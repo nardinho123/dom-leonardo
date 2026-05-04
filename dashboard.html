@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERP Restaurante</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0a0e17;--card:#151b2b;--border:#1e2740;--text:#e2e8f0;--muted:#64748b;
+    --green:#34d399;--red:#f87171;--blue:#4a90d9;--yellow:#fbbf24;--purple:#a78bfa;
+    --sidebar-w:220px;
+  }
+  body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;min-height:100vh}
+  #root{display:flex;min-height:100vh}
+
+  /* SIDEBAR */
+  .sidebar{width:var(--sidebar-w);background:var(--card);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;
+    transition:transform .3s}
+  .sidebar.hidden{transform:translateX(-100%)}
+  .sidebar-logo{padding:20px 16px;border-bottom:1px solid var(--border);font-size:16px;
+    font-weight:700;color:var(--green);display:flex;align-items:center;gap:8px}
+  .sidebar-logo span{font-size:22px}
+  .nav-section{padding:12px 8px 4px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;
+    border-radius:8px;margin:2px 8px;font-size:14px;color:var(--muted);transition:all .15s}
+  .nav-item:hover{background:#1e2740;color:var(--text)}
+  .nav-item.active{background:#1e3a5f;color:var(--blue)}
+  .nav-icon{font-size:16px;width:20px;text-align:center}
+  .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
+  .sidebar-overlay.show{display:block}
+
+  /* MAIN */
+  .main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
+  .topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;
+    display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
+  .hamburger{display:none;background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;padding:4px}
+  .topbar-title{font-size:16px;font-weight:600;flex:1}
+  .content{padding:20px;flex:1;max-width:1200px;width:100%}
+
+  /* CARDS */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+  .card-title{font-size:14px;color:var(--muted);margin-bottom:12px;font-weight:500}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px}
+  .stat-value{font-size:22px;font-weight:700;margin-bottom:4px}
+  .stat-label{font-size:12px;color:var(--muted)}
+  .green{color:var(--green)}.red{color:var(--red)}.blue{color:var(--blue)}.yellow{color:var(--yellow)}
+
+  /* FORMS */
+  .form-group{margin-bottom:14px}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+  input,select,textarea{width:100%;background:#0d1220;border:1px solid var(--border);border-radius:8px;
+    padding:10px 12px;color:var(--text);font-size:14px;outline:none;transition:border-color .15s}
+  input:focus,select:focus,textarea:focus{border-color:var(--blue)}
+  select option{background:#1a2035}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .form-row-3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
+
+  /* BUTTONS */
+  .btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:500;transition:all .15s}
+  .btn-primary{background:var(--blue);color:#fff}
+  .btn-primary:hover{background:#3a7bc8}
+  .btn-danger{background:#7f1d1d;color:var(--red)}
+  .btn-success{background:#064e3b;color:var(--green)}
+  .btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+  .btn-outline:hover{border-color:var(--blue);color:var(--blue)}
+  .btn-sm{padding:6px 12px;font-size:12px}
+  .btn-icon{background:none;border:none;cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:6px;font-size:16px}
+  .btn-icon:hover{color:var(--red);background:#1e2740}
+  button:disabled{opacity:.5;cursor:not-allowed}
+
+  /* TABLE */
+  .table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{background:#0d1220;padding:10px 14px;text-align:left;color:var(--muted);font-weight:500;
+    border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+  th:hover{color:var(--text)}
+  td{padding:10px 14px;border-bottom:1px solid #0d1220;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:#0d1220}
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+  .badge-green{background:#064e3b;color:var(--green)}
+  .badge-red{background:#7f1d1d;color:var(--red)}
+  .badge-blue{background:#1e3a5f;color:var(--blue)}
+  .badge-yellow{background:#451a03;color:var(--yellow)}
+
+  /* INSUMOS LIST */
+  .insumos-list{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px}
+  .insumo-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center;
+    padding:8px 12px;border-bottom:1px solid var(--border);background:#0d1220}
+  .insumo-row:last-child{border-bottom:none}
+
+  /* TOAST */
+  .toast-container{position:fixed;top:20px;right:20px;z-index:1000;display:flex;flex-direction:column;gap:8px}
+  .toast{padding:12px 16px;border-radius:10px;font-size:13px;max-width:380px;animation:slide-in .2s ease;
+    border-left:3px solid;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+  .toast-success{background:#0d2818;border-color:var(--green);color:var(--green)}
+  .toast-error{background:#200d0d;border-color:var(--red);color:#fca5a5}
+  .toast-info{background:#0d1e38;border-color:var(--blue);color:#93c5fd}
+  @keyframes slide-in{from{transform:translateX(100%);opacity:0}to{transform:none;opacity:1}}
+
+  /* MISC */
+  .loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--muted);font-size:14px}
+  .empty{text-align:center;padding:40px;color:var(--muted);font-size:14px}
+  .divider{height:1px;background:var(--border);margin:16px 0}
+  .row-red td{color:var(--red)}
+  .filter-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .chip{padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--border);
+    background:transparent;color:var(--muted);transition:all .15s}
+  .chip.active{background:var(--blue);border-color:var(--blue);color:#fff}
+  .section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .section-title{font-size:18px;font-weight:600}
+
+  /* LOGIN */
+  .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .login-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;
+    width:100%;max-width:400px}
+  .login-title{font-size:22px;font-weight:700;margin-bottom:6px;color:var(--green)}
+  .login-sub{font-size:13px;color:var(--muted);margin-bottom:24px}
+
+  @media(max-width:768px){
+    .sidebar{transform:translateX(-100%)}
+    .sidebar.open{transform:none}
+    .main{margin-left:0}
+    .hamburger{display:block}
+    .form-row,.form-row-3{grid-template-columns:1fr}
+    .insumo-row{grid-template-columns:1fr 1fr auto;gap:6px}
+    .stat-grid{grid-template-columns:repeat(2,1fr)}
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, createContext, useContext } = React;
+
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+const DEFAULT_URL  = 'https://ippeiearkgnqdeiquiuy.supabase.co';
+const DEFAULT_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlwcGVpZWFya2ducWRlaXF1aXV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNTkyOTMsImV4cCI6MjA5MTgzNTI5M30.wL83lZlG9vet_rXHT91ZYk1ZmDucJHIMjr9mck9cwhI';
+
+function getClient() {
+  const url = localStorage.getItem('sb_url') || DEFAULT_URL;
+  const key = localStorage.getItem('sb_key') || DEFAULT_KEY;
+  return supabase.createClient(url, key);
+}
+
+// ── TOAST ────────────────────────────────────────────────────────────────────
+const ToastCtx = createContext(null);
+function ToastProvider({ children }) {
+  const [toasts, setToasts] = useState([]);
+  const add = useCallback((msg, type='success') => {
+    const id = Date.now();
+    setToasts(t => [...t, { id, msg, type }]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 5000);
+  }, []);
+  return (
+    <ToastCtx.Provider value={add}>
+      {children}
+      <div className="toast-container">
+        {toasts.map(t => (
+          <div key={t.id} className={`toast toast-${t.type}`}>{t.msg}</div>
+        ))}
+      </div>
+    </ToastCtx.Provider>
+  );
+}
+const useToast = () => useContext(ToastCtx);
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+const fmt = (v, dec=2) => Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+const fmtG = g => g >= 1000 ? `${fmt(g/1000,3).replace(/\.?0+$/,'')} kg` : `${fmt(g,0)} g`;
+const fmtR$ = v => `R$ ${fmt(v)}`;
+
+const CANAL_LABEL = { ifood:'iFood', balcao:'Balcão', rappi:'Rappi', delivery_proprio:'Delivery próprio', outros:'Outros' };
+const MOTIVO_PERDA = ['Vencimento','Preparo errado','Armazenamento','Quebra','Outros'];
+const TIPO_LABEL = { cru:'In Natura', preparado:'Preparado', embalagem:'Embalagem', insumo:'Insumo' };
+
+// ── LOGIN ────────────────────────────────────────────────────────────────────
+function Login({ onLogin }) {
+  const [url, setUrl] = useState(localStorage.getItem('sb_url') || DEFAULT_URL);
+  const [key, setKey] = useState(localStorage.getItem('sb_key') || DEFAULT_KEY);
+  const [loading, setLoading] = useState(false);
+  const toast = useToast();
+  async function handle() {
+    setLoading(true);
+    try {
+      const client = supabase.createClient(url, key);
+      const { error } = await client.from('produtos').select('id').limit(1);
+      if (error) throw error;
+      localStorage.setItem('sb_url', url);
+      localStorage.setItem('sb_key', key);
+      onLogin();
+    } catch(e) {
+      toast('Erro ao conectar: ' + e.message, 'error');
+    }
+    setLoading(false);
+  }
+  return (
+    <div className="login-wrap">
+      <div className="login-card">
+        <div className="login-title">🍝 ERP Restaurante</div>
+        <div className="login-sub">Configure a conexão com o Supabase</div>
+        <div className="form-group">
+          <label>URL do Projeto</label>
+          <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://xxx.supabase.co"/>
+        </div>
+        <div className="form-group">
+          <label>Anon Key</label>
+          <input value={key} onChange={e=>setKey(e.target.value)} placeholder="eyJ..."/>
+        </div>
+        <button className="btn btn-primary" style={{width:'100%'}} onClick={handle} disabled={loading}>
+          {loading ? 'Conectando...' : 'Entrar'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── LANCAMENTO COMPRA ────────────────────────────────────────────────────────
+function TelaCompra() {
+  const toast = useToast();
+  const sb = getClient();
+  const [produtos, setProdutos] = useState([]);
+  const [fornecedores, setFornecedores] = useState([]);
+  const [unidades, setUnidades] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [f, setF] = useState({ produto_id:'', quantidade:'', unidade_id:'', valor_total:'', fornecedor_id:'' });
+  const [showNovoProd, setShowNovoProd] = useState(false);
+  const [np, setNp] = useState({ nome:'', tipo:'cru', categoria_id:'', unidade_id:'' });
+
+  useEffect(() => {
+    sb.from('produtos').select('id,nome,tipo').eq('ativo',true).order('nome').then(r=>setProdutos(r.data||[]));
+    sb.from('fornecedores').select('id,nome').eq('ativo',true).order('nome').then(r=>setFornecedores(r.data||[]));
+    sb.from('unidades').select('id,nome').order('nome').then(r=>setUnidades(r.data||[]));
+    sb.from('categorias').select('id,nome').order('nome').then(r=>setCategorias(r.data||[]));
+  }, []);
+
+  async function lancar() {
+    const { produto_id, quantidade, unidade_id, valor_total, fornecedor_id } = f;
+    if (!produto_id || !quantidade || !unidade_id || !valor_total || !fornecedor_id)
+      return toast('Preencha todos os campos', 'error');
+    setLoading(true);
+    try {
+      const prod = produtos.find(p=>p.id===produto_id);
+      const forn = fornecedores.find(p=>p.id===fornecedor_id);
+      const qtd = parseFloat(quantidade);
+      const vt = parseFloat(valor_total);
+      const { data: mov } = await sb.from('movimentacoes').insert({ tipo:'compra', descricao:`Compra: ${prod?.nome}` }).select('id').single();
+      const { data: compra } = await sb.from('compras').insert({ movimentacao_id: mov.id, fornecedor_id }).select('id').single();
+      await sb.from('compras_itens').insert({ compra_id: compra.id, produto_id, quantidade: qtd, unidade_id, preco_unitario: vt/qtd });
+      toast(`✅ Compra registrada: ${fmtG(qtd * (unidades.find(u=>u.id===unidade_id)?.fator_gramas||1))} de ${prod?.nome} — ${fmtR$(vt)} (${forn?.nome})`, 'success');
+      setF({ produto_id:'', quantidade:'', unidade_id:'', valor_total:'', fornecedor_id:'' });
+    } catch(e) { toast('Erro: '+e.message, 'error'); }
+    setLoading(false);
+  }
+
+  async function criarProduto() {
+    if (!np.nome || !np.tipo || !np.unidade_id) return toast('Preencha nome, tipo e unidade', 'error');
+    try {
+      const { data } = await sb.from('produtos').insert({ nome: np.nome.toLowerCase(), tipo: np.tipo, categoria_id: np.categoria_id||null, unidade_id: np.unidade_id }).select('id,nome,tipo').single();
+      setProdutos(p=>[...p,data].sort((a,b)=>a.nome.localeCompare(b.nome)));
+      setNp({ nome:'', tipo:'cru', categoria_id:'', unidade_id:'' });
+      setShowNovoProd(false);
+      toast(`✅ Produto "${data.nome}" criado`, 'success');
+    } catch(e) { toast('Erro: '+e.message,'error'); }
+  }
+
+  return (
+    <div className="content">
+      <div className="section-header">
+        <div className="section-title">🛒 Lançar Compra</div>
+      </div>
+      <div className="card">
+        <div className="form-group">
+          <label>Produto</label>
+          <select value={f.produto_id} onChange={e=>setF({...f,produto_id:e.target.value})}>
+            <option value="">Selecione o produto...</option>
+            {produtos.map(p=><option key={p.id} value={p.id}>{p.nome} ({TIPO_LABEL[p.tipo]||p.tipo})</option>)}
+          </select>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label>Quantidade</label>
+            <input type="number" value={f.quantidade} onChange={e=>setF({...f,quantidade:e.target.value})} placeholder="Ex: 5"/>
+          </div>
+          <div className="form-group">
+            <label>Unidade</label>
+            <select value={f.unidade_id} onChange={e=>setF({...f,unidade_id:e.target.value})}>
+              <option value="">Unidade...</option>
+              {unidades.map(u=><option key={u.id} value={u.id}>{u.nome}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label>Valor Total (R$)</label>
+            <input type="number" step="0.01" value={f.valor_total} onChange={e=>setF({...f,valor_total:e.target.value})} placeholder="Ex: 200.00"/>
+          </div>
+          <div className="form-group">
+            <label>Fornecedor</label>
+            <select value={f.fornecedor_id} onChange={e=>setF({...f,fornecedor_id:e.target.value})}>
+              <option value="">Selecione...</option>
+              {fornecedores.map(fo=><option key={fo.id} value={fo.id}>{fo.nome}</option>)}
+            </select>
+          </div>
+        </div>
+        {f.quantidade && f.valor_total && <div style={{marginBottom:12,fontSize:13,color:'var(--muted)'}}>
+          Preço unitário: {fmtR$(parseFloat(f.valor_total||0)/parseFloat(f.quantidade||1))}/{unidades.find(u=>u.id===f.unidade_id)?.nome||'un'}
+        </div>}
+        <div style={{display:'flex',gap:10}}>
+          <button className="btn btn-primary" onClick={lancar} disabled={loading}>{loading?'Registrando...':'Lançar Compra'}</button>
+          <button className="btn btn-outline" onClick={()=>setShowNovoProd(!showNovoProd)}>+ Novo Produto</button>
+        </div>
+      </div>
+
+      {showNovoProd && (
+        <div className="card">
+          <div className="card-title">Novo Produto</div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Nome</label>
+              <input value={np.nome} onChange={e=>setNp({...np,nome:e.target.value})} placeholder="Nome do produto"/>
+            </div>
+            <div className="form-group">
+              <label>Tipo</label>
+              <select value={np.tipo} onChange={e=>setNp({...np,tipo:e.target.value})}>
+                <option value="cru">In Natura (cru)</option>
+                <option value="preparado">Preparado</option>
+                <option value="embalagem">Embalagem</option>
+                <option value="insumo">Insumo</option>
+              </select>
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Categoria</label>
+              <select value={np.categoria_id} onChange={e=>setNp({...np,categoria_id:e.target.value})}>
+                <option value="">Sem categoria</option>
+                {categorias.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Unidade padrão</label>
+              <select value={np.unidade_id} onChange={e=>setNp({...np,unidade_id:e.target.value})}>
+                <option value="">Selecione...</option>
+                {unidades.map(u=><option key={u.id} value={u.id}>{u.nome}</option>)}
+              </select>
+            </div>
+          </div>
+          <button className="btn btn-success" onClick={criarProduto}>Criar Produto</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── LANCAMENTO PRODUCAO ──────────────────────────────────────────────────────
+function TelaProducao() {
+  const toast = useToast();
+  const sb = getClient();
+  const [preparados, setPreparados] = useState([]);
+  const [insumos, setInsumos] = useState([]);
+  const [unidades, setUnidades] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [saida, setSaida] = useState({ produto_id:'', quantidade:'', unidade_id:'' });
+  const [itens, setItens] = useState([{ produto_id:'', quantidade:'', unidade_id:'' }]);
+
+  useEffect(() => {
+    sb.from('produtos').select('id,nome,tipo').eq('ativo',true).in('tipo',['preparado']).order('nome').then(r=>setPreparados(r.data||[]));
+    sb.from('produtos').select('id,nome,tipo').eq('ativo',true).in('tipo',['cru','insumo','embalagem']).order('nome').then(r=>setInsumos(r.data||[]));
+    sb.from('unidades').select('id,nome,fator_gramas').order('nome').then(r=>setUnidades(r.data||[]));
+  }, []);
+
+  function addItem() { setItens([...itens,{produto_id:'',quantidade:'',unidade_id:''}]); }
+  function removeItem(i) { setItens(itens.filter((_,idx)=>idx!==i)); }
+  function updItem(i,k,v) { setItens(itens.map((it,idx)=>idx===i?{...it,[k]:v}:it)); }
+
+  async function lancar() {
+    if (!saida.produto_id||!saida.quantidade||!saida.unidade_id) return toast('Preencha produto e quantidade de saída','error');
+    if (itens.some(it=>!it.produto_id||!it.quantidade||!it.unidade_id)) return toast('Preencha todos os insumos','error');
+    setLoading(true);
+    try {
+      const prod = preparados.find(p=>p.id===saida.produto_id);
+      const { data: mov } = await sb.from('movimentacoes').insert({ tipo:'producao', descricao:`Produção: ${prod?.nome}` }).select('id').single();
+      const { data: producao } = await sb.from('producoes').insert({
+        movimentacao_id: mov.id, produto_saida_id: saida.produto_id,
+        quantidade_produzida: parseFloat(saida.quantidade), unidade_saida_id: saida.unidade_id
+      }).select('id').single();
+      for (const it of itens) {
+        await sb.from('producao_insumos').insert({
+          producao_id: producao.id, produto_id: it.produto_id,
+          quantidade_usada: parseFloat(it.quantidade), unidade_id: it.unidade_id
+        });
+      }
+      const { data: resultado } = await sb.rpc('finalizar_producao', { p_producao_id: producao.id });
+      const r = resultado?.[0];
+      toast(`✅ Produção: ${saida.quantidade}${unidades.find(u=>u.id===saida.unidade_id)?.nome||''} de ${prod?.nome}${r ? ` | Custo: ${fmtR$(r.custo_total)} | Rend: ${fmt(r.rendimento,1)}%` : ''}`, 'success');
+      setSaida({produto_id:'',quantidade:'',unidade_id:''});
+      setItens([{produto_id:'',quantidade:'',unidade_id:''}]);
+    } catch(e) { toast('Erro: '+e.message,'error'); }
+    setLoading(false);
+  }
+
+  return (
+    <div className="content">
+      <div className="section-header"><div className="section-title">🍳 Lançar Produção</div></div>
+      <div className="card">
+        <div className="card-title">Produto de saída (preparado)</div>
+        <div className="form-row-3">
+          <div className="form-group">
+            <label>Produto</label>
+            <select value={saida.produto_id} onChange={e=>setSaida({...saida,produto_id:e.target.value})}>
+              <option value="">Selecione o preparado...</option>
+              {preparados.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Quantidade</label>
+            <input type="number" value={saida.quantidade} onChange={e=>setSaida({...saida,quantidade:e.target.value})} placeholder="Ex: 3"/>
+          </div>
+          <div className="form-group">
+            <label>Unidade</label>
+            <select value={saida.unidade_id} onChange={e=>setSaida({...saida,unidade_id:e.target.value})}>
+              <option value="">Un...</option>
+              {unidades.map(u=><option key={u.id} value={u.id}>{u.nome}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="divider"/>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+          <div className="card-title" style={{margin:0}}>Insumos utilizados</div>
+          <button className="btn btn-outline btn-sm" onClick={addItem}>+ Adicionar</button>
+        </div>
+        <div className="insumos-list">
+          {itens.map((it,i)=>(
+            <div className="insumo-row" key={i}>
+              <select value={it.produto_id} onChange={e=>updItem(i,'produto_id',e.target.value)}>
+                <option value="">Produto...</option>
+                {insumos.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}
+              </select>
+              <input type="number" value={it.quantidade} onChange={e=>updItem(i,'quantidade',e.target.value)} placeholder="Qtd"/>
+              <select value={it.unidade_id} onChange={e=>updItem(i,'unidade_id',e.target.value)}>
+                <option value="">Un</option>
+                {unidades.map(u=><option key={u.id} value={u.id}>{u.nome}</option>)}
+              </select>
+              <button className="btn-icon" onClick={()=>removeItem(i)}>✕</button>
+            </div>
+          ))}
+        </div>
+        <button className="btn btn-primary" onClick={lancar} disabled={loading}>{loading?'Registrando...':'Lançar Produção'}</button>
+      </div>
+    </div>
+  );
+}
+
+// ── LANCAMENTO VENDA ─────────────────────────────────────────────────────────
+function TelaVenda() {
+  const toast = useToast();
+  const sb = getClient();
+  const [receitas, setReceitas] = useState([]);
+  const [precos, setPrecos] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [canal, setCanal] = useState('ifood');
+  const [desconto, setDesconto] = useState('0');
+  const [itens, setItens] = useState([{receita_id:'',quantidade:'1',valor_unitario:''}]);
+
+  useEffect(() => {
+    sb.from('receitas_ficha_tecnica').select('id,nome').eq('ativo',true).order('nome').then(r=>setReceitas(r.data||[]));
+    sb.from('precos_venda').select('receita_id,canal,preco').eq('ativo',true).then(r=>{
+      const m={};
+      (r.data||[]).forEach(p=>{ if(!m[p.receita_id]) m[p.receita_id]={}; m[p.receita_id][p.canal]=p.preco; });
+      setPrecos(m);
+    });
+  }, []);
+
+  function addItem() { setItens([...itens,{receita_id:'',quantidade:'1',valor_unitario:''}]); }
+  function removeItem(i) { setItens(itens.filter((_,idx)=>idx!==i)); }
+  function updItem(i,k,v) {
+    const novo = itens.map((it,idx)=>{
+      if(idx!==i) return it;
+      const upd = {...it,[k]:v};
+      if(k==='receita_id' && precos[v]) upd.valor_unitario = precos[v][canal] || precos[v]['ifood'] || '';
+      return upd;
+    });
+    setItens(novo);
+  }
+
+  const bruto = itens.reduce((s,it)=>s+parseFloat(it.valor_unitario||0)*parseFloat(it.quantidade||0),0);
+  const liquido = bruto - parseFloat(desconto||0);
+
+  async function lancar() {
+    if (itens.some(it=>!it.receita_id||!it.quantidade||!it.valor_unitario)) return toast('Preencha todos os pratos','error');
+    setLoading(true);
+    try {
+      const { data: mov } = await sb.from('movimentacoes').insert({ tipo:'venda', descricao:`Venda ${CANAL_LABEL[canal]}` }).select('id').single();
+      const { data: venda } = await sb.from('vendas').insert({
+        movimentacao_id: mov.id, canal_venda: canal,
+        desconto_plataforma: parseFloat(desconto||0)
+      }).select('id').single();
+      let cmvTotal = 0;
+      for (const it of itens) {
+        const { data: vi } = await sb.from('vendas_itens').insert({
+          venda_id: venda.id, receita_id: it.receita_id,
+          quantidade: parseFloat(it.quantidade), valor_unitario: parseFloat(it.valor_unitario)
+        }).select('cmv_total,lucro_bruto').single();
+        cmvTotal += parseFloat(vi?.cmv_total||0);
+      }
+      await sb.rpc('registrar_receita_venda', { p_venda_id: venda.id }).catch(()=>{});
+      toast(`✅ Venda: Bruto ${fmtR$(bruto)} | Desc ${fmtR$(parseFloat(desconto||0))} | Líquido ${fmtR$(liquido)} | CMV ${fmtR$(cmvTotal)}`, 'success');
+      setItens([{receita_id:'',quantidade:'1',valor_unitario:''}]);
+      setDesconto('0');
+    } catch(e) { toast('Erro: '+e.message,'error'); }
+    setLoading(false);
+  }
+
+  return (
+    <div className="content">
+      <div className="section-header"><div className="section-title">💰 Lançar Venda</div></div>
+      <div className="card">
+        <div className="form-row">
+          <div className="form-group">
+            <label>Canal de venda</label>
+            <select value={canal} onChange={e=>setCanal(e.target.value)}>
+              {Object.entries(CANAL_LABEL).map(([v,l])=><option key={v} value={v}>{l}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Desconto / Taxa plataforma (R$)</label>
+            <input type="number" step="0.01" value={desconto} onChange={e=>setDesconto(e.target.value)} placeholder="0.00"/>
+          </div>
+        </div>
+        <div className="divider"/>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+          <div className="card-title" style={{margin:0}}>Pratos vendidos</div>
+          <button className="btn btn-outline btn-sm" onClick={addItem}>+ Adicionar prato</button>
+        </div>
+        <div className="insumos-list">
+          {itens.map((it,i)=>(
+            <div className="insumo-row" key={i}>
+              <select value={it.receita_id} onChange={e=>updItem(i,'receita_id',e.target.value)}>
+                <option value="">Prato...</option>
+                {receitas.map(r=><option key={r.id} value={r.id}>{r.nome}</option>)}
+              </select>
+              <input type="number" value={it.quantidade} onChange={e=>updItem(i,'quantidade',e.target.value)} placeholder="Qtd"/>
+              <input type="number" step="0.01" value={it.valor_unitario} onChange={e=>updItem(i,'valor_unitario',e.target.value)} placeholder="R$"/>
+              <button className="btn-icon" onClick={()=>removeItem(i)}>✕</button>
+            </div>
+          ))}
+        </div>
+        <div className="divider"/>
+        <div style={{display:'flex',gap:20,marginBottom:16,fontSize:13}}>
+          <span>Bruto: <b className="green">{fmtR$(bruto)}</b></span>
+          <span>Desconto: <b className="red">{fmtR$(parseFloat(desconto||0))}</b></span>
+          <span>Líquido: <b className="blue">{fmtR$(liquido)}</b></span>
+        </div>
+        <button className="btn btn-success" onClick={lancar} disabled={loading}>{loading?'Registrando...':'Lançar Venda'}</button>
+      </div>
+    </div>
+  );
+}
+
+// ── LANCAMENTO PERDA ─────────────────────────────────────────────────────────
+function TelaPerda() {
+  const toast = useToast();
+  const sb = getClient();
+  const [produtos, setProdutos] = useState([]);
+  const [unidades, setUnidades] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [f, setF] = useState({ produto_id:'', quantidade:'', unidade_id:'', motivo:'Vencimento', obs:'' });
+
+  useEffect(() => {
+    sb.from('produtos').select('id,nome,tipo').eq('ativo',true).order('nome').then(r=>setProdutos(r.data||[]));
+    sb.from('unidades').select('id,nome').order('nome').then(r=>setUnidades(r.data||[]));
+  }, []);
+
+  async function lancar() {
+    if (!f.produto_id||!f.quantidade||!f.unidade_id) return toast('Preencha produto, quantidade e unidade','error');
+    setLoading(true);
+    try {
+      const prod = produtos.find(p=>p.id===f.produto_id);
+      const { data: mov } = await sb.from('movimentacoes').insert({ tipo:'perda', descricao:`Perda: ${prod?.nome} — ${f.motivo}` }).select('id').single();
+      await sb.from('ajustes_estoque').insert({
+        movimentacao_id: mov.id, produto_id: f.produto_id, tipo: 'perda',
+        quantidade: parseFloat(f.quantidade), unidade_id: f.unidade_id,
+        motivo_perda: f.motivo, observacoes: f.obs || null
+      });
+      toast(`⚠️ Perda registrada: ${f.quantidade} ${unidades.find(u=>u.id===f.unidade_id)?.nome||''} de ${prod?.nome} — ${f.motivo}`, 'error');
+      setF({ produto_id:'', quantidade:'', unidade_id:'', motivo:'Vencimento', obs:'' });
+    } catch(e) { toast('Erro: '+e.message,'error'); }
+    setLoading(false);
+  }
+
+  return (
+    <div className="content">
+      <div className="section-header"><div className="section-title">⚠️ Lançar Perda</div></div>
+      <div className="card">
+        <div className="form-group">
+          <label>Produto</label>
+          <select value={f.produto_id} onChange={e=>setF({...f,produto_id:e.target.value})}>
+            <option value="">Selecione o produto...</option>
+            {produtos.map(p=><option key={p.id} value={p.id}>{p.nome} ({TIPO_LABEL[p.tipo]||p.tipo})</option>)}
+          </select>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label>Quantidade perdida</label>
+            <input type="number" value={f.quantidade} onChange={e=>setF({...f,quantidade:e.target.value})} placeholder="Ex: 200"/>
+          </div>
+          <div className="form-group">
+            <label>Unidade</label>
+            <select value={f.unidade_id} onChange={e=>setF({...f,unidade_id:e.target.value})}>
+              <option value="">Unidade...</option>
+              {unidades.map(u=><option key={u.id} value={u.id}>{u.nome}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="form-group">
+          <label>Motivo</label>
+          <select value={f.motivo} onChange={e=>setF({...f,motivo:e.target.value})}>
+            {MOTIVO_PERDA.map(m=><option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+        <div className="form-group">
+          <label>Observação (opcional)</label>
+          <input value={f.obs} onChange={e=>setF({...f,obs:e.target.value})} placeholder="Detalhes..."/>
+        </div>
+        <button className="btn btn-danger" onClick={lancar} disabled={loading} style={{background:'#7f1d1d',color:'var(--red)'}}>
+          {loading?'Registrando...':'Registrar Perda'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── FICHAS TECNICAS ──────────────────────────────────────────────────────────
+function TelaFichas() {
+  const toast = useToast();
+  const sb = getClient();
+  const [receitas, setReceitas] = useState([]);
+  const [cmvMap, setCmvMap] = useState({});
+  const [selected, setSelected] = useState(null);
+  const [itens, setItens] = useState([]);
+  const [produtos, setProdutos] = useState([]);
+  const [unidades, setUnidades] = useState([]);
+  const [showNova, setShowNova] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [nova, setNova] = useState({ nome:'', preco_ifood:'' });
+  const [novaItens, setNovaItens] = useState([{produto_id:'',quantidade:'',unidade_id:''}]);
+
+  useEffect(() => { loadReceitas(); loadCMV(); }, []);
+  useEffect(() => {
+    sb.from('produtos').select('id,nome,tipo').eq('ativo',true).order('nome').then(r=>setProdutos(r.data||[]));
+    sb.from('unidades').select('id,nome').order('nome').then(r=>setUnidades(r.data||[]));
+  }, []);
+
+  async function loadReceitas() {
+    const { data } = await sb.from('receitas_ficha_tecnica').select('id,nome,ativo').order('nome');
+    setReceitas(data||[]);
+  }
+  async function loadCMV() {
+    const { data } = await sb.from('v_cmv_pratos').select('receita_id,nome,cmv_total');
+    const m={}; (data||[]).forEach(r=>m[r.receita_id]=r.cmv_total); setCmvMap(m);
+  }
+
+  async function selectReceita(r) {
+    setSelected(r);
+    const { data } = await sb.from('receita_itens').select('id,produto_id,quantidade,unidade_id,quantidade_gramas,produtos(nome),unidades(nome)').eq('receita_id',r.id);
+    setItens(data||[]);
+  }
+
+  async function deleteItem(id) {
+    await sb.from('receita_itens').delete().eq('id',id);
+    setItens(itens.filter(i=>i.id!==id));
+    toast('Ingrediente removido','info');
+  }
+
+  async function criarFicha() {
+    if (!nova.nome) return toast('Informe o nome do prato','error');
+    setLoading(true);
+    try {
+      const { data: r } = await sb.from('receitas_ficha_tecnica').insert({ nome: nova.nome }).select('id,nome,ativo').single();
+      if (nova.preco_ifood) {
+        await sb.from('precos_venda').insert({ receita_id: r.id, canal: 'ifood', preco: parseFloat(nova.preco_ifood) });
+      }
+      for (const it of novaItens.filter(i=>i.produto_id&&i.quantidade&&i.unidade_id)) {
+        await sb.from('receita_itens').insert({ receita_id: r.id, produto_id: it.produto_id, quantidade: parseFloat(it.quantidade), unidade_id: it.unidade_id });
+      }
+      setReceitas(prev=>[...prev,r].sort((a,b)=>a.nome.localeCompare(b.nome)));
+      setNova({nome:'',preco_ifood:''}); setNovaItens([{produto_id:'',quantidade:'',unidade_id:''}]);
+      setShowNova(false);
+      toast(`✅ Ficha "${r.nome}" criada`,'success');
+    } catch(e) { toast('Erro: '+e.message,'error'); }
+    setLoading(false);
+  }
+
+  const addNovoItem = ()=>setNovaItens([...novaItens,{produto_id:'',quantidade:'',unidade_id:''}]);
+  const remNovoItem = i=>setNovaItens(novaItens.filter((_,idx)=>idx!==i));
+  const updNovoItem = (i,k,v)=>setNovaItens(novaItens.map((it,idx)=>idx===i?{...it,[k]:v}:it));
+
+  return (
+    <div className="content">
+      <div className="section-header">
+        <div className="section-title">📋 Fichas Técnicas</div>
+        <button className="btn btn-outline btn-sm" onClick={()=>setShowNova(!showNova)}>+ Nova Ficha</button>
+      </div>
+
+      {showNova && (
+        <div className="card">
+          <div className="card-title">Nova Ficha Técnica</div>
+          <div className="form-row">
+            <div className="form-group"><label>Nome do prato</label><input value={nova.nome} onChange={e=>setNova({...nova,nome:e.target.value})} placeholder="Ex: Penne bolonhesa 400g"/></div>
+            <div className="form-group"><label>Preço iFood (R$)</label><input type="number" step="0.01" value={nova.preco_ifood} onChange={e=>setNova({...nova,preco_ifood:e.target.value})} placeholder="39.90"/></div>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+            <div className="card-title" style={{margin:0}}>Ingredientes</div>
+            <button className="btn btn-outline btn-sm" onClick={addNovoItem}>+ Adicionar</button>
+          </div>
+          <div className="insumos-list">
+            {novaItens.map((it,i)=>(
+              <div className="insumo-row" key={i}>
+                <select value={it.produto_id} onChange={e=>updNovoItem(i,'produto_id',e.target.value)}>
+                  <option value="">Produto...</option>
+                  {produtos.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}
+                </select>
+                <input type="number" value={it.quantidade} onChange={e=>updNovoItem(i,'quantidade',e.target.value)} placeholder="Qtd"/>
+                <select value={it.unidade_id} onChange={e=>updNovoItem(i,'unidade_id',e.target.value)}>
+                  <option value="">Un</option>
+                  {unidades.map(u=><option key={u.id} value={u.id}>{u.nome}</option>)}
+                </select>
+                <button className="btn-icon" onClick={()=>remNovoItem(i)}>✕</button>
+              </div>
+            ))}
+          </div>
+          <button className="btn btn-primary" onClick={criarFicha} disabled={loading}>{loading?'Salvando...':'Salvar Ficha'}</button>
+        </div>
+      )}
+
+      <div className="form-row" style={{gap:16}}>
+        <div className="card" style={{flex:'0 0 300px',maxHeight:600,overflowY:'auto'}}>
+          <div className="card-title">{receitas.length} pratos</div>
+          {receitas.map(r=>(
+            <div key={r.id} onClick={()=>selectReceita(r)} style={{
+              padding:'10px 12px',borderRadius:8,cursor:'pointer',marginBottom:4,
+              background:selected?.id===r.id?'#1e3a5f':'transparent',
+              border:'1px solid '+(selected?.id===r.id?'var(--blue)':'transparent'),
+              fontSize:13
+            }}>
+              <div style={{fontWeight:500}}>{r.nome}</div>
+              <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>
+                CMV: {cmvMap[r.id]?fmtR$(cmvMap[r.id]):'—'}
+                {!r.ativo && <span className="badge badge-red" style={{marginLeft:6}}>Inativo</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {selected && (
+          <div className="card" style={{flex:1}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+              <div>
+                <div style={{fontWeight:600,fontSize:15}}>{selected.nome}</div>
+                {cmvMap[selected.id] && <div style={{fontSize:12,color:'var(--muted)',marginTop:2}}>CMV: {fmtR$(cmvMap[selected.id])}</div>}
+              </div>
+            </div>
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>Ingrediente</th><th>Qtd</th><th>Un</th><th>Gramas</th><th></th></tr></thead>
+                <tbody>
+                  {itens.map(it=>(
+                    <tr key={it.id}>
+                      <td>{it.produtos?.nome||'-'}</td>
+                      <td>{fmt(it.quantidade,0)}</td>
+                      <td>{it.unidades?.nome||'-'}</td>
+                      <td>{it.quantidade_gramas!=null?fmtG(it.quantidade_gramas):'—'}</td>
+                      <td><button className="btn-icon" onClick={()=>deleteItem(it.id)}>🗑</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── ESTOQUE ──────────────────────────────────────────────────────────────────
+function TelaEstoque() {
+  const sb = getClient();
+  const [data, setData] = useState([]);
+  const [filter, setFilter] = useState('todos');
+  const [sort, setSort] = useState({ col:'nome', asc:true });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { load(); }, []);
+  async function load() {
+    setLoading(true);
+    const { data: d } = await sb.from('v_estoque_atual').select('*').order('nome');
+    setData(d||[]);
+    setLoading(false);
+  }
+
+  const filtered = data
+    .filter(r => filter==='todos'||r.tipo===filter)
+    .sort((a,b)=>{
+      const va=a[sort.col]??0, vb=b[sort.col]??0;
+      const cmp = typeof va==='string'?va.localeCompare(vb):parseFloat(va)-parseFloat(vb);
+      return sort.asc?cmp:-cmp;
+    });
+
+  const total = data.reduce((s,r)=>s+parseFloat(r.valor_estoque||0),0);
+  const zerados = data.filter(r=>parseFloat(r.estoque_gramas||0)<=0).length;
+
+  function sortBy(col) {
+    setSort(s=>s.col===col?{col,asc:!s.asc}:{col,asc:true});
+  }
+
+  return (
+    <div className="content">
+      <div className="section-header">
+        <div className="section-title">📦 Estoque Atual</div>
+        <button className="btn btn-outline btn-sm" onClick={load}>↺ Atualizar</button>
+      </div>
+      <div className="stat-grid">
+        <div className="stat-card"><div className="stat-value blue">{data.length}</div><div className="stat-label">Produtos cadastrados</div></div>
+        <div className="stat-card"><div className="stat-value green">{fmtR$(total)}</div><div className="stat-label">Valor em estoque</div></div>
+        <div className="stat-card"><div className="stat-value red">{zerados}</div><div className="stat-label">Produtos zerados</div></div>
+      </div>
+      <div className="filter-bar">
+        {['todos','cru','preparado','embalagem'].map(t=>(
+          <button key={t} className={`chip${filter===t?' active':''}`} onClick={()=>setFilter(t)}>
+            {t==='todos'?'Todos':TIPO_LABEL[t]||t}
+          </button>
+        ))}
+      </div>
+      {loading ? <div className="loading">Carregando...</div> : (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                {[['nome','Produto'],['tipo','Tipo'],['estoque_gramas','Estoque'],['custo_medio_grama','Custo/g'],['valor_estoque','Valor']].map(([c,l])=>(
+                  <th key={c} onClick={()=>sortBy(c)}>{l} {sort.col===c?(sort.asc?'↑':'↓'):''}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((r,i)=>(
+                <tr key={i} className={parseFloat(r.estoque_gramas||0)<=0?'row-red':''}>
+                  <td><b>{r.nome}</b></td>
+                  <td><span className={`badge badge-${r.tipo==='preparado'?'blue':r.tipo==='embalagem'?'yellow':'green'}`}>{TIPO_LABEL[r.tipo]||r.tipo}</span></td>
+                  <td style={{color:parseFloat(r.estoque_gramas||0)<=0?'var(--red)':'var(--green)'}}>{fmtG(parseFloat(r.estoque_gramas||0))}</td>
+                  <td>{r.custo_medio_grama?`R$ ${fmt(parseFloat(r.custo_medio_grama),4)}/g`:'—'}</td>
+                  <td>{fmtR$(r.valor_estoque||0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── CMV & LUCRO ──────────────────────────────────────────────────────────────
+function TelaCMV() {
+  const sb = getClient();
+  const [cmv, setCmv] = useState([]);
+  const [lucro, setLucro] = useState([]);
+  const [precos, setPrecos] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      sb.from('v_cmv_pratos').select('*').order('cmv_total', {ascending:false}),
+      sb.from('v_lucro_por_prato').select('*').order('margem_percentual'),
+      sb.from('precos_venda').select('receita_id,canal,preco').eq('ativo',true).eq('canal','ifood')
+    ]).then(([r1,r2,r3])=>{
+      setCmv(r1.data||[]);
+      setLucro(r2.data||[]);
+      const m={}; (r3.data||[]).forEach(p=>m[p.receita_id]=p.preco);
+      setPrecos(m);
+      setLoading(false);
+    });
+  }, []);
+
+  const cmvComMargem = cmv.map(r=>{
+    const pv = precos[r.receita_id]||0;
+    const margem = pv > 0 ? ((pv-r.cmv_total)/pv*100) : null;
+    return {...r, preco_venda: pv, margem_reais: pv - r.cmv_total, margem_pct: margem};
+  }).sort((a,b)=>(a.margem_pct??999)-(b.margem_pct??999));
+
+  return (
+    <div className="content">
+      <div className="section-header"><div className="section-title">📊 CMV & Lucro</div></div>
+      {loading ? <div className="loading">Carregando...</div> : (<>
+        <div className="card">
+          <div className="card-title">CMV por prato (pior margem primeiro)</div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Prato</th><th>CMV</th><th>Preço iFood</th><th>Margem R$</th><th>Margem %</th></tr></thead>
+              <tbody>
+                {cmvComMargem.map((r,i)=>{
+                  const cor = r.margem_pct==null?'var(--muted)':r.margem_pct<20?'var(--red)':r.margem_pct<40?'var(--yellow)':'var(--green)';
+                  return (
+                    <tr key={i}>
+                      <td>{r.nome}</td>
+                      <td className="red">{fmtR$(r.cmv_total)}</td>
+                      <td>{r.preco_venda?fmtR$(r.preco_venda):'—'}</td>
+                      <td style={{color:cor}}>{r.preco_venda?fmtR$(r.margem_reais):'—'}</td>
+                      <td style={{color:cor}}>{r.margem_pct!=null?`${fmt(r.margem_pct,1)}%`:'—'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {lucro.length > 0 && (
+          <div className="card">
+            <div className="card-title">Lucro por prato (vendas reais)</div>
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>Prato</th><th>Qtd vendida</th><th>Receita</th><th>CMV total</th><th>Lucro</th><th>Margem %</th></tr></thead>
+                <tbody>
+                  {lucro.map((r,i)=>(
+                    <tr key={i}>
+                      <td>{r.nome||r.prato}</td>
+                      <td>{r.quantidade_vendida}</td>
+                      <td className="green">{fmtR$(r.receita_total||r.receita)}</td>
+                      <td className="red">{fmtR$(r.cmv_total)}</td>
+                      <td style={{color:parseFloat(r.lucro||0)>=0?'var(--green)':'var(--red)'}}>{fmtR$(r.lucro)}</td>
+                      <td>{r.margem_percentual!=null?`${fmt(r.margem_percentual,1)}%`:'—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </>)}
+    </div>
+  );
+}
+
+// ── FLUXO DE CAIXA ───────────────────────────────────────────────────────────
+function TelaCaixa() {
+  const sb = getClient();
+  const [data, setData] = useState([]);
+  const [periodo, setPeriodo] = useState('mes');
+  const [loading, setLoading] = useState(true);
+  const chartRef = useRef(null);
+  const chartInst = useRef(null);
+
+  useEffect(() => { load(); }, [periodo]);
+  useEffect(() => { if (data.length) buildChart(); }, [data]);
+
+  async function load() {
+    setLoading(true);
+    let query = sb.from('fluxo_caixa').select('*').order('created_at', {ascending:false});
+    const now = new Date();
+    if (periodo==='hoje') {
+      query = query.gte('created_at', new Date(now.setHours(0,0,0,0)).toISOString());
+    } else if (periodo==='semana') {
+      const d = new Date(); d.setDate(d.getDate()-7);
+      query = query.gte('created_at', d.toISOString());
+    } else {
+      const d = new Date(); d.setDate(d.getDate()-30);
+      query = query.gte('created_at', d.toISOString());
+    }
+    const { data: d } = await query;
+    setData(d||[]);
+    setLoading(false);
+  }
+
+  function buildChart() {
+    if (!chartRef.current) return;
+    if (chartInst.current) chartInst.current.destroy();
+    const byDay = {};
+    data.forEach(r=>{
+      const day = r.created_at?.slice(0,10)||'';
+      if (!byDay[day]) byDay[day]={rec:0,desp:0};
+      if (r.tipo==='receita') byDay[day].rec+=parseFloat(r.valor||0);
+      else byDay[day].desp+=parseFloat(r.valor||0);
+    });
+    const labels = Object.keys(byDay).sort();
+    chartInst.current = new Chart(chartRef.current, {
+      type:'bar',
+      data:{
+        labels,
+        datasets:[
+          {label:'Receita',data:labels.map(l=>byDay[l].rec),backgroundColor:'rgba(52,211,153,.7)'},
+          {label:'Despesa',data:labels.map(l=>byDay[l].desp),backgroundColor:'rgba(248,113,113,.7)'}
+        ]
+      },
+      options:{
+        responsive:true,
+        plugins:{legend:{labels:{color:'#94a3b8'}}},
+        scales:{
+          x:{ticks:{color:'#64748b'},grid:{color:'#1e2740'}},
+          y:{ticks:{color:'#64748b'},grid:{color:'#1e2740'}}
+        }
+      }
+    });
+  }
+
+  const receita = data.filter(r=>r.tipo==='receita').reduce((s,r)=>s+parseFloat(r.valor||0),0);
+  const despesa = data.filter(r=>r.tipo==='despesa').reduce((s,r)=>s+parseFloat(r.valor||0),0);
+  const saldo = receita - despesa;
+
+  return (
+    <div className="content">
+      <div className="section-header"><div className="section-title">💵 Fluxo de Caixa</div></div>
+      <div className="filter-bar">
+        {[['hoje','Hoje'],['semana','Última semana'],['mes','Último mês']].map(([v,l])=>(
+          <button key={v} className={`chip${periodo===v?' active':''}`} onClick={()=>setPeriodo(v)}>{l}</button>
+        ))}
+      </div>
+      <div className="stat-grid">
+        <div className="stat-card"><div className="stat-value green">{fmtR$(receita)}</div><div className="stat-label">Receita</div></div>
+        <div className="stat-card"><div className="stat-value red">{fmtR$(despesa)}</div><div className="stat-label">Despesas</div></div>
+        <div className="stat-card"><div className="stat-value" style={{color:saldo>=0?'var(--green)':'var(--red)'}}>{fmtR$(saldo)}</div><div className="stat-label">Saldo</div></div>
+      </div>
+      {!loading && <div className="card"><canvas ref={chartRef} height={120}/></div>}
+      {loading ? <div className="loading">Carregando...</div> : (
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Pago</th></tr></thead>
+            <tbody>
+              {data.map((r,i)=>(
+                <tr key={i}>
+                  <td style={{color:'var(--muted)'}}>{new Date(r.created_at).toLocaleDateString('pt-BR')}</td>
+                  <td><span className={`badge badge-${r.tipo==='receita'?'green':'red'}`}>{r.tipo}</span></td>
+                  <td>{r.descricao}</td>
+                  <td style={{color:r.tipo==='receita'?'var(--green)':'var(--red)',fontWeight:600}}>{fmtR$(r.valor)}</td>
+                  <td>{r.pago?'✅':'⏳'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── CADASTROS ────────────────────────────────────────────────────────────────
+function TelaCadastros() {
+  const toast = useToast();
+  const sb = getClient();
+  const [tab, setTab] = useState('produtos');
+  const [produtos, setProdutos] = useState([]);
+  const [fornecedores, setFornecedores] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+
+  useEffect(() => {
+    sb.from('produtos').select('id,nome,tipo,ativo,categorias(nome)').order('tipo').then(r=>setProdutos(r.data||[]));
+    sb.from('fornecedores').select('id,nome,ativo').order('nome').then(r=>setFornecedores(r.data||[]));
+    sb.from('categorias').select('id,nome').order('nome').then(r=>setCategorias(r.data||[]));
+  }, []);
+
+  async function toggleProduto(id, ativo) {
+    await sb.from('produtos').update({ativo:!ativo}).eq('id',id);
+    setProdutos(p=>p.map(x=>x.id===id?{...x,ativo:!ativo}:x));
+    toast(ativo?'Produto desativado':'Produto ativado','info');
+  }
+  async function toggleFornecedor(id, ativo) {
+    await sb.from('fornecedores').update({ativo:!ativo}).eq('id',id);
+    setFornecedores(f=>f.map(x=>x.id===id?{...x,ativo:!ativo}:x));
+    toast(ativo?'Fornecedor desativado':'Fornecedor ativado','info');
+  }
+
+  return (
+    <div className="content">
+      <div className="section-header"><div className="section-title">⚙️ Cadastros</div></div>
+      <div className="filter-bar">
+        {[['produtos','Produtos'],['fornecedores','Fornecedores'],['categorias','Categorias']].map(([v,l])=>(
+          <button key={v} className={`chip${tab===v?' active':''}`} onClick={()=>setTab(v)}>{l}</button>
+        ))}
+      </div>
+
+      {tab==='produtos' && (
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Produto</th><th>Tipo</th><th>Categoria</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {produtos.map(p=>(
+                <tr key={p.id}>
+                  <td><b>{p.nome}</b></td>
+                  <td><span className={`badge badge-${p.tipo==='preparado'?'blue':p.tipo==='embalagem'?'yellow':'green'}`}>{TIPO_LABEL[p.tipo]||p.tipo}</span></td>
+                  <td style={{color:'var(--muted)'}}>{p.categorias?.nome||'—'}</td>
+                  <td><span className={`badge badge-${p.ativo?'green':'red'}`}>{p.ativo?'Ativo':'Inativo'}</span></td>
+                  <td><button className="btn btn-outline btn-sm" onClick={()=>toggleProduto(p.id,p.ativo)}>{p.ativo?'Desativar':'Ativar'}</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {tab==='fornecedores' && (
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Fornecedor</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {fornecedores.map(f=>(
+                <tr key={f.id}>
+                  <td><b>{f.nome}</b></td>
+                  <td><span className={`badge badge-${f.ativo?'green':'red'}`}>{f.ativo?'Ativo':'Inativo'}</span></td>
+                  <td><button className="btn btn-outline btn-sm" onClick={()=>toggleFornecedor(f.id,f.ativo)}>{f.ativo?'Desativar':'Ativar'}</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {tab==='categorias' && (
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Categoria</th></tr></thead>
+            <tbody>{categorias.map(c=><tr key={c.id}><td>{c.nome}</td></tr>)}</tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── DASHBOARD HOME ───────────────────────────────────────────────────────────
+function TelaDashboard() {
+  const sb = getClient();
+  const [stats, setStats] = useState({ receita:0, despesa:0, estoque_valor:0, produtos_zerados:0 });
+  const [estoque, setEstoque] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      sb.from('fluxo_caixa').select('tipo,valor').gte('created_at', new Date(Date.now()-30*86400000).toISOString()),
+      sb.from('v_estoque_atual').select('nome,tipo,estoque_gramas,valor_estoque').order('estoque_gramas',{ascending:true}).limit(30)
+    ]).then(([r1,r2])=>{
+      const fc = r1.data||[];
+      const rec = fc.filter(r=>r.tipo==='receita').reduce((s,r)=>s+parseFloat(r.valor||0),0);
+      const desp = fc.filter(r=>r.tipo==='despesa').reduce((s,r)=>s+parseFloat(r.valor||0),0);
+      const est = r2.data||[];
+      const ev = est.reduce((s,r)=>s+parseFloat(r.valor_estoque||0),0);
+      const zerados = est.filter(r=>parseFloat(r.estoque_gramas||0)<=0).length;
+      setStats({receita:rec, despesa:desp, estoque_valor:ev, produtos_zerados:zerados});
+      setEstoque(est);
+      setLoading(false);
+    });
+  }, []);
+
+  const criticos = estoque.filter(r=>parseFloat(r.estoque_gramas||0)<=0);
+
+  return (
+    <div className="content">
+      <div className="section-header"><div className="section-title">📊 Visão Geral — Últimos 30 dias</div></div>
+      {loading ? <div className="loading">Carregando...</div> : (<>
+        <div className="stat-grid">
+          <div className="stat-card"><div className="stat-value green">{fmtR$(stats.receita)}</div><div className="stat-label">Receita (30d)</div></div>
+          <div className="stat-card"><div className="stat-value red">{fmtR$(stats.despesa)}</div><div className="stat-label">Despesas (30d)</div></div>
+          <div className="stat-card"><div className="stat-value" style={{color:stats.receita-stats.despesa>=0?'var(--green)':'var(--red)'}}>{fmtR$(stats.receita-stats.despesa)}</div><div className="stat-label">Resultado (30d)</div></div>
+          <div className="stat-card"><div className="stat-value blue">{fmtR$(stats.estoque_valor)}</div><div className="stat-label">Valor em estoque</div></div>
+        </div>
+        {criticos.length > 0 && (
+          <div className="card" style={{borderColor:'var(--red)'}}>
+            <div className="card-title" style={{color:'var(--red)'}}>⚠️ Produtos sem estoque ({criticos.length})</div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+              {criticos.map(r=><span key={r.nome} className="badge badge-red">{r.nome}</span>)}
+            </div>
+          </div>
+        )}
+        <div className="card">
+          <div className="card-title">Estoque disponível</div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Produto</th><th>Tipo</th><th>Estoque</th><th>Valor</th></tr></thead>
+              <tbody>
+                {estoque.filter(r=>parseFloat(r.estoque_gramas||0)>0).map((r,i)=>(
+                  <tr key={i}>
+                    <td><b>{r.nome}</b></td>
+                    <td><span className={`badge badge-${r.tipo==='preparado'?'blue':r.tipo==='embalagem'?'yellow':'green'}`}>{TIPO_LABEL[r.tipo]||r.tipo}</span></td>
+                    <td className="green">{fmtG(parseFloat(r.estoque_gramas||0))}</td>
+                    <td>{fmtR$(r.valor_estoque||0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </>)}
+    </div>
+  );
+}
+
+// ── APP SHELL ────────────────────────────────────────────────────────────────
+const SCREENS = [
+  { id:'home',     label:'Dashboard',      icon:'📊', group:'geral' },
+  { id:'compra',   label:'Lançar Compra',  icon:'🛒', group:'lancamentos' },
+  { id:'producao', label:'Lançar Produção',icon:'🍳', group:'lancamentos' },
+  { id:'venda',    label:'Lançar Venda',   icon:'💰', group:'lancamentos' },
+  { id:'perda',    label:'Lançar Perda',   icon:'⚠️', group:'lancamentos' },
+  { id:'fichas',   label:'Fichas Técnicas',icon:'📋', group:'gestao' },
+  { id:'estoque',  label:'Estoque',        icon:'📦', group:'gestao' },
+  { id:'cmv',      label:'CMV & Lucro',    icon:'📈', group:'gestao' },
+  { id:'caixa',    label:'Fluxo de Caixa', icon:'💵', group:'gestao' },
+  { id:'cadastros',label:'Cadastros',      icon:'⚙️', group:'gestao' },
+];
+
+function App() {
+  const [loggedIn, setLoggedIn] = useState(!!localStorage.getItem('sb_url'));
+  const [screen, setScreen] = useState('home');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  function navigate(id) { setScreen(id); setSidebarOpen(false); }
+
+  const current = SCREENS.find(s=>s.id===screen);
+  const groups = [...new Set(SCREENS.map(s=>s.group))];
+  const groupLabel = { geral:'', lancamentos:'Lançamentos', gestao:'Gestão' };
+
+  if (!loggedIn) return <ToastProvider><Login onLogin={()=>setLoggedIn(true)}/></ToastProvider>;
+
+  return (
+    <ToastProvider>
+      <div id="root-inner" style={{display:'flex',minHeight:'100vh'}}>
+        <div className={`sidebar-overlay${sidebarOpen?' show':''}`} onClick={()=>setSidebarOpen(false)}/>
+        <nav className={`sidebar${sidebarOpen?' open':''}`}>
+          <div className="sidebar-logo"><span>🍝</span> ERP Restaurante</div>
+          {groups.map(g=>(
+            <div key={g}>
+              {groupLabel[g] && <div className="nav-section">{groupLabel[g]}</div>}
+              {SCREENS.filter(s=>s.group===g).map(s=>(
+                <div key={s.id} className={`nav-item${screen===s.id?' active':''}`} onClick={()=>navigate(s.id)}>
+                  <span className="nav-icon">{s.icon}</span>{s.label}
+                </div>
+              ))}
+            </div>
+          ))}
+          <div style={{marginTop:'auto',padding:'16px',borderTop:'1px solid var(--border)'}}>
+            <button className="btn btn-outline btn-sm" style={{width:'100%'}} onClick={()=>{localStorage.removeItem('sb_url');localStorage.removeItem('sb_key');setLoggedIn(false);}}>
+              Trocar conexão
+            </button>
+          </div>
+        </nav>
+
+        <div className="main">
+          <div className="topbar">
+            <button className="hamburger" onClick={()=>setSidebarOpen(!sidebarOpen)}>☰</button>
+            <div className="topbar-title">{current?.icon} {current?.label}</div>
+          </div>
+          {screen==='home'     && <TelaDashboard/>}
+          {screen==='compra'   && <TelaCompra/>}
+          {screen==='producao' && <TelaProducao/>}
+          {screen==='venda'    && <TelaVenda/>}
+          {screen==='perda'    && <TelaPerda/>}
+          {screen==='fichas'   && <TelaFichas/>}
+          {screen==='estoque'  && <TelaEstoque/>}
+          {screen==='cmv'      && <TelaCMV/>}
+          {screen==='caixa'    && <TelaCaixa/>}
+          {screen==='cadastros'&& <TelaCadastros/>}
+        </div>
+      </div>
+    </ToastProvider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
