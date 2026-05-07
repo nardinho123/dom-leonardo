@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dom Leonardo - Cardapio</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+:root{
+  --red:#EA1D2C;--red-dark:#c91825;--green:#50A773;--purple:#9B59E5;
+  --bg:#F2F2F2;--text:#3F3E3E;--muted:#717171;--line:#E8E8E8;--white:#FFFFFF;
+  --shadow:0 10px 28px rgba(0,0,0,.12);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+.app{min-height:100vh;padding-bottom:96px}
+.hero{position:relative;background:#2d1512;height:188px;overflow:hidden}
+.hero-img{position:absolute;inset:0;background:linear-gradient(135deg,#5d211b,#17100f 58%,#2b150f);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:48px;letter-spacing:.03em}
+.hero-img.has-photo{background-size:cover;background-position:center}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.12),rgba(0,0,0,.56))}
+.top-pill{position:absolute;left:14px;top:12px;z-index:2;background:rgba(255,255,255,.94);border:0;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:800;color:var(--text)}
+.store-card{position:relative;margin:-44px 12px 10px;background:#fff;border-radius:18px;padding:54px 14px 14px;box-shadow:var(--shadow);z-index:3}
+.logo{position:absolute;top:-42px;left:16px;width:82px;height:82px;border-radius:50%;border:4px solid #fff;background:#fff;box-shadow:0 8px 20px rgba(0,0,0,.16);display:grid;place-items:center;font-size:34px;font-weight:900;color:var(--red);overflow:hidden}
+.logo img{width:100%;height:100%;object-fit:cover}
+.store-title{display:flex;align-items:flex-start;gap:8px;justify-content:space-between}
+h1{font-size:22px;margin:0 0 4px;font-weight:900;line-height:1.1}
+.small{font-size:12px;color:var(--muted)}
+.rating{display:flex;align-items:center;gap:4px;color:#E6A100;font-size:12px;font-weight:800;white-space:nowrap;margin-top:2px}
+.store-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.meta-chip{background:#f7f7f7;border-radius:999px;padding:6px 8px;color:var(--muted);font-size:12px;font-weight:650}
+.open{color:var(--green)}.closed{color:var(--red)}
+.coupon-row{display:flex;gap:10px;overflow-x:auto;padding:0 12px 12px;scrollbar-width:none}
+.coupon{min-width:178px;background:#fff;border:1px solid #ece1ff;border-radius:14px;padding:12px;box-shadow:0 4px 16px rgba(0,0,0,.05)}
+.coupon strong{display:block;color:var(--purple);font-size:13px}
+.coupon span{font-size:11px;color:var(--muted)}
+.category-tabs{position:sticky;top:0;background:#fff;z-index:9;display:flex;gap:8px;overflow-x:auto;padding:10px 12px;border-bottom:1px solid var(--line);scrollbar-width:none}
+.category-tabs button{border:0;background:#f5f5f5;color:#555;border-radius:999px;padding:9px 13px;font-size:13px;font-weight:800;white-space:nowrap}
+.category-tabs button.active{background:var(--red);color:#fff}
+.section{padding:16px 12px 4px}
+.section h2{font-size:18px;margin:0 0 4px;font-weight:900}
+.section p{font-size:12px;margin:0;color:var(--muted)}
+.highlights{display:flex;gap:12px;overflow-x:auto;padding:12px;scrollbar-width:none}
+.highlight-card{min-width:154px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.06);border:1px solid #eee}
+.highlight-photo{height:116px;background:linear-gradient(135deg,#efdfd0,#b64033);display:grid;place-items:center;color:#fff;font-weight:900;text-align:center;padding:8px}
+.highlight-body{padding:10px}
+.badge{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:4px 7px;font-size:10px;font-weight:850}
+.badge-red{background:#fff0f1;color:var(--red)}
+.badge-purple{background:#f3e9ff;color:var(--purple)}
+.badge-gray{background:#f5f5f5;color:#666}
+.dish-list{padding:0 12px}
+.dish-card{background:#fff;border-radius:14px;margin:10px 0;padding:12px;display:grid;grid-template-columns:1fr 104px;gap:12px;border:1px solid #eee;min-height:132px}
+.dish-card h3{font-size:15px;line-height:1.2;margin:0 0 6px;font-weight:900}
+.dish-card p{font-size:12px;line-height:1.35;margin:0;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.dish-coupons{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.price{margin-top:10px;font-weight:900;color:var(--green);font-size:14px}
+.old-price{color:#999;text-decoration:line-through;font-weight:700;margin-right:4px}
+.dish-photo{width:104px;height:104px;border-radius:12px;background:linear-gradient(135deg,#f7d8ca,#aa2c24);display:grid;place-items:center;text-align:center;color:#fff;font-weight:900;padding:6px;overflow:hidden}
+.dish-photo img,.detail-photo img,.option-photo img,.cart-thumb img{width:100%;height:100%;object-fit:cover}
+.loading{padding:24px 12px}
+.skeleton{height:122px;border-radius:14px;margin:10px 0;background:linear-gradient(90deg,#e7e7e7,#f7f7f7,#e7e7e7);background-size:220% 100%;animation:pulse 1.2s linear infinite}
+@keyframes pulse{to{background-position:-220% 0}}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+.empty-menu{margin:18px 12px;padding:32px 18px;border:1px dashed #ddd;border-radius:16px;background:#fff;text-align:center;color:var(--muted)}
+.empty-menu strong{display:block;color:var(--text);font-size:18px;margin-bottom:6px}
+.bottom-bag{position:fixed;left:0;right:0;bottom:0;background:#fff;padding:10px 12px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -8px 22px rgba(0,0,0,.12);z-index:30}
+.bag-btn{width:100%;border:0;border-radius:12px;background:var(--red);color:#fff;padding:14px 16px;font-weight:900;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:40;display:flex;justify-content:center;align-items:flex-end}
+.sheet{background:#fff;width:100%;max-width:560px;max-height:94vh;border-radius:20px 20px 0 0;overflow:auto;position:relative}
+.sheet.full{height:100vh;max-height:100vh;border-radius:0}
+.sheet-head{position:sticky;top:0;z-index:3;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:12px;border-bottom:1px solid var(--line)}
+.icon-btn{border:0;background:#f5f5f5;border-radius:999px;width:38px;height:38px;font-weight:900}
+.detail-photo{height:230px;background:linear-gradient(135deg,#5e2118,#e05a4b);display:grid;place-items:center;text-align:center;color:#fff;font-size:30px;font-weight:900;padding:22px;overflow:hidden}
+.detail-body{padding:16px}
+.detail-body h2{font-size:24px;margin:0 0 8px;line-height:1.1}
+.detail-desc{font-size:14px;color:#5b5b5b;line-height:1.45;margin-bottom:16px}
+.group{border-top:8px solid #f5f5f5;padding:14px 16px}
+.group-title{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}
+.group-title h3{font-size:15px;margin:0;font-weight:900}
+.group-title small{display:block;color:var(--muted);margin-top:2px}
+.req{background:#222;color:#fff;border-radius:999px;padding:4px 7px;font-size:10px;font-weight:900;white-space:nowrap}
+.choice{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}
+.choice:last-child{border-bottom:0}
+.choice-title{font-size:14px;font-weight:800}
+.choice-desc{font-size:12px;color:var(--muted);margin-top:2px}
+.choice-price{font-size:12px;color:var(--green);font-weight:900;margin-top:4px}
+.radio{width:22px;height:22px;border-radius:50%;border:2px solid #d6d6d6;display:grid;place-items:center}
+.radio.active{border-color:var(--red)}
+.radio.active::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--red)}
+.plus{width:32px;height:32px;border:1px solid var(--red);color:var(--red);background:#fff;border-radius:50%;font-size:18px;font-weight:900}
+.plus.active{background:var(--red);color:#fff}
+.option-line{display:grid;grid-template-columns:54px 1fr auto;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
+.option-photo{width:54px;height:54px;border-radius:10px;background:linear-gradient(135deg,#efdfd0,#bc4a38);display:grid;place-items:center;color:#fff;font-size:11px;font-weight:900;text-align:center;overflow:hidden}
+.detail-footer{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:grid;grid-template-columns:114px 1fr;gap:10px}
+.stepper{height:48px;border:1px solid var(--line);border-radius:12px;display:flex;align-items:center;justify-content:space-around;font-weight:900}
+.stepper button{border:0;background:transparent;color:var(--red);font-size:20px;font-weight:900}
+.add-btn,.continue-btn{border:0;background:var(--red);color:#fff;border-radius:12px;font-weight:900}
+.add-btn:disabled,.continue-btn:disabled{opacity:.55}
+.cart-item{display:grid;grid-template-columns:62px 1fr auto;gap:10px;padding:14px 12px;border-bottom:1px solid var(--line)}
+.cart-thumb{width:62px;height:62px;border-radius:10px;background:linear-gradient(135deg,#efdfd0,#aa2c24);display:grid;place-items:center;color:#fff;font-weight:900;font-size:11px;text-align:center;overflow:hidden}
+.cart-title{font-weight:900;font-size:14px}
+.cart-desc{font-size:12px;color:var(--muted);margin:3px 0}
+.cart-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.tag{background:#f4f4f4;border-radius:999px;padding:4px 7px;font-size:10px;color:#666}
+.cart-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.danger{border:0;background:#fff;color:var(--red);font-weight:900}
+.cart-footer{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px calc(12px) calc(12px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center}
+.total-label{font-size:12px;color:var(--muted)}
+.total-value{font-size:18px;font-weight:950}
+.upsell{padding:14px 12px;background:#fff}
+.upsell-row{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none}
+.upsell-card{min-width:132px;border:1px solid #eee;border-radius:12px;padding:8px}
+.form{padding:14px 12px}
+.form label{display:block;font-size:12px;color:var(--muted);font-weight:800;margin:12px 0 6px}
+.form input,.form textarea,.form select{width:100%;border:1px solid #ddd;border-radius:12px;padding:12px;background:#fff;color:var(--text);outline:none}
+.form textarea{min-height:78px;resize:vertical}
+.form-row{display:grid;grid-template-columns:1fr 110px;gap:8px}
+.warn{background:#fff8dc;color:#7a4a00;border-radius:12px;padding:10px 12px;font-size:12px;margin:10px 12px}
+.toast{position:fixed;left:12px;right:12px;bottom:88px;background:#222;color:#fff;border-radius:12px;padding:12px 14px;z-index:70;font-size:13px}
+@media(min-width:760px){
+  .app{max-width:760px;margin:0 auto;background:var(--bg);box-shadow:0 0 0 1px #ddd}
+  .bottom-bag{left:50%;right:auto;transform:translateX(-50%);max-width:760px;width:100%}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useEffect, useMemo, useState } = React;
+
+const SUPABASE_URL = 'https://jewamqbdonudiapxbzay.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function fmtR$(v){ return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function initials(name){ return (name||'Dom').split(/\s+/).slice(0,2).map(s=>s[0]).join('').toUpperCase(); }
+function minPrice(prato){ return Number(prato.preco_promocional ?? prato.preco_base ?? 0); }
+function allPratos(cardapio){ return (cardapio?.categorias||[]).flatMap(c => (c.pratos||[]).map(p => ({...p,categoria_nome:c.nome,categoria_slug:c.slug}))); }
+function makeId(){
+  if(window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+function Photo({ url, name, className }){
+  return <div className={className}>{url ? <img src={url} alt={name}/> : <span>{initials(name)}</span>}</div>;
+}
+
+function App(){
+  const [cardapio,setCardapio] = useState(null);
+  const [loading,setLoading] = useState(true);
+  const [error,setError] = useState('');
+  const [activeCat,setActiveCat] = useState('');
+  const [detail,setDetail] = useState(null);
+  const [editingIndex,setEditingIndex] = useState(null);
+  const [bagOpen,setBagOpen] = useState(false);
+  const [checkoutOpen,setCheckoutOpen] = useState(false);
+  const [cart,setCart] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('dom_cart')||'[]'); } catch { return []; }
+  });
+  const [toast,setToast] = useState('');
+
+  useEffect(()=>{ load(); },[]);
+  useEffect(()=>{ localStorage.setItem('dom_cart', JSON.stringify(cart)); },[cart]);
+  useEffect(()=>{ if(toast){ const t=setTimeout(()=>setToast(''),2600); return ()=>clearTimeout(t); } },[toast]);
+
+  async function load(){
+    setLoading(true); setError('');
+    const { data, error } = await sb.rpc('get_cardapio_publico');
+    if(error){ setError(error.message); }
+    else { setCardapio(data); setActiveCat(data?.categorias?.[0]?.id || ''); }
+    setLoading(false);
+  }
+
+  const pratos = useMemo(()=>allPratos(cardapio),[cardapio]);
+  const destaques = pratos.filter(p=>p.badge_destaque).slice(0,8);
+  const bebidas = (cardapio?.categorias||[]).find(c=>c.slug==='bebidas')?.pratos || [];
+  const subtotal = cart.reduce((s,it)=>s + Number(it.preco_unitario||0) * Number(it.quantidade||1),0);
+  const totalQtd = cart.reduce((s,it)=>s + Number(it.quantidade||1),0);
+
+  function openDetail(prato, index=null){
+    setEditingIndex(index);
+    setDetail({ prato, preset:index!=null ? cart[index] : null });
+  }
+
+  function onSaved(item){
+    setCart(prev => {
+      if(editingIndex!=null) return prev.map((x,i)=>i===editingIndex ? item : x);
+      return [...prev, item];
+    });
+    setDetail(null); setEditingIndex(null); setToast('O Dom colocou na sacola.');
+  }
+
+  async function addBebida(prato){
+    const { data, error } = await sb.rpc('calcular_preco_item', {
+      p_prato_id: prato.id, p_tamanho_id: null, p_opcionais_ids: []
+    });
+    if(error) return setToast(error.message);
+    setCart(prev => [...prev, {
+      uid: makeId(), prato, tamanho:null, opcionais:[], quantidade:1,
+      observacoes:'', preco_unitario:Number(data||0)
+    }]);
+    setToast('Bebida adicionada.');
+  }
+
+  if(loading) return <SkeletonApp/>;
+  if(error) return <div className="empty">Nao consegui carregar o cardapio.<br/>{error}<br/><button className="top-pill" onClick={load}>Tentar de novo</button></div>;
+
+  const rest = cardapio.restaurante || {};
+  return <div className="app">
+    <header className="hero">
+      <button className="top-pill">{rest.aberta_agora ? 'Aberto agora' : 'Dom fora do horario'}</button>
+      <div className={`hero-img${rest.capa_url?' has-photo':''}`} style={rest.capa_url?{backgroundImage:`url(${rest.capa_url})`}:null}>DOM</div>
+    </header>
+
+    <section className="store-card">
+      <div className="logo">{rest.logo_url ? <img src={rest.logo_url} alt="Dom Leonardo"/> : 'D'}</div>
+      <div className="store-title">
+        <div>
+          <h1>{rest.nome}</h1>
+          <div className="small">{rest.descricao}</div>
+        </div>
+        <div className="rating">★ {Number(rest.avaliacao||4.9).toFixed(1)}</div>
+      </div>
+      <div className="store-meta">
+        <span className={`meta-chip ${rest.aberta_agora?'open':'closed'}`}>{rest.aberta_agora?'Aberto':'Fechado'}</span>
+        <span className="meta-chip">{rest.tempo_entrega_min}-{rest.tempo_entrega_max} min</span>
+        <span className="meta-chip">{Number(rest.taxa_entrega||0)>0?fmtR$(rest.taxa_entrega):'Entrega a combinar'}</span>
+        <span className="meta-chip">Pedido minimo {fmtR$(rest.pedido_minimo)}</span>
+        <span className="meta-chip">Entrega rastreavel</span>
+      </div>
+    </section>
+
+    <div className="coupon-row">
+      <div className="coupon"><strong>BEMVINDO10</strong><span>O Dom dá 10% no primeiro pedido acima de R$ 50.</span></div>
+      <div className="coupon"><strong>Canal proprio</strong><span>Sem comissao pesada. Mais tempero, menos taxa.</span></div>
+    </div>
+
+    {(cardapio.categorias||[]).length > 0 && <nav className="category-tabs">
+      {(cardapio.categorias||[]).map(c => <button key={c.id} className={activeCat===c.id?'active':''} onClick={()=>{setActiveCat(c.id); document.getElementById(c.id)?.scrollIntoView({block:'start'});}}>{c.icone||''} {c.nome}</button>)}
+    </nav>}
+
+    {(cardapio.categorias||[]).length === 0 && <div className="empty-menu">
+      <strong>O Dom ainda esta montando o cardapio.</strong>
+      Assim que os itens forem cadastrados no painel, eles aparecem aqui automaticamente.
+    </div>}
+
+    {destaques.length > 0 && <>
+      <div className="section"><h2>O Dom recomenda</h2><p>Os pratos que mais saem por aqui.</p></div>
+      <div className="highlights">
+        {destaques.map(p => <article className="highlight-card" key={p.id} onClick={()=>openDetail(p)}>
+          <Photo url={p.foto_url} name={p.nome} className="highlight-photo"/>
+          <div className="highlight-body">
+            <span className="badge badge-red">{p.badge_destaque}</span>
+            <h3>{p.nome}</h3>
+            <div className="price">a partir de {fmtR$(minPrice(p))}</div>
+          </div>
+        </article>)}
+      </div>
+    </>}
+
+    {(cardapio.categorias||[]).map(c => <section key={c.id} id={c.id}>
+      <div className="section"><h2>{c.nome}</h2><p>{c.descricao}</p></div>
+      <div className="dish-list">
+        {(c.pratos||[]).length === 0 && <div className="empty">Essa parte do Dom ainda vai ganhar prato.</div>}
+        {(c.pratos||[]).map(p => <DishCard key={p.id} prato={{...p,categoria_slug:c.slug}} onClick={()=>openDetail({...p,categoria_slug:c.slug})}/>)}
+      </div>
+    </section>)}
+
+    <div className="bottom-bag">
+      <button className="bag-btn" onClick={()=>setBagOpen(true)}>
+        <span>{totalQtd ? `${totalQtd} item(ns) na sacola` : 'Ver sacola'}</span>
+        <b>{fmtR$(subtotal)}</b>
+      </button>
+    </div>
+
+    {detail && <DetailModal data={detail} onClose={()=>{setDetail(null); setEditingIndex(null);}} onSaved={onSaved}/>}
+    {bagOpen && <CartModal cart={cart} setCart={setCart} subtotal={subtotal} bebidas={bebidas} onClose={()=>setBagOpen(false)} onEdit={openDetail} onAddBebida={addBebida} onCheckout={()=>setCheckoutOpen(true)}/>}
+    {checkoutOpen && <CheckoutModal cardapio={cardapio} cart={cart} subtotal={subtotal} onClose={()=>setCheckoutOpen(false)} onSuccess={()=>{setCart([]); setBagOpen(false); setCheckoutOpen(false);}}/>}
+    {toast && <div className="toast">{toast}</div>}
+  </div>;
+}
+
+function SkeletonApp(){
+  return <div className="app">
+    <div className="hero"><div className="hero-img">DOM</div></div>
+    <div className="store-card"><div className="logo">D</div><h1>Dom Leonardo</h1><div className="small">Carregando o cardapio...</div></div>
+    <div className="loading">{[1,2,3,4].map(i=><div className="skeleton" key={i}/>)}</div>
+  </div>;
+}
+
+function DishCard({ prato, onClick }){
+  return <article className="dish-card" onClick={onClick}>
+    <div>
+      {prato.badge_destaque && <span className="badge badge-red">{prato.badge_destaque}</span>}
+      {prato.exclusivo_clube && <span className="badge badge-purple">Exclusivo Clube</span>}
+      <h3>{prato.nome}</h3>
+      <p>{prato.descricao_curta || prato.descricao_completa}</p>
+      {!!(prato.cupons||[]).length && <div className="dish-coupons">
+        {(prato.cupons||[]).slice(0,2).map(c => <span className="badge badge-purple" key={c.id}>{c.codigo}</span>)}
+      </div>}
+      <div className="price">
+        {prato.preco_promocional && <span className="old-price">{fmtR$(prato.preco_base)}</span>}
+        a partir de {fmtR$(minPrice(prato))}
+      </div>
+    </div>
+    <Photo url={prato.foto_url} name={prato.nome} className="dish-photo"/>
+  </article>;
+}
+
+function DetailModal({ data, onClose, onSaved }){
+  const prato = data.prato;
+  const preset = data.preset;
+  const defaultSize = preset?.tamanho || (prato.tamanhos||[]).find(t=>t.padrao) || (prato.tamanhos||[])[0] || null;
+  const [tamanho,setTamanho] = useState(defaultSize);
+  const [selected,setSelected] = useState(() => {
+    const map = {};
+    (preset?.opcionais||[]).forEach(o => { if(!map[o.grupo_id]) map[o.grupo_id]=[]; map[o.grupo_id].push(o.id); });
+    return map;
+  });
+  const [qty,setQty] = useState(preset?.quantidade || 1);
+  const [obs,setObs] = useState(preset?.observacoes || '');
+  const [unit,setUnit] = useState(preset?.preco_unitario || minPrice(prato));
+  const [pricing,setPricing] = useState(false);
+  const [err,setErr] = useState('');
+  const optionIds = Object.values(selected).flat();
+
+  useEffect(()=>{ recalc(); },[tamanho?.id, JSON.stringify(optionIds)]);
+
+  async function recalc(){
+    setPricing(true); setErr('');
+    const { data, error } = await sb.rpc('calcular_preco_item', {
+      p_prato_id: prato.id,
+      p_tamanho_id: tamanho?.id || null,
+      p_opcionais_ids: optionIds
+    });
+    if(error) setErr(error.message); else setUnit(Number(data||0));
+    setPricing(false);
+  }
+
+  function toggle(group,opt){
+    setSelected(prev => {
+      const current = prev[group.id] || [];
+      const has = current.includes(opt.id);
+      let next = current;
+      if(has) next = current.filter(id=>id!==opt.id);
+      else if(group.max_escolhas === 1 || group.tipo === 'unico') next = [opt.id];
+      else if(current.length < Number(group.max_escolhas||99)) next = [...current,opt.id];
+      else return prev;
+      return {...prev,[group.id]:next};
+    });
+  }
+
+  function validate(){
+    if((prato.tamanhos||[]).length && !tamanho) return 'Escolha um tamanho.';
+    for(const g of prato.grupos_opcionais||[]){
+      const count = (selected[g.id]||[]).length;
+      if(count < Number(g.min_escolhas||0)) return `Escolha pelo menos ${g.min_escolhas} opcao em ${g.nome}.`;
+      if(count > Number(g.max_escolhas||99)) return `Escolha no maximo ${g.max_escolhas} em ${g.nome}.`;
+    }
+    if(err) return err;
+    return '';
+  }
+
+  function save(){
+    const problem = validate();
+    if(problem){ setErr(problem); return; }
+    const opts = (prato.grupos_opcionais||[]).flatMap(g => (g.opcionais||[]).filter(o => (selected[g.id]||[]).includes(o.id)).map(o => ({...o, grupo_id:g.id, grupo_nome:g.nome})));
+    onSaved({
+      uid: preset?.uid || makeId(),
+      prato, tamanho, opcionais:opts, quantidade:qty, observacoes:obs, preco_unitario:unit
+    });
+  }
+
+  return <div className="modal-back">
+    <div className="sheet full">
+      <div className="sheet-head"><button className="icon-btn" onClick={onClose}>×</button><b>{prato.nome}</b><span/></div>
+      <Photo url={prato.foto_url} name={prato.nome} className="detail-photo"/>
+      <div className="detail-body">
+        <h2>{prato.nome}</h2>
+        <div className="detail-desc">{prato.descricao_completa || prato.descricao_curta}</div>
+        {!!(prato.cupons||[]).length && <div className="dish-coupons" style={{marginBottom:10}}>
+          {(prato.cupons||[]).map(c => <span className="badge badge-purple" key={c.id}>{c.codigo}{c.valor ? ` · ${c.tipo === 'percentual' ? `${c.valor}%` : fmtR$(c.valor)}` : ''}</span>)}
+        </div>}
+        <div className="price">
+          {prato.preco_promocional && <span className="old-price">{fmtR$(prato.preco_base)}</span>}
+          a partir de {fmtR$(minPrice(prato))}
+        </div>
+      </div>
+      {(prato.tamanhos||[]).length > 0 && <div className="group">
+        <div className="group-title"><div><h3>Tamanho</h3><small>Escolha 1 opcao</small></div><span className="req">OBRIGATORIO</span></div>
+        {prato.tamanhos.map(t => <div className="choice" key={t.id} onClick={()=>setTamanho(t)}>
+          <div><div className="choice-title">{t.nome}</div>{t.peso_g && <div className="choice-desc">{t.peso_g}g</div>}<div className="choice-price">{Number(t.preco_delta)>0?`+ ${fmtR$(t.preco_delta)}`:'incluido'}</div></div>
+          <span className={`radio ${tamanho?.id===t.id?'active':''}`}/>
+        </div>)}
+      </div>}
+      {(prato.grupos_opcionais||[]).map(g => <div className="group" key={g.id}>
+        <div className="group-title">
+          <div><h3>{g.nome}</h3><small>Escolha {g.min_escolhas ? `de ${g.min_escolhas} a ` : 'ate '}{g.max_escolhas} opcao(oes)</small></div>
+          {Number(g.min_escolhas)>0 && <span className="req">OBRIGATORIO</span>}
+        </div>
+        {(g.opcionais||[]).map(o => {
+          const active = (selected[g.id]||[]).includes(o.id);
+          return <div className="option-line" key={o.id} onClick={()=>toggle(g,o)}>
+            <Photo url={o.foto_url} name={o.nome} className="option-photo"/>
+            <div><div className="choice-title">{o.nome}</div><div className="choice-desc">{o.descricao}</div><div className="choice-price">{Number(o.preco_delta)>0?`+ ${fmtR$(o.preco_delta)}`:'sem acrescimo'}</div></div>
+            <button className={`plus ${active?'active':''}`}>{active?'✓':'+'}</button>
+          </div>;
+        })}
+      </div>)}
+      <div className="form"><label>Observacao do item</label><textarea value={obs} onChange={e=>setObs(e.target.value)} placeholder="Ex: sem cebola, capricha no parmesao..."/></div>
+      {err && <div className="warn">{err}</div>}
+      <div className="detail-footer">
+        <div className="stepper"><button onClick={()=>setQty(Math.max(1,qty-1))}>-</button><span>{qty}</span><button onClick={()=>setQty(qty+1)}>+</button></div>
+        <button className="add-btn" disabled={pricing} onClick={save}>{pricing?'Calculando...':`Adicionar — ${fmtR$(unit*qty)}`}</button>
+      </div>
+    </div>
+  </div>;
+}
+
+function CartModal({ cart,setCart,subtotal,bebidas,onClose,onEdit,onAddBebida,onCheckout }){
+  return <div className="modal-back">
+    <div className="sheet full">
+      <div className="sheet-head"><button className="icon-btn" onClick={onClose}>×</button><b>SACOLA</b><button className="danger" onClick={()=>setCart([])}>Limpar</button></div>
+      <div className="store-card" style={{margin:'12px',padding:'14px'}}><b>Dom Leonardo</b><div className="small">Adicionar mais itens do cardapio do Dom.</div></div>
+      {cart.length === 0 && <div className="empty">Sua sacola esta vazia.</div>}
+      {cart.map((it,i) => <div className="cart-item" key={it.uid}>
+        <Photo url={it.prato.foto_url} name={it.prato.nome} className="cart-thumb"/>
+        <div>
+          <div className="cart-title">{it.prato.nome}</div>
+          <div className="cart-desc">{it.prato.descricao_curta}</div>
+          <div className="cart-tags">
+            {it.tamanho && <span className="tag">{it.tamanho.nome}</span>}
+            {it.opcionais.map(o=><span className="tag" key={o.id}>{o.nome}</span>)}
+            {it.observacoes && <span className="tag">{it.observacoes}</span>}
+          </div>
+          <button className="danger" onClick={()=>onEdit(it.prato,i)}>Editar</button>
+        </div>
+        <div className="cart-actions">
+          <button className="danger" onClick={()=>setCart(prev=>prev.filter((_,idx)=>idx!==i))}>Excluir</button>
+          <div className="stepper" style={{width:92,height:34}}><button onClick={()=>setCart(prev=>prev.map((x,idx)=>idx===i?{...x,quantidade:Math.max(1,x.quantidade-1)}:x))}>-</button><span>{it.quantidade}</span><button onClick={()=>setCart(prev=>prev.map((x,idx)=>idx===i?{...x,quantidade:x.quantidade+1}:x))}>+</button></div>
+          <b>{fmtR$(it.preco_unitario*it.quantidade)}</b>
+        </div>
+      </div>)}
+      {bebidas.length > 0 && <div className="upsell"><h3>O Dom tambem recomenda</h3><div className="upsell-row">{bebidas.map(b=><div className="upsell-card" key={b.id}><Photo url={b.foto_url} name={b.nome} className="cart-thumb"/><b>{b.nome}</b><div className="price">{fmtR$(b.preco_base)}</div><button className="plus" onClick={()=>onAddBebida(b)}>+</button></div>)}</div></div>}
+      <div className="cart-footer"><div><div className="total-label">Total</div><div className="total-value">{fmtR$(subtotal)}</div></div><button className="continue-btn" disabled={!cart.length} onClick={onCheckout}>Continuar</button></div>
+    </div>
+  </div>;
+}
+
+function CheckoutModal({ cardapio, cart, subtotal, onClose, onSuccess }){
+  const rest = cardapio.restaurante || {};
+  const [form,setForm] = useState({nome:'',whatsapp:'',cep:'',logradouro:'',numero:'',complemento:'',bairro:'',cidade:'Curitiba',uf:'PR',referencia:'',pagamento:'pix_manual',troco:'',cupom:'',obs:''});
+  const [loading,setLoading] = useState(false);
+  const [msg,setMsg] = useState('');
+  function set(k,v){ setForm({...form,[k]:v}); }
+
+  async function confirm(){
+    setMsg('');
+    if(!form.nome || !form.whatsapp || !form.logradouro || !form.numero || !form.bairro) return setMsg('Preencha nome, WhatsApp e endereco.');
+    setLoading(true);
+    const payload = {
+      p_cliente:{ nome:form.nome, whatsapp:form.whatsapp },
+      p_endereco:{ cep:form.cep, logradouro:form.logradouro, numero:form.numero, complemento:form.complemento, bairro:form.bairro, cidade:form.cidade, uf:form.uf, ponto_referencia:form.referencia },
+      p_itens:cart.map(it=>({ prato_id:it.prato.id, tamanho_id:it.tamanho?.id || null, opcionais_ids:it.opcionais.map(o=>o.id), quantidade:it.quantidade, observacoes:it.observacoes || null })),
+      p_forma_pagamento:form.pagamento,
+      p_troco_para:form.troco ? Number(form.troco) : null,
+      p_cupom_codigo:form.cupom || null,
+      p_observacoes:form.obs || null,
+      p_origem:'cardapio_html'
+    };
+    const { data, error } = await sb.rpc('criar_pedido', payload);
+    setLoading(false);
+    if(error) return setMsg(error.message);
+    const whatsapp = (rest.whatsapp || '5541000000000').replace(/\D/g,'');
+    const text = data?.mensagem_whatsapp || `Pedido Dom Leonardo ${data?.numero_pedido||''}`;
+    window.open(`https://wa.me/${whatsapp}?text=${encodeURIComponent(text)}`,'_blank');
+    onSuccess();
+  }
+  return <div className="modal-back">
+    <div className="sheet full">
+      <div className="sheet-head"><button className="icon-btn" onClick={onClose}>×</button><b>Finalizar pedido</b><span/></div>
+      <div className="warn">O pagamento e a entrega sao combinados pelo WhatsApp. O pedido tambem fica salvo no sistema.</div>
+      <div className="form">
+        <label>Nome</label><input value={form.nome} onChange={e=>set('nome',e.target.value)} placeholder="Seu nome"/>
+        <label>WhatsApp</label><input value={form.whatsapp} onChange={e=>set('whatsapp',e.target.value)} placeholder="41999999999"/>
+        <label>Endereco</label><input value={form.logradouro} onChange={e=>set('logradouro',e.target.value)} placeholder="Rua / Avenida"/>
+        <div className="form-row"><div><label>Bairro</label><input value={form.bairro} onChange={e=>set('bairro',e.target.value)}/></div><div><label>Numero</label><input value={form.numero} onChange={e=>set('numero',e.target.value)}/></div></div>
+        <div className="form-row"><div><label>Complemento</label><input value={form.complemento} onChange={e=>set('complemento',e.target.value)}/></div><div><label>CEP</label><input value={form.cep} onChange={e=>set('cep',e.target.value)}/></div></div>
+        <div className="form-row"><div><label>Cidade</label><input value={form.cidade} onChange={e=>set('cidade',e.target.value)}/></div><div><label>UF</label><input value={form.uf} onChange={e=>set('uf',e.target.value)}/></div></div>
+        <label>Referencia</label><input value={form.referencia} onChange={e=>set('referencia',e.target.value)} placeholder="Portao, bloco, ponto de referencia..."/>
+        <label>Forma de pagamento</label><select value={form.pagamento} onChange={e=>set('pagamento',e.target.value)}><option value="pix_manual">Pix manual</option><option value="cartao_entrega">Cartao na entrega</option><option value="dinheiro">Dinheiro</option><option value="nao_definido">Combinar no WhatsApp</option></select>
+        {form.pagamento==='dinheiro' && <><label>Troco para</label><input type="number" value={form.troco} onChange={e=>set('troco',e.target.value)}/></>}
+        <label>Cupom</label><input value={form.cupom} onChange={e=>set('cupom',e.target.value.toUpperCase())} placeholder="BEMVINDO10"/>
+        <label>Observacoes do pedido</label><textarea value={form.obs} onChange={e=>set('obs',e.target.value)} placeholder="Alguma informacao para o Dom?"/>
+      </div>
+      {msg && <div className="warn">{msg}</div>}
+      <div className="cart-footer"><div><div className="total-label">Subtotal estimado</div><div className="total-value">{fmtR$(subtotal)}</div></div><button className="continue-btn" disabled={loading} onClick={confirm}>{loading?'Enviando...':'Confirmar'}</button></div>
+    </div>
+  </div>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

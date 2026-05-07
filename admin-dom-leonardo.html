@@ -1,0 +1,1690 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dom Leonardo</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    :root {
+      --red: #ea1d2c;
+      --red-dark: #c41724;
+      --green: #50a773;
+      --purple: #9b59e5;
+      --bg: #f4f4f4;
+      --panel: #fff;
+      --text: #2d2b2b;
+      --muted: #717171;
+      --line: #e8e8e8;
+      --soft: #fafafa;
+      --soft-red: #fff0f2;
+      --warn: #f8c846;
+      --shadow: 0 12px 30px rgba(0,0,0,.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    button, input, select, textarea { font: inherit; }
+    button {
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      padding: 11px 12px;
+      outline: none;
+    }
+    textarea { min-height: 92px; resize: vertical; }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(234,29,44,.10);
+    }
+    .app-shell {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    .sidebar {
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      overflow: auto;
+      background: #fff;
+      border-right: 1px solid var(--line);
+      padding: 18px 14px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 8px 20px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--red);
+      color: #fff;
+      font-weight: 950;
+    }
+    .brand h1 { margin: 0; font-size: 16px; line-height: 1.15; }
+    .brand p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+    .nav-list { display: grid; gap: 4px; }
+    .nav-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-align: left;
+      background: transparent;
+      color: var(--text);
+      padding: 13px 11px;
+      border-radius: 8px;
+    }
+    .nav-btn.active {
+      background: rgba(234,29,44,.11);
+      color: var(--red);
+    }
+    .sidebar-footer {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      display: grid;
+      gap: 8px;
+    }
+    .main { min-width: 0; padding: 22px; }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .topbar h2 { margin: 0; font-size: 25px; letter-spacing: 0; }
+    .topbar p { margin: 4px 0 0; color: var(--muted); }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 11px 14px;
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--line);
+      text-decoration: none;
+    }
+    .btn-primary {
+      color: #fff;
+      background: var(--red);
+      border-color: var(--red);
+    }
+    .btn-primary:hover { background: var(--red-dark); }
+    .btn-green {
+      color: #fff;
+      background: var(--green);
+      border-color: var(--green);
+    }
+    .btn-danger {
+      color: var(--red);
+      background: #fff5f6;
+      border-color: rgba(234,29,44,.22);
+    }
+    .btn-ghost {
+      background: transparent;
+      border-color: transparent;
+    }
+    .btn-small {
+      padding: 7px 9px;
+      border-radius: 7px;
+      font-size: 12px;
+    }
+    .grid { display: grid; gap: 14px; }
+    .stats-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-bottom: 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+    }
+    .panel { padding: 16px; }
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .panel-head h3 { margin: 0; font-size: 18px; }
+    .stat { padding: 16px; }
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .stat strong { display: block; margin-top: 6px; font-size: 26px; }
+    .muted { color: var(--muted); }
+    .money { color: var(--green); font-weight: 900; white-space: nowrap; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+      background: #eee;
+      color: #555;
+    }
+    .badge.on { color: #23764a; background: rgba(80,167,115,.16); }
+    .badge.off { color: var(--red); background: rgba(234,29,44,.11); }
+    .badge.purple { color: var(--purple); background: rgba(155,89,229,.12); }
+    .badge.warn { color: #8a6900; background: rgba(248,200,70,.22); }
+    .empty-builder {
+      min-height: 430px;
+      display: grid;
+      place-items: center;
+      border: 2px dashed #ddd;
+      border-radius: 12px;
+      background: #fff;
+      text-align: center;
+      padding: 26px;
+    }
+    .empty-builder h3 { margin: 0 0 8px; font-size: 24px; }
+    .empty-plus {
+      width: 86px;
+      height: 86px;
+      border-radius: 50%;
+      background: var(--red);
+      color: #fff;
+      font-size: 46px;
+      margin: 0 auto 18px;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 12px 28px rgba(234,29,44,.25);
+    }
+    .category-block {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .category-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 15px 16px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(90deg, #fff, #fff7f8);
+    }
+    .category-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .category-title h3 {
+      margin: 0;
+      font-size: 21px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .category-body {
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+    .category-add {
+      min-height: 74px;
+      border: 1px dashed #ddd;
+      background: var(--soft);
+      color: var(--muted);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .dish-row {
+      display: grid;
+      grid-template-columns: 86px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: #fff;
+    }
+    .thumb {
+      width: 86px;
+      height: 66px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #f1d2c8, #c95b4c);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: #fff;
+      font-weight: 950;
+    }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .dish-row h4 { margin: 0 0 4px; font-size: 16px; }
+    .dish-row p {
+      margin: 0;
+      color: var(--muted);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .dish-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 7px;
+    }
+    .add-category-footer {
+      width: 100%;
+      padding: 15px;
+      border-radius: 12px;
+      background: #fff;
+      color: var(--red);
+      border: 1px dashed rgba(234,29,44,.35);
+      margin-top: 12px;
+    }
+    .table-wrap {
+      width: 100%;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 780px; }
+    th, td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+      font-size: 14px;
+    }
+    th {
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      white-space: nowrap;
+    }
+    tr:last-child td { border-bottom: 0; }
+    .login-page {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background:
+        linear-gradient(135deg, rgba(234,29,44,.93), rgba(118,10,18,.93)),
+        url("https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=1400&q=70") center/cover;
+    }
+    .login-card {
+      width: min(430px, 100%);
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.20);
+    }
+    .login-card h1 { margin: 0 0 6px; font-size: 24px; }
+    .login-card p { margin: 0 0 18px; color: var(--muted); }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .field.full { grid-column: 1 / -1; }
+    .field label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 850;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 42px;
+    }
+    .check-row input { width: auto; }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(0,0,0,.45);
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+    .modal {
+      width: min(980px, 100%);
+      max-height: 92vh;
+      overflow: auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.25);
+    }
+    .modal.wide { width: min(1140px, 100%); }
+    .modal-head {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .modal-head h3 { margin: 0; }
+    .modal-body { padding: 16px; }
+    .modal-foot {
+      position: sticky;
+      bottom: 0;
+      z-index: 2;
+      background: #fff;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 14px 16px;
+      border-top: 1px solid var(--line);
+    }
+    .editor-section {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px;
+      background: var(--soft);
+      margin-top: 14px;
+    }
+    .editor-section h4 {
+      margin: 0 0 10px;
+      font-size: 16px;
+    }
+    .row-card {
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #fff;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .inline-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 10px;
+      align-items: end;
+    }
+    .span-2 { grid-column: span 2; }
+    .span-3 { grid-column: span 3; }
+    .span-4 { grid-column: span 4; }
+    .span-5 { grid-column: span 5; }
+    .span-6 { grid-column: span 6; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: span 12; }
+    .upload-box {
+      border: 1px dashed #d5d5d5;
+      border-radius: 10px;
+      background: #fff;
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+    }
+    .upload-preview {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      border-radius: 8px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #f1d2c8, #c95b4c);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-weight: 950;
+    }
+    .upload-preview.logo { aspect-ratio: 1 / 1; border-radius: 50%; }
+    .upload-preview.cover { aspect-ratio: 1600 / 368; }
+    .upload-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 80;
+      max-width: 380px;
+      padding: 13px 16px;
+      border-radius: 8px;
+      background: var(--text);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .toast.error { background: var(--red); }
+    .order-list { display: grid; gap: 12px; }
+    .order-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 14px;
+    }
+    .order-card h3 { margin: 0 0 6px; font-size: 17px; }
+    .order-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .status-novo { color: var(--red); background: rgba(234,29,44,.12); }
+    .status-em_preparo, .status-pronto { color: #836400; background: rgba(248,200,70,.20); }
+    .status-saiu_entrega { color: var(--purple); background: rgba(155,89,229,.14); }
+    .status-entregue { color: #23764a; background: rgba(80,167,115,.16); }
+    .status-cancelado { color: #555; background: #e8e8e8; }
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 34px 18px;
+    }
+    @media (max-width: 940px) {
+      .app-shell { grid-template-columns: 1fr; }
+      .sidebar {
+        height: auto;
+        position: static;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .nav-list {
+        display: flex;
+        gap: 6px;
+        overflow: auto;
+        padding-bottom: 4px;
+      }
+      .nav-btn { width: auto; min-width: max-content; }
+      .sidebar-footer { display: none; }
+      .main { padding: 14px; }
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .topbar { flex-direction: column; }
+      .actions { justify-content: flex-start; }
+    }
+    @media (max-width: 680px) {
+      .stats-grid, .form-grid { grid-template-columns: 1fr; }
+      .dish-row { grid-template-columns: 72px minmax(0, 1fr); }
+      .dish-row .actions { grid-column: 1 / -1; justify-content: flex-start; }
+      .category-head { flex-direction: column; align-items: stretch; }
+      .inline-grid { grid-template-columns: 1fr; }
+      .span-2, .span-3, .span-4, .span-5, .span-6, .span-8, .span-12 { grid-column: auto; }
+      .order-card { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useEffect, useMemo, useState } = React;
+
+    const SUPABASE_URL = 'https://jewamqbdonudiapxbzay.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY';
+    const BUCKET = 'cardapio';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const NAV = [
+      { id: 'painel', icon: '📊', label: 'Painel' },
+      { id: 'cardapio', icon: '🍝', label: 'Cardápio' },
+      { id: 'pedidos', icon: '🧾', label: 'Pedidos' },
+      { id: 'clientes', icon: '👤', label: 'Clientes' },
+      { id: 'cupons', icon: '🎟️', label: 'Cupons' },
+      { id: 'config', icon: '⚙️', label: 'Configurações' },
+    ];
+
+    const STATUS = ['novo', 'em_preparo', 'pronto', 'saiu_entrega', 'entregue', 'cancelado'];
+    const STATUS_LABEL = {
+      novo: 'Novo',
+      em_preparo: 'Em preparo',
+      pronto: 'Pronto',
+      saiu_entrega: 'Saiu entrega',
+      entregue: 'Entregue',
+      cancelado: 'Cancelado',
+    };
+
+    const IMAGE_PRESETS = {
+      prato: { width: 800, height: 600, quality: .86, label: '800×600 · 4:3 · WebP' },
+      opcional: { width: 800, height: 600, quality: .86, label: '800×600 · 4:3 · WebP' },
+      logo: { width: 400, height: 400, quality: .90, label: '400×400 · quadrado · WebP' },
+      capa: { width: 1600, height: 368, quality: .86, label: '1600×368 · capa mobile · WebP' },
+    };
+
+    const fmtMoney = (value) =>
+      Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const fmtDate = (value) => value ? new Date(value).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '-';
+    const slugify = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    const toNum = (value) => value === '' || value === null || value === undefined ? null : Number(value);
+    const uuid = () => {
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    };
+
+    function Toast({ toast, onClose }) {
+      useEffect(() => {
+        if (!toast) return;
+        const timer = setTimeout(onClose, 3800);
+        return () => clearTimeout(timer);
+      }, [toast]);
+      if (!toast) return null;
+      return <div className={`toast ${toast.type === 'error' ? 'error' : ''}`}>{toast.message}</div>;
+    }
+
+    function Login({ onLogin, toast }) {
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [loading, setLoading] = useState(false);
+
+      async function submit(e) {
+        e.preventDefault();
+        setLoading(true);
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        setLoading(false);
+        if (error) return toast(error.message, 'error');
+        onLogin(data.session);
+      }
+
+      return (
+        <main className="login-page">
+          <form className="login-card" onSubmit={submit}>
+            <h1>Dom Leonardo Admin</h1>
+            <p>Entre com o usuário criado no Supabase Auth.</p>
+            <div className="grid">
+              <div className="field">
+                <label>Email</label>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" required />
+              </div>
+              <div className="field">
+                <label>Senha</label>
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Sua senha" required />
+              </div>
+              <button className="btn btn-primary" disabled={loading}>{loading ? 'Entrando...' : 'Entrar no painel'}</button>
+            </div>
+          </form>
+        </main>
+      );
+    }
+
+    async function fileToImage(file) {
+      const url = URL.createObjectURL(file);
+      try {
+        const img = new Image();
+        img.decoding = 'async';
+        img.src = url;
+        await img.decode();
+        return img;
+      } finally {
+        setTimeout(() => URL.revokeObjectURL(url), 500);
+      }
+    }
+
+    async function resizeImage(file, preset) {
+      if (!file) return null;
+      if (!file.type.startsWith('image/')) throw new Error('Envie um arquivo de imagem.');
+      const img = await fileToImage(file);
+      const canvas = document.createElement('canvas');
+      canvas.width = preset.width;
+      canvas.height = preset.height;
+      const ctx = canvas.getContext('2d');
+      const sourceRatio = img.width / img.height;
+      const targetRatio = preset.width / preset.height;
+      let sx = 0, sy = 0, sw = img.width, sh = img.height;
+      if (sourceRatio > targetRatio) {
+        sw = img.height * targetRatio;
+        sx = (img.width - sw) / 2;
+      } else {
+        sh = img.width / targetRatio;
+        sy = (img.height - sh) / 2;
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, preset.width, preset.height);
+      return await new Promise((resolve, reject) => {
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Não consegui processar a imagem.')), 'image/webp', preset.quality);
+      });
+    }
+
+    async function uploadImage(file, kind, folder, ownerId) {
+      if (!file) return null;
+      const preset = IMAGE_PRESETS[kind];
+      const blob = await resizeImage(file, preset);
+      const path = `${folder}/${ownerId}-${Date.now()}.webp`;
+      const { error } = await sb.storage.from(BUCKET).upload(path, blob, {
+        contentType: 'image/webp',
+        cacheControl: '31536000',
+        upsert: false,
+      });
+      if (error) throw error;
+      const { data } = sb.storage.from(BUCKET).getPublicUrl(path);
+      return data.publicUrl;
+    }
+
+    function ImageInput({ label, value, file, onFile, kind, empty = 'DL' }) {
+      const [preview, setPreview] = useState(value || '');
+      useEffect(() => setPreview(value || ''), [value]);
+      async function change(e) {
+        const picked = e.target.files?.[0];
+        if (!picked) return;
+        onFile(picked);
+        const url = URL.createObjectURL(picked);
+        setPreview(url);
+      }
+      return (
+        <div className="upload-box">
+          <label className="field">
+            <span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6, textTransform:'uppercase'}}>{label}</span>
+            <div className={`upload-preview ${kind === 'logo' ? 'logo' : kind === 'capa' ? 'cover' : ''}`}>
+              {preview ? <img src={preview} alt="" /> : <span>{empty}</span>}
+            </div>
+            <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp,image/avif" onChange={change} />
+          </label>
+          <div className="hint">O admin converte para {IMAGE_PRESETS[kind].label}. Evite texto, telefone, link e promoção dentro da foto.</div>
+        </div>
+      );
+    }
+
+    function TextField({ label, value, onChange, type = 'text', textarea = false, step }) {
+      return (
+        <div className="field">
+          <label>{label}</label>
+          {textarea
+            ? <textarea value={value || ''} onChange={e => onChange(e.target.value)} />
+            : <input type={type} step={step || (type === 'number' ? '0.01' : undefined)} value={value ?? ''} onChange={e => onChange(e.target.value)} />}
+        </div>
+      );
+    }
+
+    function SelectField({ label, value, onChange, children }) {
+      return (
+        <div className="field">
+          <label>{label}</label>
+          <select value={value || ''} onChange={e => onChange(e.target.value)}>{children}</select>
+        </div>
+      );
+    }
+
+    function App() {
+      const [session, setSession] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [active, setActive] = useState('cardapio');
+      const [toastState, setToastState] = useState(null);
+      const [data, setData] = useState({
+        categorias: [], pratos: [], tamanhos: [], grupos: [], opcionais: [], pratoCupons: [],
+        cupons: [], pedidos: [], clientes: [], config: null,
+      });
+      const [modal, setModal] = useState(null);
+      const [statusFilter, setStatusFilter] = useState('');
+      const [orderDetail, setOrderDetail] = useState(null);
+
+      const toast = (message, type = 'ok') => setToastState({ message, type });
+
+      useEffect(() => {
+        sb.auth.getSession().then(({ data }) => {
+          setSession(data.session);
+          setLoading(false);
+        });
+        const { data: sub } = sb.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession));
+        return () => sub.subscription.unsubscribe();
+      }, []);
+
+      useEffect(() => {
+        if (session) loadAll();
+      }, [session]);
+
+      useEffect(() => {
+        if (!session) return;
+        const channel = sb.channel('admin-pedidos')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, () => loadPedidos())
+          .subscribe();
+        return () => { sb.removeChannel(channel); };
+      }, [session, statusFilter]);
+
+      async function run(label, promise) {
+        const { data, error } = await promise;
+        if (error) throw new Error(`${label}: ${error.message}`);
+        return data || [];
+      }
+
+      async function loadAll() {
+        setLoading(true);
+        try {
+          const [categorias, pratos, tamanhos, grupos, opcionais, pratoCupons, cupons, clientes, config] = await Promise.all([
+            run('categorias', sb.from('categorias').select('*').order('ordem').order('nome')),
+            run('pratos', sb.from('pratos').select('*').order('ordem').order('nome')),
+            run('tamanhos', sb.from('pratos_tamanhos').select('*').order('ordem').order('nome')),
+            run('grupos', sb.from('grupos_opcionais').select('*').order('ordem').order('nome')),
+            run('opcionais', sb.from('opcionais').select('*').order('ordem').order('nome')),
+            run('prato_cupons', sb.from('prato_cupons').select('*, cupons(*)').order('ordem')),
+            run('cupons', sb.from('cupons').select('*').order('criado_em', { ascending: false })),
+            run('clientes', sb.from('clientes').select('*').order('criado_em', { ascending: false }).limit(200)),
+            run('config', sb.from('configuracoes').select('*').eq('id', 1).single()),
+          ]);
+          setData(prev => ({ ...prev, categorias, pratos, tamanhos, grupos, opcionais, pratoCupons, cupons, clientes, config }));
+          await loadPedidos();
+        } catch (error) {
+          toast(error.message, 'error');
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      async function loadPedidos() {
+        try {
+          const pedidos = await run('pedidos', sb.rpc('pedidos_admin', {
+            p_status: statusFilter || null,
+            p_limite: 100,
+          }));
+          setData(prev => ({ ...prev, pedidos }));
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function logout() {
+        await sb.auth.signOut();
+        setSession(null);
+      }
+
+      const nested = useMemo(() => buildNested(data), [data]);
+      const stats = useMemo(() => {
+        const today = new Date().toISOString().slice(0, 10);
+        const pedidosHoje = data.pedidos.filter(p => String(p.criado_em || '').slice(0, 10) === today);
+        return {
+          categorias: data.categorias.length,
+          pratos: data.pratos.filter(p => p.ativo).length,
+          pedidosHoje: pedidosHoje.length,
+          receitaHoje: pedidosHoje.reduce((sum, p) => sum + Number(p.total || 0), 0),
+        };
+      }, [data]);
+
+      async function saveCategory(form) {
+        try {
+          const payload = {
+            nome: form.nome?.trim(),
+            slug: form.slug?.trim() || slugify(form.nome),
+            descricao: form.descricao || null,
+            icone: form.icone || null,
+            ordem: toNum(form.ordem) || 0,
+            ativo: form.ativo !== false,
+          };
+          if (!payload.nome) throw new Error('Nome da categoria é obrigatório.');
+          if (form.id) {
+            const { error } = await sb.from('categorias').update(payload).eq('id', form.id);
+            if (error) throw error;
+          } else {
+            const { error } = await sb.from('categorias').insert(payload);
+            if (error) throw error;
+          }
+          setModal(null);
+          toast('Categoria salva.');
+          await loadAll();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function deleteCategory(cat) {
+        if (!confirm(`Excluir a categoria "${cat.nome}"?`)) return;
+        try {
+          const { error } = await sb.from('categorias').delete().eq('id', cat.id);
+          if (error) throw error;
+          toast('Categoria excluída.');
+          await loadAll();
+        } catch (error) {
+          toast('Não consegui excluir. Se tiver itens dentro, exclua/desative os itens primeiro.', 'error');
+        }
+      }
+
+      async function saveDish(form) {
+        try {
+          const pratoId = form.id || uuid();
+          let fotoUrl = form.foto_url || null;
+          if (form.fotoFile) fotoUrl = await uploadImage(form.fotoFile, 'prato', 'pratos', pratoId);
+
+          const grupos = [];
+          for (const [gi, grupo] of form.grupos.entries()) {
+            const opcionais = [];
+            for (const [oi, opcional] of grupo.opcionais.entries()) {
+              let opcFoto = opcional.foto_url || null;
+              if (opcional.fotoFile) opcFoto = await uploadImage(opcional.fotoFile, 'opcional', 'opcionais', opcional.localId || uuid());
+              opcionais.push({
+                nome: opcional.nome,
+                descricao: opcional.descricao || null,
+                preco_delta: toNum(opcional.preco_delta) || 0,
+                foto_url: opcFoto,
+                ordem: oi,
+                ativo: opcional.ativo !== false,
+              });
+            }
+            grupos.push({
+              nome: grupo.nome,
+              descricao: grupo.descricao || null,
+              tipo: Number(grupo.min_escolhas || 0) > 0 ? 'obrigatorio' : (Number(grupo.max_escolhas || 1) === 1 ? 'unico' : 'multiplo'),
+              min_escolhas: toNum(grupo.min_escolhas) || 0,
+              max_escolhas: toNum(grupo.max_escolhas) || 1,
+              ordem: gi,
+              ativo: grupo.ativo !== false,
+              opcionais,
+            });
+          }
+
+          const tamanhos = form.tamanhos.map((tam, index) => ({
+            id: tam.id || null,
+            nome: tam.nome,
+            peso_g: toNum(tam.peso_g),
+            preco_delta: toNum(tam.preco_delta) || 0,
+            ordem: index,
+            padrao: !!tam.padrao,
+            ativo: tam.ativo !== false,
+          }));
+
+          const cupons = form.cupons.map((cupom, index) => ({
+            cupom_id: cupom.cupom_id,
+            inicio_em: cupom.inicio_em || null,
+            fim_em: cupom.fim_em || null,
+            ativo: cupom.ativo !== false,
+            ordem: index,
+          })).filter(c => c.cupom_id);
+
+          const payload = {
+            p_prato_id: pratoId,
+            p_categoria_id: form.categoria_id,
+            p_nome: form.nome,
+            p_slug: form.slug || slugify(form.nome),
+            p_descricao_curta: form.descricao_curta,
+            p_descricao_completa: form.descricao_completa || form.descricao_curta,
+            p_preco_base: toNum(form.preco_base) || 0,
+            p_foto_url: fotoUrl,
+            p_badge_destaque: form.badge_destaque || null,
+            p_ordem: toNum(form.ordem) || 0,
+            p_ativo: form.ativo !== false,
+            p_tamanhos: tamanhos,
+            p_grupos: grupos,
+            p_cupons: cupons,
+          };
+          const { error } = await sb.rpc('salvar_prato_completo', payload);
+          if (error) throw error;
+          setModal(null);
+          toast('Item salvo no cardápio.');
+          await loadAll();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function deleteDish(prato) {
+        if (!confirm(`Excluir o item "${prato.nome}"?`)) return;
+        try {
+          const grupos = data.grupos.filter(g => g.prato_id === prato.id).map(g => g.id);
+          if (grupos.length) await sb.from('opcionais').delete().in('grupo_id', grupos);
+          await sb.from('grupos_opcionais').delete().eq('prato_id', prato.id);
+          await sb.from('prato_cupons').delete().eq('prato_id', prato.id);
+          await sb.from('pratos_tamanhos').delete().eq('prato_id', prato.id);
+          const { error } = await sb.from('pratos').delete().eq('id', prato.id);
+          if (error) throw error;
+          toast('Item excluído.');
+          await loadAll();
+        } catch (error) {
+          const { error: offError } = await sb.from('pratos').update({ ativo: false }).eq('id', prato.id);
+          if (offError) toast(offError.message, 'error');
+          else {
+            toast('O histórico bloqueou exclusão total; item foi desativado.');
+            await loadAll();
+          }
+        }
+      }
+
+      async function toggleDish(prato) {
+        try {
+          const { error } = await sb.from('pratos').update({ ativo: !prato.ativo }).eq('id', prato.id);
+          if (error) throw error;
+          toast(prato.ativo ? 'Item desativado.' : 'Item ativado.');
+          await loadAll();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function saveCupom(form) {
+        try {
+          const payload = {
+            codigo: form.codigo?.trim(),
+            descricao: form.descricao || null,
+            tipo: form.tipo || 'percentual',
+            valor: toNum(form.valor) || 0,
+            valor_minimo_pedido: toNum(form.valor_minimo_pedido) || 0,
+            valido_de: form.valido_de ? new Date(form.valido_de).toISOString() : null,
+            valido_ate: form.valido_ate ? new Date(form.valido_ate).toISOString() : null,
+            usos_max: toNum(form.usos_max),
+            primeiro_pedido_apenas: !!form.primeiro_pedido_apenas,
+            ativo: form.ativo !== false,
+          };
+          if (!payload.codigo) throw new Error('Código obrigatório.');
+          if (form.id) {
+            const { error } = await sb.from('cupons').update(payload).eq('id', form.id);
+            if (error) throw error;
+          } else {
+            const { error } = await sb.from('cupons').insert(payload);
+            if (error) throw error;
+          }
+          setModal(null);
+          toast('Cupom salvo.');
+          await loadAll();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function saveConfig(form) {
+        try {
+          let logo = form.restaurante_logo_url || null;
+          let capa = form.restaurante_capa_url || null;
+          if (form.logoFile) logo = await uploadImage(form.logoFile, 'logo', 'marca/logo', 'dom');
+          if (form.capaFile) capa = await uploadImage(form.capaFile, 'capa', 'marca/capa', 'dom');
+          const payload = {
+            restaurante_nome: form.restaurante_nome,
+            restaurante_descricao: form.restaurante_descricao || null,
+            restaurante_logo_url: logo,
+            restaurante_capa_url: capa,
+            restaurante_avaliacao: toNum(form.restaurante_avaliacao) || 4.9,
+            restaurante_total_avaliacoes: toNum(form.restaurante_total_avaliacoes) || 0,
+            whatsapp_pedidos: form.whatsapp_pedidos,
+            taxa_entrega_padrao: toNum(form.taxa_entrega_padrao) || 0,
+            pedido_minimo: toNum(form.pedido_minimo) || 0,
+            raio_entrega_km: toNum(form.raio_entrega_km) || 5,
+            tempo_entrega_min: toNum(form.tempo_entrega_min) || 45,
+            tempo_entrega_max: toNum(form.tempo_entrega_max) || 60,
+            horario_abertura: form.horario_abertura,
+            horario_fechamento: form.horario_fechamento,
+            aviso_topo: form.aviso_topo || null,
+            loja_aberta_manual: !!form.loja_aberta_manual,
+          };
+          const { error } = await sb.from('configuracoes').update(payload).eq('id', 1);
+          if (error) throw error;
+          toast('Configurações salvas.');
+          await loadAll();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function updateStatus(pedido, status) {
+        try {
+          const motivo = status === 'cancelado' ? prompt('Motivo do cancelamento:') || null : null;
+          const { error } = await sb.rpc('atualizar_status_pedido', {
+            p_pedido_id: pedido.id,
+            p_novo_status: status,
+            p_motivo: motivo,
+          });
+          if (error) throw error;
+          toast(`Pedido #${pedido.numero_pedido} atualizado.`);
+          await loadPedidos();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function openOrder(pedido) {
+        try {
+          const itens = await run('pedido_itens', sb.from('pedido_itens').select('*').eq('pedido_id', pedido.id).order('ordem'));
+          setOrderDetail({ pedido, itens });
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      if (loading && !session) return <div className="empty">Carregando...</div>;
+      if (!session) {
+        return <>
+          <Login onLogin={setSession} toast={toast} />
+          <Toast toast={toastState} onClose={() => setToastState(null)} />
+        </>;
+      }
+
+      const title = NAV.find(n => n.id === active)?.label || 'Painel';
+
+      return (
+        <div className="app-shell">
+          <aside className="sidebar">
+            <div className="brand">
+              <div className="brand-logo">DL</div>
+              <div>
+                <h1>Dom Leonardo</h1>
+                <p>Admin do cardápio</p>
+              </div>
+            </div>
+            <nav className="nav-list">
+              {NAV.map(item => (
+                <button key={item.id} className={`nav-btn ${active === item.id ? 'active' : ''}`} onClick={() => setActive(item.id)}>
+                  <span>{item.icon}</span><span>{item.label}</span>
+                </button>
+              ))}
+            </nav>
+            <div className="sidebar-footer">
+              <button className="btn" onClick={loadAll}>Atualizar dados</button>
+              <button className="btn btn-danger" onClick={logout}>Sair</button>
+            </div>
+          </aside>
+
+          <main className="main">
+            <div className="topbar">
+              <div>
+                <h2>{title}</h2>
+                <p>Monte o cardápio na mesma ordem que o cliente vê.</p>
+              </div>
+              <div className="actions">
+                <a className="btn" href="cardapio-cliente.html" target="_blank">Abrir cardápio</a>
+                <button className="btn" onClick={loadAll}>Atualizar dados</button>
+                <button className="btn btn-danger" onClick={logout}>Sair</button>
+              </div>
+            </div>
+
+            {active === 'painel' && <Painel stats={stats} data={data} setActive={setActive} />}
+            {active === 'cardapio' && (
+              <CardapioBuilder
+                nested={nested}
+                data={data}
+                onAddCategory={() => setModal({ type: 'categoria', item: null })}
+                onEditCategory={item => setModal({ type: 'categoria', item })}
+                onDeleteCategory={deleteCategory}
+                onAddDish={categoria => setModal({ type: 'prato', item: blankDish(categoria.id, data.pratos.length) })}
+                onEditDish={prato => setModal({ type: 'prato', item: dishToForm(prato, data) })}
+                onDeleteDish={deleteDish}
+                onToggleDish={toggleDish}
+              />
+            )}
+            {active === 'pedidos' && <Pedidos pedidos={data.pedidos} statusFilter={statusFilter} setStatusFilter={setStatusFilter} reload={loadPedidos} openOrder={openOrder} updateStatus={updateStatus} />}
+            {active === 'clientes' && <Clientes clientes={data.clientes} />}
+            {active === 'cupons' && <Cupons cupons={data.cupons} onNew={() => setModal({ type: 'cupom', item: null })} onEdit={item => setModal({ type: 'cupom', item })} onSave={saveCupom} reload={loadAll} toast={toast} />}
+            {active === 'config' && <ConfigScreen config={data.config} onSave={saveConfig} />}
+          </main>
+
+          {modal?.type === 'categoria' && <CategoryModal item={modal.item} onClose={() => setModal(null)} onSave={saveCategory} />}
+          {modal?.type === 'prato' && <DishModal item={modal.item} categorias={data.categorias} cupons={data.cupons} onClose={() => setModal(null)} onSave={saveDish} />}
+          {modal?.type === 'cupom' && <CupomModal item={modal.item} onClose={() => setModal(null)} onSave={saveCupom} />}
+          {orderDetail && <OrderModal detail={orderDetail} onClose={() => setOrderDetail(null)} />}
+          <Toast toast={toastState} onClose={() => setToastState(null)} />
+        </div>
+      );
+    }
+
+    function buildNested(data) {
+      const tamanhosByPrato = groupBy(data.tamanhos, 'prato_id');
+      const gruposByPrato = groupBy(data.grupos, 'prato_id');
+      const opcionaisByGrupo = groupBy(data.opcionais, 'grupo_id');
+      const cuponsByPrato = groupBy(data.pratoCupons, 'prato_id');
+      const pratosByCat = groupBy(data.pratos, 'categoria_id');
+      return data.categorias.map(cat => ({
+        ...cat,
+        pratos: (pratosByCat[cat.id] || []).map(prato => ({
+          ...prato,
+          tamanhos: tamanhosByPrato[prato.id] || [],
+          grupos: (gruposByPrato[prato.id] || []).map(g => ({ ...g, opcionais: opcionaisByGrupo[g.id] || [] })),
+          cupons: cuponsByPrato[prato.id] || [],
+        })),
+      }));
+    }
+
+    function groupBy(items, key) {
+      return items.reduce((acc, item) => {
+        const value = item[key];
+        if (!acc[value]) acc[value] = [];
+        acc[value].push(item);
+        return acc;
+      }, {});
+    }
+
+    function blankDish(categoriaId, ordem) {
+      return {
+        id: null,
+        categoria_id: categoriaId,
+        nome: '',
+        slug: '',
+        descricao_curta: '',
+        descricao_completa: '',
+        preco_base: 0,
+        foto_url: '',
+        fotoFile: null,
+        badge_destaque: '',
+        ordem,
+        ativo: true,
+        tamanhos: [{ nome: 'Individual', peso_g: '', preco_delta: 0, padrao: true, ativo: true }],
+        grupos: [],
+        cupons: [],
+      };
+    }
+
+    function dishToForm(prato, data) {
+      const tamanhos = data.tamanhos.filter(t => t.prato_id === prato.id).map(t => ({ ...t }));
+      const grupos = data.grupos.filter(g => g.prato_id === prato.id).map(g => ({
+        ...g,
+        opcionais: data.opcionais.filter(o => o.grupo_id === g.id).map(o => ({ ...o, localId: o.id })),
+      }));
+      const cupons = data.pratoCupons.filter(c => c.prato_id === prato.id).map(c => ({
+        cupom_id: c.cupom_id,
+        inicio_em: c.inicio_em ? c.inicio_em.slice(0,16) : '',
+        fim_em: c.fim_em ? c.fim_em.slice(0,16) : '',
+        ativo: c.ativo,
+      }));
+      return {
+        ...prato,
+        fotoFile: null,
+        tamanhos: tamanhos.length ? tamanhos : [{ nome: 'Individual', peso_g: '', preco_delta: 0, padrao: true, ativo: true }],
+        grupos,
+        cupons,
+      };
+    }
+
+    function Painel({ stats, data, setActive }) {
+      return (
+        <div>
+          <div className="grid stats-grid">
+            <div className="card stat"><span>Categorias</span><strong>{stats.categorias}</strong></div>
+            <div className="card stat"><span>Pratos ativos</span><strong>{stats.pratos}</strong></div>
+            <div className="card stat"><span>Pedidos hoje</span><strong>{stats.pedidosHoje}</strong></div>
+            <div className="card stat"><span>Receita hoje</span><strong>{fmtMoney(stats.receitaHoje)}</strong></div>
+          </div>
+          <div className="grid" style={{gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))'}}>
+            <div className="card panel">
+              <div className="panel-head"><h3>Cardápio</h3></div>
+              <p>{data.categorias.length} categorias · {data.pratos.length} itens cadastrados.</p>
+              <p className="muted">Crie tudo pela aba Cardápio, na ordem da experiência do cliente.</p>
+              <button className="btn btn-primary" onClick={() => setActive('cardapio')}>Montar cardápio</button>
+            </div>
+            <div className="card panel">
+              <div className="panel-head"><h3>Loja</h3></div>
+              <p>WhatsApp: {data.config?.whatsapp_pedidos || 'não configurado'}</p>
+              <p className="muted">Pedido mínimo {fmtMoney(data.config?.pedido_minimo)} · Entrega {fmtMoney(data.config?.taxa_entrega_padrao)}</p>
+              <button className="btn btn-primary" onClick={() => setActive('config')}>Configurações</button>
+            </div>
+            <div className="card panel">
+              <div className="panel-head"><h3>Fotos</h3></div>
+              <p className="muted">Pratos/adicionais: 800×600. Logo: 400×400. Capa: 1600×368.</p>
+              <p>O admin comprime e sobe no Supabase Storage automaticamente.</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function CardapioBuilder({ nested, data, onAddCategory, onEditCategory, onDeleteCategory, onAddDish, onEditDish, onDeleteDish, onToggleDish }) {
+      if (!nested.length) {
+        return (
+          <div className="empty-builder">
+            <div>
+              <button className="empty-plus" onClick={onAddCategory}>+</button>
+              <h3>Cardápio vazio</h3>
+              <p className="muted">Comece criando a primeira categoria, por exemplo: Mais pedidos.</p>
+              <button className="btn btn-primary" onClick={onAddCategory}>Adicionar categoria</button>
+            </div>
+          </div>
+        );
+      }
+      return (
+        <div>
+          {nested.map(cat => (
+            <section className="category-block" key={cat.id}>
+              <div className="category-head">
+                <div className="category-title">
+                  <span className="badge purple">{cat.icone || '🍝'}</span>
+                  <div>
+                    <h3>{cat.nome}</h3>
+                    {cat.descricao && <p className="muted" style={{margin:'2px 0 0'}}>{cat.descricao}</p>}
+                  </div>
+                </div>
+                <div className="actions">
+                  <button className="btn btn-primary" onClick={() => onAddDish(cat)}>Adicionar item</button>
+                  <button className="btn btn-small" onClick={() => onEditCategory(cat)}>Editar</button>
+                  <button className="btn btn-small btn-danger" onClick={() => onDeleteCategory(cat)}>Excluir</button>
+                </div>
+              </div>
+              <div className="category-body">
+                {cat.pratos.map(prato => (
+                  <div className="dish-row" key={prato.id}>
+                    <div className="thumb">{prato.foto_url ? <img src={prato.foto_url} alt="" /> : 'DL'}</div>
+                    <div>
+                      <h4>{prato.nome}</h4>
+                      <p>{prato.descricao_curta || 'Sem descrição'}</p>
+                      <div className="dish-meta">
+                        <span className="money">{fmtMoney(prato.preco_base)}</span>
+                        <span className={`badge ${prato.ativo ? 'on' : 'off'}`}>{prato.ativo ? 'Ativo' : 'Inativo'}</span>
+                        <span className="badge">{prato.tamanhos.length} tamanhos</span>
+                        <span className="badge">{prato.grupos.length} grupos</span>
+                        {!!prato.cupons.length && <span className="badge purple">{prato.cupons.length} cupons</span>}
+                      </div>
+                    </div>
+                    <div className="actions">
+                      <button className="btn btn-small" onClick={() => onEditDish(prato)}>Editar</button>
+                      <button className="btn btn-small" onClick={() => onToggleDish(prato)}>{prato.ativo ? 'Pausar' : 'Ativar'}</button>
+                      <button className="btn btn-small btn-danger" onClick={() => onDeleteDish(prato)}>Excluir</button>
+                    </div>
+                  </div>
+                ))}
+                {!cat.pratos.length && <button className="category-add" onClick={() => onAddDish(cat)}>+ Adicionar primeiro item em {cat.nome}</button>}
+              </div>
+            </section>
+          ))}
+          <button className="add-category-footer" onClick={onAddCategory}>+ Adicionar outra categoria</button>
+        </div>
+      );
+    }
+
+    function CategoryModal({ item, onClose, onSave }) {
+      const [form, setForm] = useState(() => item ? { ...item } : { nome: '', slug: '', descricao: '', icone: '🍝', ordem: 0, ativo: true });
+      const set = (key, value) => setForm(prev => ({ ...prev, [key]: value, ...(key === 'nome' && !item ? { slug: slugify(value) } : {}) }));
+      return (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <div className="modal-head">
+              <h3>{item ? 'Editar categoria' : 'Adicionar categoria'}</h3>
+              <button className="btn btn-ghost" onClick={onClose}>Fechar</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div className="field full"><TextField label="Nome da categoria" value={form.nome} onChange={v => set('nome', v)} /></div>
+                <div style={{display:'none'}}><TextField label="Slug" value={form.slug} onChange={v => set('slug', v)} /></div>
+                <TextField label="Ícone" value={form.icone} onChange={v => set('icone', v)} />
+                <div className="field full"><TextField label="Descrição" value={form.descricao} onChange={v => set('descricao', v)} textarea /></div>
+                <TextField label="Ordem" type="number" step="1" value={form.ordem} onChange={v => set('ordem', v)} />
+                <label className="field"><span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6}}>ATIVO</span><div className="check-row"><input type="checkbox" checked={!!form.ativo} onChange={e => set('ativo', e.target.checked)} /> <span>{form.ativo ? 'Sim' : 'Não'}</span></div></label>
+              </div>
+            </div>
+            <div className="modal-foot">
+              <button className="btn" onClick={onClose}>Cancelar</button>
+              <button className="btn btn-primary" onClick={() => onSave(form)}>Salvar categoria</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function DishModal({ item, categorias, cupons, onClose, onSave }) {
+      const [form, setForm] = useState(() => JSON.parse(JSON.stringify(item)));
+      const set = (key, value) => setForm(prev => ({ ...prev, [key]: value, ...(key === 'nome' && !prev.slug ? { slug: slugify(value) } : {}) }));
+      const patchArray = (key, index, patch) => setForm(prev => ({ ...prev, [key]: prev[key].map((row, i) => i === index ? { ...row, ...patch } : row) }));
+      const removeArray = (key, index) => setForm(prev => ({ ...prev, [key]: prev[key].filter((_, i) => i !== index) }));
+      const patchGroup = (gi, patch) => setForm(prev => ({ ...prev, grupos: prev.grupos.map((g, i) => i === gi ? { ...g, ...patch } : g) }));
+      const patchOption = (gi, oi, patch) => setForm(prev => ({ ...prev, grupos: prev.grupos.map((g, i) => i === gi ? { ...g, opcionais: g.opcionais.map((o, j) => j === oi ? { ...o, ...patch } : o) } : g) }));
+
+      function addGroup() {
+        setForm(prev => ({ ...prev, grupos: [...prev.grupos, { nome: 'Opcionais que combinam', descricao: '', min_escolhas: 0, max_escolhas: 1, ativo: true, opcionais: [] }] }));
+      }
+      function addOption(gi) {
+        setForm(prev => ({ ...prev, grupos: prev.grupos.map((g, i) => i === gi ? { ...g, opcionais: [...g.opcionais, { localId: uuid(), nome: '', descricao: '', preco_delta: 0, foto_url: '', fotoFile: null, ativo: true }] } : g) }));
+      }
+
+      return (
+        <div className="modal-backdrop">
+          <div className="modal wide">
+            <div className="modal-head">
+              <h3>{form.id ? 'Editar item' : 'Adicionar item'}</h3>
+              <button className="btn btn-ghost" onClick={onClose}>Fechar</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div className="field full">
+                  <ImageInput label="Foto do prato" value={form.foto_url} file={form.fotoFile} onFile={file => set('fotoFile', file)} kind="prato" empty="PRATO" />
+                </div>
+                <SelectField label="Categoria" value={form.categoria_id} onChange={v => set('categoria_id', v)}>
+                  {categorias.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                </SelectField>
+                <TextField label="Nome do prato" value={form.nome} onChange={v => set('nome', v)} />
+                <div className="field full"><TextField label="Descrição do prato" value={form.descricao_curta} onChange={v => set('descricao_curta', v)} textarea /></div>
+                <div style={{display:'none'}}><TextField label="Slug" value={form.slug} onChange={v => set('slug', v)} /></div>
+                <TextField label="Preço base" type="number" value={form.preco_base} onChange={v => set('preco_base', v)} />
+                <TextField label="Etiqueta no cardápio" value={form.badge_destaque} onChange={v => set('badge_destaque', v)} />
+                <TextField label="Ordem" type="number" step="1" value={form.ordem} onChange={v => set('ordem', v)} />
+              </div>
+
+              <div className="editor-section">
+                <div className="panel-head">
+                  <h4>Preço e tamanhos</h4>
+                  <button className="btn btn-small btn-primary" onClick={() => setForm(prev => ({ ...prev, tamanhos: [...prev.tamanhos, { nome: '', peso_g: '', preco_delta: 0, padrao: false, ativo: true }] }))}>Adicionar tamanho</button>
+                </div>
+                {form.tamanhos.map((tam, index) => (
+                  <div className="row-card" key={index}>
+                    <div className="inline-grid">
+                      <div className="span-4"><TextField label="Nome do tamanho" value={tam.nome} onChange={v => patchArray('tamanhos', index, { nome: v })} /></div>
+                      <div className="span-2"><TextField label="Peso g" type="number" step="1" value={tam.peso_g} onChange={v => patchArray('tamanhos', index, { peso_g: v })} /></div>
+                      <div className="span-2"><TextField label="Preço extra" type="number" value={tam.preco_delta} onChange={v => patchArray('tamanhos', index, { preco_delta: v })} /></div>
+                      <label className="field span-2"><span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6}}>PADRÃO</span><div className="check-row"><input type="checkbox" checked={!!tam.padrao} onChange={e => setForm(prev => ({ ...prev, tamanhos: prev.tamanhos.map((t, i) => ({ ...t, padrao: i === index ? e.target.checked : false })) }))} /><span>Sim</span></div></label>
+                      <div className="span-2"><button className="btn btn-danger" onClick={() => removeArray('tamanhos', index)}>Remover</button></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="editor-section">
+                <div className="panel-head">
+                  <div>
+                    <h4>Opcionais e adicionais</h4>
+                    <p className="hint" style={{margin:0}}>Cada grupo é uma categoria de opcional. Use mínimo e máximo para transformar em obrigatório, único ou múltiplo.</p>
+                  </div>
+                  <button className="btn btn-small btn-primary" onClick={addGroup}>Adicionar opcionais</button>
+                </div>
+                {form.grupos.map((grupo, gi) => (
+                  <div className="row-card" key={gi}>
+                    <div className="inline-grid">
+                      <div className="span-4"><TextField label="Categoria do opcional" value={grupo.nome} onChange={v => patchGroup(gi, { nome: v })} /></div>
+                      <div className="span-2"><TextField label="Mínimo" type="number" step="1" value={grupo.min_escolhas} onChange={v => patchGroup(gi, { min_escolhas: v })} /></div>
+                      <div className="span-2"><TextField label="Máximo" type="number" step="1" value={grupo.max_escolhas} onChange={v => patchGroup(gi, { max_escolhas: v })} /></div>
+                      <div className="span-4 actions">
+                        <button className="btn btn-small btn-primary" onClick={() => addOption(gi)}>Adicionar item</button>
+                        <button className="btn btn-small btn-danger" onClick={() => removeArray('grupos', gi)}>Remover grupo</button>
+                      </div>
+                      <div className="span-12"><TextField label="Descrição do grupo" value={grupo.descricao} onChange={v => patchGroup(gi, { descricao: v })} /></div>
+                    </div>
+                    {grupo.opcionais.map((op, oi) => (
+                      <div className="row-card" key={op.localId || oi} style={{marginTop:10}}>
+                        <div className="inline-grid">
+                          <div className="span-3"><ImageInput label="Foto" value={op.foto_url} file={op.fotoFile} onFile={file => patchOption(gi, oi, { fotoFile: file })} kind="opcional" empty="+" /></div>
+                          <div className="span-3"><TextField label="Nome" value={op.nome} onChange={v => patchOption(gi, oi, { nome: v })} /></div>
+                          <div className="span-3"><TextField label="Descrição" value={op.descricao} onChange={v => patchOption(gi, oi, { descricao: v })} /></div>
+                          <div className="span-2"><TextField label="Preço" type="number" value={op.preco_delta} onChange={v => patchOption(gi, oi, { preco_delta: v })} /></div>
+                          <div className="span-1"><button className="btn btn-small btn-danger" onClick={() => patchGroup(gi, { opcionais: grupo.opcionais.filter((_, j) => j !== oi) })}>X</button></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+
+              <div className="editor-section">
+                <div className="panel-head">
+                  <h4>Cupons ligados a esse prato</h4>
+                  <button className="btn btn-small btn-primary" onClick={() => setForm(prev => ({ ...prev, cupons: [...prev.cupons, { cupom_id: '', inicio_em: '', fim_em: '', ativo: true }] }))}>Adicionar cupom</button>
+                </div>
+                {form.cupons.map((cupom, index) => (
+                  <div className="row-card" key={index}>
+                    <div className="inline-grid">
+                      <div className="span-4">
+                        <SelectField label="Cupom" value={cupom.cupom_id} onChange={v => patchArray('cupons', index, { cupom_id: v })}>
+                          <option value="">Selecione</option>
+                          {cupons.map(c => <option key={c.id} value={c.id}>{c.codigo} · {c.descricao || c.tipo}</option>)}
+                        </SelectField>
+                      </div>
+                      <div className="span-3"><TextField label="Começa em" type="datetime-local" value={cupom.inicio_em} onChange={v => patchArray('cupons', index, { inicio_em: v })} /></div>
+                      <div className="span-3"><TextField label="Expira em" type="datetime-local" value={cupom.fim_em} onChange={v => patchArray('cupons', index, { fim_em: v })} /></div>
+                      <div className="span-2"><button className="btn btn-danger" onClick={() => removeArray('cupons', index)}>Remover</button></div>
+                    </div>
+                  </div>
+                ))}
+                {!form.cupons.length && <p className="hint">Opcional. O cupom precisa existir na aba Cupons.</p>}
+              </div>
+            </div>
+            <div className="modal-foot">
+              <button className="btn" onClick={onClose}>Cancelar</button>
+              <button className="btn btn-primary" onClick={() => onSave(form)}>Salvar item completo</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function Cupons({ cupons, onNew, onEdit, reload, toast }) {
+      async function remove(cupom) {
+        if (!confirm(`Excluir cupom ${cupom.codigo}?`)) return;
+        const { error } = await sb.from('cupons').delete().eq('id', cupom.id);
+        if (error) toast(error.message, 'error');
+        else { toast('Cupom excluído.'); reload(); }
+      }
+      async function toggle(cupom) {
+        const { error } = await sb.from('cupons').update({ ativo: !cupom.ativo }).eq('id', cupom.id);
+        if (error) toast(error.message, 'error');
+        else { toast('Cupom atualizado.'); reload(); }
+      }
+      return (
+        <section className="card panel">
+          <div className="panel-head">
+            <h3>Cupons</h3>
+            <button className="btn btn-primary" onClick={onNew}>Adicionar cupom</button>
+          </div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Código</th><th>Tipo</th><th>Valor</th><th>Mínimo</th><th>Usos</th><th>Status</th><th>Ações</th></tr></thead>
+              <tbody>
+                {cupons.map(c => (
+                  <tr key={c.id}>
+                    <td><strong>{c.codigo}</strong><br /><span className="muted">{c.descricao}</span></td>
+                    <td>{c.tipo}</td>
+                    <td>{c.tipo === 'percentual' ? `${c.valor}%` : fmtMoney(c.valor)}</td>
+                    <td>{fmtMoney(c.valor_minimo_pedido)}</td>
+                    <td>{c.usos_atual}/{c.usos_max || '∞'}</td>
+                    <td><span className={`badge ${c.ativo ? 'on' : 'off'}`}>{c.ativo ? 'Ativo' : 'Inativo'}</span></td>
+                    <td><div className="actions"><button className="btn btn-small" onClick={() => onEdit(c)}>Editar</button><button className="btn btn-small" onClick={() => toggle(c)}>{c.ativo ? 'Pausar' : 'Ativar'}</button><button className="btn btn-small btn-danger" onClick={() => remove(c)}>Excluir</button></div></td>
+                  </tr>
+                ))}
+                {!cupons.length && <tr><td colSpan="7" className="empty">Nenhum cupom.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      );
+    }
+
+    function CupomModal({ item, onClose, onSave }) {
+      const [form, setForm] = useState(() => item ? {
+        ...item,
+        valido_de: item.valido_de ? item.valido_de.slice(0,16) : '',
+        valido_ate: item.valido_ate ? item.valido_ate.slice(0,16) : '',
+      } : { codigo: '', descricao: '', tipo: 'percentual', valor: 0, valor_minimo_pedido: 0, valido_de: '', valido_ate: '', usos_max: '', primeiro_pedido_apenas: false, ativo: true });
+      const set = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
+      return (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <div className="modal-head"><h3>{item ? 'Editar cupom' : 'Adicionar cupom'}</h3><button className="btn btn-ghost" onClick={onClose}>Fechar</button></div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <TextField label="Código" value={form.codigo} onChange={v => set('codigo', v.toUpperCase())} />
+                <SelectField label="Tipo" value={form.tipo} onChange={v => set('tipo', v)}><option value="percentual">Percentual</option><option value="valor_fixo">Valor fixo</option><option value="frete_gratis">Frete grátis</option></SelectField>
+                <div className="field full"><TextField label="Descrição" value={form.descricao} onChange={v => set('descricao', v)} /></div>
+                <TextField label="Valor" type="number" value={form.valor} onChange={v => set('valor', v)} />
+                <TextField label="Pedido mínimo" type="number" value={form.valor_minimo_pedido} onChange={v => set('valor_minimo_pedido', v)} />
+                <TextField label="Válido de" type="datetime-local" value={form.valido_de} onChange={v => set('valido_de', v)} />
+                <TextField label="Válido até" type="datetime-local" value={form.valido_ate} onChange={v => set('valido_ate', v)} />
+                <TextField label="Usos máximo" type="number" step="1" value={form.usos_max} onChange={v => set('usos_max', v)} />
+                <label className="field"><span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6}}>PRIMEIRO PEDIDO</span><div className="check-row"><input type="checkbox" checked={!!form.primeiro_pedido_apenas} onChange={e => set('primeiro_pedido_apenas', e.target.checked)} /><span>Somente primeiro pedido</span></div></label>
+              </div>
+            </div>
+            <div className="modal-foot"><button className="btn" onClick={onClose}>Cancelar</button><button className="btn btn-primary" onClick={() => onSave(form)}>Salvar cupom</button></div>
+          </div>
+        </div>
+      );
+    }
+
+    function Pedidos({ pedidos, statusFilter, setStatusFilter, reload, openOrder, updateStatus }) {
+      return (
+        <section className="card panel">
+          <div className="panel-head">
+            <h3>Pedidos</h3>
+            <div className="actions">
+              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{width:190}}>
+                <option value="">Todos</option>
+                {STATUS.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+              </select>
+              <button className="btn" onClick={reload}>Atualizar</button>
+            </div>
+          </div>
+          <div className="order-list">
+            {pedidos.map(p => (
+              <div className="order-card" key={p.id}>
+                <div>
+                  <h3>#{p.numero_pedido} · {p.cliente_nome}</h3>
+                  <div className="order-meta">
+                    <span className={`badge status-${p.status}`}>{STATUS_LABEL[p.status]}</span>
+                    <span>{fmtDate(p.criado_em)}</span>
+                    <span>{p.cliente_whatsapp}</span>
+                    <span className="money">{fmtMoney(p.total)}</span>
+                  </div>
+                  <p className="muted">{p.observacoes || 'Sem observações'}</p>
+                </div>
+                <div className="actions">
+                  <button className="btn btn-small" onClick={() => openOrder(p)}>Detalhes</button>
+                  {STATUS.map(s => <button key={s} className="btn btn-small" disabled={s === p.status} onClick={() => updateStatus(p, s)}>{STATUS_LABEL[s]}</button>)}
+                </div>
+              </div>
+            ))}
+            {!pedidos.length && <div className="empty">Nenhum pedido ainda.</div>}
+          </div>
+        </section>
+      );
+    }
+
+    function OrderModal({ detail, onClose }) {
+      const { pedido, itens } = detail;
+      const endereco = pedido.endereco_snapshot || {};
+      return (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <div className="modal-head"><h3>Pedido #{pedido.numero_pedido}</h3><button className="btn btn-ghost" onClick={onClose}>Fechar</button></div>
+            <div className="modal-body">
+              <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))'}}>
+                <div><p className="muted">Cliente</p><h3>{pedido.cliente_nome}</h3><p>{pedido.cliente_whatsapp}</p></div>
+                <div><p className="muted">Total</p><h3>{fmtMoney(pedido.total)}</h3><p>Subtotal {fmtMoney(pedido.subtotal)} · Desconto {fmtMoney(pedido.desconto)}</p></div>
+                <div><p className="muted">Status</p><h3>{STATUS_LABEL[pedido.status]}</h3><p>{fmtDate(pedido.criado_em)}</p></div>
+              </div>
+              <hr style={{border:0,borderTop:'1px solid var(--line)',margin:'16px 0'}} />
+              <h3>Itens</h3>
+              {itens.map(item => (
+                <div className="row-card" key={item.id}>
+                  <strong>{item.quantidade}x {item.prato_nome} {item.tamanho_nome ? `(${item.tamanho_nome})` : ''}</strong>
+                  <p className="money">{fmtMoney(item.preco_total)}</p>
+                  {!!item.opcionais_snapshot?.length && <p className="muted">{item.opcionais_snapshot.map(op => `+ ${op.opcional_nome || op.nome}`).join(' · ')}</p>}
+                  {item.observacoes && <p>{item.observacoes}</p>}
+                </div>
+              ))}
+              <h3>Endereço</h3>
+              <p>{endereco.logradouro}, {endereco.numero}{endereco.complemento ? ` — ${endereco.complemento}` : ''} · {endereco.bairro} · {endereco.cidade}/{endereco.uf}</p>
+            </div>
+            <div className="modal-foot"><button className="btn" onClick={() => window.print()}>Imprimir</button><button className="btn btn-primary" onClick={onClose}>Ok</button></div>
+          </div>
+        </div>
+      );
+    }
+
+    function Clientes({ clientes }) {
+      return (
+        <section className="card panel">
+          <div className="panel-head"><h3>Clientes</h3></div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Nome</th><th>WhatsApp</th><th>Pedidos</th><th>Total gasto</th><th>Último pedido</th></tr></thead>
+              <tbody>
+                {clientes.map(c => <tr key={c.id}><td><strong>{c.nome}</strong></td><td>{c.whatsapp}</td><td>{c.total_pedidos}</td><td className="money">{fmtMoney(c.total_gasto)}</td><td>{fmtDate(c.ultimo_pedido_em)}</td></tr>)}
+                {!clientes.length && <tr><td colSpan="5" className="empty">Nenhum cliente ainda.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      );
+    }
+
+    function ConfigScreen({ config, onSave }) {
+      const [form, setForm] = useState(null);
+      useEffect(() => {
+        if (!config) return;
+        setForm({
+          restaurante_nome: config.restaurante_nome || 'Dom Leonardo',
+          restaurante_descricao: config.restaurante_descricao || '',
+          restaurante_logo_url: config.restaurante_logo_url || '',
+          restaurante_capa_url: config.restaurante_capa_url || '',
+          logoFile: null,
+          capaFile: null,
+          restaurante_avaliacao: config.restaurante_avaliacao || 4.9,
+          restaurante_total_avaliacoes: config.restaurante_total_avaliacoes || 0,
+          whatsapp_pedidos: config.whatsapp_pedidos || '',
+          taxa_entrega_padrao: config.taxa_entrega_padrao || 0,
+          pedido_minimo: config.pedido_minimo || 0,
+          raio_entrega_km: config.raio_entrega_km || 5,
+          tempo_entrega_min: config.tempo_entrega_min || 45,
+          tempo_entrega_max: config.tempo_entrega_max || 60,
+          horario_abertura: config.horario_abertura || '18:00:00',
+          horario_fechamento: config.horario_fechamento || '23:30:00',
+          aviso_topo: config.aviso_topo || '',
+          loja_aberta_manual: config.loja_aberta_manual ?? true,
+        });
+      }, [config]);
+      if (!form) return <div className="empty">Carregando configurações...</div>;
+      const set = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
+      return (
+        <section className="card panel">
+          <div className="panel-head"><h3>Configurações</h3><button className="btn btn-primary" onClick={() => onSave(form)}>Salvar configurações</button></div>
+          <div className="form-grid">
+            <div className="field full"><ImageInput label="Logo" value={form.restaurante_logo_url} file={form.logoFile} onFile={file => set('logoFile', file)} kind="logo" empty="DL" /></div>
+            <div className="field full"><ImageInput label="Capa" value={form.restaurante_capa_url} file={form.capaFile} onFile={file => set('capaFile', file)} kind="capa" empty="CAPA" /></div>
+            <TextField label="Nome" value={form.restaurante_nome} onChange={v => set('restaurante_nome', v)} />
+            <TextField label="WhatsApp pedidos" value={form.whatsapp_pedidos} onChange={v => set('whatsapp_pedidos', v)} />
+            <div className="field full"><TextField label="Descrição" value={form.restaurante_descricao} onChange={v => set('restaurante_descricao', v)} textarea /></div>
+            <TextField label="Avaliação" type="number" value={form.restaurante_avaliacao} onChange={v => set('restaurante_avaliacao', v)} />
+            <TextField label="Total avaliações" type="number" step="1" value={form.restaurante_total_avaliacoes} onChange={v => set('restaurante_total_avaliacoes', v)} />
+            <TextField label="Taxa entrega" type="number" value={form.taxa_entrega_padrao} onChange={v => set('taxa_entrega_padrao', v)} />
+            <TextField label="Pedido mínimo" type="number" value={form.pedido_minimo} onChange={v => set('pedido_minimo', v)} />
+            <TextField label="Entrega min" type="number" step="1" value={form.tempo_entrega_min} onChange={v => set('tempo_entrega_min', v)} />
+            <TextField label="Entrega max" type="number" step="1" value={form.tempo_entrega_max} onChange={v => set('tempo_entrega_max', v)} />
+            <TextField label="Abre" type="time" value={form.horario_abertura} onChange={v => set('horario_abertura', v)} />
+            <TextField label="Fecha" type="time" value={form.horario_fechamento} onChange={v => set('horario_fechamento', v)} />
+            <div className="field full"><TextField label="Aviso no topo" value={form.aviso_topo} onChange={v => set('aviso_topo', v)} textarea /></div>
+            <label className="field"><span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6}}>LOJA ABERTA</span><div className="check-row"><input type="checkbox" checked={!!form.loja_aberta_manual} onChange={e => set('loja_aberta_manual', e.target.checked)} /><span>{form.loja_aberta_manual ? 'Sim' : 'Não'}</span></div></label>
+          </div>
+        </section>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
