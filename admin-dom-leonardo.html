@@ -486,7 +486,25 @@
     }
     .upload-preview.logo { aspect-ratio: 1 / 1; border-radius: 50%; }
     .upload-preview.cover { aspect-ratio: 1600 / 368; }
-    .upload-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .upload-preview img, .upload-preview video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .color-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      align-items: center;
+    }
+    .color-choice {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+    }
+    .color-choice.active {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(234,29,44,.10);
+    }
     .hint {
       font-size: 12px;
       color: var(--muted);
@@ -533,6 +551,51 @@
       text-align: center;
       padding: 34px 18px;
     }
+    .funnel {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .funnel-step {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .funnel-step span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+    .funnel-step strong { display:block; font-size: 28px; margin-top: 6px; }
+    .visitor-layout { display: grid; grid-template-columns: 360px minmax(0,1fr); gap: 14px; }
+    .visitor-list { display: grid; gap: 8px; max-height: 620px; overflow: auto; }
+    .visitor-card {
+      width: 100%;
+      text-align: left;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      display: grid;
+      gap: 5px;
+    }
+    .visitor-card.active { border-color: var(--red); box-shadow: 0 0 0 3px rgba(234,29,44,.08); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #bbb; display:inline-block; margin-right: 6px; }
+    .dot.on { background: var(--green); }
+    .admin-chat { background:#fff; border:1px solid var(--line); border-radius:10px; min-height:520px; display:grid; grid-template-rows:auto 1fr auto; overflow:hidden; }
+    .admin-chat-head { padding:14px; border-bottom:1px solid var(--line); }
+    .admin-chat-body { padding:14px; display:grid; align-content:start; gap:8px; overflow:auto; background:#f7f7f7; }
+    .admin-msg { max-width:80%; padding:10px 12px; border-radius:14px; background:#fff; border:1px solid var(--line); }
+    .admin-msg.admin { justify-self:end; background:var(--red); color:#fff; border-color:var(--red); }
+    .admin-chat-input { display:grid; grid-template-columns:1fr auto; gap:8px; padding:12px; border-top:1px solid var(--line); }
+    @media (max-width: 900px) {
+      .funnel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .visitor-layout { grid-template-columns: 1fr; }
+    }
     @media (max-width: 940px) {
       .app-shell { grid-template-columns: 1fr; }
       .sidebar {
@@ -577,6 +640,8 @@
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const NAV = [
+      { id: 'desempenho', icon: '>>', label: 'Desempenho' },
+      { id: 'bot', icon: 'IA', label: 'Bot' },
       { id: 'painel', icon: '📊', label: 'Painel' },
       { id: 'cardapio', icon: '🍝', label: 'Cardápio' },
       { id: 'pedidos', icon: '🧾', label: 'Pedidos' },
@@ -601,6 +666,21 @@
       logo: { width: 400, height: 400, quality: .90, label: '400×400 · quadrado · WebP' },
       capa: { width: 1600, height: 368, quality: .86, label: '1600×368 · capa mobile · WebP' },
     };
+
+    const PALETTE = [
+      { id: 'roxo', label: 'Roxo' },
+      { id: 'vermelho', label: 'Vermelho' },
+      { id: 'azul', label: 'Azul' },
+      { id: 'verde', label: 'Verde' },
+      { id: 'cinza', label: 'Cinza' },
+      { id: 'amarelo', label: 'Amarelo' },
+      { id: 'laranja', label: 'Laranja' },
+    ];
+    const THEMES = [
+      { id: 'branco', label: 'Branco' },
+      { id: 'cinza', label: 'Cinza' },
+      { id: 'preto', label: 'Preto' },
+    ];
 
     const fmtMoney = (value) =>
       Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -713,6 +793,36 @@
       return data.publicUrl;
     }
 
+    async function uploadVideo(file, folder, ownerId) {
+      if (!file) return null;
+      if (!file.type.startsWith('video/')) throw new Error('Envie um video MP4 ou WebM.');
+      const ext = file.type.includes('webm') ? 'webm' : 'mp4';
+      const path = `${folder}/${ownerId}-${Date.now()}.${ext}`;
+      const { error } = await sb.storage.from(BUCKET).upload(path, file, {
+        contentType: file.type,
+        cacheControl: '31536000',
+        upsert: false,
+      });
+      if (error) throw error;
+      const { data } = sb.storage.from(BUCKET).getPublicUrl(path);
+      return data.publicUrl;
+    }
+
+    async function uploadAudio(file, folder, ownerId) {
+      if (!file) return null;
+      if (!file.type.startsWith('audio/')) throw new Error('Envie um arquivo de audio MP3, WAV, OGG ou WebM.');
+      const ext = file.name.split('.').pop()?.toLowerCase() || (file.type.includes('mpeg') ? 'mp3' : 'audio');
+      const path = `${folder}/${ownerId}-${Date.now()}.${ext}`;
+      const { error } = await sb.storage.from(BUCKET).upload(path, file, {
+        contentType: file.type,
+        cacheControl: '31536000',
+        upsert: false,
+      });
+      if (error) throw error;
+      const { data } = sb.storage.from(BUCKET).getPublicUrl(path);
+      return data.publicUrl;
+    }
+
     function ImageInput({ label, value, file, onFile, kind, empty = 'DL' }) {
       const [preview, setPreview] = useState(value || '');
       useEffect(() => setPreview(value || ''), [value]);
@@ -733,6 +843,67 @@
             <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp,image/avif" onChange={change} />
           </label>
           <div className="hint">O admin converte para {IMAGE_PRESETS[kind].label}. Evite texto, telefone, link e promoção dentro da foto.</div>
+        </div>
+      );
+    }
+
+    function VideoInput({ label, value, file, onFile }) {
+      const [preview, setPreview] = useState(value || '');
+      useEffect(() => setPreview(value || ''), [value]);
+      function change(e) {
+        const picked = e.target.files?.[0];
+        if (!picked) return;
+        onFile(picked);
+        setPreview(URL.createObjectURL(picked));
+      }
+      return (
+        <div className="upload-box">
+          <label className="field">
+            <span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6, textTransform:'uppercase'}}>{label}</span>
+            <div className="upload-preview cover">
+              {preview ? <video src={preview} muted loop autoPlay playsInline /> : <span>VIDEO</span>}
+            </div>
+            <input type="file" accept="video/mp4,video/webm" onChange={change} />
+          </label>
+          <div className="hint">Use um video curto, sem audio, em MP4 ou WebM. No cardapio ele roda em loop.</div>
+        </div>
+      );
+    }
+
+    function AudioInput({ label, value, file, onFile }) {
+      const [preview, setPreview] = useState(value || '');
+      useEffect(() => setPreview(value || ''), [value]);
+      function change(e) {
+        const picked = e.target.files?.[0];
+        if (!picked) return;
+        onFile(picked);
+        setPreview(URL.createObjectURL(picked));
+      }
+      return (
+        <div className="upload-box">
+          <label className="field">
+            <span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6, textTransform:'uppercase'}}>{label}</span>
+            <div className="upload-preview" style={{height:92}}>
+              {preview ? <audio src={preview} controls style={{width:'100%'}} /> : <span>AUDIO</span>}
+            </div>
+            <input type="file" accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/webm" onChange={change} />
+          </label>
+          <div className="hint">A radio aparece como faixa visual no topo. O navegador pode bloquear autoplay com som ate o primeiro toque do cliente na pagina.</div>
+        </div>
+      );
+    }
+
+    function ColorPicker({ label, value, onChange, options = PALETTE }) {
+      return (
+        <div className="field">
+          <label>{label}</label>
+          <div className="color-grid">
+            {options.map(option => (
+              <button type="button" key={option.id} className={`color-choice ${value === option.id ? 'active' : ''}`} onClick={() => onChange(option.id)}>
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
       );
     }
@@ -765,10 +936,14 @@
       const [data, setData] = useState({
         categorias: [], pratos: [], tamanhos: [], grupos: [], opcionais: [], pratoCupons: [],
         cupons: [], pedidos: [], clientes: [], config: null,
+        desempenho: null, visitantes: [], chatMensagens: [],
+        chatbotConfig: null, chatbotRegras: [],
       });
       const [modal, setModal] = useState(null);
       const [statusFilter, setStatusFilter] = useState('');
       const [orderDetail, setOrderDetail] = useState(null);
+      const [selectedVisitor, setSelectedVisitor] = useState(null);
+      const [adminChatText, setAdminChatText] = useState('');
 
       const toast = (message, type = 'ok') => setToastState({ message, type });
 
@@ -793,6 +968,16 @@
         return () => { sb.removeChannel(channel); };
       }, [session, statusFilter]);
 
+      useEffect(() => {
+        if (!session) return;
+        const channel = sb.channel('admin-desempenho')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'cardapio_eventos' }, () => loadDesempenho())
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'cardapio_visitantes' }, () => loadDesempenho())
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_mensagens' }, () => loadDesempenho())
+          .subscribe();
+        return () => { sb.removeChannel(channel); };
+      }, [session, selectedVisitor?.id]);
+
       async function run(label, promise) {
         const { data, error } = await promise;
         if (error) throw new Error(`${label}: ${error.message}`);
@@ -802,7 +987,7 @@
       async function loadAll() {
         setLoading(true);
         try {
-          const [categorias, pratos, tamanhos, grupos, opcionais, pratoCupons, cupons, clientes, config] = await Promise.all([
+          const [categorias, pratos, tamanhos, grupos, opcionais, pratoCupons, cupons, clientes, config, chatbotConfig, chatbotRegras] = await Promise.all([
             run('categorias', sb.from('categorias').select('*').order('ordem').order('nome')),
             run('pratos', sb.from('pratos').select('*').order('ordem').order('nome')),
             run('tamanhos', sb.from('pratos_tamanhos').select('*').order('ordem').order('nome')),
@@ -812,9 +997,12 @@
             run('cupons', sb.from('cupons').select('*').order('criado_em', { ascending: false })),
             run('clientes', sb.from('clientes').select('*').order('criado_em', { ascending: false }).limit(200)),
             run('config', sb.from('configuracoes').select('*').eq('id', 1).single()),
+            run('chatbot_config', sb.from('chatbot_config').select('*').eq('id', 1).single()),
+            run('chatbot_regras', sb.from('chatbot_regras').select('*').order('ordem').order('criado_em')),
           ]);
-          setData(prev => ({ ...prev, categorias, pratos, tamanhos, grupos, opcionais, pratoCupons, cupons, clientes, config }));
+          setData(prev => ({ ...prev, categorias, pratos, tamanhos, grupos, opcionais, pratoCupons, cupons, clientes, config, chatbotConfig, chatbotRegras }));
           await loadPedidos();
+          await loadDesempenho();
         } catch (error) {
           toast(error.message, 'error');
         } finally {
@@ -829,6 +1017,61 @@
             p_limite: 100,
           }));
           setData(prev => ({ ...prev, pedidos }));
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function loadDesempenho() {
+        try {
+          const [desempenhoRes, visitantesRes] = await Promise.all([
+            sb.rpc('cardapio_admin_desempenho', { p_dias: 1 }),
+            sb.rpc('cardapio_admin_visitantes_online', { p_minutos: 10 }),
+          ]);
+          if (desempenhoRes.error) throw desempenhoRes.error;
+          if (visitantesRes.error) throw visitantesRes.error;
+
+          let chatMensagens = null;
+          if (selectedVisitor?.id) {
+            const chatRes = await sb.rpc('cardapio_admin_mensagens', { p_visitante_id: selectedVisitor.id });
+            if (chatRes.error) throw chatRes.error;
+            chatMensagens = Array.isArray(chatRes.data) ? chatRes.data : [];
+          }
+
+          setData(prev => ({
+            ...prev,
+            desempenho: desempenhoRes.data || {},
+            visitantes: Array.isArray(visitantesRes.data) ? visitantesRes.data : [],
+            ...(chatMensagens ? { chatMensagens } : {}),
+          }));
+        } catch (error) {
+          if (active === 'desempenho') toast(error.message, 'error');
+        }
+      }
+
+      async function openVisitor(visitor) {
+        setSelectedVisitor(visitor);
+        try {
+          const { data: mensagens, error } = await sb.rpc('cardapio_admin_mensagens', { p_visitante_id: visitor.id });
+          if (error) throw error;
+          setData(prev => ({ ...prev, chatMensagens: Array.isArray(mensagens) ? mensagens : [] }));
+          await loadDesempenho();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function sendAdminMessage() {
+        const msg = adminChatText.trim();
+        if (!msg || !selectedVisitor) return;
+        try {
+          const { error } = await sb.rpc('cardapio_admin_enviar_mensagem', {
+            p_visitante_id: selectedVisitor.id,
+            p_mensagem: msg,
+          });
+          if (error) throw error;
+          setAdminChatText('');
+          await openVisitor(selectedVisitor);
         } catch (error) {
           toast(error.message, 'error');
         }
@@ -950,6 +1193,7 @@
             p_preco_base: toNum(form.preco_base) || 0,
             p_foto_url: fotoUrl,
             p_badge_destaque: form.badge_destaque || null,
+            p_badge_cor: form.badge_cor || 'vermelho',
             p_ordem: toNum(form.ordem) || 0,
             p_ativo: form.ativo !== false,
             p_tamanhos: tamanhos,
@@ -1006,6 +1250,7 @@
             descricao: form.descricao || null,
             tipo: form.tipo || 'percentual',
             valor: toNum(form.valor) || 0,
+            cor: form.cor || 'roxo',
             valor_minimo_pedido: toNum(form.valor_minimo_pedido) || 0,
             valido_de: form.valido_de ? new Date(form.valido_de).toISOString() : null,
             valido_ate: form.valido_ate ? new Date(form.valido_ate).toISOString() : null,
@@ -1033,13 +1278,30 @@
         try {
           let logo = form.restaurante_logo_url || null;
           let capa = form.restaurante_capa_url || null;
+          let capaVideo = form.restaurante_capa_video_url || null;
+          let radioAudio = form.radio_audio_url || null;
           if (form.logoFile) logo = await uploadImage(form.logoFile, 'logo', 'marca/logo', 'dom');
           if (form.capaFile) capa = await uploadImage(form.capaFile, 'capa', 'marca/capa', 'dom');
+          if (form.capaVideoFile) capaVideo = await uploadVideo(form.capaVideoFile, 'marca/capa-video', 'dom');
+          if (form.radioAudioFile) radioAudio = await uploadAudio(form.radioAudioFile, 'marca/radio', 'dom');
           const payload = {
             restaurante_nome: form.restaurante_nome,
             restaurante_descricao: form.restaurante_descricao || null,
             restaurante_logo_url: logo,
             restaurante_capa_url: capa,
+            restaurante_capa_tipo: form.restaurante_capa_tipo || 'imagem',
+            restaurante_capa_video_url: capaVideo,
+            tema_cardapio: form.tema_cardapio || 'branco',
+            destaques_titulo: form.destaques_titulo || 'O Dom recomenda',
+            destaques_descricao: form.destaques_descricao || 'Os pratos que mais saem por aqui.',
+            cupons_titulo: form.cupons_titulo || 'Cupons do Dom',
+            cupons_descricao: form.cupons_descricao || 'Toque para ver onde usar e quando acaba.',
+            radio_ativo: !!form.radio_ativo,
+            radio_titulo: form.radio_titulo || 'Radio Dom Leonardo',
+            radio_texto: form.radio_texto || '',
+            radio_artista: form.radio_artista || '',
+            radio_musica: form.radio_musica || '',
+            radio_audio_url: radioAudio,
             restaurante_avaliacao: toNum(form.restaurante_avaliacao) || 4.9,
             restaurante_total_avaliacoes: toNum(form.restaurante_total_avaliacoes) || 0,
             whatsapp_pedidos: form.whatsapp_pedidos,
@@ -1056,6 +1318,40 @@
           const { error } = await sb.from('configuracoes').update(payload).eq('id', 1);
           if (error) throw error;
           toast('Configurações salvas.');
+          await loadAll();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function saveBot(form) {
+        try {
+          const payload = {
+            id: 1,
+            ativo: !!form.ativo,
+            nome_bot: form.nome_bot || 'Garcom do Dom',
+            modelo: form.modelo || 'gpt-4o-mini',
+            temperatura: Math.max(0, Math.min(2, Number(form.temperatura ?? 0.4))),
+            prompt_base: form.prompt_base || '',
+          };
+          const { error } = await sb.from('chatbot_config').upsert(payload, { onConflict: 'id' });
+          if (error) throw error;
+
+          const { error: delError } = await sb.from('chatbot_regras').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          if (delError) throw delError;
+          const regras = (form.regras || [])
+            .map((regra, index) => ({
+              gatilho: regra.gatilho?.trim(),
+              resposta: regra.resposta?.trim(),
+              ativo: regra.ativo !== false,
+              ordem: index,
+            }))
+            .filter(regra => regra.gatilho && regra.resposta);
+          if (regras.length) {
+            const { error: insertError } = await sb.from('chatbot_regras').insert(regras);
+            if (insertError) throw insertError;
+          }
+          toast('Bot salvo.');
           await loadAll();
         } catch (error) {
           toast(error.message, 'error');
@@ -1134,6 +1430,17 @@
             </div>
 
             {active === 'painel' && <Painel stats={stats} data={data} setActive={setActive} />}
+            {active === 'desempenho' && (
+              <Desempenho
+                data={data}
+                selectedVisitor={selectedVisitor}
+                onSelect={openVisitor}
+                chatText={adminChatText}
+                setChatText={setAdminChatText}
+                sendMessage={sendAdminMessage}
+                reload={loadDesempenho}
+              />
+            )}
             {active === 'cardapio' && (
               <CardapioBuilder
                 nested={nested}
@@ -1150,6 +1457,7 @@
             {active === 'pedidos' && <Pedidos pedidos={data.pedidos} statusFilter={statusFilter} setStatusFilter={setStatusFilter} reload={loadPedidos} openOrder={openOrder} updateStatus={updateStatus} />}
             {active === 'clientes' && <Clientes clientes={data.clientes} />}
             {active === 'cupons' && <Cupons cupons={data.cupons} onNew={() => setModal({ type: 'cupom', item: null })} onEdit={item => setModal({ type: 'cupom', item })} onSave={saveCupom} reload={loadAll} toast={toast} />}
+            {active === 'bot' && <BotScreen config={data.chatbotConfig} regras={data.chatbotRegras} onSave={saveBot} />}
             {active === 'config' && <ConfigScreen config={data.config} onSave={saveConfig} />}
           </main>
 
@@ -1200,6 +1508,7 @@
         foto_url: '',
         fotoFile: null,
         badge_destaque: '',
+        badge_cor: 'vermelho',
         ordem,
         ativo: true,
         tamanhos: [{ nome: 'Individual', peso_g: '', preco_delta: 0, padrao: true, ativo: true }],
@@ -1256,6 +1565,101 @@
               <p className="muted">Pratos/adicionais: 800×600. Logo: 400×400. Capa: 1600×368.</p>
               <p>O admin comprime e sobe no Supabase Storage automaticamente.</p>
             </div>
+          </div>
+        </div>
+      );
+    }
+
+    function Desempenho({ data, selectedVisitor, onSelect, chatText, setChatText, sendMessage, reload }) {
+      const desempenho = data.desempenho || {};
+      const visitantes = data.visitantes || [];
+      const mensagens = data.chatMensagens || [];
+      const pct = value => `${Number(value || 0).toFixed(1).replace('.', ',')}%`;
+      const shortKey = value => String(value || '').slice(0, 10) || 'visitante';
+      const browserLabel = info => {
+        const payload = info || {};
+        return [payload.platform, payload.language].filter(Boolean).join(' | ') || 'navegador';
+      };
+      const steps = [
+        { label: 'Entraram', value: desempenho.entraram || 0, rate: 'base' },
+        { label: 'Clicaram item', value: desempenho.clicaram_item || 0, rate: pct(desempenho.taxa_click) },
+        { label: 'Adicionaram', value: desempenho.adicionaram_carrinho || 0, rate: pct(desempenho.taxa_carrinho) },
+        { label: 'Chamaram o Dom', value: desempenho.chamaram_garcom || 0, rate: pct(desempenho.taxa_garcom) },
+        { label: 'Pedidos', value: desempenho.pedidos || 0, rate: pct(desempenho.taxa_pedido) },
+      ];
+
+      return (
+        <div>
+          <div className="panel-head" style={{marginBottom: 12}}>
+            <div>
+              <h3>Desempenho em tempo real</h3>
+              <p className="muted" style={{margin: 0}}>Visitantes anonimos, funil do cardapio e chat direto.</p>
+            </div>
+            <button className="btn" onClick={reload}>Atualizar agora</button>
+          </div>
+
+          <div className="funnel">
+            {steps.map(step => (
+              <div className="funnel-step" key={step.label}>
+                <span>{step.label}</span>
+                <strong>{step.value}</strong>
+                <small className="muted">{step.rate === 'base' ? 'base do funil' : `conversao ${step.rate}`}</small>
+              </div>
+            ))}
+          </div>
+
+          <div className="visitor-layout">
+            <section className="card panel">
+              <div className="panel-head">
+                <h3>Quem entrou</h3>
+                <span className="badge">{visitantes.length} visitantes</span>
+              </div>
+              <div className="visitor-list">
+                {!visitantes.length && <div className="empty">Ainda nao tem visitantes recentes.</div>}
+                {visitantes.map(visitor => (
+                  <button
+                    type="button"
+                    key={visitor.id}
+                    className={`visitor-card ${selectedVisitor?.id === visitor.id ? 'active' : ''}`}
+                    onClick={() => onSelect(visitor)}
+                  >
+                    <strong><span className={`dot ${visitor.online ? 'on' : ''}`}></span>{shortKey(visitor.visitor_key)}</strong>
+                    <span className="muted">{browserLabel(visitor.browser_info)}</span>
+                    <span className="muted">{visitor.ultima_url || '-'}</span>
+                    <span className="muted">Ultimo acesso: {fmtDate(visitor.ultimo_acesso_em)}</span>
+                    {!!Number(visitor.nao_lidas_admin || 0) && <span className="badge purple">{visitor.nao_lidas_admin} novas</span>}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="admin-chat">
+              <div className="admin-chat-head">
+                {selectedVisitor
+                  ? <><strong>Chat com {shortKey(selectedVisitor.visitor_key)}</strong><div className="muted">{browserLabel(selectedVisitor.browser_info)}</div></>
+                  : <><strong>Chat do cardapio</strong><div className="muted">Selecione um visitante para conversar.</div></>}
+              </div>
+              <div className="admin-chat-body">
+                {!selectedVisitor && <div className="empty">Quando alguem chamar o Dom no cardapio, a conversa aparece aqui.</div>}
+                {selectedVisitor && !mensagens.length && <div className="empty">Nenhuma mensagem ainda. Voce pode puxar conversa por aqui.</div>}
+                {mensagens.map(msg => (
+                  <div key={msg.id} className={`admin-msg ${msg.autor === 'admin' ? 'admin' : ''}`}>
+                    <div>{msg.mensagem}</div>
+                    <small>{msg.autor} | {fmtDate(msg.criado_em)}</small>
+                  </div>
+                ))}
+              </div>
+              <div className="admin-chat-input">
+                <input
+                  value={chatText}
+                  disabled={!selectedVisitor}
+                  onChange={e => setChatText(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') sendMessage(); }}
+                  placeholder={selectedVisitor ? 'Escreva para esse visitante...' : 'Selecione um visitante'}
+                />
+                <button className="btn btn-primary" disabled={!selectedVisitor || !chatText.trim()} onClick={sendMessage}>Enviar</button>
+              </div>
+            </section>
           </div>
         </div>
       );
@@ -1387,6 +1791,7 @@
                 <div style={{display:'none'}}><TextField label="Slug" value={form.slug} onChange={v => set('slug', v)} /></div>
                 <TextField label="Preço base" type="number" value={form.preco_base} onChange={v => set('preco_base', v)} />
                 <TextField label="Etiqueta no cardápio" value={form.badge_destaque} onChange={v => set('badge_destaque', v)} />
+                <ColorPicker label="Cor da etiqueta" value={form.badge_cor || 'vermelho'} onChange={v => set('badge_cor', v)} />
                 <TextField label="Ordem" type="number" step="1" value={form.ordem} onChange={v => set('ordem', v)} />
               </div>
 
@@ -1521,7 +1926,7 @@
         ...item,
         valido_de: item.valido_de ? item.valido_de.slice(0,16) : '',
         valido_ate: item.valido_ate ? item.valido_ate.slice(0,16) : '',
-      } : { codigo: '', descricao: '', tipo: 'percentual', valor: 0, valor_minimo_pedido: 0, valido_de: '', valido_ate: '', usos_max: '', primeiro_pedido_apenas: false, ativo: true });
+      } : { codigo: '', descricao: '', tipo: 'percentual', valor: 0, cor: 'roxo', valor_minimo_pedido: 0, valido_de: '', valido_ate: '', usos_max: '', primeiro_pedido_apenas: false, ativo: true });
       const set = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
       return (
         <div className="modal-backdrop">
@@ -1533,6 +1938,7 @@
                 <SelectField label="Tipo" value={form.tipo} onChange={v => set('tipo', v)}><option value="percentual">Percentual</option><option value="valor_fixo">Valor fixo</option><option value="frete_gratis">Frete grátis</option></SelectField>
                 <div className="field full"><TextField label="Descrição" value={form.descricao} onChange={v => set('descricao', v)} /></div>
                 <TextField label="Valor" type="number" value={form.valor} onChange={v => set('valor', v)} />
+                <ColorPicker label="Cor do cupom" value={form.cor || 'roxo'} onChange={v => set('cor', v)} />
                 <TextField label="Pedido mínimo" type="number" value={form.valor_minimo_pedido} onChange={v => set('valor_minimo_pedido', v)} />
                 <TextField label="Válido de" type="datetime-local" value={form.valido_de} onChange={v => set('valido_de', v)} />
                 <TextField label="Válido até" type="datetime-local" value={form.valido_ate} onChange={v => set('valido_ate', v)} />
@@ -1633,6 +2039,64 @@
       );
     }
 
+    function BotScreen({ config, regras, onSave }) {
+      const [form, setForm] = useState(null);
+      useEffect(() => {
+        setForm({
+          ativo: config?.ativo ?? true,
+          nome_bot: config?.nome_bot || 'Garcom do Dom',
+          modelo: config?.modelo || 'gpt-4o-mini',
+          temperatura: config?.temperatura ?? 0.4,
+          prompt_base: config?.prompt_base || '',
+          regras: (regras || []).map(r => ({ ...r })),
+        });
+      }, [config, regras]);
+      if (!form) return <div className="empty">Carregando bot...</div>;
+      const set = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
+      const patchRule = (index, patch) => setForm(prev => ({ ...prev, regras: prev.regras.map((r, i) => i === index ? { ...r, ...patch } : r) }));
+      const removeRule = index => setForm(prev => ({ ...prev, regras: prev.regras.filter((_, i) => i !== index) }));
+      const addRule = () => setForm(prev => ({ ...prev, regras: [...prev.regras, { gatilho: '', resposta: '', ativo: true }] }));
+
+      return (
+        <section className="card panel">
+          <div className="panel-head">
+            <div>
+              <h3>Garcom virtual</h3>
+              <p className="muted" style={{margin:0}}>O cliente conversa no cardapio; a IA responde usando o cardapio salvo no Supabase.</p>
+            </div>
+            <button className="btn btn-primary" onClick={() => onSave(form)}>Salvar bot</button>
+          </div>
+          <div className="form-grid">
+            <TextField label="Nome que o cliente ve" value={form.nome_bot} onChange={v => set('nome_bot', v)} />
+            <TextField label="Modelo" value={form.modelo} onChange={v => set('modelo', v)} />
+            <TextField label="Temperatura" type="number" value={form.temperatura} onChange={v => set('temperatura', v)} />
+            <label className="field"><span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6}}>BOT ATIVO</span><div className="check-row"><input type="checkbox" checked={!!form.ativo} onChange={e => set('ativo', e.target.checked)} /><span>{form.ativo ? 'Sim' : 'Nao'}</span></div></label>
+            <div className="field full"><TextField label="Prompt do garcom" value={form.prompt_base} onChange={v => set('prompt_base', v)} textarea /></div>
+          </div>
+
+          <div className="editor-section">
+            <div className="panel-head">
+              <h4>Respostas rigidas</h4>
+              <button className="btn btn-small btn-primary" onClick={addRule}>Adicionar regra</button>
+            </div>
+            <p className="muted">Se a mensagem do cliente contiver o gatilho, o bot responde exatamente com a resposta cadastrada. Use varios gatilhos separados por |.</p>
+            {form.regras.map((regra, index) => (
+              <div className="row-card" key={regra.id || index}>
+                <div className="form-grid">
+                  <TextField label="Gatilho" value={regra.gatilho} onChange={v => patchRule(index, { gatilho: v })} />
+                  <TextField label="Resposta exata" value={regra.resposta} onChange={v => patchRule(index, { resposta: v })} textarea />
+                  <label className="field"><span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6}}>ATIVA</span><div className="check-row"><input type="checkbox" checked={regra.ativo !== false} onChange={e => patchRule(index, { ativo: e.target.checked })} /><span>{regra.ativo !== false ? 'Sim' : 'Nao'}</span></div></label>
+                  <button className="btn btn-danger" onClick={() => removeRule(index)}>Remover</button>
+                </div>
+              </div>
+            ))}
+            {!form.regras.length && <div className="empty">Nenhuma regra rigida ainda.</div>}
+          </div>
+          <div className="hint">A chave OpenAI fica como secret OPENAI_API_KEY na Edge Function. Nunca coloque chave dentro do HTML.</div>
+        </section>
+      );
+    }
+
     function ConfigScreen({ config, onSave }) {
       const [form, setForm] = useState(null);
       useEffect(() => {
@@ -1642,8 +2106,23 @@
           restaurante_descricao: config.restaurante_descricao || '',
           restaurante_logo_url: config.restaurante_logo_url || '',
           restaurante_capa_url: config.restaurante_capa_url || '',
+          restaurante_capa_tipo: config.restaurante_capa_tipo || 'imagem',
+          restaurante_capa_video_url: config.restaurante_capa_video_url || '',
+          tema_cardapio: config.tema_cardapio || 'branco',
+          destaques_titulo: config.destaques_titulo || 'O Dom recomenda',
+          destaques_descricao: config.destaques_descricao || 'Os pratos que mais saem por aqui.',
+          cupons_titulo: config.cupons_titulo || 'Cupons do Dom',
+          cupons_descricao: config.cupons_descricao || 'Toque para ver onde usar e quando acaba.',
+          radio_ativo: config.radio_ativo || false,
+          radio_titulo: config.radio_titulo || 'Radio Dom Leonardo',
+          radio_texto: config.radio_texto || '',
+          radio_artista: config.radio_artista || '',
+          radio_musica: config.radio_musica || '',
+          radio_audio_url: config.radio_audio_url || '',
+          radioAudioFile: null,
           logoFile: null,
           capaFile: null,
+          capaVideoFile: null,
           restaurante_avaliacao: config.restaurante_avaliacao || 4.9,
           restaurante_total_avaliacoes: config.restaurante_total_avaliacoes || 0,
           whatsapp_pedidos: config.whatsapp_pedidos || '',
@@ -1666,9 +2145,25 @@
           <div className="form-grid">
             <div className="field full"><ImageInput label="Logo" value={form.restaurante_logo_url} file={form.logoFile} onFile={file => set('logoFile', file)} kind="logo" empty="DL" /></div>
             <div className="field full"><ImageInput label="Capa" value={form.restaurante_capa_url} file={form.capaFile} onFile={file => set('capaFile', file)} kind="capa" empty="CAPA" /></div>
+            <div className="field full"><VideoInput label="Capa em video opcional" value={form.restaurante_capa_video_url} file={form.capaVideoFile} onFile={file => set('capaVideoFile', file)} /></div>
+            <SelectField label="Tipo de capa" value={form.restaurante_capa_tipo} onChange={v => set('restaurante_capa_tipo', v)}>
+              <option value="imagem">Imagem</option>
+              <option value="video">Video sem audio em loop</option>
+            </SelectField>
+            <ColorPicker label="Tema do cardapio" value={form.tema_cardapio || 'branco'} onChange={v => set('tema_cardapio', v)} options={THEMES} />
             <TextField label="Nome" value={form.restaurante_nome} onChange={v => set('restaurante_nome', v)} />
             <TextField label="WhatsApp pedidos" value={form.whatsapp_pedidos} onChange={v => set('whatsapp_pedidos', v)} />
             <div className="field full"><TextField label="Descrição" value={form.restaurante_descricao} onChange={v => set('restaurante_descricao', v)} textarea /></div>
+            <TextField label="Titulo dos destaques" value={form.destaques_titulo} onChange={v => set('destaques_titulo', v)} />
+            <TextField label="Descricao dos destaques" value={form.destaques_descricao} onChange={v => set('destaques_descricao', v)} />
+            <TextField label="Titulo dos cupons" value={form.cupons_titulo} onChange={v => set('cupons_titulo', v)} />
+            <TextField label="Descricao dos cupons" value={form.cupons_descricao} onChange={v => set('cupons_descricao', v)} />
+            <div className="field full"><AudioInput label="Radio Dom Leonardo - musica" value={form.radio_audio_url} file={form.radioAudioFile} onFile={file => set('radioAudioFile', file)} /></div>
+            <TextField label="Titulo da radio" value={form.radio_titulo} onChange={v => set('radio_titulo', v)} />
+            <TextField label="Texto da radio" value={form.radio_texto} onChange={v => set('radio_texto', v)} />
+            <TextField label="Artista" value={form.radio_artista} onChange={v => set('radio_artista', v)} />
+            <TextField label="Musica" value={form.radio_musica} onChange={v => set('radio_musica', v)} />
+            <label className="field"><span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6}}>RADIO ATIVA</span><div className="check-row"><input type="checkbox" checked={!!form.radio_ativo} onChange={e => set('radio_ativo', e.target.checked)} /><span>{form.radio_ativo ? 'Sim' : 'Nao'}</span></div></label>
             <TextField label="Avaliação" type="number" value={form.restaurante_avaliacao} onChange={v => set('restaurante_avaliacao', v)} />
             <TextField label="Total avaliações" type="number" step="1" value={form.restaurante_total_avaliacoes} onChange={v => set('restaurante_total_avaliacoes', v)} />
             <TextField label="Taxa entrega" type="number" value={form.taxa_entrega_padrao} onChange={v => set('taxa_entrega_padrao', v)} />
