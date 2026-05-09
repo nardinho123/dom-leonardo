@@ -30,12 +30,6 @@ button{cursor:pointer}
 .hero-video{width:100%;height:100%;object-fit:cover}
 .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.12),rgba(0,0,0,.56))}
 .top-pill{position:absolute;left:14px;top:12px;z-index:2;background:rgba(255,255,255,.94);border:0;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:800;color:var(--text)}
-.dom-radio-station{position:absolute;right:12px;top:12px;z-index:3;width:156px;pointer-events:none;color:#fff}
-.dom-radio-title{font-size:10px;font-weight:950;text-transform:uppercase;letter-spacing:.04em;text-align:right;text-shadow:0 1px 8px rgba(0,0,0,.65);margin:0 4px 4px 0}
-.dom-radio-box{height:34px;border-radius:12px;background:rgba(0,0,0,.88);box-shadow:0 8px 18px rgba(0,0,0,.25);overflow:hidden;display:flex;align-items:center}
-.dom-radio-marquee{display:inline-flex;white-space:nowrap;gap:18px;min-width:100%;animation:radioTicker 13s linear infinite;font-size:11px;font-weight:850;padding-left:100%}
-.dom-radio-marquee span{display:inline-block}
-@keyframes radioTicker{to{transform:translateX(-100%)}}
 .store-card{position:relative;margin:-44px 12px 10px;background:#fff;border-radius:18px;padding:54px 14px 14px;box-shadow:var(--shadow);z-index:3}
 .logo{position:absolute;top:-42px;left:16px;width:82px;height:82px;border-radius:50%;border:4px solid #fff;background:#fff;box-shadow:0 8px 20px rgba(0,0,0,.16);display:grid;place-items:center;font-size:34px;font-weight:900;color:var(--red);overflow:hidden}
 .logo img{width:100%;height:100%;object-fit:cover}
@@ -156,6 +150,11 @@ h1{font-size:22px;margin:0 0 4px;font-weight:900;line-height:1.1}
 .chat-bubble{max-width:82%;border-radius:14px;padding:10px 12px;font-size:13px;line-height:1.35;background:#fff;border:0;box-shadow:0 2px 10px rgba(0,0,0,.045)}
 .chat-bubble.admin{justify-self:start}
 .chat-bubble.visitante{justify-self:end;background:var(--red);color:#fff;border-color:var(--red)}
+.chat-bubble.chat-typing{padding:14px 16px;display:flex;gap:5px;align-items:center}
+.chat-bubble.chat-typing span{width:7px;height:7px;border-radius:50%;background:#bbb;animation:typingDot 1.2s infinite ease-in-out}
+.chat-bubble.chat-typing span:nth-child(2){animation-delay:.15s}
+.chat-bubble.chat-typing span:nth-child(3){animation-delay:.3s}
+@keyframes typingDot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-3px);opacity:1}}
 .chat-input{display:grid;grid-template-columns:1fr auto;gap:8px;padding:12px;background:#fff}
 .chat-input input{border:1px solid #ddd;border-radius:12px;padding:12px}
 .chat-input button{border:0;border-radius:12px;background:var(--red);color:#fff;font-weight:900;padding:0 14px}
@@ -175,7 +174,7 @@ h1{font-size:22px;margin:0 0 4px;font-weight:900;line-height:1.1}
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useEffect, useMemo, useState } = React;
+const { useEffect, useMemo, useState, useRef } = React;
 
 const SUPABASE_URL = 'https://jewamqbdonudiapxbzay.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY';
@@ -208,6 +207,29 @@ function getVisitorKey(){
   let value = localStorage.getItem(key);
   if(!value){ value = makeId(); localStorage.setItem(key, value); }
   return value;
+}
+async function resolveVisitorKey(){
+  const key = 'dom_visitor_key';
+  const local = localStorage.getItem(key);
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/cardapio-bind-visitor`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ visitor_key: local || null })
+    });
+    if(res.ok){
+      const data = await res.json();
+      if(data?.visitor_key){
+        localStorage.setItem(key, data.visitor_key);
+        return data.visitor_key;
+      }
+    }
+  } catch(_) { /* fallback abaixo */ }
+  if(local) return local;
+  const novo = makeId();
+  localStorage.setItem(key, novo);
+  return novo;
 }
 function browserInfo(){
   return {
@@ -257,26 +279,10 @@ function App(){
     const id = setInterval(() => track('heartbeat', { url: location.pathname }), 45000);
     return () => clearInterval(id);
   },[tracking]);
-  useEffect(()=>{
-    const radio = cardapio?.restaurante?.radio;
-    const hasRadio = !!(radio?.ativo || radio?.audio_url || radio?.texto || radio?.artista || radio?.musica);
-    if(!hasRadio || !radio?.audio_url) return;
-    const audio = document.getElementById('dom-radio-audio');
-    if(!audio) return;
-    audio.volume = 0.42;
-    const play = () => audio.play().catch(()=>{});
-    play();
-    window.addEventListener('pointerdown', play, { once:true });
-    window.addEventListener('keydown', play, { once:true });
-    return () => {
-      window.removeEventListener('pointerdown', play);
-      window.removeEventListener('keydown', play);
-    };
-  },[cardapio]);
 
   async function initTracking(){
     try {
-      const visitorKey = getVisitorKey();
+      const visitorKey = await resolveVisitorKey();
       const sessionKey = sessionStorage.getItem('dom_session_key') || makeId();
       sessionStorage.setItem('dom_session_key', sessionKey);
       const { data } = await sb.rpc('cardapio_identificar_visitante', {
@@ -320,10 +326,22 @@ function App(){
   const subtotal = cart.reduce((s,it)=>s + Number(it.preco_unitario||0) * Number(it.quantidade||1),0);
   const totalQtd = cart.reduce((s,it)=>s + Number(it.quantidade||1),0);
 
+  const detailRef = useRef(null);
+
   function openDetail(prato, index=null){
     track('item_click', { prato_id: prato.id, prato_nome: prato.nome, origem: index != null ? 'cart_edit' : 'cardapio' });
+    detailRef.current = { prato_id: prato.id, prato_nome: prato.nome, opened_at: Date.now() };
     setEditingIndex(index);
     setDetail({ prato, preset:index!=null ? cart[index] : null });
+  }
+
+  function closeDetail(extra = {}){
+    if(detailRef.current){
+      const { prato_id, prato_nome, opened_at } = detailRef.current;
+      track('item_close', { prato_id, prato_nome, duracao_ms: Date.now() - opened_at, ...extra });
+      detailRef.current = null;
+    }
+    setDetail(null); setEditingIndex(null);
   }
 
   function onSaved(item){
@@ -332,7 +350,8 @@ function App(){
       if(editingIndex!=null) return prev.map((x,i)=>i===editingIndex ? item : x);
       return [...prev, item];
     });
-    setDetail(null); setEditingIndex(null); setToast('O Dom colocou na sacola.');
+    closeDetail({ resultado: 'add_to_cart' });
+    setToast('O Dom colocou na sacola.');
   }
 
   async function addBebida(prato){
@@ -349,7 +368,6 @@ function App(){
   }
 
   function openChat(){
-    track('call_waiter', { origem: 'botao_fixo' });
     track('chat_open', { origem: 'botao_fixo' });
     setChatOpen(true);
   }
@@ -358,18 +376,9 @@ function App(){
   if(error) return <div className="empty">Nao consegui carregar o cardapio.<br/>{error}<br/><button className="top-pill" onClick={load}>Tentar de novo</button></div>;
 
   const rest = cardapio.restaurante || {};
-  const radio = rest.radio || {};
-  const radioVisible = !!(radio.ativo || radio.audio_url || radio.texto || radio.artista || radio.musica);
-  const radioMusic = [radio.artista, radio.musica].filter(Boolean).join(' - ');
-  const radioLine = radioMusic && radio.texto ? `${radioMusic} · ${radio.texto}` : (radioMusic || radio.texto || 'Radio Dom Leonardo');
   return <div className={`app theme-${rest.tema || 'branco'}`}>
     <header className="hero">
       <button className="top-pill">{rest.aberta_agora ? 'Aberto agora' : 'Dom fora do horario'}</button>
-      {radioVisible && <div className="dom-radio-station" aria-hidden="true">
-        <div className="dom-radio-title">{radio.titulo || 'Radio Dom'}</div>
-        <div className="dom-radio-box"><div className="dom-radio-marquee"><span>{radioLine}</span><span>{radioLine}</span></div></div>
-        {radio.audio_url && <audio id="dom-radio-audio" src={radio.audio_url} loop preload="auto" />}
-      </div>}
       {rest.capa_tipo === 'video' && rest.capa_video_url
         ? <video className="hero-img hero-video" src={rest.capa_video_url} poster={rest.capa_url || ''} autoPlay muted loop playsInline />
         : <div className={`hero-img${rest.capa_url?' has-photo':''}`} style={rest.capa_url?{backgroundImage:`url(${rest.capa_url})`}:null}>DOM</div>}
@@ -451,7 +460,7 @@ function App(){
     </div>
     <button className="waiter-btn" onClick={openChat}>Chamar o Dom</button>
 
-    {detail && <DetailModal data={detail} onClose={()=>{setDetail(null); setEditingIndex(null);}} onSaved={onSaved}/>}
+    {detail && <DetailModal data={detail} onClose={()=>closeDetail({ resultado: 'fechou' })} onSaved={onSaved}/>}
     {bagOpen && <CartModal cart={cart} setCart={setCart} subtotal={subtotal} bebidas={bebidas} onClose={()=>setBagOpen(false)} onEdit={openDetail} onAddBebida={addBebida} onCheckout={()=>setCheckoutOpen(true)}/>}
     {checkoutOpen && <CheckoutModal cardapio={cardapio} cart={cart} subtotal={subtotal} tracking={tracking} track={track} onClose={()=>setCheckoutOpen(false)} onSuccess={()=>{track('order_created', { subtotal }); setCart([]); setBagOpen(false); setCheckoutOpen(false);}}/>}
     {couponDetail && <CouponModal cupom={couponDetail} onClose={()=>setCouponDetail(null)} />}
@@ -634,9 +643,25 @@ function ChatModal({ tracking, bot, onClose }){
   const visitorKey = tracking?.visitor_key || getVisitorKey();
 
   useEffect(()=>{
-    loadMessages();
-    const id = setInterval(loadMessages, 4500);
-    return () => clearInterval(id);
+    if(!visitorKey) return;
+    let cancelled = false;
+    let timer = null;
+    async function tick(){
+      if(cancelled) return;
+      if(document.visibilityState === 'visible'){
+        await loadMessages();
+      }
+      if(cancelled) return;
+      timer = setTimeout(tick, 8000);
+    }
+    tick();
+    function onVis(){ if(document.visibilityState === 'visible') loadMessages(); }
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      cancelled = true;
+      if(timer) clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onVis);
+    };
   },[visitorKey]);
 
   async function loadMessages(){
@@ -650,6 +675,9 @@ function ChatModal({ tracking, bot, onClose }){
     if(!msg) return;
     setLoading(true);
     setErr('');
+    setText('');
+    const optimistic = { id: `tmp-${Date.now()}`, autor: 'visitante', mensagem: msg, criado_em: new Date().toISOString(), _optimistic: true };
+    setMessages(prev => [...prev, optimistic]);
     const { error } = await sb.functions.invoke('garcom-bot', {
       body: {
         visitor_key: visitorKey,
@@ -660,9 +688,10 @@ function ChatModal({ tracking, bot, onClose }){
     setLoading(false);
     if(error){
       setErr(error.message || 'Nao consegui chamar o garcom virtual agora.');
+      setMessages(prev => prev.filter(m => m.id !== optimistic.id));
+      setText(msg);
       return;
     }
-    setText('');
     await loadMessages();
   }
 
@@ -670,13 +699,14 @@ function ChatModal({ tracking, bot, onClose }){
     <div className="sheet chat-sheet" onClick={e=>e.stopPropagation()}>
       <div className="sheet-head"><b>{bot?.nome || 'Falar com o Dom'}</b><button className="icon-btn chat-close" onClick={onClose}>x</button></div>
       <div className="chat-body">
-        {!messages.length && <div className="chat-bubble admin">Me chama por aqui que eu vejo no painel em tempo real.</div>}
+        {!messages.length && !loading && <div className="chat-bubble admin">Me chama por aqui que eu vejo no painel em tempo real.</div>}
         {messages.map(m => <div key={m.id} className={`chat-bubble ${m.autor === 'visitante' ? 'visitante' : 'admin'}`}>{m.mensagem}</div>)}
+        {loading && <div className="chat-bubble admin chat-typing"><span/><span/><span/></div>}
       </div>
       {err && <div className="warn">{err}</div>}
       <div className="chat-input">
-        <input value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')send();}} placeholder="Escreva sua mensagem..." />
-        <button disabled={loading} onClick={send}>{loading ? '...' : 'Enviar'}</button>
+        <input value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')send();}} placeholder="Escreva sua mensagem..." disabled={loading} />
+        <button disabled={loading || !text.trim()} onClick={send}>{loading ? '...' : 'Enviar'}</button>
       </div>
     </div>
   </div>;
@@ -723,6 +753,10 @@ function CheckoutModal({ cardapio, cart, subtotal, tracking, track, onClose, onS
     setMsg('');
     if(!form.nome || !form.whatsapp || !form.logradouro || !form.numero || !form.bairro) return setMsg('Preencha nome, WhatsApp e endereco.');
     setLoading(true);
+    const visitorKey = tracking?.visitor_key || getVisitorKey();
+    if(visitorKey){
+      try { await sb.rpc('cardapio_resolver_visitante', { p_visitor_key: visitorKey, p_whatsapp: form.whatsapp, p_nome: form.nome }); } catch(_) { /* segue sem mesclar */ }
+    }
     const payload = {
       p_cliente:{ nome:form.nome, whatsapp:form.whatsapp },
       p_endereco:{ cep:form.cep, logradouro:form.logradouro, numero:form.numero, complemento:form.complemento, bairro:form.bairro, cidade:form.cidade, uf:form.uf, ponto_referencia:form.referencia },

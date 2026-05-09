@@ -584,10 +584,44 @@
       gap: 5px;
     }
     .visitor-card.active { border-color: var(--red); box-shadow: 0 0 0 3px rgba(234,29,44,.08); }
+    .visitor-card.temp-quente { border-left: 4px solid #EA1D2C; }
+    .visitor-card.temp-morno { border-left: 4px solid #F2994A; }
+    .visitor-card.temp-frio { border-left: 4px solid #B0B0B0; }
+    .visitor-card-row { display: flex; align-items: center; gap: 8px; }
+    .visitor-card-row.small { font-size: 12px; }
+    .visitor-card-icons { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 14px; }
+    .visitor-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .temp-dot { width: 10px; height: 10px; border-radius: 50%; background: #bbb; display: inline-block; flex-shrink: 0; }
+    .temp-dot.temp-quente { background: #EA1D2C; box-shadow: 0 0 0 0 rgba(234,29,44,.6); }
+    .temp-dot.temp-morno { background: #F2994A; }
+    .temp-dot.temp-frio { background: #B0B0B0; }
+    .temp-dot.online.temp-quente { animation: pulseRed 1.6s infinite; }
+    @keyframes pulseRed { 0%{box-shadow:0 0 0 0 rgba(234,29,44,.55)} 70%{box-shadow:0 0 0 8px rgba(234,29,44,0)} 100%{box-shadow:0 0 0 0 rgba(234,29,44,0)} }
+    .score-badge { padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 900; flex-shrink: 0; }
+    .score-badge.temp-quente { background: rgba(234,29,44,.12); color: #EA1D2C; }
+    .score-badge.temp-morno { background: rgba(242,153,74,.16); color: #C76A1F; }
+    .score-badge.temp-frio { background: #f0f0f0; color: #666; }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #bbb; display:inline-block; margin-right: 6px; }
     .dot.on { background: var(--green); }
-    .admin-chat { background:#fff; border:1px solid var(--line); border-radius:10px; min-height:520px; display:grid; grid-template-rows:auto 1fr auto; overflow:hidden; }
+    .admin-chat { background:#fff; border:1px solid var(--line); border-radius:10px; min-height:520px; display:grid; grid-template-rows:auto auto 1fr auto; overflow:hidden; }
     .admin-chat-head { padding:14px; border-bottom:1px solid var(--line); }
+    .profile-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .score-big { display: flex; flex-direction: column; align-items: center; padding: 8px 14px; border-radius: 12px; line-height: 1; gap: 4px; }
+    .score-big .score-num { font-size: 28px; font-weight: 950; }
+    .score-big .score-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+    .score-big.temp-quente { background: rgba(234,29,44,.08); color: #EA1D2C; }
+    .score-big.temp-morno { background: rgba(242,153,74,.12); color: #C76A1F; }
+    .score-big.temp-frio { background: #f4f4f4; color: #666; }
+    .profile-extra { padding: 12px 14px; border-bottom: 1px solid var(--line); display: grid; gap: 12px; max-height: 280px; overflow: auto; background: #fafafa; }
+    .profile-block-title { font-size: 11px; font-weight: 850; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+    .profile-pratos, .profile-cupons { display: flex; gap: 6px; flex-wrap: wrap; }
+    .profile-prato { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; font-size: 12px; }
+    .profile-cupom { background: rgba(155,89,229,.12); color: var(--purple); border-radius: 8px; padding: 4px 8px; font-size: 12px; font-weight: 800; }
+    .profile-timeline { display: grid; gap: 4px; }
+    .timeline-row { display: grid; grid-template-columns: 76px 1fr; gap: 8px; font-size: 12px; padding: 4px 0; border-bottom: 1px dashed #ececec; }
+    .timeline-row:last-child { border-bottom: 0; }
+    .timeline-when { color: var(--muted); font-weight: 700; }
+    .timeline-text { color: var(--text); }
     .admin-chat-body { padding:14px; display:grid; align-content:start; gap:8px; overflow:auto; background:#f7f7f7; }
     .admin-msg { max-width:80%; padding:10px 12px; border-radius:14px; background:#fff; border:1px solid var(--line); }
     .admin-msg.admin { justify-self:end; background:var(--red); color:#fff; border-color:var(--red); }
@@ -808,21 +842,6 @@
       return data.publicUrl;
     }
 
-    async function uploadAudio(file, folder, ownerId) {
-      if (!file) return null;
-      if (!file.type.startsWith('audio/')) throw new Error('Envie um arquivo de audio MP3, WAV, OGG ou WebM.');
-      const ext = file.name.split('.').pop()?.toLowerCase() || (file.type.includes('mpeg') ? 'mp3' : 'audio');
-      const path = `${folder}/${ownerId}-${Date.now()}.${ext}`;
-      const { error } = await sb.storage.from(BUCKET).upload(path, file, {
-        contentType: file.type,
-        cacheControl: '31536000',
-        upsert: false,
-      });
-      if (error) throw error;
-      const { data } = sb.storage.from(BUCKET).getPublicUrl(path);
-      return data.publicUrl;
-    }
-
     function ImageInput({ label, value, file, onFile, kind, empty = 'DL' }) {
       const [preview, setPreview] = useState(value || '');
       useEffect(() => setPreview(value || ''), [value]);
@@ -866,29 +885,6 @@
             <input type="file" accept="video/mp4,video/webm" onChange={change} />
           </label>
           <div className="hint">Use um video curto, sem audio, em MP4 ou WebM. No cardapio ele roda em loop.</div>
-        </div>
-      );
-    }
-
-    function AudioInput({ label, value, file, onFile }) {
-      const [preview, setPreview] = useState(value || '');
-      useEffect(() => setPreview(value || ''), [value]);
-      function change(e) {
-        const picked = e.target.files?.[0];
-        if (!picked) return;
-        onFile(picked);
-        setPreview(URL.createObjectURL(picked));
-      }
-      return (
-        <div className="upload-box">
-          <label className="field">
-            <span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6, textTransform:'uppercase'}}>{label}</span>
-            <div className="upload-preview" style={{height:92}}>
-              {preview ? <audio src={preview} controls style={{width:'100%'}} /> : <span>AUDIO</span>}
-            </div>
-            <input type="file" accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/webm" onChange={change} />
-          </label>
-          <div className="hint">A radio aparece como faixa visual no topo. O navegador pode bloquear autoplay com som ate o primeiro toque do cliente na pagina.</div>
         </div>
       );
     }
@@ -1032,10 +1028,16 @@
           if (visitantesRes.error) throw visitantesRes.error;
 
           let chatMensagens = null;
+          let perfil = null;
           if (selectedVisitor?.id) {
-            const chatRes = await sb.rpc('cardapio_admin_mensagens', { p_visitante_id: selectedVisitor.id });
+            const [chatRes, perfilRes] = await Promise.all([
+              sb.rpc('cardapio_admin_mensagens', { p_visitante_id: selectedVisitor.id }),
+              sb.rpc('cardapio_admin_perfil_visitante', { p_visitante_id: selectedVisitor.id }),
+            ]);
             if (chatRes.error) throw chatRes.error;
+            if (perfilRes.error) throw perfilRes.error;
             chatMensagens = Array.isArray(chatRes.data) ? chatRes.data : [];
+            perfil = perfilRes.data || null;
           }
 
           setData(prev => ({
@@ -1043,6 +1045,7 @@
             desempenho: desempenhoRes.data || {},
             visitantes: Array.isArray(visitantesRes.data) ? visitantesRes.data : [],
             ...(chatMensagens ? { chatMensagens } : {}),
+            ...(perfil ? { perfil } : {}),
           }));
         } catch (error) {
           if (active === 'desempenho') toast(error.message, 'error');
@@ -1052,9 +1055,17 @@
       async function openVisitor(visitor) {
         setSelectedVisitor(visitor);
         try {
-          const { data: mensagens, error } = await sb.rpc('cardapio_admin_mensagens', { p_visitante_id: visitor.id });
-          if (error) throw error;
-          setData(prev => ({ ...prev, chatMensagens: Array.isArray(mensagens) ? mensagens : [] }));
+          const [chatRes, perfilRes] = await Promise.all([
+            sb.rpc('cardapio_admin_mensagens', { p_visitante_id: visitor.id }),
+            sb.rpc('cardapio_admin_perfil_visitante', { p_visitante_id: visitor.id }),
+          ]);
+          if (chatRes.error) throw chatRes.error;
+          if (perfilRes.error) throw perfilRes.error;
+          setData(prev => ({
+            ...prev,
+            chatMensagens: Array.isArray(chatRes.data) ? chatRes.data : [],
+            perfil: perfilRes.data || null,
+          }));
           await loadDesempenho();
         } catch (error) {
           toast(error.message, 'error');
@@ -1279,11 +1290,9 @@
           let logo = form.restaurante_logo_url || null;
           let capa = form.restaurante_capa_url || null;
           let capaVideo = form.restaurante_capa_video_url || null;
-          let radioAudio = form.radio_audio_url || null;
           if (form.logoFile) logo = await uploadImage(form.logoFile, 'logo', 'marca/logo', 'dom');
           if (form.capaFile) capa = await uploadImage(form.capaFile, 'capa', 'marca/capa', 'dom');
           if (form.capaVideoFile) capaVideo = await uploadVideo(form.capaVideoFile, 'marca/capa-video', 'dom');
-          if (form.radioAudioFile) radioAudio = await uploadAudio(form.radioAudioFile, 'marca/radio', 'dom');
           const payload = {
             restaurante_nome: form.restaurante_nome,
             restaurante_descricao: form.restaurante_descricao || null,
@@ -1296,12 +1305,6 @@
             destaques_descricao: form.destaques_descricao || 'Os pratos que mais saem por aqui.',
             cupons_titulo: form.cupons_titulo || 'Cupons do Dom',
             cupons_descricao: form.cupons_descricao || 'Toque para ver onde usar e quando acaba.',
-            radio_ativo: !!(form.radio_ativo || radioAudio || form.radio_texto || form.radio_artista || form.radio_musica),
-            radio_titulo: form.radio_titulo || 'Radio Dom Leonardo',
-            radio_texto: form.radio_texto || '',
-            radio_artista: form.radio_artista || '',
-            radio_musica: form.radio_musica || '',
-            radio_audio_url: radioAudio,
             restaurante_avaliacao: toNum(form.restaurante_avaliacao) || 4.9,
             restaurante_total_avaliacoes: toNum(form.restaurante_total_avaliacoes) || 0,
             whatsapp_pedidos: form.whatsapp_pedidos,
@@ -1574,12 +1577,22 @@
       const desempenho = data.desempenho || {};
       const visitantes = data.visitantes || [];
       const mensagens = data.chatMensagens || [];
+      const perfil = data.perfil || null;
       const pct = value => `${Number(value || 0).toFixed(1).replace('.', ',')}%`;
-      const shortKey = value => String(value || '').slice(0, 10) || 'visitante';
+      const shortKey = value => String(value || '').slice(0, 8) || 'visitante';
       const browserLabel = info => {
         const payload = info || {};
         return [payload.platform, payload.language].filter(Boolean).join(' | ') || 'navegador';
       };
+      const visitorLabel = v => v?.nome || (v?.whatsapp ? `WhatsApp ${v.whatsapp}` : `Anônimo ${shortKey(v?.visitor_key)}`);
+      const formatSessao = seg => {
+        const s = Number(seg || 0);
+        if (s < 60) return `${s}s na sessão`;
+        const m = Math.floor(s / 60);
+        if (m < 60) return `${m}min na sessão`;
+        return `${Math.floor(m / 60)}h${m % 60 ? ` ${m % 60}min` : ''} na sessão`;
+      };
+      const tempIcon = t => t === 'quente' ? '🔥' : t === 'morno' ? '⚡' : '❄️';
       const steps = [
         { label: 'Entraram', value: desempenho.entraram || 0, rate: 'base' },
         { label: 'Clicaram item', value: desempenho.clicaram_item || 0, rate: pct(desempenho.taxa_click) },
@@ -1593,7 +1606,7 @@
           <div className="panel-head" style={{marginBottom: 12}}>
             <div>
               <h3>Desempenho em tempo real</h3>
-              <p className="muted" style={{margin: 0}}>Visitantes anonimos, funil do cardapio e chat direto.</p>
+              <p className="muted" style={{margin: 0}}>Temperatura do cliente, funil e chat direto.</p>
             </div>
             <button className="btn" onClick={reload}>Atualizar agora</button>
           </div>
@@ -1611,23 +1624,34 @@
           <div className="visitor-layout">
             <section className="card panel">
               <div className="panel-head">
-                <h3>Quem entrou</h3>
+                <h3>Quem está aqui</h3>
                 <span className="badge">{visitantes.length} visitantes</span>
               </div>
               <div className="visitor-list">
-                {!visitantes.length && <div className="empty">Ainda nao tem visitantes recentes.</div>}
+                {!visitantes.length && <div className="empty">Ainda não tem visitantes recentes.</div>}
                 {visitantes.map(visitor => (
                   <button
                     type="button"
                     key={visitor.id}
-                    className={`visitor-card ${selectedVisitor?.id === visitor.id ? 'active' : ''}`}
+                    className={`visitor-card temp-${visitor.temperatura || 'frio'} ${selectedVisitor?.id === visitor.id ? 'active' : ''}`}
                     onClick={() => onSelect(visitor)}
                   >
-                    <strong><span className={`dot ${visitor.online ? 'on' : ''}`}></span>{shortKey(visitor.visitor_key)}</strong>
-                    <span className="muted">{browserLabel(visitor.browser_info)}</span>
-                    <span className="muted">{visitor.ultima_url || '-'}</span>
-                    <span className="muted">Ultimo acesso: {fmtDate(visitor.ultimo_acesso_em)}</span>
-                    {!!Number(visitor.nao_lidas_admin || 0) && <span className="badge purple">{visitor.nao_lidas_admin} novas</span>}
+                    <div className="visitor-card-row">
+                      <span className={`temp-dot temp-${visitor.temperatura || 'frio'} ${visitor.online ? 'online' : ''}`} title={visitor.temperatura || 'frio'}></span>
+                      <strong className="visitor-name">{visitorLabel(visitor)}</strong>
+                      <span className={`score-badge temp-${visitor.temperatura || 'frio'}`}>{visitor.score ?? 0}</span>
+                    </div>
+                    <div className="visitor-card-row muted small">
+                      {visitor.online ? formatSessao(visitor.tempo_sessao_seg) : `${visitor.minutos_inativo}min inativo`}
+                      {visitor.pratos_distintos > 0 && <span> · {visitor.pratos_distintos} {visitor.pratos_distintos === 1 ? 'prato' : 'pratos'}</span>}
+                    </div>
+                    <div className="visitor-card-icons">
+                      {visitor.add_to_cart && <span title="adicionou ao carrinho">🛒</span>}
+                      {visitor.open_cart && <span title="abriu sacola">📦</span>}
+                      {visitor.checkout_open && <span title="iniciou checkout">💳</span>}
+                      {visitor.chat_engajou && <span title="conversou no chat">💬</span>}
+                      {!!Number(visitor.nao_lidas_admin || 0) && <span className="badge purple">{visitor.nao_lidas_admin} novas</span>}
+                    </div>
                   </button>
                 ))}
               </div>
@@ -1636,12 +1660,60 @@
             <section className="admin-chat">
               <div className="admin-chat-head">
                 {selectedVisitor
-                  ? <><strong>Chat com {shortKey(selectedVisitor.visitor_key)}</strong><div className="muted">{browserLabel(selectedVisitor.browser_info)}</div></>
-                  : <><strong>Chat do cardapio</strong><div className="muted">Selecione um visitante para conversar.</div></>}
+                  ? <>
+                      <div className="profile-header">
+                        <div>
+                          <strong>{visitorLabel(selectedVisitor)}</strong>
+                          <div className="muted small">{browserLabel(selectedVisitor.browser_info)} · {selectedVisitor.online ? formatSessao(selectedVisitor.tempo_sessao_seg) : `${selectedVisitor.minutos_inativo}min inativo`}</div>
+                        </div>
+                        <div className={`score-big temp-${perfil?.temperatura || selectedVisitor.temperatura || 'frio'}`}>
+                          <span className="score-num">{perfil?.score ?? selectedVisitor.score ?? 0}</span>
+                          <span className="score-label">{tempIcon(perfil?.temperatura || selectedVisitor.temperatura)} {perfil?.temperatura || selectedVisitor.temperatura || 'frio'}</span>
+                        </div>
+                      </div>
+                    </>
+                  : <><strong>Selecione um visitante</strong><div className="muted">A timeline e o chat aparecem aqui.</div></>}
               </div>
+
+              {selectedVisitor && perfil && (
+                <div className="profile-extra">
+                  {perfil.pratos_vistos?.length > 0 && (
+                    <div className="profile-block">
+                      <div className="profile-block-title">Pratos olhados</div>
+                      <div className="profile-pratos">
+                        {perfil.pratos_vistos.slice(0, 5).map(p => (
+                          <span className="profile-prato" key={p.prato_id}>{p.prato_nome} · <b>{p.visualizacoes}x</b></span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {perfil.cupons_vistos?.length > 0 && (
+                    <div className="profile-block">
+                      <div className="profile-block-title">Cupons olhados</div>
+                      <div className="profile-cupons">
+                        {perfil.cupons_vistos.map((c, i) => <span className="profile-cupom" key={i}>{c}</span>)}
+                      </div>
+                    </div>
+                  )}
+                  {perfil.timeline?.length > 0 && (
+                    <div className="profile-block">
+                      <div className="profile-block-title">Timeline ({perfil.timeline.length})</div>
+                      <div className="profile-timeline">
+                        {perfil.timeline.slice(0, 12).map(ev => (
+                          <div className="timeline-row" key={ev.id}>
+                            <span className="timeline-when">{ev.minutos_atras === 0 ? 'agora' : `há ${ev.minutos_atras}min`}</span>
+                            <span className="timeline-text">{ev.descricao}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="admin-chat-body">
-                {!selectedVisitor && <div className="empty">Quando alguem chamar o Dom no cardapio, a conversa aparece aqui.</div>}
-                {selectedVisitor && !mensagens.length && <div className="empty">Nenhuma mensagem ainda. Voce pode puxar conversa por aqui.</div>}
+                {!selectedVisitor && <div className="empty">Quando alguém chamar o Dom no cardápio, aparece aqui.</div>}
+                {selectedVisitor && !mensagens.length && <div className="empty">Nenhuma mensagem ainda. Você pode puxar conversa por aqui.</div>}
                 {mensagens.map(msg => (
                   <div key={msg.id} className={`admin-msg ${msg.autor === 'admin' ? 'admin' : ''}`}>
                     <div>{msg.mensagem}</div>
@@ -2113,13 +2185,6 @@
           destaques_descricao: config.destaques_descricao || 'Os pratos que mais saem por aqui.',
           cupons_titulo: config.cupons_titulo || 'Cupons do Dom',
           cupons_descricao: config.cupons_descricao || 'Toque para ver onde usar e quando acaba.',
-          radio_ativo: config.radio_ativo || !!(config.radio_audio_url || config.radio_texto || config.radio_artista || config.radio_musica),
-          radio_titulo: config.radio_titulo || 'Radio Dom Leonardo',
-          radio_texto: config.radio_texto || '',
-          radio_artista: config.radio_artista || '',
-          radio_musica: config.radio_musica || '',
-          radio_audio_url: config.radio_audio_url || '',
-          radioAudioFile: null,
           logoFile: null,
           capaFile: null,
           capaVideoFile: null,
@@ -2158,12 +2223,6 @@
             <TextField label="Descricao dos destaques" value={form.destaques_descricao} onChange={v => set('destaques_descricao', v)} />
             <TextField label="Titulo dos cupons" value={form.cupons_titulo} onChange={v => set('cupons_titulo', v)} />
             <TextField label="Descricao dos cupons" value={form.cupons_descricao} onChange={v => set('cupons_descricao', v)} />
-            <div className="field full"><AudioInput label="Radio Dom Leonardo - musica" value={form.radio_audio_url} file={form.radioAudioFile} onFile={file => set('radioAudioFile', file)} /></div>
-            <TextField label="Titulo da radio" value={form.radio_titulo} onChange={v => set('radio_titulo', v)} />
-            <TextField label="Texto da radio" value={form.radio_texto} onChange={v => set('radio_texto', v)} />
-            <TextField label="Artista" value={form.radio_artista} onChange={v => set('radio_artista', v)} />
-            <TextField label="Musica" value={form.radio_musica} onChange={v => set('radio_musica', v)} />
-            <label className="field"><span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6}}>RADIO ATIVA</span><div className="check-row"><input type="checkbox" checked={!!form.radio_ativo} onChange={e => set('radio_ativo', e.target.checked)} /><span>{form.radio_ativo ? 'Sim' : 'Nao'}</span></div></label>
             <TextField label="Avaliação" type="number" value={form.restaurante_avaliacao} onChange={v => set('restaurante_avaliacao', v)} />
             <TextField label="Total avaliações" type="number" step="1" value={form.restaurante_total_avaliacoes} onChange={v => set('restaurante_total_avaliacoes', v)} />
             <TextField label="Taxa entrega" type="number" value={form.taxa_entrega_padrao} onChange={v => set('taxa_entrega_padrao', v)} />
