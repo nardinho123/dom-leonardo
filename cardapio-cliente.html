@@ -22,7 +22,7 @@ button{cursor:pointer}
 .app{min-height:100vh;padding-bottom:96px;background:var(--bg)}
 .app.theme-cinza{--bg:#ededed;--white:#fff}
 .app.theme-preto{--bg:#161616;--text:#f5f5f5;--muted:#bdbdbd;--line:#333;--white:#222}
-.app.theme-preto .store-card,.app.theme-preto .coupon,.app.theme-preto .dish-card,.app.theme-preto .sheet,.app.theme-preto .category-tabs,.app.theme-preto .bottom-bag,.app.theme-preto .group,.app.theme-preto .upsell{background:#222;color:var(--text);border-color:#333}
+.app.theme-preto .store-card,.app.theme-preto .coupon,.app.theme-preto .dish-card,.app.theme-preto .sheet,.app.theme-preto .category-tabs,.app.theme-preto .bottom-bag,.app.theme-preto .group,.app.theme-preto .upsell{background:#222;color:var(--text)}
 .app.theme-preto .meta-chip,.app.theme-preto .category-tabs button,.app.theme-preto .tag,.app.theme-preto .icon-btn{background:#303030;color:#ddd}
 .hero{position:relative;background:#2d1512;height:188px;overflow:hidden}
 .hero-img{position:absolute;inset:0;background:linear-gradient(135deg,#5d211b,#17100f 58%,#2b150f);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:48px;letter-spacing:.03em}
@@ -54,7 +54,7 @@ h1{font-size:22px;margin:0 0 4px;font-weight:900;line-height:1.1}
 .coupon{min-width:156px;background:#fff;border:0;border-radius:10px;padding:9px 10px;box-shadow:0 3px 12px rgba(0,0,0,.07);text-align:left}
 .coupon strong{display:block;font-size:12px}
 .coupon span{font-size:11px;color:var(--muted)}
-.category-tabs{position:sticky;top:0;background:#fff;z-index:9;display:flex;gap:8px;overflow-x:auto;padding:10px 12px;border-bottom:1px solid var(--line);scrollbar-width:none}
+.category-tabs{position:sticky;top:0;background:#fff;z-index:9;display:flex;gap:8px;overflow-x:auto;padding:10px 12px;scrollbar-width:none}
 .category-tabs button{border:0;background:#f5f5f5;color:#555;border-radius:999px;padding:9px 13px;font-size:13px;font-weight:800;white-space:nowrap}
 .category-tabs button.active{background:var(--red);color:#fff}
 .section{padding:16px 12px 4px}
@@ -80,7 +80,7 @@ h1{font-size:22px;margin:0 0 4px;font-weight:900;line-height:1.1}
 .badge-purple{background:#f3e9ff;color:var(--purple)}
 .badge-gray{background:#f5f5f5;color:#666}
 .dish-list{padding:0 12px}
-.dish-card{background:#fff;border-radius:14px;margin:10px 0;padding:12px;display:grid;grid-template-columns:1fr 104px;gap:12px;border:1px solid #eee;min-height:132px}
+.dish-card{background:#fff;border-radius:14px;margin:10px 0;padding:12px;display:grid;grid-template-columns:1fr 104px;gap:12px;border:0;min-height:132px;box-shadow:0 3px 14px rgba(0,0,0,.045)}
 .dish-card h3{font-size:15px;line-height:1.2;margin:0 0 6px;font-weight:900}
 .dish-card p{font-size:12px;line-height:1.35;margin:0;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .dish-coupons{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
@@ -92,7 +92,7 @@ h1{font-size:22px;margin:0 0 4px;font-weight:900;line-height:1.1}
 .skeleton{height:122px;border-radius:14px;margin:10px 0;background:linear-gradient(90deg,#e7e7e7,#f7f7f7,#e7e7e7);background-size:220% 100%;animation:pulse 1.2s linear infinite}
 @keyframes pulse{to{background-position:-220% 0}}
 .empty{padding:28px;text-align:center;color:var(--muted)}
-.empty-menu{margin:18px 12px;padding:32px 18px;border:1px dashed #ddd;border-radius:16px;background:#fff;text-align:center;color:var(--muted)}
+.empty-menu{margin:18px 12px;padding:32px 18px;border:0;border-radius:16px;background:#fff;text-align:center;color:var(--muted)}
 .empty-menu strong{display:block;color:var(--text);font-size:18px;margin-bottom:6px}
 .bottom-bag{position:fixed;left:0;right:0;bottom:0;background:#fff;padding:10px 12px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -8px 22px rgba(0,0,0,.12);z-index:30}
 .bag-btn{width:100%;border:0;border-radius:12px;background:var(--red);color:#fff;padding:14px 16px;font-weight:900;font-size:15px;display:flex;justify-content:space-between;align-items:center}
@@ -100,7 +100,7 @@ h1{font-size:22px;margin:0 0 4px;font-weight:900;line-height:1.1}
 .modal-back{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:40;display:flex;justify-content:center;align-items:flex-end}
 .sheet{background:#fff;width:100%;max-width:560px;max-height:94vh;border-radius:20px 20px 0 0;overflow:auto;position:relative}
 .sheet.full{height:100vh;max-height:100vh;border-radius:0}
-.sheet-head{position:sticky;top:0;z-index:3;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:12px;border-bottom:1px solid var(--line)}
+.sheet-head{position:sticky;top:0;z-index:3;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:12px}
 .icon-btn{border:0;background:#f5f5f5;border-radius:999px;width:38px;height:38px;font-weight:900}
 .detail-photo{height:230px;background:linear-gradient(135deg,#5e2118,#e05a4b);display:grid;place-items:center;text-align:center;color:#fff;font-size:30px;font-weight:900;padding:22px;overflow:hidden}
 .detail-body{padding:16px}
@@ -111,7 +111,7 @@ h1{font-size:22px;margin:0 0 4px;font-weight:900;line-height:1.1}
 .group-title h3{font-size:15px;margin:0;font-weight:900}
 .group-title small{display:block;color:var(--muted);margin-top:2px}
 .req{background:#222;color:#fff;border-radius:999px;padding:4px 7px;font-size:10px;font-weight:900;white-space:nowrap}
-.choice{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}
+.choice{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:13px 0}
 .choice:last-child{border-bottom:0}
 .choice-title{font-size:14px;font-weight:800}
 .choice-desc{font-size:12px;color:var(--muted);margin-top:2px}
@@ -121,14 +121,14 @@ h1{font-size:22px;margin:0 0 4px;font-weight:900;line-height:1.1}
 .radio.active::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--red)}
 .plus{width:32px;height:32px;border:1px solid var(--red);color:var(--red);background:#fff;border-radius:50%;font-size:18px;font-weight:900}
 .plus.active{background:var(--red);color:#fff}
-.option-line{display:grid;grid-template-columns:54px 1fr auto;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
+.option-line{display:grid;grid-template-columns:54px 1fr auto;gap:10px;align-items:center;padding:11px 0}
 .option-photo{width:54px;height:54px;border-radius:10px;background:linear-gradient(135deg,#efdfd0,#bc4a38);display:grid;place-items:center;color:#fff;font-size:11px;font-weight:900;text-align:center;overflow:hidden}
-.detail-footer{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:grid;grid-template-columns:114px 1fr;gap:10px}
+.detail-footer{position:sticky;bottom:0;background:#fff;padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:grid;grid-template-columns:114px 1fr;gap:10px;box-shadow:0 -8px 20px rgba(0,0,0,.08)}
 .stepper{height:48px;border:1px solid var(--line);border-radius:12px;display:flex;align-items:center;justify-content:space-around;font-weight:900}
 .stepper button{border:0;background:transparent;color:var(--red);font-size:20px;font-weight:900}
 .add-btn,.continue-btn{border:0;background:var(--red);color:#fff;border-radius:12px;font-weight:900}
 .add-btn:disabled,.continue-btn:disabled{opacity:.55}
-.cart-item{display:grid;grid-template-columns:62px 1fr auto;gap:10px;padding:14px 12px;border-bottom:1px solid var(--line)}
+.cart-item{display:grid;grid-template-columns:62px 1fr auto;gap:10px;padding:14px 12px}
 .cart-thumb{width:62px;height:62px;border-radius:10px;background:linear-gradient(135deg,#efdfd0,#aa2c24);display:grid;place-items:center;color:#fff;font-weight:900;font-size:11px;text-align:center;overflow:hidden}
 .cart-title{font-weight:900;font-size:14px}
 .cart-desc{font-size:12px;color:var(--muted);margin:3px 0}
@@ -136,12 +136,12 @@ h1{font-size:22px;margin:0 0 4px;font-weight:900;line-height:1.1}
 .tag{background:#f4f4f4;border-radius:999px;padding:4px 7px;font-size:10px;color:#666}
 .cart-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
 .danger{border:0;background:#fff;color:var(--red);font-weight:900}
-.cart-footer{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px calc(12px) calc(12px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center}
+.cart-footer{position:sticky;bottom:0;background:#fff;padding:12px calc(12px) calc(12px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;box-shadow:0 -8px 20px rgba(0,0,0,.08)}
 .total-label{font-size:12px;color:var(--muted)}
 .total-value{font-size:18px;font-weight:950}
 .upsell{padding:14px 12px;background:#fff}
 .upsell-row{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none}
-.upsell-card{min-width:132px;border:1px solid #eee;border-radius:12px;padding:8px}
+.upsell-card{min-width:132px;border:0;border-radius:12px;padding:8px;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.045)}
 .form{padding:14px 12px}
 .form label{display:block;font-size:12px;color:var(--muted);font-weight:800;margin:12px 0 6px}
 .form input,.form textarea,.form select{width:100%;border:1px solid #ddd;border-radius:12px;padding:12px;background:#fff;color:var(--text);outline:none}
@@ -150,10 +150,13 @@ h1{font-size:22px;margin:0 0 4px;font-weight:900;line-height:1.1}
 .warn{background:#fff8dc;color:#7a4a00;border-radius:12px;padding:10px 12px;font-size:12px;margin:10px 12px}
 .toast{position:fixed;left:12px;right:12px;bottom:88px;background:#222;color:#fff;border-radius:12px;padding:12px 14px;z-index:70;font-size:13px}
 .chat-body{padding:14px;display:grid;gap:10px;max-height:52vh;overflow:auto;background:#f7f7f7}
-.chat-bubble{max-width:82%;border-radius:14px;padding:10px 12px;font-size:13px;line-height:1.35;background:#fff;border:1px solid var(--line)}
+.chat-modal-back{align-items:center;padding:18px}
+.chat-sheet{width:min(420px,100%);max-height:76vh;border-radius:22px;box-shadow:0 18px 48px rgba(0,0,0,.25);overflow:hidden}
+.chat-close{background:var(--red)!important;color:#fff!important}
+.chat-bubble{max-width:82%;border-radius:14px;padding:10px 12px;font-size:13px;line-height:1.35;background:#fff;border:0;box-shadow:0 2px 10px rgba(0,0,0,.045)}
 .chat-bubble.admin{justify-self:start}
 .chat-bubble.visitante{justify-self:end;background:var(--red);color:#fff;border-color:var(--red)}
-.chat-input{display:grid;grid-template-columns:1fr auto;gap:8px;padding:12px;border-top:1px solid var(--line);background:#fff}
+.chat-input{display:grid;grid-template-columns:1fr auto;gap:8px;padding:12px;background:#fff}
 .chat-input input{border:1px solid #ddd;border-radius:12px;padding:12px}
 .chat-input button{border:0;border-radius:12px;background:var(--red);color:#fff;font-weight:900;padding:0 14px}
 .coupon-detail-body{padding:16px}
@@ -161,7 +164,7 @@ h1{font-size:22px;margin:0 0 4px;font-weight:900;line-height:1.1}
 .coupon-code{border-radius:10px;padding:8px 10px;font-weight:950;font-size:13px}
 .timer{font-size:12px;font-weight:900;color:var(--red);margin-top:8px}
 .coupon-dishes{display:grid;gap:8px;margin-top:14px}
-.coupon-dish{display:grid;grid-template-columns:46px 1fr;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px}
+.coupon-dish{display:grid;grid-template-columns:46px 1fr;gap:8px;align-items:center;border:0;border-radius:10px;padding:8px;background:#f8f8f8}
 .coupon-dish .cart-thumb{width:46px;height:46px}
 @media(min-width:760px){
   .app{max-width:760px;margin:0 auto;background:var(--bg);box-shadow:0 0 0 1px #ddd}
@@ -256,9 +259,11 @@ function App(){
   },[tracking]);
   useEffect(()=>{
     const radio = cardapio?.restaurante?.radio;
-    if(!radio?.ativo || !radio?.audio_url) return;
+    const hasRadio = !!(radio?.ativo || radio?.audio_url || radio?.texto || radio?.artista || radio?.musica);
+    if(!hasRadio || !radio?.audio_url) return;
     const audio = document.getElementById('dom-radio-audio');
     if(!audio) return;
+    audio.volume = 0.42;
     const play = () => audio.play().catch(()=>{});
     play();
     window.addEventListener('pointerdown', play, { once:true });
@@ -354,12 +359,13 @@ function App(){
 
   const rest = cardapio.restaurante || {};
   const radio = rest.radio || {};
+  const radioVisible = !!(radio.ativo || radio.audio_url || radio.texto || radio.artista || radio.musica);
   const radioMusic = [radio.artista, radio.musica].filter(Boolean).join(' - ');
   const radioLine = radioMusic && radio.texto ? `${radioMusic} · ${radio.texto}` : (radioMusic || radio.texto || 'Radio Dom Leonardo');
   return <div className={`app theme-${rest.tema || 'branco'}`}>
     <header className="hero">
       <button className="top-pill">{rest.aberta_agora ? 'Aberto agora' : 'Dom fora do horario'}</button>
-      {radio.ativo && <div className="dom-radio-station" aria-hidden="true">
+      {radioVisible && <div className="dom-radio-station" aria-hidden="true">
         <div className="dom-radio-title">{radio.titulo || 'Radio Dom'}</div>
         <div className="dom-radio-box"><div className="dom-radio-marquee"><span>{radioLine}</span><span>{radioLine}</span></div></div>
         {radio.audio_url && <audio id="dom-radio-audio" src={radio.audio_url} loop preload="auto" />}
@@ -624,6 +630,7 @@ function ChatModal({ tracking, bot, onClose }){
   const [messages,setMessages] = useState([]);
   const [text,setText] = useState('');
   const [loading,setLoading] = useState(false);
+  const [err,setErr] = useState('');
   const visitorKey = tracking?.visitor_key || getVisitorKey();
 
   useEffect(()=>{
@@ -642,6 +649,7 @@ function ChatModal({ tracking, bot, onClose }){
     const msg = text.trim();
     if(!msg) return;
     setLoading(true);
+    setErr('');
     const { error } = await sb.functions.invoke('garcom-bot', {
       body: {
         visitor_key: visitorKey,
@@ -650,19 +658,22 @@ function ChatModal({ tracking, bot, onClose }){
       }
     });
     setLoading(false);
-    if(!error){
-      setText('');
-      await loadMessages();
+    if(error){
+      setErr(error.message || 'Nao consegui chamar o garcom virtual agora.');
+      return;
     }
+    setText('');
+    await loadMessages();
   }
 
-  return <div className="modal-back" onClick={onClose}>
-    <div className="sheet" onClick={e=>e.stopPropagation()}>
-      <div className="sheet-head"><b>{bot?.nome || 'Falar com o Dom'}</b><button className="icon-btn" onClick={onClose}>x</button></div>
+  return <div className="modal-back chat-modal-back" onClick={onClose}>
+    <div className="sheet chat-sheet" onClick={e=>e.stopPropagation()}>
+      <div className="sheet-head"><b>{bot?.nome || 'Falar com o Dom'}</b><button className="icon-btn chat-close" onClick={onClose}>x</button></div>
       <div className="chat-body">
         {!messages.length && <div className="chat-bubble admin">Me chama por aqui que eu vejo no painel em tempo real.</div>}
         {messages.map(m => <div key={m.id} className={`chat-bubble ${m.autor === 'visitante' ? 'visitante' : 'admin'}`}>{m.mensagem}</div>)}
       </div>
+      {err && <div className="warn">{err}</div>}
       <div className="chat-input">
         <input value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')send();}} placeholder="Escreva sua mensagem..." />
         <button disabled={loading} onClick={send}>{loading ? '...' : 'Enviar'}</button>
