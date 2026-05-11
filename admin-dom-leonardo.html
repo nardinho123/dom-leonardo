@@ -967,8 +967,6 @@
       useEffect(() => {
         if (!session) return;
         const channel = sb.channel('admin-desempenho')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'cardapio_eventos' }, () => loadDesempenho())
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'cardapio_visitantes' }, () => loadDesempenho())
           .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_mensagens' }, () => loadDesempenho())
           .subscribe();
         return () => { sb.removeChannel(channel); };
