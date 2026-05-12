@@ -2943,6 +2943,7 @@ function LegacyVendaFormAtual({ receitas, precos, sb, toast, onSuccess }) {
 }
 
 function VendaForm({ receitas, precos, produtos, unidades, sb, toast, onSuccess }) {
+  const [numeroPedido, setNumeroPedido] = useState('');
   const [data, setData] = useState(todayISO());
   const [canal, setCanal] = useState('ifood');
   const [descontos, setDescontos] = useState([]);
@@ -3078,10 +3079,12 @@ function VendaForm({ receitas, precos, produtos, unidades, sb, toast, onSuccess 
         p_data_movimentacao: dateInputToIso(data),
         p_canal_venda: canal,
         p_itens: validos,
-        p_descontos: descontosPayload(descontos)
+        p_descontos: descontosPayload(descontos),
+        p_numero_pedido: numeroPedido.trim() || null
       });
       if (error) throw error;
       toast(`Venda ${CANAL_LABEL[canal]}: Bruto ${fmtR$(res?.valor_bruto||bruto)} - Liq ${fmtR$(res?.valor_liquido||liquido)} - CMV ${fmtR$(res?.cmv_total||0)}`,'success');
+      setNumeroPedido('');
       setItens([novoItemVenda()]);
       setDescontos([]);
       setConfirmPayload(null);
@@ -3092,7 +3095,11 @@ function VendaForm({ receitas, precos, produtos, unidades, sb, toast, onSuccess 
 
   return (
     <div className="card">
-      <div className="form-row-3">
+      <div style={{display:'grid',gridTemplateColumns:'1.2fr 1fr 1fr 0.8fr',gap:10,marginBottom:10}}>
+        <div className="form-group">
+          <label>Nº do pedido (iFood)</label>
+          <input value={numeroPedido} onChange={e=>setNumeroPedido(e.target.value)} placeholder="ex: 4523"/>
+        </div>
         <div className="form-group"><label>Data</label><input type="date" value={data} onChange={e=>setData(e.target.value)}/></div>
         <div className="form-group">
           <label>Canal</label>
@@ -3100,7 +3107,7 @@ function VendaForm({ receitas, precos, produtos, unidades, sb, toast, onSuccess 
             {Object.entries(CANAL_LABEL).map(([v,l])=><option key={v} value={v}>{l}</option>)}
           </select>
         </div>
-        <div className="form-group"><label>% desconto desta venda</label><input value={fmtPct(pctDesconto)} readOnly/></div>
+        <div className="form-group"><label>% desconto</label><input value={fmtPct(pctDesconto)} readOnly/></div>
       </div>
 
       <div className="card" style={{background:'var(--card-2)',padding:12}}>
@@ -3219,7 +3226,16 @@ function VendaForm({ receitas, precos, produtos, unidades, sb, toast, onSuccess 
 }
 
 function novoPedidoLote() {
-  return { data:todayISO(), canal:'ifood', descontos:[], itens:[novoItemVenda()] };
+  return {
+    numero_pedido:'',
+    data:'',
+    canal:'ifood',
+    descontos:[
+      { tipo_desconto:'comissao_ifood', valor:'', observacoes:'' },
+      { tipo_desconto:'promocao',       valor:'', observacoes:'' }
+    ],
+    itens:[novoItemVenda()]
+  };
 }
 
 function VendaLote({ receitas, precos, produtos, unidades, sb, toast, onSuccess }) {
@@ -3354,6 +3370,7 @@ function VendaLote({ receitas, precos, produtos, unidades, sb, toast, onSuccess 
       const principais = itensPayload.filter(x => x.tipo_item === 'principal');
       if (principais.length === 0) return null;
       return {
+        numero_pedido: (pedido.numero_pedido||'').trim() || null,
         data_movimentacao: dateInputToIso(pedido.data),
         canal_venda: pedido.canal,
         itens: itensPayload,
@@ -3365,8 +3382,15 @@ function VendaLote({ receitas, precos, produtos, unidades, sb, toast, onSuccess 
   function pedidoBruto(p) { return sumBy(p.itens||[], it => vendaItemValorTotal(it) + sumBy(it.adicionais||[], vendaItemValorTotal)); }
   function pedidoDescontos(p) { return descontoTotal(p.descontos); }
   function pedidoCountPratos(p) { return (p.itens||[]).filter(it => it.receita_id && parseDecimal(it.quantidade) > 0).length; }
+  function pedidoTemPrato(p) { return (p.itens||[]).some(it => it.receita_id && parseDecimal(it.quantidade) > 0 && it.valor_unitario !== ''); }
 
   function confirmar() {
+    // valida data obrigatoria nos pedidos que ja tem prato
+    for (let i = 0; i < pedidos.length; i++) {
+      if (pedidoTemPrato(pedidos[i]) && !pedidos[i].data) {
+        return toast(`Preencha a data do Pedido #${i+1}`,'error');
+      }
+    }
     const payload = buildPayload();
     if (payload.length === 0) return toast('Adicione ao menos um pedido com prato principal','error');
     setConfirmPayload(payload);
@@ -3399,40 +3423,28 @@ function VendaLote({ receitas, precos, produtos, unidades, sb, toast, onSuccess 
         return (
           <div className="card" key={pi} style={{marginBottom:14}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,marginBottom:10}}>
-              <div className="card-title" style={{margin:0}}>📦 Pedido #{pi+1}</div>
+              <div className="card-title" style={{margin:0}}>📦 Pedido #{pi+1}{p.numero_pedido && <span className="muted" style={{fontWeight:500,marginLeft:8}}>— iFood #{p.numero_pedido}</span>}</div>
               <button className="btn btn-outline btn-sm" onClick={()=>removePedido(pi)} title="Remover pedido">x Remover</button>
             </div>
 
-            <div className="form-row-3">
-              <div className="form-group"><label>Data</label><input type="date" value={p.data} onChange={e=>updPedido(pi,'data',e.target.value)}/></div>
+            <div style={{display:'grid',gridTemplateColumns:'1.2fr 1fr 1fr 0.8fr',gap:10,marginBottom:10}}>
+              <div className="form-group">
+                <label>Nº do pedido (iFood)</label>
+                <input value={p.numero_pedido} onChange={e=>updPedido(pi,'numero_pedido',e.target.value)} placeholder="ex: 4523"/>
+              </div>
+              <div className="form-group">
+                <label>Data <span className="red">*</span></label>
+                <input type="date" value={p.data} onChange={e=>updPedido(pi,'data',e.target.value)} style={!p.data && pedidoTemPrato(p) ? {borderColor:'var(--red)'} : {}}/>
+              </div>
               <div className="form-group">
                 <label>Canal</label>
                 <select value={p.canal} onChange={e=>updPedido(pi,'canal',e.target.value)}>
                   {Object.entries(CANAL_LABEL).map(([v,l])=><option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
-              <div className="form-group"><label>% desconto deste pedido</label><input value={fmtPct(bruto > 0 ? (desc/bruto)*100 : 0)} readOnly/></div>
+              <div className="form-group"><label>% desconto</label><input value={fmtPct(bruto > 0 ? (desc/bruto)*100 : 0)} readOnly/></div>
             </div>
 
-            <div className="card" style={{background:'var(--card-2)',padding:12,marginBottom:10}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,marginBottom:8}}>
-                <div className="card-title" style={{margin:0}}>Descontos do pedido</div>
-                <button className="btn btn-outline btn-sm" onClick={()=>addDesconto(pi)}>+ Desconto</button>
-              </div>
-              {(p.descontos||[]).length === 0 && <div className="muted" style={{fontSize:12}}>Sem taxa, comissao ou promocao neste pedido.</div>}
-              {(p.descontos||[]).map((d,di) => (
-                <div className="row-item" key={di} style={{display:'grid',gridTemplateColumns:'minmax(160px,1.4fr) 120px minmax(140px,1fr) auto',gap:8,alignItems:'center',marginTop:6}}>
-                  <select value={d.tipo_desconto} onChange={e=>updDesconto(pi,di,'tipo_desconto',e.target.value)}>
-                    {Object.entries(DESCONTO_LABEL).map(([v,l])=><option key={v} value={v}>{l}</option>)}
-                  </select>
-                  <input type="number" step="0.01" value={d.valor} onChange={e=>updDesconto(pi,di,'valor',e.target.value)} placeholder="R$"/>
-                  <input value={d.observacoes||''} onChange={e=>updDesconto(pi,di,'observacoes',e.target.value)} placeholder="Obs opcional"/>
-                  <button className="btn-icon" onClick={()=>removeDesconto(pi,di)}>x</button>
-                </div>
-              ))}
-            </div>
-
-            <div className="divider"/>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
               <div className="card-title" style={{margin:0}}>Pratos do pedido</div>
               <button className="btn btn-outline btn-sm" onClick={()=>addItem(pi)}>+ Adicionar prato</button>
@@ -3491,6 +3503,24 @@ function VendaLote({ receitas, precos, produtos, unidades, sb, toast, onSuccess 
               ))}
             </div>
 
+            <div className="card" style={{background:'var(--card-2)',padding:12,marginTop:10,marginBottom:10}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,marginBottom:8}}>
+                <div className="card-title" style={{margin:0}}>Descontos do pedido</div>
+                <button className="btn btn-outline btn-sm" onClick={()=>addDesconto(pi)}>+ Desconto</button>
+              </div>
+              {(p.descontos||[]).length === 0 && <div className="muted" style={{fontSize:12}}>Sem taxa, comissao ou promocao neste pedido.</div>}
+              {(p.descontos||[]).map((d,di) => (
+                <div className="row-item" key={di} style={{display:'grid',gridTemplateColumns:'minmax(160px,1.4fr) 120px minmax(140px,1fr) auto',gap:8,alignItems:'center',marginTop:6}}>
+                  <select value={d.tipo_desconto} onChange={e=>updDesconto(pi,di,'tipo_desconto',e.target.value)}>
+                    {Object.entries(DESCONTO_LABEL).map(([v,l])=><option key={v} value={v}>{l}</option>)}
+                  </select>
+                  <input type="number" step="0.01" value={d.valor} onChange={e=>updDesconto(pi,di,'valor',e.target.value)} placeholder="R$"/>
+                  <input value={d.observacoes||''} onChange={e=>updDesconto(pi,di,'observacoes',e.target.value)} placeholder="Obs opcional"/>
+                  <button className="btn-icon" onClick={()=>removeDesconto(pi,di)}>x</button>
+                </div>
+              ))}
+            </div>
+
             <div className="preview-line" style={{display:'flex',justifyContent:'space-between',flexWrap:'wrap',gap:10}}>
               <span>Bruto: <b className="green">{fmtR$(bruto)}</b></span>
               <span>Descontos: <b className="red">{fmtR$(desc)}</b></span>
@@ -3533,7 +3563,7 @@ function VendaLote({ receitas, precos, produtos, unidades, sb, toast, onSuccess 
             return (
               <div key={vi} style={{marginBottom:14,padding:10,background:'var(--card-2)',borderRadius:8}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
-                  <b>📦 Pedido #{vi+1} — {CANAL_LABEL[v.canal_venda]||v.canal_venda} — {fmtDate(v.data_movimentacao)}</b>
+                  <b>📦 Pedido #{vi+1}{v.numero_pedido?` — iFood #${v.numero_pedido}`:''} — {CANAL_LABEL[v.canal_venda]||v.canal_venda} — {fmtDate(v.data_movimentacao)}</b>
                   <span>Bruto <b className="green">{fmtR$(bruto)}</b> · Desc <b className="red">{fmtR$(desc)}</b> · Liq <b className="blue">{fmtR$(Math.max(0,bruto-desc))}</b></span>
                 </div>
                 <table>
@@ -3969,6 +3999,7 @@ function VendaHistorico({ sb, receitas, precos, produtos, unidades, toast, refre
   const [confirmDeleteCusto, setConfirmDeleteCusto] = useState(null);
   const [loading, setLoading] = useState(false);
   const [expandedPedidos, setExpandedPedidos] = useState(new Set());
+  const [diaAtivoIdx, setDiaAtivoIdx] = useState(0);
   const chartLineRef = useRef(null);
   const chartPieRef = useRef(null);
 
@@ -3987,7 +4018,7 @@ function VendaHistorico({ sb, receitas, precos, produtos, unidades, toast, refre
       id, venda_id, quantidade, valor_unitario, valor_total, desconto_item, cmv_total, custo_extra_total, lucro_bruto, receita_id,
       tipo_item, venda_item_pai_id, peso_real_gramas, observacoes, cancelado, cancelado_em, cancelamento_motivo,
       receitas_ficha_tecnica(nome),
-      vendas!inner(canal_venda, desconto_plataforma, valor_bruto, valor_liquido, movimentacao_id, movimentacoes!inner(data_movimentacao))
+      vendas!inner(canal_venda, desconto_plataforma, valor_bruto, valor_liquido, numero_pedido, movimentacao_id, movimentacoes!inner(data_movimentacao))
     `).gte('vendas.movimentacoes.data_movimentacao', from.toISOString()).lte('vendas.movimentacoes.data_movimentacao', to.toISOString());
     if (filtroPrato) q = q.eq('receita_id', filtroPrato);
     if (filtroCanal) q = q.eq('vendas.canal_venda', filtroCanal);
@@ -4105,6 +4136,7 @@ function VendaHistorico({ sb, receitas, precos, produtos, unidades, toast, refre
       if (!porVenda[p.venda_id]) {
         porVenda[p.venda_id] = {
           venda_id: p.venda_id,
+          numero_pedido: p.vendas?.numero_pedido || null,
           data_movimentacao: p.vendas?.movimentacoes?.data_movimentacao,
           canal_venda: p.vendas?.canal_venda,
           valor_bruto: Number(p.vendas?.valor_bruto || 0),
@@ -4117,6 +4149,40 @@ function VendaHistorico({ sb, receitas, precos, produtos, unidades, toast, refre
     });
     return Object.values(porVenda).sort((a,b) => (b.data_movimentacao||'').localeCompare(a.data_movimentacao||'') || (b.venda_id||'').localeCompare(a.venda_id||''));
   }, [rows, custosByItem, descontosByVenda]);
+
+  // Agrupa pedidos por dia (YYYY-MM-DD) para o carrossel
+  const diasAgrupados = useMemo(() => {
+    const m = {};
+    pedidosAgrupados.forEach(ped => {
+      const d = (ped.data_movimentacao||'').slice(0,10);
+      if (!d) return;
+      if (!m[d]) m[d] = { data:d, pedidos:[], bruto:0, descontos:0, cmv:0, lucroReal:0 };
+      const totalDescPed = sumBy(ped.descontos||[], 'valor');
+      const totalCmvPed = sumBy(ped.principais, p => Number(p.cmv_total||0)+Number(p.custo_extra_total||0)+sumBy(p.adicionais||[], a=>Number(a.cmv_total||0)+Number(a.custo_extra_total||0))+sumBy(p.custos_extras||[],'custo_total'));
+      m[d].pedidos.push(ped);
+      m[d].bruto    += Number(ped.valor_bruto||0);
+      m[d].descontos+= totalDescPed;
+      m[d].cmv      += totalCmvPed;
+      m[d].lucroReal+= Number(ped.valor_bruto||0) - totalDescPed - totalCmvPed;
+    });
+    return Object.values(m).sort((a,b) => b.data.localeCompare(a.data));
+  }, [pedidosAgrupados]);
+
+  // Reseta dia ativo quando os dados mudam
+  useEffect(() => { setDiaAtivoIdx(0); }, [periodo, custom, filtroPrato, filtroCanal]);
+  // Mantem o dia ativo dentro dos limites se a lista encurtar
+  useEffect(() => {
+    if (diaAtivoIdx >= diasAgrupados.length && diasAgrupados.length > 0) setDiaAtivoIdx(0);
+  }, [diasAgrupados.length]);
+
+  const diaAtivo = diasAgrupados[diaAtivoIdx];
+  function dataLabel(d) {
+    try {
+      const dt = new Date(d + 'T12:00:00');
+      const dias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+      return `${dias[dt.getDay()]}, ${fmtDate(d)}`;
+    } catch { return d; }
+  }
 
   useChart(chartLineRef, () => {
     if (porDia.length === 0) return null;
@@ -4143,6 +4209,134 @@ function VendaHistorico({ sb, receitas, precos, produtos, unidades, toast, refre
         <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(totalCMV)}</div><div className="stat-label">CMV + erros</div></div>
         <div className="stat-card tinted-blue"><div className={`stat-value ${totalLucro>=0?'green':'red'}`}>{fmtR$(totalLucro)}</div><div className="stat-label">Lucro bruto real</div></div>
       </div>
+
+      {/* Extrato diario - carrossel */}
+      <div className="card" style={{padding:0,overflow:'hidden'}}>
+        {loading && <div style={{padding:18}}><Skeleton rows={4}/></div>}
+        {!loading && diasAgrupados.length === 0 && <div className="empty" style={{padding:24,textAlign:'center'}}>Nenhuma venda no periodo</div>}
+        {!loading && diaAtivo && (
+          <Fragment>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'14px 16px',background:'var(--card-2)',borderBottom:'1px solid var(--border)'}}>
+              <button className="btn btn-outline" onClick={()=>setDiaAtivoIdx(i=>Math.min(i+1, diasAgrupados.length-1))} disabled={diaAtivoIdx >= diasAgrupados.length-1} title="Dia anterior">◂</button>
+              <div style={{textAlign:'center',flex:1}}>
+                <div style={{fontSize:18,fontWeight:700}}>📅 {dataLabel(diaAtivo.data)}</div>
+                <div className="muted" style={{fontSize:12,marginTop:2}}>{diaAtivo.pedidos.length} pedido{diaAtivo.pedidos.length===1?'':'s'} · dia {diaAtivoIdx+1} de {diasAgrupados.length}</div>
+              </div>
+              <button className="btn btn-outline" onClick={()=>setDiaAtivoIdx(i=>Math.max(i-1, 0))} disabled={diaAtivoIdx === 0} title="Próximo dia">▸</button>
+            </div>
+            <div className="stat-grid" style={{padding:14,marginBottom:0}}>
+              <div className="stat-card tinted-green"><div className="stat-value green">{fmtR$(diaAtivo.bruto)}</div><div className="stat-label">Faturamento bruto</div></div>
+              <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(diaAtivo.descontos)}</div><div className="stat-label">Desconto iFood</div></div>
+              <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(diaAtivo.cmv)}</div><div className="stat-label">CMV</div></div>
+              <div className="stat-card tinted-blue"><div className={`stat-value ${diaAtivo.lucroReal>=0?'green':'red'}`}>{fmtR$(diaAtivo.lucroReal)}</div><div className="stat-label">Lucro real</div></div>
+            </div>
+            <div style={{padding:'0 14px 14px',display:'flex',flexDirection:'column',gap:10}}>
+              {diaAtivo.pedidos.map(ped => {
+                const isOpen = expandedPedidos.has(ped.venda_id);
+                const totalDesc = sumBy(ped.descontos||[], 'valor');
+                const totalCmv = sumBy(ped.principais, p => Number(p.cmv_total||0)+Number(p.custo_extra_total||0)+sumBy(p.adicionais||[], a=>Number(a.cmv_total||0)+Number(a.custo_extra_total||0))+sumBy(p.custos_extras||[],'custo_total'));
+                const qtdPratos = ped.principais.length;
+                const qtdAdicionais = sumBy(ped.principais, p => (p.adicionais||[]).length);
+                const algumCancelado = ped.principais.some(p => p.cancelado || (p.adicionais||[]).some(a=>a.cancelado));
+                return (
+                  <div className="card" key={ped.venda_id} style={{padding:0,background:algumCancelado?'var(--red-bg)':'var(--card)'}}>
+                    <div onClick={()=>togglePedido(ped.venda_id)} style={{cursor:'pointer',padding:'12px 14px',display:'flex',flexWrap:'wrap',gap:10,alignItems:'center',justifyContent:'space-between'}}>
+                      <div style={{display:'flex',gap:14,alignItems:'center',flexWrap:'wrap'}}>
+                        <span style={{fontSize:18}}>{isOpen?'▾':'▸'}</span>
+                        <b>📦 {ped.numero_pedido?`iFood #${ped.numero_pedido}`:'Pedido s/n'}</b>
+                        <span className={`badge badge-blue`}>{CANAL_LABEL[ped.canal_venda]||ped.canal_venda}</span>
+                        <span className="muted">{qtdPratos} prato{qtdPratos===1?'':'s'}{qtdAdicionais>0?` + ${qtdAdicionais} adicional${qtdAdicionais===1?'':'is'}`:''}</span>
+                      </div>
+                      <div style={{display:'flex',gap:14,alignItems:'center'}}>
+                        <span>Bruto <b className="green">{fmtR$(ped.valor_bruto)}</b></span>
+                        <span>Desc <b className="red">{fmtR$(totalDesc)}</b></span>
+                        <span>CMV <b className="red">{fmtR$(totalCmv)}</b></span>
+                        <span>Lucro real <b className={(ped.valor_bruto - totalDesc - totalCmv)>=0?'green':'red'}>{fmtR$(ped.valor_bruto - totalDesc - totalCmv)}</b></span>
+                      </div>
+                    </div>
+                    {isOpen && (
+                      <div style={{padding:'0 14px 14px'}}>
+                        {(ped.descontos||[]).length > 0 && (
+                          <div className="muted" style={{fontSize:12,padding:'8px 0',borderTop:'1px solid var(--border)'}}>
+                            <b>Descontos do pedido:</b>{' '}
+                            {ped.descontos.map((d,i)=>(
+                              <span key={i} style={{marginRight:10}}>
+                                {DESCONTO_LABEL[d.tipo_desconto]||d.tipo_desconto} <b className="red">{fmtR$(d.valor)}</b>
+                                {d.observacoes && <span style={{marginLeft:4,opacity:.7}}>({d.observacoes})</span>}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <div className="table-wrap" style={{marginTop:4}}>
+                          <table>
+                            <thead><tr><th>Prato / Item</th><th>Tipo / Peso</th><th>Qtd</th><th>Preco</th><th>Total</th><th>Desc.</th><th>CMV</th><th>Lucro</th><th>Acoes</th></tr></thead>
+                            <tbody>
+                              {ped.principais.map(r => <Fragment key={r.id}>
+                                <tr className={r.cancelado?'row-red':''}>
+                                  <td><b>{r.receitas_ficha_tecnica?.nome}</b>{r.observacoes && <div className="muted" style={{fontSize:11}}>{r.observacoes}</div>}</td>
+                                  <td><span className={`badge badge-${r.cancelado?'red':'blue'}`}>{r.cancelado?'Cancelado':'Principal'}</span>{r.peso_real_gramas != null && <div className="muted" style={{fontSize:11}}>Peso: {fmt(r.peso_real_gramas,0)}g</div>}</td>
+                                  <td>{fmt(r.quantidade,0)}</td>
+                                  <td>{fmtR$(r.valor_unitario)}</td>
+                                  <td className={r.cancelado?'red':'green'}>{fmtR$(r.valor_total)}</td>
+                                  <td className="red">{fmtR$(r.desconto_item)}</td>
+                                  <td className="red">{fmtR$(Number(r.cmv_total||0)+Number(r.custo_extra_total||0))}</td>
+                                  <td className={Number(r.lucro_bruto)>=0?'green':'red'}>{fmtR$(r.lucro_bruto)}</td>
+                                  <td><div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                                    <EditRowButton onClick={()=>setEditing(r)}/>
+                                    <button className="btn btn-outline btn-sm" onClick={()=>setAddingOpcional(r)}>+ Opcional</button>
+                                    <button className="btn btn-outline btn-sm" onClick={()=>setAddingCusto(r)}>+ Erro</button>
+                                    {!r.cancelado && <button className="btn btn-danger btn-sm" onClick={()=>setConfirmCancel(r)}>Zerar receita</button>}
+                                    <DeleteRowButton onClick={()=>setConfirmDeleteItem(r)}/>
+                                  </div></td>
+                                </tr>
+                                {(r.adicionais||[]).map(ad => (
+                                  <tr key={ad.id} className={ad.cancelado?'row-red':''}>
+                                    <td style={{paddingLeft:24}}>↳ {ad.receitas_ficha_tecnica?.nome}{ad.observacoes && <div className="muted" style={{fontSize:11}}>{ad.observacoes}</div>}</td>
+                                    <td><span className={`badge badge-${ad.cancelado?'red':ad.tipo_item==='cortesia'?'yellow':'green'}`}>{ad.cancelado?'Cancelado':ad.tipo_item==='cortesia'?'Cortesia':'Adicional'}</span>{ad.peso_real_gramas != null && <div className="muted" style={{fontSize:11}}>Peso: {fmt(ad.peso_real_gramas,0)}g</div>}</td>
+                                    <td>{fmt(ad.quantidade,0)}</td>
+                                    <td>{fmtR$(ad.valor_unitario)}</td>
+                                    <td className={ad.tipo_item==='cortesia'||ad.cancelado?'yellow':'green'}>{fmtR$(ad.valor_total)}</td>
+                                    <td className="red">{fmtR$(ad.desconto_item)}</td>
+                                    <td className="red">{fmtR$(Number(ad.cmv_total||0)+Number(ad.custo_extra_total||0))}</td>
+                                    <td className={Number(ad.lucro_bruto)>=0?'green':'red'}>{fmtR$(ad.lucro_bruto)}</td>
+                                    <td><div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                                      <EditRowButton onClick={()=>setEditing(ad)}/>
+                                      {!ad.cancelado && <button className="btn btn-danger btn-sm" onClick={()=>setConfirmCancel(ad)}>Zerar receita</button>}
+                                      <DeleteRowButton onClick={()=>setConfirmDeleteItem(ad)}/>
+                                    </div></td>
+                                  </tr>
+                                ))}
+                                {(r.custos_extras||[]).map(ce => (
+                                  <tr key={ce.id}>
+                                    <td style={{paddingLeft:24}}>↳ {ce.produtos?.nome}{ce.observacoes && <div className="muted" style={{fontSize:11}}>{ce.observacoes}</div>}</td>
+                                    <td><span className="badge badge-yellow">Erro/custo</span></td>
+                                    <td>{fmtQtyValueUnit(ce.quantidade, ce.unidades)}</td>
+                                    <td className="muted">--</td>
+                                    <td className="muted">--</td>
+                                    <td className="muted">--</td>
+                                    <td className="red">{fmtR$(ce.custo_total)}</td>
+                                    <td className="red">-{fmtR$(ce.custo_total)}</td>
+                                    <td><DeleteRowButton onClick={()=>setConfirmDeleteCusto(ce)}/></td>
+                                  </tr>
+                                ))}
+                              </Fragment>)}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div style={{display:'flex',justifyContent:'flex-end',gap:6,marginTop:8,flexWrap:'wrap'}}>
+                          <button className="btn btn-outline btn-sm" onClick={()=>setEditingDescontos(ped.principais[0])}>Editar descontos do pedido</button>
+                          <button className="btn btn-danger btn-sm" onClick={()=>setConfirmDelete(ped.principais[0])}>Excluir pedido inteiro</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </Fragment>
+        )}
+      </div>
+
       {ranking.length > 0 && (
         <div className="card" style={{background:'var(--card-2)'}}>
           <div className="card-title">Ranking por prato/adicional</div>
@@ -4155,112 +4349,6 @@ function VendaHistorico({ sb, receitas, precos, produtos, unidades, toast, refre
         </div>
       )}
       {porDia.length > 0 && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}><div className="card" style={{background:'var(--card-2)'}}><div className="card-title">Vendas por dia</div><div className="chart-wrap"><canvas ref={chartLineRef}/></div></div><div className="card" style={{background:'var(--card-2)'}}><div className="card-title">Receita por prato/adicional</div><div className="chart-wrap"><canvas ref={chartPieRef}/></div></div></div>}
-      <div style={{marginTop:14,display:'flex',flexDirection:'column',gap:10}}>
-        {loading && <Skeleton rows={4}/>}
-        {!loading && pedidosAgrupados.length === 0 && <div className="empty" style={{padding:18,textAlign:'center'}}>Nenhuma venda no periodo</div>}
-        {!loading && pedidosAgrupados.map(ped => {
-          const isOpen = expandedPedidos.has(ped.venda_id);
-          const totalDesc = sumBy(ped.descontos||[], 'valor');
-          const totalCmv = sumBy(ped.principais, p => Number(p.cmv_total||0)+Number(p.custo_extra_total||0)+sumBy(p.adicionais||[], a=>Number(a.cmv_total||0)+Number(a.custo_extra_total||0))+sumBy(p.custos_extras||[],'custo_total'));
-          const qtdPratos = ped.principais.length;
-          const qtdAdicionais = sumBy(ped.principais, p => (p.adicionais||[]).length);
-          const algumCancelado = ped.principais.some(p => p.cancelado || (p.adicionais||[]).some(a=>a.cancelado));
-          return (
-            <div className="card" key={ped.venda_id} style={{padding:0,background:algumCancelado?'var(--red-bg)':'var(--card-2)'}}>
-              <div onClick={()=>togglePedido(ped.venda_id)} style={{cursor:'pointer',padding:'12px 14px',display:'flex',flexWrap:'wrap',gap:10,alignItems:'center',justifyContent:'space-between'}}>
-                <div style={{display:'flex',gap:14,alignItems:'center',flexWrap:'wrap'}}>
-                  <span style={{fontSize:18}}>{isOpen?'▾':'▸'}</span>
-                  <b>📦 {fmtDate(ped.data_movimentacao)}</b>
-                  <span className={`badge badge-blue`}>{CANAL_LABEL[ped.canal_venda]||ped.canal_venda}</span>
-                  <span className="muted">{qtdPratos} prato{qtdPratos===1?'':'s'}{qtdAdicionais>0?` + ${qtdAdicionais} adicional${qtdAdicionais===1?'':'is'}`:''}</span>
-                  {totalDesc > 0 && <span className="muted" style={{fontSize:12}}>Desc: <b className="red">{fmtR$(totalDesc)}</b></span>}
-                </div>
-                <div style={{display:'flex',gap:14,alignItems:'center'}}>
-                  <span>Bruto <b className="green">{fmtR$(ped.valor_bruto)}</b></span>
-                  <span>Desc <b className="red">{fmtR$(totalDesc)}</b></span>
-                  <span>CMV <b className="red">{fmtR$(totalCmv)}</b></span>
-                  <span>Lucro real <b className={(ped.valor_bruto - totalDesc - totalCmv)>=0?'green':'red'}>{fmtR$(ped.valor_bruto - totalDesc - totalCmv)}</b></span>
-                </div>
-              </div>
-              {isOpen && (
-                <div style={{padding:'0 14px 14px'}}>
-                  {(ped.descontos||[]).length > 0 && (
-                    <div className="muted" style={{fontSize:12,padding:'8px 0',borderTop:'1px solid var(--border)'}}>
-                      <b>Descontos do pedido:</b>{' '}
-                      {ped.descontos.map((d,i)=>(
-                        <span key={i} style={{marginRight:10}}>
-                          {DESCONTO_LABEL[d.tipo_desconto]||d.tipo_desconto} <b className="red">{fmtR$(d.valor)}</b>
-                          {d.observacoes && <span style={{marginLeft:4,opacity:.7}}>({d.observacoes})</span>}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="table-wrap" style={{marginTop:4}}>
-                    <table>
-                      <thead><tr><th>Prato / Item</th><th>Tipo / Peso</th><th>Qtd</th><th>Preco</th><th>Total</th><th>Desc.</th><th>CMV</th><th>Lucro</th><th>Acoes</th></tr></thead>
-                      <tbody>
-                        {ped.principais.map(r => <Fragment key={r.id}>
-                          <tr className={r.cancelado?'row-red':''}>
-                            <td><b>{r.receitas_ficha_tecnica?.nome}</b>{r.observacoes && <div className="muted" style={{fontSize:11}}>{r.observacoes}</div>}</td>
-                            <td><span className={`badge badge-${r.cancelado?'red':'blue'}`}>{r.cancelado?'Cancelado':'Principal'}</span>{r.peso_real_gramas != null && <div className="muted" style={{fontSize:11}}>Peso: {fmt(r.peso_real_gramas,0)}g</div>}</td>
-                            <td>{fmt(r.quantidade,0)}</td>
-                            <td>{fmtR$(r.valor_unitario)}</td>
-                            <td className={r.cancelado?'red':'green'}>{fmtR$(r.valor_total)}</td>
-                            <td className="red">{fmtR$(r.desconto_item)}</td>
-                            <td className="red">{fmtR$(Number(r.cmv_total||0)+Number(r.custo_extra_total||0))}</td>
-                            <td className={Number(r.lucro_bruto)>=0?'green':'red'}>{fmtR$(r.lucro_bruto)}</td>
-                            <td><div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                              <EditRowButton onClick={()=>setEditing(r)}/>
-                              <button className="btn btn-outline btn-sm" onClick={()=>setAddingOpcional(r)}>+ Opcional</button>
-                              <button className="btn btn-outline btn-sm" onClick={()=>setAddingCusto(r)}>+ Erro</button>
-                              {!r.cancelado && <button className="btn btn-danger btn-sm" onClick={()=>setConfirmCancel(r)}>Zerar receita</button>}
-                              <DeleteRowButton onClick={()=>setConfirmDeleteItem(r)}/>
-                            </div></td>
-                          </tr>
-                          {(r.adicionais||[]).map(ad => (
-                            <tr key={ad.id} className={ad.cancelado?'row-red':''}>
-                              <td style={{paddingLeft:24}}>↳ {ad.receitas_ficha_tecnica?.nome}{ad.observacoes && <div className="muted" style={{fontSize:11}}>{ad.observacoes}</div>}</td>
-                              <td><span className={`badge badge-${ad.cancelado?'red':ad.tipo_item==='cortesia'?'yellow':'green'}`}>{ad.cancelado?'Cancelado':ad.tipo_item==='cortesia'?'Cortesia':'Adicional'}</span>{ad.peso_real_gramas != null && <div className="muted" style={{fontSize:11}}>Peso: {fmt(ad.peso_real_gramas,0)}g</div>}</td>
-                              <td>{fmt(ad.quantidade,0)}</td>
-                              <td>{fmtR$(ad.valor_unitario)}</td>
-                              <td className={ad.tipo_item==='cortesia'||ad.cancelado?'yellow':'green'}>{fmtR$(ad.valor_total)}</td>
-                              <td className="red">{fmtR$(ad.desconto_item)}</td>
-                              <td className="red">{fmtR$(Number(ad.cmv_total||0)+Number(ad.custo_extra_total||0))}</td>
-                              <td className={Number(ad.lucro_bruto)>=0?'green':'red'}>{fmtR$(ad.lucro_bruto)}</td>
-                              <td><div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                                <EditRowButton onClick={()=>setEditing(ad)}/>
-                                {!ad.cancelado && <button className="btn btn-danger btn-sm" onClick={()=>setConfirmCancel(ad)}>Zerar receita</button>}
-                                <DeleteRowButton onClick={()=>setConfirmDeleteItem(ad)}/>
-                              </div></td>
-                            </tr>
-                          ))}
-                          {(r.custos_extras||[]).map(ce => (
-                            <tr key={ce.id}>
-                              <td style={{paddingLeft:24}}>↳ {ce.produtos?.nome}{ce.observacoes && <div className="muted" style={{fontSize:11}}>{ce.observacoes}</div>}</td>
-                              <td><span className="badge badge-yellow">Erro/custo</span></td>
-                              <td>{fmtQtyValueUnit(ce.quantidade, ce.unidades)}</td>
-                              <td className="muted">--</td>
-                              <td className="muted">--</td>
-                              <td className="muted">--</td>
-                              <td className="red">{fmtR$(ce.custo_total)}</td>
-                              <td className="red">-{fmtR$(ce.custo_total)}</td>
-                              <td><DeleteRowButton onClick={()=>setConfirmDeleteCusto(ce)}/></td>
-                            </tr>
-                          ))}
-                        </Fragment>)}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div style={{display:'flex',justifyContent:'flex-end',gap:6,marginTop:8,flexWrap:'wrap'}}>
-                    <button className="btn btn-outline btn-sm" onClick={()=>setEditingDescontos(ped.principais[0])}>Editar descontos do pedido</button>
-                    <button className="btn btn-danger btn-sm" onClick={()=>setConfirmDelete(ped.principais[0])}>Excluir pedido inteiro</button>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
       <EditVendaModal open={!!editing} onClose={()=>setEditing(null)} row={editing} receitas={receitas} sb={sb} toast={toast} onSaved={load}/>
       <EditVendaDescontosModal open={!!editingDescontos} onClose={()=>setEditingDescontos(null)} row={editingDescontos} sb={sb} toast={toast} onSaved={load}/>
       <AddVendaOpcionalModal open={!!addingOpcional} onClose={()=>setAddingOpcional(null)} parent={addingOpcional} receitas={receitas} precos={precos} sb={sb} toast={toast} onSaved={load}/>
