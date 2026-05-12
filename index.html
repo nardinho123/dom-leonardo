@@ -380,7 +380,8 @@ const sumBy = (arr,fn) => arr.reduce((s,x)=>{
 },0);
 const groupBy = (arr,fn) => arr.reduce((m,x)=>{ const k=fn(x); (m[k]=m[k]||[]).push(x); return m; },{});
 
-const CANAL_LABEL = { ifood:'iFood', balcao:'Balcão', rappi:'Rappi', delivery_proprio:'Delivery próprio', outros:'Outros' };
+const CANAL_LABEL = { ifood:'iFood', '99food':'99Food', whatsapp:'WhatsApp', balcao:'Balcão', rappi:'Rappi', delivery_proprio:'Delivery próprio', outros:'Outros' };
+const CANAL_COR   = { ifood:'red',   '99food':'yellow',  whatsapp:'green',    balcao:'blue',    rappi:'blue',  delivery_proprio:'blue',         outros:'blue'    };
 const DESCONTO_LABEL = { pagamento_online:'Taxa pagamento online', promocao:'Promocao', comissao_ifood:'Comissao iFood' };
 const MOTIVO_PERDA = ['vencimento','preparo_errado','armazenamento','quebra','outros'];
 const MOTIVO_LABEL = { vencimento:'Vencimento', preparo_errado:'Preparo errado', armazenamento:'Armazenamento', quebra:'Quebra', outros:'Outros' };
@@ -3385,10 +3386,11 @@ function VendaLote({ receitas, precos, produtos, unidades, sb, toast, onSuccess 
   function pedidoTemPrato(p) { return (p.itens||[]).some(it => it.receita_id && parseDecimal(it.quantidade) > 0 && it.valor_unitario !== ''); }
 
   function confirmar() {
-    // valida data obrigatoria nos pedidos que ja tem prato
+    // valida data e numero_pedido obrigatorios nos pedidos que ja tem prato
     for (let i = 0; i < pedidos.length; i++) {
-      if (pedidoTemPrato(pedidos[i]) && !pedidos[i].data) {
-        return toast(`Preencha a data do Pedido #${i+1}`,'error');
+      if (pedidoTemPrato(pedidos[i])) {
+        if (!pedidos[i].data) return toast(`Preencha a data do Pedido #${i+1}`,'error');
+        if (!pedidos[i].numero_pedido || !pedidos[i].numero_pedido.trim()) return toast(`Preencha o nº do pedido do Pedido #${i+1}`,'error');
       }
     }
     const payload = buildPayload();
@@ -3423,14 +3425,14 @@ function VendaLote({ receitas, precos, produtos, unidades, sb, toast, onSuccess 
         return (
           <div className="card" key={pi} style={{marginBottom:14}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,marginBottom:10}}>
-              <div className="card-title" style={{margin:0}}>📦 Pedido #{pi+1}{p.numero_pedido && <span className="muted" style={{fontWeight:500,marginLeft:8}}>— iFood #{p.numero_pedido}</span>}</div>
+              <div className="card-title" style={{margin:0}}>📦 Pedido #{pi+1}{p.numero_pedido && <span className={`muted`} style={{fontWeight:500,marginLeft:8}}>— <span className={CANAL_COR[p.canal]||''}>{CANAL_LABEL[p.canal]||p.canal} #{p.numero_pedido}</span></span>}</div>
               <button className="btn btn-outline btn-sm" onClick={()=>removePedido(pi)} title="Remover pedido">x Remover</button>
             </div>
 
             <div style={{display:'grid',gridTemplateColumns:'1.2fr 1fr 1fr 0.8fr',gap:10,marginBottom:10}}>
               <div className="form-group">
-                <label>Nº do pedido (iFood)</label>
-                <input value={p.numero_pedido} onChange={e=>updPedido(pi,'numero_pedido',e.target.value)} placeholder="ex: 4523"/>
+                <label>Nº do pedido <span className="red">*</span></label>
+                <input value={p.numero_pedido} onChange={e=>updPedido(pi,'numero_pedido',e.target.value)} placeholder="ex: 4523" style={!p.numero_pedido && pedidoTemPrato(p) ? {borderColor:'var(--red)'} : {}}/>
               </div>
               <div className="form-group">
                 <label>Data <span className="red">*</span></label>
@@ -3563,7 +3565,7 @@ function VendaLote({ receitas, precos, produtos, unidades, sb, toast, onSuccess 
             return (
               <div key={vi} style={{marginBottom:14,padding:10,background:'var(--card-2)',borderRadius:8}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
-                  <b>📦 Pedido #{vi+1}{v.numero_pedido?` — iFood #${v.numero_pedido}`:''} — {CANAL_LABEL[v.canal_venda]||v.canal_venda} — {fmtDate(v.data_movimentacao)}</b>
+                  <b>📦 Pedido #{vi+1}{v.numero_pedido?` — #${v.numero_pedido}`:''} — <span className={CANAL_COR[v.canal_venda]||''}>{CANAL_LABEL[v.canal_venda]||v.canal_venda}</span> — {fmtDate(v.data_movimentacao)}</b>
                   <span>Bruto <b className="green">{fmtR$(bruto)}</b> · Desc <b className="red">{fmtR$(desc)}</b> · Liq <b className="blue">{fmtR$(Math.max(0,bruto-desc))}</b></span>
                 </div>
                 <table>
@@ -4243,8 +4245,8 @@ function VendaHistorico({ sb, receitas, precos, produtos, unidades, toast, refre
                     <div onClick={()=>togglePedido(ped.venda_id)} style={{cursor:'pointer',padding:'12px 14px',display:'flex',flexWrap:'wrap',gap:10,alignItems:'center',justifyContent:'space-between'}}>
                       <div style={{display:'flex',gap:14,alignItems:'center',flexWrap:'wrap'}}>
                         <span style={{fontSize:18}}>{isOpen?'▾':'▸'}</span>
-                        <b>📦 {ped.numero_pedido?`iFood #${ped.numero_pedido}`:'Pedido s/n'}</b>
-                        <span className={`badge badge-blue`}>{CANAL_LABEL[ped.canal_venda]||ped.canal_venda}</span>
+                        <b>📦 #{ped.numero_pedido || 's/n'}</b>
+                        <span className={`badge badge-${CANAL_COR[ped.canal_venda]||'blue'}`}>{CANAL_LABEL[ped.canal_venda]||ped.canal_venda}</span>
                         <span className="muted">{qtdPratos} prato{qtdPratos===1?'':'s'}{qtdAdicionais>0?` + ${qtdAdicionais} adicional${qtdAdicionais===1?'':'is'}`:''}</span>
                       </div>
                       <div style={{display:'flex',gap:14,alignItems:'center'}}>
