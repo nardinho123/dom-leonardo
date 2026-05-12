@@ -4177,8 +4177,9 @@ function VendaHistorico({ sb, receitas, precos, produtos, unidades, toast, refre
                 </div>
                 <div style={{display:'flex',gap:14,alignItems:'center'}}>
                   <span>Bruto <b className="green">{fmtR$(ped.valor_bruto)}</b></span>
+                  <span>Desc <b className="red">{fmtR$(totalDesc)}</b></span>
                   <span>CMV <b className="red">{fmtR$(totalCmv)}</b></span>
-                  <span>Liq <b className={ped.valor_liquido>=0?'blue':'red'}>{fmtR$(ped.valor_liquido)}</b></span>
+                  <span>Lucro real <b className={(ped.valor_bruto - totalDesc - totalCmv)>=0?'green':'red'}>{fmtR$(ped.valor_bruto - totalDesc - totalCmv)}</b></span>
                 </div>
               </div>
               {isOpen && (
@@ -6880,30 +6881,50 @@ function CadastroModal({ modal, onClose, onSaved, sb, toast, categorias, unidade
   );
 }
 
+const CONTAS_FIXAS_MES = [
+  { label:'Vó',            valor: 1000 },
+  { label:'Amanda',        valor:  500 },
+  { label:'Duda',          valor:  500 },
+  { label:'Carro',         valor: 1100 },
+  { label:'Venvanse',      valor:  500 },
+  { label:'Seguro carro',  valor:  369 },
+  { label:'Gastos extras', valor:  300 },
+  { label:'Cigarro/outros',valor:  500 },
+  { label:'Gás',           valor:  125 },
+  { label:'Água',          valor:  100 },
+];
+const META_BREAKEVEN_MES = CONTAS_FIXAS_MES.reduce((s,c)=>s+c.valor, 0);
+
 function TelaDashboardBackend({ refreshKey }) {
   const sb = getClient();
   const [periodo, setPeriodo] = useState('hoje');
   const [custom, setCustom] = useState({});
   const [data, setData] = useState(null);
   const [qtdPratos, setQtdPratos] = useState(0);
+  const [lucroMes, setLucroMes] = useState(0);
+  const [showContas, setShowContas] = useState(false);
   const [loading, setLoading] = useState(true);
   const chartRef = useRef(null);
 
   async function load() {
     setLoading(true);
     const { from, to } = periodToDates(periodo, custom);
-    const [resp, pratos] = await Promise.all([
+    const hoje = new Date();
+    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const [resp, pratos, mesAtual] = await Promise.all([
       sb.rpc('rpc_dashboard_financeiro_v1', { p_inicio: from.toISOString(), p_fim: to.toISOString() }),
       sb.from('vendas_itens')
         .select('quantidade,tipo_item,cancelado,vendas!inner(movimentacao_id,movimentacoes!inner(data_movimentacao))', { count:'exact' })
         .eq('tipo_item','principal')
         .eq('cancelado', false)
         .gte('vendas.movimentacoes.data_movimentacao', from.toISOString())
-        .lte('vendas.movimentacoes.data_movimentacao', to.toISOString())
+        .lte('vendas.movimentacoes.data_movimentacao', to.toISOString()),
+      sb.rpc('rpc_dashboard_financeiro_v1', { p_inicio: inicioMes.toISOString(), p_fim: hoje.toISOString() })
     ]);
     if (!resp.error) setData(resp.data);
     const totalQtd = (pratos.data||[]).reduce((acc,r)=>acc + Number(r.quantidade||0), 0);
     setQtdPratos(totalQtd);
+    if (!mesAtual.error) setLucroMes(Number(mesAtual.data?.cards?.lucro_pos_taxas_cmv || 0));
     setLoading(false);
   }
   useEffect(() => { load(); }, [periodo, custom, refreshKey]);
@@ -6913,6 +6934,18 @@ function TelaDashboardBackend({ refreshKey }) {
   const foodCost = Number(cards.food_cost_percentual || 0);
   const custosExtras = Number(cards.custos_fixos_diluidos || 0) + Number(cards.custos_variaveis_periodo || 0);
   const custoExtraPorPrato = qtdPratos > 0 ? (custosExtras / qtdPratos) : 0;
+
+  // KPIs principais alinhados com Historico de Vendas
+  const fatBruto      = Number(cards.receita_bruta || 0);
+  const taxasDesc     = Number(cards.taxas_plataforma || 0);
+  const cmvDash       = Number(cards.cmv || 0);
+  const lucroRealKpi  = Number(cards.lucro_pos_taxas_cmv || 0); // bruto - taxas - cmv
+
+  // Breakeven — sempre olha o MES ATUAL inteiro
+  const breakevenPct  = META_BREAKEVEN_MES > 0 ? (lucroMes / META_BREAKEVEN_MES) * 100 : 0;
+  const faltaMeta     = Math.max(0, META_BREAKEVEN_MES - lucroMes);
+  const corBarra      = breakevenPct >= 100 ? 'var(--green)' : breakevenPct >= 50 ? 'var(--yellow)' : 'var(--red)';
+  const corTexto      = breakevenPct >= 100 ? 'green' : breakevenPct >= 50 ? 'yellow' : 'red';
 
   useChart(chartRef, () => {
     if (!serie.length) return null;
@@ -6948,15 +6981,62 @@ function TelaDashboardBackend({ refreshKey }) {
       <DatePeriodFilter value={periodo} onChange={setPeriodo} custom={custom} onCustomChange={setCustom}/>
 
       <div className="stat-grid">
-        <div className="stat-card tinted-green"><div className="stat-value green">{fmtR$(cards.receita_bruta)}</div><div className="stat-label">Receita bruta</div><div className="stat-sub">Tudo que vendeu no filtro</div></div>
-        <div className="stat-card tinted-blue"><div className="stat-value blue">{fmtR$(cards.dinheiro_conta)}</div><div className="stat-label">Vai cair na conta</div><div className="stat-sub">Receita menos taxas/descontos</div></div>
-        <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(cards.cmv)}</div><div className="stat-label">CMV das vendas</div><div className="stat-sub">Food cost {cards.receita_bruta>0?fmtPct(foodCost):'--'}</div></div>
-        <div className="stat-card tinted-blue"><div className={`stat-value ${Number(cards.lucro_pos_taxas_cmv||0)>=0?'green':'red'}`}>{fmtR$(cards.lucro_pos_taxas_cmv)}</div><div className="stat-label">Lucro pos taxas + CMV</div><div className="stat-sub">O numero operacional mais rapido</div></div>
-        <div className="stat-card tinted-yellow"><div className="stat-value yellow">{fmtR$(cards.custos_fixos_diluidos)}</div><div className="stat-label">Custos fixos diluidos</div><div className="stat-sub">Rateado pelos dias do filtro</div></div>
-        <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(cards.custos_variaveis_mes)}</div><div className="stat-label">Custos variaveis do mes</div><div className="stat-sub">Perdas/ajustes no periodo: {fmtR$(cards.custos_variaveis_periodo)}</div></div>
-        <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(cards.taxas_plataforma)}</div><div className="stat-label">Taxas de plataforma</div><div className="stat-sub">Comissao, pagamento online e promocao</div></div>
-        <div className="stat-card tinted-blue"><div className={`stat-value ${Number(cards.lucro_real||0)>=0?'green':'red'}`}>{fmtR$(cards.lucro_real)}</div><div className="stat-label">Lucro real</div><div className="stat-sub">Conta - CMV - fixos - variaveis</div></div>
-        <div className="stat-card tinted-yellow"><div className="stat-value yellow">{fmtR$(custoExtraPorPrato)}</div><div className="stat-label">Custo extra por prato</div><div className="stat-sub">{qtdPratos} prato(s) · {fmtR$(custosExtras)} de fixos + perdas</div></div>
+        <div className="stat-card tinted-green"><div className="stat-value green">{fmtR$(fatBruto)}</div><div className="stat-label">Faturamento bruto</div><div className="stat-sub">Tudo que vendeu no filtro</div></div>
+        <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(taxasDesc)}</div><div className="stat-label">Descontos e taxas</div><div className="stat-sub">Comissao, pg online e promocao</div></div>
+        <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(cmvDash)}</div><div className="stat-label">CMV</div><div className="stat-sub">Food cost {fatBruto>0?fmtPct(foodCost):'--'}</div></div>
+        <div className="stat-card tinted-blue"><div className={`stat-value ${lucroRealKpi>=0?'green':'red'}`}>{fmtR$(lucroRealKpi)}</div><div className="stat-label">Lucro real</div><div className="stat-sub">Bruto − descontos − CMV</div></div>
+      </div>
+
+      <div className="card" style={{borderLeft:`6px solid ${corBarra}`,padding:18}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:10,marginBottom:14}}>
+          <div>
+            <div style={{fontSize:13,opacity:.7,marginBottom:4}}>🎯 BREAKEVEN DO MÊS — cobrir as contas pessoais</div>
+            <div style={{fontSize:28,fontWeight:800}} className={corTexto}>{fmtR$(lucroMes)} <span style={{fontSize:18,opacity:.6,fontWeight:500}}>/ {fmtR$(META_BREAKEVEN_MES)}</span></div>
+          </div>
+          <div style={{textAlign:'right'}}>
+            <div style={{fontSize:38,fontWeight:800}} className={corTexto}>{fmtPct(breakevenPct)}</div>
+            <div className="muted" style={{fontSize:12}}>
+              {breakevenPct >= 100
+                ? `✅ Contas pagas! Sobrou ${fmtR$(lucroMes - META_BREAKEVEN_MES)}`
+                : `Falta ${fmtR$(faltaMeta)} pra cobrir as contas`}
+            </div>
+          </div>
+        </div>
+        <div style={{height:24,background:'var(--card-2)',borderRadius:12,overflow:'hidden',position:'relative'}}>
+          <div style={{height:'100%',width:`${Math.min(100, breakevenPct)}%`,background:corBarra,transition:'width .5s ease',borderRadius:12}}/>
+          {breakevenPct > 100 && <div style={{position:'absolute',top:0,right:8,height:'100%',display:'flex',alignItems:'center',fontSize:12,fontWeight:700,color:'#fff'}}>+{fmtPct(breakevenPct-100)} acima!</div>}
+        </div>
+        <div style={{marginTop:12,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <span className="muted" style={{fontSize:12}}>Lucro real (bruto − descontos − CMV) do mês atual</span>
+          <button className="btn btn-outline btn-sm" onClick={()=>setShowContas(s=>!s)}>{showContas?'Ocultar':'Ver'} detalhes das contas</button>
+        </div>
+        {showContas && (
+          <div style={{marginTop:10,padding:'10px 14px',background:'var(--card-2)',borderRadius:8}}>
+            <div className="muted" style={{fontSize:11,marginBottom:6}}>Custos pessoais que precisam ser cobertos por mês:</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'4px 14px',fontSize:13}}>
+              {CONTAS_FIXAS_MES.map((c,i)=>(
+                <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'4px 0',borderBottom:'1px dashed var(--border)'}}>
+                  <span>{c.label}</span>
+                  <span className="red">{fmtR$(c.valor)}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between',marginTop:8,paddingTop:8,borderTop:'1px solid var(--border)',fontWeight:700}}>
+              <span>Total mensal</span>
+              <span className="red">{fmtR$(META_BREAKEVEN_MES)}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="card" style={{background:'var(--card-2)'}}>
+        <div className="card-title">📈 Indicadores secundários do período</div>
+        <div className="stat-grid" style={{marginBottom:0}}>
+          <div className="stat-card"><div className="stat-value blue">{fmtR$(cards.dinheiro_conta)}</div><div className="stat-label">Vai cair na conta</div><div className="stat-sub">Receita − descontos</div></div>
+          <div className="stat-card"><div className="stat-value yellow">{fmtR$(cards.custos_fixos_diluidos)}</div><div className="stat-label">Fixos diluídos</div><div className="stat-sub">Rateado pelos dias do filtro</div></div>
+          <div className="stat-card"><div className="stat-value red">{fmtR$(cards.custos_variaveis_periodo)}</div><div className="stat-label">Variáveis (perdas)</div><div className="stat-sub">Perdas/ajustes no período</div></div>
+          <div className="stat-card"><div className="stat-value yellow">{fmtR$(custoExtraPorPrato)}</div><div className="stat-label">Custo extra por prato</div><div className="stat-sub">{qtdPratos} prato(s) · {fmtR$(custosExtras)}</div></div>
+        </div>
       </div>
 
       {(Number(cards.cancelamentos_mes||0) > 0 || Number(cards.cortesias_mes||0) > 0) && (
