@@ -6992,6 +6992,7 @@ function TelaDashboardBackend({ refreshKey }) {
   const [data, setData] = useState(null);
   const [qtdPratos, setQtdPratos] = useState(0);
   const [lucroMes, setLucroMes] = useState(0);
+  const [perdasMes, setPerdasMes] = useState(0);
   const [showContas, setShowContas] = useState(false);
   const [loading, setLoading] = useState(true);
   const chartRef = useRef(null);
@@ -7014,7 +7015,12 @@ function TelaDashboardBackend({ refreshKey }) {
     if (!resp.error) setData(resp.data);
     const totalQtd = (pratos.data||[]).reduce((acc,r)=>acc + Number(r.quantidade||0), 0);
     setQtdPratos(totalQtd);
-    if (!mesAtual.error) setLucroMes(Number(mesAtual.data?.cards?.lucro_pos_taxas_cmv || 0));
+    if (!mesAtual.error) {
+      const lucroPosCmv = Number(mesAtual.data?.cards?.lucro_pos_taxas_cmv || 0);
+      const perdas = Number(mesAtual.data?.cards?.custos_variaveis_mes || 0);
+      setLucroMes(lucroPosCmv - perdas);
+      setPerdasMes(perdas);
+    }
     setLoading(false);
   }
   useEffect(() => { load(); }, [periodo, custom, refreshKey]);
@@ -7082,6 +7088,11 @@ function TelaDashboardBackend({ refreshKey }) {
           <div>
             <div style={{fontSize:13,opacity:.7,marginBottom:4}}>🎯 BREAKEVEN DO MÊS — cobrir as contas pessoais</div>
             <div style={{fontSize:28,fontWeight:800}} className={corTexto}>{fmtR$(lucroMes)} <span style={{fontSize:18,opacity:.6,fontWeight:500}}>/ {fmtR$(META_BREAKEVEN_MES)}</span></div>
+            {perdasMes > 0 && (
+              <div className="muted" style={{fontSize:12,marginTop:4}}>
+                Já descontadas perdas/auditoria do mês: <b className="red">−{fmtR$(perdasMes)}</b>
+              </div>
+            )}
           </div>
           <div style={{textAlign:'right'}}>
             <div style={{fontSize:38,fontWeight:800}} className={corTexto}>{fmtPct(breakevenPct)}</div>
