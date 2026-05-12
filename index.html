@@ -2667,7 +2667,7 @@ function TelaVenda() {
         <button className={`tab${tab==='lote'?' active':''}`} onClick={()=>setTab('lote')}>Vendas em massa</button>
       </div>
       {tab === 'unica' && <VendaForm receitas={receitas} precos={precos} produtos={produtos} unidades={unidades} sb={sb} toast={toast} onSuccess={()=>setRefreshHistKey(k=>k+1)}/>}
-      {tab === 'lote' && <VendaLote receitas={receitas} precos={precos} sb={sb} toast={toast} onSuccess={()=>setRefreshHistKey(k=>k+1)}/>}
+      {tab === 'lote' && <VendaLote receitas={receitas} precos={precos} produtos={produtos} unidades={unidades} sb={sb} toast={toast} onSuccess={()=>setRefreshHistKey(k=>k+1)}/>}
       <VendaHistorico sb={sb} receitas={receitas} precos={precos} produtos={produtos} unidades={unidades} toast={toast} refreshKey={refreshHistKey}/>
     </div>
   );
@@ -3218,52 +3218,157 @@ function VendaForm({ receitas, precos, produtos, unidades, sb, toast, onSuccess 
   );
 }
 
-function VendaLote({ receitas, precos, sb, toast, onSuccess }) {
-  function novaLinha() {
-    return { data:todayISO(), canal:'ifood', receita_id:'', quantidade:'1', valor_unitario:'', peso_real_gramas:'', comissao_ifood:'', promocao:'', pagamento_online:'' };
-  }
-  const [linhas, setLinhas] = useState([novaLinha(), novaLinha(), novaLinha()]);
+function novoPedidoLote() {
+  return { data:todayISO(), canal:'ifood', descontos:[], itens:[novoItemVenda()] };
+}
+
+function VendaLote({ receitas, precos, produtos, unidades, sb, toast, onSuccess }) {
+  const [pedidos, setPedidos] = useState([novoPedidoLote()]);
   const [confirmPayload, setConfirmPayload] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  function add() { setLinhas([...linhas, novaLinha()]); }
-  function remove(i) { setLinhas(linhas.length > 1 ? linhas.filter((_,idx)=>idx!==i) : [novaLinha()]); }
-  function upd(i,k,v) {
-    setLinhas(linhas.map((l,idx) => {
-      if (idx !== i) return l;
-      const next = {...l, [k]:v};
-      if (k === 'receita_id') next.valor_unitario = precoReceitaCanal(precos, v, next.canal);
-      if (k === 'canal' && next.receita_id) next.valor_unitario = precoReceitaCanal(precos, next.receita_id, v) || next.valor_unitario;
+  function receitaNome(id) { return receitas.find(r=>r.id===id)?.nome || 'Item'; }
+  function produtoNome(id) { return produtos.find(p=>p.id===id)?.nome || 'Produto'; }
+  function unidadeLabel(id) { const u = unidades.find(x=>x.id===id); return u ? (u.codigo || u.nome) : ''; }
+
+  function addPedido() { setPedidos([...pedidos, novoPedidoLote()]); }
+  function removePedido(pi) { setPedidos(pedidos.length > 1 ? pedidos.filter((_,idx)=>idx!==pi) : [novoPedidoLote()]); }
+  function updPedido(pi, k, v) {
+    setPedidos(pedidos.map((p,idx) => {
+      if (idx !== pi) return p;
+      const next = {...p, [k]:v};
+      // Quando muda o canal, recalcula preco unitario de cada prato e adicional do pedido
+      if (k === 'canal') {
+        next.itens = (p.itens||[]).map(it => ({
+          ...it,
+          valor_unitario: it.receita_id ? (precoReceitaCanal(precos, it.receita_id, v) || it.valor_unitario || '') : it.valor_unitario,
+          adicionais: (it.adicionais||[]).map(ad => ({
+            ...ad,
+            valor_unitario: ad.tipo_item === 'cortesia' ? '0' : (ad.receita_id ? (precoReceitaCanal(precos, ad.receita_id, v) || ad.valor_unitario || '') : ad.valor_unitario)
+          }))
+        }));
+      }
       return next;
     }));
   }
-  function receitaNome(id) { return receitas.find(r=>r.id===id)?.nome || 'Prato'; }
-  function descontoLinha(l) {
-    return ['comissao_ifood','promocao','pagamento_online'].reduce((acc,k)=>acc + (parseDecimal(l[k])||0), 0);
+
+  function addItem(pi) { setPedidos(pedidos.map((p,idx)=>idx===pi?{...p,itens:[...(p.itens||[]), novoItemVenda()]}:p)); }
+  function removeItem(pi, ii) { setPedidos(pedidos.map((p,idx)=>idx===pi?{...p,itens:(p.itens.length>1?p.itens.filter((_,j)=>j!==ii):[novoItemVenda()])}:p)); }
+  function updItem(pi, ii, k, v) {
+    setPedidos(pedidos.map((p,idx) => {
+      if (idx !== pi) return p;
+      return {...p, itens:(p.itens||[]).map((it,j) => {
+        if (j !== ii) return it;
+        const next = {...it, [k]:v};
+        if (k === 'receita_id') next.valor_unitario = precoReceitaCanal(precos, v, p.canal);
+        return next;
+      })};
+    }));
   }
-  function buildPayload() {
-    return linhas.filter(l => l.receita_id && parseDecimal(l.quantidade) > 0 && l.valor_unitario !== '').map((l,i) => {
-      const descontos = ['comissao_ifood','promocao','pagamento_online']
-        .filter(k => parseDecimal(l[k]) > 0)
-        .map(k => ({ tipo_desconto:k, valor:parseDecimal(l[k]), observacoes:'lote' }));
-      return {
-        data_movimentacao: dateInputToIso(l.data),
-        canal_venda: l.canal,
-        itens: [{
-          ref:'p0',
-          receita_id:l.receita_id,
-          quantidade:parseDecimal(l.quantidade),
-          valor_unitario:parseDecimal(l.valor_unitario),
-          tipo_item:'principal',
-          peso_real_gramas:pesoRealPayload(l.peso_real_gramas)
-        }],
-        descontos
-      };
+  function addAdicional(pi, ii) {
+    setPedidos(pedidos.map((p,idx)=>idx===pi?{...p,itens:p.itens.map((it,j)=>j===ii?{...it,adicionais:[...(it.adicionais||[]), novoOpcionalVenda()]}:it)}:p));
+  }
+  function removeAdicional(pi, ii, ai) {
+    setPedidos(pedidos.map((p,idx)=>idx===pi?{...p,itens:p.itens.map((it,j)=>j===ii?{...it,adicionais:(it.adicionais||[]).filter((_,k)=>k!==ai)}:it)}:p));
+  }
+  function updAdicional(pi, ii, ai, k, v) {
+    setPedidos(pedidos.map((p,idx) => {
+      if (idx !== pi) return p;
+      return {...p, itens:p.itens.map((it,j) => {
+        if (j !== ii) return it;
+        const adicionais = (it.adicionais||[]).map((ad,k2) => {
+          if (k2 !== ai) return ad;
+          const next = {...ad, [k]:v};
+          if (k === 'receita_id') next.valor_unitario = next.tipo_item === 'cortesia' ? '0' : precoReceitaCanal(precos, v, p.canal);
+          if (k === 'tipo_item' && v === 'cortesia') next.valor_unitario = '0';
+          if (k === 'tipo_item' && v === 'adicional' && next.receita_id && !next.valor_unitario) next.valor_unitario = precoReceitaCanal(precos, next.receita_id, p.canal);
+          return next;
+        });
+        return {...it, adicionais};
+      })};
+    }));
+  }
+  function addCustoExtra(pi, ii) {
+    setPedidos(pedidos.map((p,idx)=>idx===pi?{...p,itens:p.itens.map((it,j)=>j===ii?{...it,custos_extras:[...(it.custos_extras||[]), novoCustoExtraVenda()]}:it)}:p));
+  }
+  function removeCustoExtra(pi, ii, ci) {
+    setPedidos(pedidos.map((p,idx)=>idx===pi?{...p,itens:p.itens.map((it,j)=>j===ii?{...it,custos_extras:(it.custos_extras||[]).filter((_,k)=>k!==ci)}:it)}:p));
+  }
+  function updCustoExtra(pi, ii, ci, k, v) {
+    setPedidos(pedidos.map((p,idx) => {
+      if (idx !== pi) return p;
+      return {...p, itens:p.itens.map((it,j) => {
+        if (j !== ii) return it;
+        const custos_extras = (it.custos_extras||[]).map((ce,k2) => {
+          if (k2 !== ci) return ce;
+          const next = {...ce, [k]:v};
+          if (k === 'produto_id') { const prod = produtos.find(x=>x.id===v); if (prod?.unidade_id) next.unidade_id = prod.unidade_id; }
+          return next;
+        });
+        return {...it, custos_extras};
+      })};
+    }));
+  }
+
+  function addDesconto(pi) { setPedidos(pedidos.map((p,idx)=>idx===pi?{...p,descontos:[...(p.descontos||[]), novoDescontoVenda()]}:p)); }
+  function updDesconto(pi, di, k, v) { setPedidos(pedidos.map((p,idx)=>idx===pi?{...p,descontos:(p.descontos||[]).map((d,j)=>j===di?{...d,[k]:v}:d)}:p)); }
+  function removeDesconto(pi, di) { setPedidos(pedidos.map((p,idx)=>idx===pi?{...p,descontos:(p.descontos||[]).filter((_,j)=>j!==di)}:p)); }
+
+  function custosExtrasPayload(it) {
+    return (it.custos_extras||[])
+      .filter(ce => ce.produto_id && ce.unidade_id && parseDecimal(ce.quantidade) > 0)
+      .map(ce => ({ produto_id:ce.produto_id, quantidade:parseDecimal(ce.quantidade), unidade_id:ce.unidade_id, observacoes:ce.observacoes||null }));
+  }
+
+  function pedidoItensPayload(pedido) {
+    const out = [];
+    (pedido.itens||[]).forEach((it,i) => {
+      if (!it.receita_id || !(parseDecimal(it.quantidade) > 0) || it.valor_unitario === '') return;
+      const ref = `p${i}`;
+      out.push({
+        ref, receita_id:it.receita_id, quantidade:parseDecimal(it.quantidade),
+        valor_unitario:parseDecimal(it.valor_unitario), tipo_item:'principal',
+        peso_real_gramas:pesoRealPayload(it.peso_real_gramas),
+        observacoes:it.observacoes||null,
+        custos_extras:custosExtrasPayload(it)
+      });
+      (it.adicionais||[]).forEach((ad,j) => {
+        if (!ad.receita_id || !(parseDecimal(ad.quantidade) > 0)) return;
+        if (ad.tipo_item !== 'cortesia' && ad.valor_unitario === '') return;
+        out.push({
+          ref:`a${i}_${j}`, parent_ref:ref, receita_id:ad.receita_id,
+          quantidade:parseDecimal(ad.quantidade),
+          valor_unitario:ad.tipo_item === 'cortesia' ? 0 : parseDecimal(ad.valor_unitario),
+          tipo_item:ad.tipo_item || 'adicional',
+          peso_real_gramas:pesoRealPayload(ad.peso_real_gramas),
+          observacoes:ad.observacoes||null
+        });
+      });
     });
+    return out;
   }
+
+  function buildPayload() {
+    return pedidos.map(pedido => {
+      const itensPayload = pedidoItensPayload(pedido);
+      const principais = itensPayload.filter(x => x.tipo_item === 'principal');
+      if (principais.length === 0) return null;
+      return {
+        data_movimentacao: dateInputToIso(pedido.data),
+        canal_venda: pedido.canal,
+        itens: itensPayload,
+        descontos: descontosPayload(pedido.descontos)
+      };
+    }).filter(Boolean);
+  }
+
+  function pedidoBruto(p) { return sumBy(p.itens||[], it => vendaItemValorTotal(it) + sumBy(it.adicionais||[], vendaItemValorTotal)); }
+  function pedidoDescontos(p) { return descontoTotal(p.descontos); }
+  function pedidoCountPratos(p) { return (p.itens||[]).filter(it => it.receita_id && parseDecimal(it.quantidade) > 0).length; }
+
   function confirmar() {
     const payload = buildPayload();
-    if (payload.length === 0) return toast('Adicione ao menos uma venda valida','error');
+    if (payload.length === 0) return toast('Adicione ao menos um pedido com prato principal','error');
     setConfirmPayload(payload);
   }
   async function lancarConfirmado(payload) {
@@ -3271,64 +3376,193 @@ function VendaLote({ receitas, precos, sb, toast, onSuccess }) {
     try {
       const { data: res, error } = await sb.rpc('rpc_lancar_vendas_lote_v1', { p_vendas: payload || confirmPayload || [] });
       if (error) throw error;
-      toast(`Lote registrado: ${res?.vendas||0} venda(s), liquido ${fmtR$(res?.valor_liquido||0)}`,'success');
-      setLinhas([novaLinha(), novaLinha(), novaLinha()]);
+      toast(`Lote registrado: ${res?.vendas||0} pedido(s), liquido ${fmtR$(res?.valor_liquido||0)}`,'success');
+      setPedidos([novoPedidoLote()]);
       setConfirmPayload(null);
       onSuccess && onSuccess();
     } catch(e) { toast('Erro: '+e.message,'error'); }
     setLoading(false);
   }
 
-  const validas = buildPayload();
-  const bruto = sumBy(linhas, l => (parseDecimal(l.quantidade)||0) * (parseDecimal(l.valor_unitario)||0));
-  const descontos = sumBy(linhas, descontoLinha);
+  const validos = buildPayload();
+  const totalBruto = sumBy(pedidos, pedidoBruto);
+  const totalDescontos = sumBy(pedidos, pedidoDescontos);
+  const totalLiquido = Math.max(0, totalBruto - totalDescontos);
+  const totalPratos = validos.reduce((acc,v)=>acc + v.itens.filter(x=>x.tipo_item==='principal').length, 0);
 
   return (
-    <div className="card">
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,marginBottom:10}}>
-        <div className="card-title" style={{margin:0}}>Vendas em massa</div>
-        <button className="btn btn-outline btn-sm" onClick={add}>+ Linha</button>
-      </div>
-      <div className="row-list">
-        {linhas.map((l,i) => (
-          <div className="row-item" key={i} style={{gridTemplateColumns:'120px 120px minmax(180px,2fr) 70px 105px 90px 90px 90px 90px auto'}}>
-            <input type="date" value={l.data} onChange={e=>upd(i,'data',e.target.value)}/>
-            <select value={l.canal} onChange={e=>upd(i,'canal',e.target.value)}>
-              {Object.entries(CANAL_LABEL).map(([v,n])=><option key={v} value={v}>{n}</option>)}
-            </select>
-            <SearchableDropdown value={l.receita_id} onChange={v=>upd(i,'receita_id',v)} options={receitas} placeholder="Prato..."/>
-            <input type="number" step="1" value={l.quantidade} onChange={e=>upd(i,'quantidade',e.target.value)} placeholder="Qtd"/>
-            <input type="number" step="0.01" value={l.valor_unitario} onChange={e=>upd(i,'valor_unitario',e.target.value)} placeholder="R$"/>
-            <input type="number" step="0.01" value={l.comissao_ifood} onChange={e=>upd(i,'comissao_ifood',e.target.value)} placeholder="Comissao"/>
-            <input type="number" step="0.01" value={l.promocao} onChange={e=>upd(i,'promocao',e.target.value)} placeholder="Promocao"/>
-            <input type="number" step="0.01" value={l.pagamento_online} onChange={e=>upd(i,'pagamento_online',e.target.value)} placeholder="Pg online"/>
-            <input type="number" step="1" value={l.peso_real_gramas} onChange={e=>upd(i,'peso_real_gramas',e.target.value)} placeholder="Peso g"/>
-            <button className="btn-icon" onClick={()=>remove(i)}>x</button>
+    <div>
+      {pedidos.map((p,pi) => {
+        const bruto = pedidoBruto(p);
+        const desc = pedidoDescontos(p);
+        const liq = Math.max(0, bruto - desc);
+        return (
+          <div className="card" key={pi} style={{marginBottom:14}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,marginBottom:10}}>
+              <div className="card-title" style={{margin:0}}>📦 Pedido #{pi+1}</div>
+              <button className="btn btn-outline btn-sm" onClick={()=>removePedido(pi)} title="Remover pedido">x Remover</button>
+            </div>
+
+            <div className="form-row-3">
+              <div className="form-group"><label>Data</label><input type="date" value={p.data} onChange={e=>updPedido(pi,'data',e.target.value)}/></div>
+              <div className="form-group">
+                <label>Canal</label>
+                <select value={p.canal} onChange={e=>updPedido(pi,'canal',e.target.value)}>
+                  {Object.entries(CANAL_LABEL).map(([v,l])=><option key={v} value={v}>{l}</option>)}
+                </select>
+              </div>
+              <div className="form-group"><label>% desconto deste pedido</label><input value={fmtPct(bruto > 0 ? (desc/bruto)*100 : 0)} readOnly/></div>
+            </div>
+
+            <div className="card" style={{background:'var(--card-2)',padding:12,marginBottom:10}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,marginBottom:8}}>
+                <div className="card-title" style={{margin:0}}>Descontos do pedido</div>
+                <button className="btn btn-outline btn-sm" onClick={()=>addDesconto(pi)}>+ Desconto</button>
+              </div>
+              {(p.descontos||[]).length === 0 && <div className="muted" style={{fontSize:12}}>Sem taxa, comissao ou promocao neste pedido.</div>}
+              {(p.descontos||[]).map((d,di) => (
+                <div className="row-item" key={di} style={{display:'grid',gridTemplateColumns:'minmax(160px,1.4fr) 120px minmax(140px,1fr) auto',gap:8,alignItems:'center',marginTop:6}}>
+                  <select value={d.tipo_desconto} onChange={e=>updDesconto(pi,di,'tipo_desconto',e.target.value)}>
+                    {Object.entries(DESCONTO_LABEL).map(([v,l])=><option key={v} value={v}>{l}</option>)}
+                  </select>
+                  <input type="number" step="0.01" value={d.valor} onChange={e=>updDesconto(pi,di,'valor',e.target.value)} placeholder="R$"/>
+                  <input value={d.observacoes||''} onChange={e=>updDesconto(pi,di,'observacoes',e.target.value)} placeholder="Obs opcional"/>
+                  <button className="btn-icon" onClick={()=>removeDesconto(pi,di)}>x</button>
+                </div>
+              ))}
+            </div>
+
+            <div className="divider"/>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+              <div className="card-title" style={{margin:0}}>Pratos do pedido</div>
+              <button className="btn btn-outline btn-sm" onClick={()=>addItem(pi)}>+ Adicionar prato</button>
+            </div>
+            <div className="row-list">
+              {p.itens.map((it,ii) => (
+                <div key={ii} style={{padding:12,borderBottom:ii===p.itens.length-1?'none':'1px solid var(--border)'}}>
+                  <div className="row-item" style={{gridTemplateColumns:'minmax(180px,2fr) 80px 120px 120px auto',padding:0,borderBottom:'none'}}>
+                    <SearchableDropdown value={it.receita_id} onChange={v=>updItem(pi,ii,'receita_id',v)} options={receitas} placeholder="Buscar prato..."/>
+                    <input type="number" step="1" value={it.quantidade} onChange={e=>updItem(pi,ii,'quantidade',e.target.value)} placeholder="Qtd"/>
+                    <input type="number" step="0.01" value={it.valor_unitario} onChange={e=>updItem(pi,ii,'valor_unitario',e.target.value)} placeholder="R$ unit."/>
+                    <input type="number" step="1" value={it.peso_real_gramas} onChange={e=>updItem(pi,ii,'peso_real_gramas',e.target.value)} placeholder="Peso g"/>
+                    <button className="btn-icon" onClick={()=>removeItem(pi,ii)}>x</button>
+                  </div>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:8,gap:8}}>
+                    <input value={it.observacoes||''} onChange={e=>updItem(pi,ii,'observacoes',e.target.value)} placeholder="Observacao opcional do prato" style={{minHeight:34,padding:'6px 10px'}}/>
+                    <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                      <button className="btn btn-outline btn-sm" onClick={()=>addAdicional(pi,ii)}>+ Adicional</button>
+                      <button className="btn btn-outline btn-sm" onClick={()=>addCustoExtra(pi,ii)}>+ Erro/custo</button>
+                    </div>
+                  </div>
+                  {(it.adicionais||[]).length > 0 && (
+                    <div className="row-list" style={{marginTop:8,marginBottom:0}}>
+                      {(it.adicionais||[]).map((ad,ai) => {
+                        const cortesia = ad.tipo_item === 'cortesia';
+                        return (
+                          <div className="row-item" key={ai} style={{gridTemplateColumns:'120px minmax(160px,2fr) 70px 110px 110px auto'}}>
+                            <select value={ad.tipo_item} onChange={e=>updAdicional(pi,ii,ai,'tipo_item',e.target.value)}>
+                              <option value="adicional">Adicional</option>
+                              <option value="cortesia">Cortesia</option>
+                            </select>
+                            <SearchableDropdown value={ad.receita_id} onChange={v=>updAdicional(pi,ii,ai,'receita_id',v)} options={receitas} placeholder="Opcional..."/>
+                            <input type="number" step="1" value={ad.quantidade} onChange={e=>updAdicional(pi,ii,ai,'quantidade',e.target.value)} placeholder="Qtd"/>
+                            <input type="number" step="0.01" value={cortesia?'0':ad.valor_unitario} disabled={cortesia} onChange={e=>updAdicional(pi,ii,ai,'valor_unitario',e.target.value)} placeholder="R$"/>
+                            <input type="number" step="1" value={ad.peso_real_gramas} onChange={e=>updAdicional(pi,ii,ai,'peso_real_gramas',e.target.value)} placeholder="Peso g"/>
+                            <button className="btn-icon" onClick={()=>removeAdicional(pi,ii,ai)}>x</button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {(it.custos_extras||[]).length > 0 && (
+                    <div className="row-list" style={{marginTop:8,marginBottom:0}}>
+                      {(it.custos_extras||[]).map((ce,ci) => (
+                        <div className="row-item" key={ci} style={{gridTemplateColumns:'minmax(170px,2fr) 90px 120px minmax(120px,1fr) auto'}}>
+                          <SearchableDropdown value={ce.produto_id} onChange={v=>updCustoExtra(pi,ii,ci,'produto_id',v)} options={produtos} placeholder="Produto extra..." renderOption={prod=><div>{prod.nome} <span className="muted">({TIPO_LABEL[prod.tipo]||prod.tipo})</span></div>}/>
+                          <input type="number" step="0.001" value={ce.quantidade} onChange={e=>updCustoExtra(pi,ii,ci,'quantidade',e.target.value)} placeholder="Qtd"/>
+                          <SearchableDropdown value={ce.unidade_id} onChange={v=>updCustoExtra(pi,ii,ci,'unidade_id',v)} options={unidades} placeholder="Un" getLabel={u=>`${u.nome} (${u.codigo})`}/>
+                          <input value={ce.observacoes||''} onChange={e=>updCustoExtra(pi,ii,ci,'observacoes',e.target.value)} placeholder="Erro/obs"/>
+                          <button className="btn-icon" onClick={()=>removeCustoExtra(pi,ii,ci)}>x</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="preview-line" style={{display:'flex',justifyContent:'space-between',flexWrap:'wrap',gap:10}}>
+              <span>Bruto: <b className="green">{fmtR$(bruto)}</b></span>
+              <span>Descontos: <b className="red">{fmtR$(desc)}</b></span>
+              <span>Liquido: <b className="blue">{fmtR$(liq)}</b></span>
+            </div>
           </div>
-        ))}
+        );
+      })}
+
+      <div style={{display:'flex',justifyContent:'space-between',gap:10,marginBottom:14}}>
+        <button className="btn btn-outline btn-block" onClick={addPedido}>+ Adicionar pedido</button>
       </div>
-      <div className="preview-line" style={{display:'flex',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
-        <span>Vendas validas: <b>{validas.length}</b></span>
-        <span>Bruto: <b className="green">{fmtR$(bruto)}</b></span>
-        <span>Taxas/descontos: <b className="red">{fmtR$(descontos)}</b></span>
-        <span>Vai cair: <b className="blue">{fmtR$(Math.max(0, bruto-descontos))}</b></span>
+
+      <div className="card" style={{background:'var(--card-2)',padding:14}}>
+        <div className="preview-line" style={{display:'flex',justifyContent:'space-between',flexWrap:'wrap',gap:10}}>
+          <span>Pedidos validos: <b>{validos.length}</b></span>
+          <span>Pratos: <b>{totalPratos}</b></span>
+          <span>Bruto: <b className="green">{fmtR$(totalBruto)}</b></span>
+          <span>Descontos: <b className="red">{fmtR$(totalDescontos)}</b></span>
+          <span>Vai cair: <b className="blue">{fmtR$(totalLiquido)}</b></span>
+        </div>
+        <button className="btn btn-success btn-lg btn-block" style={{marginTop:10}} onClick={confirmar} disabled={loading || validos.length===0}>
+          {loading?'Registrando...':`Lancar ${validos.length} pedido${validos.length===1?'':'s'} (${totalPratos} prato${totalPratos===1?'':'s'})`}
+        </button>
       </div>
-      <button className="btn btn-success btn-lg btn-block" onClick={confirmar} disabled={loading || validas.length===0}>{loading?'Registrando...':`Lancar ${validas.length} vendas`}</button>
+
       <ConfirmModal
         open={!!confirmPayload}
         onClose={()=>setConfirmPayload(null)}
         onConfirm={()=>lancarConfirmado(confirmPayload)}
-        title="Confirmar lote de vendas"
-        message="Confere se todas as vendas do lote estao corretas."
+        title={`Confirmar ${(confirmPayload||[]).length} pedido(s)`}
+        message="Confere se todos os pedidos do lote estao corretos."
       >
         <div className="table-wrap" style={{marginBottom:12}}>
-          <table><thead><tr><th>Data</th><th>Canal</th><th>Prato</th><th>Qtd</th><th>Bruto</th><th>Taxas</th></tr></thead><tbody>
-            {(confirmPayload||[]).map((v,i) => {
-              const item = v.itens?.[0] || {};
-              const desc = sumBy(v.descontos||[], 'valor');
-              return <tr key={i}><td>{fmtDate(v.data_movimentacao)}</td><td>{CANAL_LABEL[v.canal_venda]||v.canal_venda}</td><td>{receitaNome(item.receita_id)}</td><td>{fmt(item.quantidade,0)}</td><td className="green">{fmtR$(Number(item.quantidade||0)*Number(item.valor_unitario||0))}</td><td className="red">{fmtR$(desc)}</td></tr>;
-            })}
-          </tbody></table>
+          {(confirmPayload||[]).map((v,vi) => {
+            const principais = (v.itens||[]).filter(x=>x.tipo_item==='principal');
+            const adicionais = (v.itens||[]).filter(x=>x.tipo_item!=='principal');
+            const bruto = (v.itens||[]).reduce((acc,it)=>acc + (it.tipo_item==='cortesia'?0:Number(it.quantidade||0)*Number(it.valor_unitario||0)), 0);
+            const desc = sumBy(v.descontos||[], 'valor');
+            return (
+              <div key={vi} style={{marginBottom:14,padding:10,background:'var(--card-2)',borderRadius:8}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
+                  <b>📦 Pedido #{vi+1} — {CANAL_LABEL[v.canal_venda]||v.canal_venda} — {fmtDate(v.data_movimentacao)}</b>
+                  <span>Bruto <b className="green">{fmtR$(bruto)}</b> · Desc <b className="red">{fmtR$(desc)}</b> · Liq <b className="blue">{fmtR$(Math.max(0,bruto-desc))}</b></span>
+                </div>
+                <table>
+                  <thead><tr><th>Prato</th><th>Tipo</th><th>Qtd</th><th>Valor</th></tr></thead>
+                  <tbody>
+                    {principais.map((it,i) => {
+                      const filhos = adicionais.filter(a => a.parent_ref === it.ref);
+                      return (<Fragment key={i}>
+                        <tr><td><b>{receitaNome(it.receita_id)}</b></td><td><span className="badge badge-blue">Principal</span></td><td>{fmt(it.quantidade,2)}</td><td className="green">{fmtR$(Number(it.quantidade||0)*Number(it.valor_unitario||0))}</td></tr>
+                        {filhos.map((ad,j) => (
+                          <tr key={'f'+j}>
+                            <td style={{paddingLeft:18}}>↳ {receitaNome(ad.receita_id)}</td>
+                            <td><span className={`badge badge-${ad.tipo_item==='cortesia'?'yellow':'green'}`}>{ad.tipo_item==='cortesia'?'Cortesia':'Adicional'}</span></td>
+                            <td>{fmt(ad.quantidade,2)}</td>
+                            <td className={ad.tipo_item==='cortesia'?'yellow':'green'}>{fmtR$(Number(ad.quantidade||0)*Number(ad.valor_unitario||0))}</td>
+                          </tr>
+                        ))}
+                      </Fragment>);
+                    })}
+                  </tbody>
+                </table>
+                {(v.descontos||[]).length > 0 && (
+                  <div style={{marginTop:6,fontSize:12}}>
+                    {v.descontos.map((d,i) => <span key={i} className="muted" style={{marginRight:10}}>{DESCONTO_LABEL[d.tipo_desconto]||d.tipo_desconto}: <b className="red">{fmtR$(d.valor)}</b></span>)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </ConfirmModal>
     </div>
@@ -3734,8 +3968,17 @@ function VendaHistorico({ sb, receitas, precos, produtos, unidades, toast, refre
   const [confirmCancel, setConfirmCancel] = useState(null);
   const [confirmDeleteCusto, setConfirmDeleteCusto] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [expandedPedidos, setExpandedPedidos] = useState(new Set());
   const chartLineRef = useRef(null);
   const chartPieRef = useRef(null);
+
+  function togglePedido(vendaId) {
+    setExpandedPedidos(prev => {
+      const n = new Set(prev);
+      if (n.has(vendaId)) n.delete(vendaId); else n.add(vendaId);
+      return n;
+    });
+  }
 
   async function load() {
     setLoading(true);
@@ -3847,13 +4090,32 @@ function VendaHistorico({ sb, receitas, precos, produtos, unidades, toast, refre
     return Object.entries(m).sort();
   }, [rows]);
 
-  const extratoAgrupado = useMemo(() => {
+  // Agrupa em dois niveis: por venda (pedido) e dentro de cada venda, adicionais sob o principal
+  const pedidosAgrupados = useMemo(() => {
     const filhos = {};
     rows.forEach(r => { if (r.venda_item_pai_id) (filhos[r.venda_item_pai_id] = filhos[r.venda_item_pai_id] || []).push(r); });
     const principais = rows.filter(r => !r.venda_item_pai_id);
     const ids = new Set(principais.map(r => r.id));
     rows.forEach(r => { if (r.venda_item_pai_id && !ids.has(r.venda_item_pai_id)) principais.push(r); });
-    return principais.map(r => ({...r, adicionais: filhos[r.id] || [], custos_extras: custosByItem[r.id] || [], descontos: descontosByVenda[r.venda_id] || []}));
+    const principaisEnriquecidos = principais.map(r => ({...r, adicionais: filhos[r.id] || [], custos_extras: custosByItem[r.id] || []}));
+
+    // agrupa por venda_id
+    const porVenda = {};
+    principaisEnriquecidos.forEach(p => {
+      if (!porVenda[p.venda_id]) {
+        porVenda[p.venda_id] = {
+          venda_id: p.venda_id,
+          data_movimentacao: p.vendas?.movimentacoes?.data_movimentacao,
+          canal_venda: p.vendas?.canal_venda,
+          valor_bruto: Number(p.vendas?.valor_bruto || 0),
+          valor_liquido: Number(p.vendas?.valor_liquido || 0),
+          descontos: descontosByVenda[p.venda_id] || [],
+          principais: []
+        };
+      }
+      porVenda[p.venda_id].principais.push(p);
+    });
+    return Object.values(porVenda).sort((a,b) => (b.data_movimentacao||'').localeCompare(a.data_movimentacao||'') || (b.venda_id||'').localeCompare(a.venda_id||''));
   }, [rows, custosByItem, descontosByVenda]);
 
   useChart(chartLineRef, () => {
@@ -3893,28 +4155,110 @@ function VendaHistorico({ sb, receitas, precos, produtos, unidades, toast, refre
         </div>
       )}
       {porDia.length > 0 && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}><div className="card" style={{background:'var(--card-2)'}}><div className="card-title">Vendas por dia</div><div className="chart-wrap"><canvas ref={chartLineRef}/></div></div><div className="card" style={{background:'var(--card-2)'}}><div className="card-title">Receita por prato/adicional</div><div className="chart-wrap"><canvas ref={chartPieRef}/></div></div></div>}
-      <div className="table-wrap" style={{marginTop:14}}>
-        <table>
-          <thead><tr><th>Data</th><th>Prato</th><th>Tipo / Peso</th><th>Qtd</th><th>Preco</th><th>Total</th><th>Desc.</th><th>CMV</th><th>Lucro</th><th>Acoes</th></tr></thead>
-          <tbody>
-            {loading && <tr><td colSpan="10"><Skeleton rows={3}/></td></tr>}
-            {!loading && extratoAgrupado.length === 0 && <tr><td colSpan="10" className="empty">Nenhuma venda no periodo</td></tr>}
-            {!loading && extratoAgrupado.map(r => <Fragment key={r.id}>
-              <tr className={r.cancelado?'row-red':''}>
-                <td className="muted">{fmtDate(r.vendas?.movimentacoes?.data_movimentacao)}</td>
-                <td><b>{r.receitas_ficha_tecnica?.nome}</b>{r.adicionais?.length > 0 && <div className="muted" style={{fontSize:11}}>{r.adicionais.length} opcional(is) junto</div>}{r.descontos?.length > 0 && <div className="muted" style={{fontSize:11}}>Descontos: {r.descontos.map(d=>`${DESCONTO_LABEL[d.tipo_desconto]||d.tipo_desconto} ${fmtR$(d.valor)}`).join(' | ')}</div>}</td>
-                <td><span className={`badge badge-${r.cancelado?'red':'blue'}`}>{r.cancelado?'Cancelado':'Principal'}</span>{r.peso_real_gramas != null && <div className="muted" style={{fontSize:11}}>Peso: {fmt(r.peso_real_gramas,0)}g</div>}</td>
-                <td>{fmt(r.quantidade,0)}</td><td>{fmtR$(r.valor_unitario)}</td><td className={r.cancelado?'red':'green'}>{fmtR$(r.valor_total)}</td><td className="red">{fmtR$(r.desconto_item)}</td>
-                <td className="red">{fmtR$(Number(r.cmv_total||0)+Number(r.custo_extra_total||0))}</td><td className={Number(r.lucro_bruto)>=0?'green':'red'}>{fmtR$(r.lucro_bruto)}</td>
-                <td><div style={{display:'flex',gap:6,flexWrap:'wrap'}}><EditRowButton onClick={()=>setEditing(r)}/><button className="btn btn-outline btn-sm" onClick={()=>setEditingDescontos(r)}>Descontos</button><button className="btn btn-outline btn-sm" onClick={()=>setAddingOpcional(r)}>+ Opcional</button><button className="btn btn-outline btn-sm" onClick={()=>setAddingCusto(r)}>+ Erro</button>{!r.cancelado && <button className="btn btn-danger btn-sm" onClick={()=>setConfirmCancel(r)}>Zerar receita</button>}<DeleteRowButton onClick={()=>setConfirmDelete(r)}/></div></td>
-              </tr>
-              {(r.adicionais?.length > 0 || r.custos_extras?.length > 0) && <tr className="expanded"><td colSpan="10"><div className="table-wrap"><table style={{background:'transparent'}}><thead><tr><th>Detalhe</th><th>Tipo / Peso</th><th>Qtd</th><th>Preco</th><th>Total</th><th>CMV/Custo</th><th>Lucro</th><th>Acoes</th></tr></thead><tbody>
-                {r.adicionais.map(ad => <tr key={ad.id} className={ad.cancelado?'row-red':''}><td>{ad.receitas_ficha_tecnica?.nome}{ad.observacoes && <div className="muted" style={{fontSize:11}}>{ad.observacoes}</div>}</td><td><span className={`badge badge-${ad.cancelado?'red':ad.tipo_item==='cortesia'?'yellow':'green'}`}>{ad.cancelado?'Cancelado':ad.tipo_item==='cortesia'?'Cortesia':'Adicional'}</span>{ad.peso_real_gramas != null && <div className="muted" style={{fontSize:11}}>Peso: {fmt(ad.peso_real_gramas,0)}g</div>}</td><td>{fmt(ad.quantidade,0)}</td><td>{fmtR$(ad.valor_unitario)}</td><td className={ad.tipo_item==='cortesia'||ad.cancelado?'yellow':'green'}>{fmtR$(ad.valor_total)}</td><td className="red">{fmtR$(Number(ad.cmv_total||0)+Number(ad.custo_extra_total||0))}</td><td className={Number(ad.lucro_bruto)>=0?'green':'red'}>{fmtR$(ad.lucro_bruto)}</td><td><div style={{display:'flex',gap:6,flexWrap:'wrap'}}><EditRowButton onClick={()=>setEditing(ad)}/>{!ad.cancelado && <button className="btn btn-danger btn-sm" onClick={()=>setConfirmCancel(ad)}>Zerar receita</button>}<DeleteRowButton onClick={()=>setConfirmDeleteItem(ad)}/></div></td></tr>)}
-                {r.custos_extras.map(ce => <tr key={ce.id}><td>{ce.produtos?.nome}{ce.observacoes && <div className="muted" style={{fontSize:11}}>{ce.observacoes}</div>}</td><td><span className="badge badge-yellow">Erro/custo</span></td><td>{fmtQtyValueUnit(ce.quantidade, ce.unidades)}</td><td className="muted">--</td><td className="muted">--</td><td className="red">{fmtR$(ce.custo_total)}</td><td className="red">-{fmtR$(ce.custo_total)}</td><td><DeleteRowButton onClick={()=>setConfirmDeleteCusto(ce)}/></td></tr>)}
-              </tbody></table></div></td></tr>}
-            </Fragment>)}
-          </tbody>
-        </table>
+      <div style={{marginTop:14,display:'flex',flexDirection:'column',gap:10}}>
+        {loading && <Skeleton rows={4}/>}
+        {!loading && pedidosAgrupados.length === 0 && <div className="empty" style={{padding:18,textAlign:'center'}}>Nenhuma venda no periodo</div>}
+        {!loading && pedidosAgrupados.map(ped => {
+          const isOpen = expandedPedidos.has(ped.venda_id);
+          const totalDesc = sumBy(ped.descontos||[], 'valor');
+          const totalCmv = sumBy(ped.principais, p => Number(p.cmv_total||0)+Number(p.custo_extra_total||0)+sumBy(p.adicionais||[], a=>Number(a.cmv_total||0)+Number(a.custo_extra_total||0))+sumBy(p.custos_extras||[],'custo_total'));
+          const qtdPratos = ped.principais.length;
+          const qtdAdicionais = sumBy(ped.principais, p => (p.adicionais||[]).length);
+          const algumCancelado = ped.principais.some(p => p.cancelado || (p.adicionais||[]).some(a=>a.cancelado));
+          return (
+            <div className="card" key={ped.venda_id} style={{padding:0,background:algumCancelado?'var(--red-bg)':'var(--card-2)'}}>
+              <div onClick={()=>togglePedido(ped.venda_id)} style={{cursor:'pointer',padding:'12px 14px',display:'flex',flexWrap:'wrap',gap:10,alignItems:'center',justifyContent:'space-between'}}>
+                <div style={{display:'flex',gap:14,alignItems:'center',flexWrap:'wrap'}}>
+                  <span style={{fontSize:18}}>{isOpen?'▾':'▸'}</span>
+                  <b>📦 {fmtDate(ped.data_movimentacao)}</b>
+                  <span className={`badge badge-blue`}>{CANAL_LABEL[ped.canal_venda]||ped.canal_venda}</span>
+                  <span className="muted">{qtdPratos} prato{qtdPratos===1?'':'s'}{qtdAdicionais>0?` + ${qtdAdicionais} adicional${qtdAdicionais===1?'':'is'}`:''}</span>
+                  {totalDesc > 0 && <span className="muted" style={{fontSize:12}}>Desc: <b className="red">{fmtR$(totalDesc)}</b></span>}
+                </div>
+                <div style={{display:'flex',gap:14,alignItems:'center'}}>
+                  <span>Bruto <b className="green">{fmtR$(ped.valor_bruto)}</b></span>
+                  <span>CMV <b className="red">{fmtR$(totalCmv)}</b></span>
+                  <span>Liq <b className={ped.valor_liquido>=0?'blue':'red'}>{fmtR$(ped.valor_liquido)}</b></span>
+                </div>
+              </div>
+              {isOpen && (
+                <div style={{padding:'0 14px 14px'}}>
+                  {(ped.descontos||[]).length > 0 && (
+                    <div className="muted" style={{fontSize:12,padding:'8px 0',borderTop:'1px solid var(--border)'}}>
+                      <b>Descontos do pedido:</b>{' '}
+                      {ped.descontos.map((d,i)=>(
+                        <span key={i} style={{marginRight:10}}>
+                          {DESCONTO_LABEL[d.tipo_desconto]||d.tipo_desconto} <b className="red">{fmtR$(d.valor)}</b>
+                          {d.observacoes && <span style={{marginLeft:4,opacity:.7}}>({d.observacoes})</span>}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="table-wrap" style={{marginTop:4}}>
+                    <table>
+                      <thead><tr><th>Prato / Item</th><th>Tipo / Peso</th><th>Qtd</th><th>Preco</th><th>Total</th><th>Desc.</th><th>CMV</th><th>Lucro</th><th>Acoes</th></tr></thead>
+                      <tbody>
+                        {ped.principais.map(r => <Fragment key={r.id}>
+                          <tr className={r.cancelado?'row-red':''}>
+                            <td><b>{r.receitas_ficha_tecnica?.nome}</b>{r.observacoes && <div className="muted" style={{fontSize:11}}>{r.observacoes}</div>}</td>
+                            <td><span className={`badge badge-${r.cancelado?'red':'blue'}`}>{r.cancelado?'Cancelado':'Principal'}</span>{r.peso_real_gramas != null && <div className="muted" style={{fontSize:11}}>Peso: {fmt(r.peso_real_gramas,0)}g</div>}</td>
+                            <td>{fmt(r.quantidade,0)}</td>
+                            <td>{fmtR$(r.valor_unitario)}</td>
+                            <td className={r.cancelado?'red':'green'}>{fmtR$(r.valor_total)}</td>
+                            <td className="red">{fmtR$(r.desconto_item)}</td>
+                            <td className="red">{fmtR$(Number(r.cmv_total||0)+Number(r.custo_extra_total||0))}</td>
+                            <td className={Number(r.lucro_bruto)>=0?'green':'red'}>{fmtR$(r.lucro_bruto)}</td>
+                            <td><div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                              <EditRowButton onClick={()=>setEditing(r)}/>
+                              <button className="btn btn-outline btn-sm" onClick={()=>setAddingOpcional(r)}>+ Opcional</button>
+                              <button className="btn btn-outline btn-sm" onClick={()=>setAddingCusto(r)}>+ Erro</button>
+                              {!r.cancelado && <button className="btn btn-danger btn-sm" onClick={()=>setConfirmCancel(r)}>Zerar receita</button>}
+                              <DeleteRowButton onClick={()=>setConfirmDeleteItem(r)}/>
+                            </div></td>
+                          </tr>
+                          {(r.adicionais||[]).map(ad => (
+                            <tr key={ad.id} className={ad.cancelado?'row-red':''}>
+                              <td style={{paddingLeft:24}}>↳ {ad.receitas_ficha_tecnica?.nome}{ad.observacoes && <div className="muted" style={{fontSize:11}}>{ad.observacoes}</div>}</td>
+                              <td><span className={`badge badge-${ad.cancelado?'red':ad.tipo_item==='cortesia'?'yellow':'green'}`}>{ad.cancelado?'Cancelado':ad.tipo_item==='cortesia'?'Cortesia':'Adicional'}</span>{ad.peso_real_gramas != null && <div className="muted" style={{fontSize:11}}>Peso: {fmt(ad.peso_real_gramas,0)}g</div>}</td>
+                              <td>{fmt(ad.quantidade,0)}</td>
+                              <td>{fmtR$(ad.valor_unitario)}</td>
+                              <td className={ad.tipo_item==='cortesia'||ad.cancelado?'yellow':'green'}>{fmtR$(ad.valor_total)}</td>
+                              <td className="red">{fmtR$(ad.desconto_item)}</td>
+                              <td className="red">{fmtR$(Number(ad.cmv_total||0)+Number(ad.custo_extra_total||0))}</td>
+                              <td className={Number(ad.lucro_bruto)>=0?'green':'red'}>{fmtR$(ad.lucro_bruto)}</td>
+                              <td><div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                                <EditRowButton onClick={()=>setEditing(ad)}/>
+                                {!ad.cancelado && <button className="btn btn-danger btn-sm" onClick={()=>setConfirmCancel(ad)}>Zerar receita</button>}
+                                <DeleteRowButton onClick={()=>setConfirmDeleteItem(ad)}/>
+                              </div></td>
+                            </tr>
+                          ))}
+                          {(r.custos_extras||[]).map(ce => (
+                            <tr key={ce.id}>
+                              <td style={{paddingLeft:24}}>↳ {ce.produtos?.nome}{ce.observacoes && <div className="muted" style={{fontSize:11}}>{ce.observacoes}</div>}</td>
+                              <td><span className="badge badge-yellow">Erro/custo</span></td>
+                              <td>{fmtQtyValueUnit(ce.quantidade, ce.unidades)}</td>
+                              <td className="muted">--</td>
+                              <td className="muted">--</td>
+                              <td className="muted">--</td>
+                              <td className="red">{fmtR$(ce.custo_total)}</td>
+                              <td className="red">-{fmtR$(ce.custo_total)}</td>
+                              <td><DeleteRowButton onClick={()=>setConfirmDeleteCusto(ce)}/></td>
+                            </tr>
+                          ))}
+                        </Fragment>)}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style={{display:'flex',justifyContent:'flex-end',gap:6,marginTop:8,flexWrap:'wrap'}}>
+                    <button className="btn btn-outline btn-sm" onClick={()=>setEditingDescontos(ped.principais[0])}>Editar descontos do pedido</button>
+                    <button className="btn btn-danger btn-sm" onClick={()=>setConfirmDelete(ped.principais[0])}>Excluir pedido inteiro</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
       <EditVendaModal open={!!editing} onClose={()=>setEditing(null)} row={editing} receitas={receitas} sb={sb} toast={toast} onSaved={load}/>
       <EditVendaDescontosModal open={!!editingDescontos} onClose={()=>setEditingDescontos(null)} row={editingDescontos} sb={sb} toast={toast} onSaved={load}/>
@@ -3934,6 +4278,8 @@ function TelaPerda() {
   const [produtos, setProdutos] = useState([]);
   const [unidades, setUnidades] = useState([]);
   const [refreshHistKey, setRefreshHistKey] = useState(0);
+  const [tipoLanc, setTipoLanc] = useState('uso'); // 'uso' | 'perda'
+  const [filtroTipo, setFiltroTipo] = useState(''); // '' | 'cru' | 'preparado'
   const [data, setData] = useState(todayISO());
   const [f, setF] = useState({ produto_id:'', quantidade:'', unidade_id:'', motivo:'vencimento', obs:'' });
   const [loading, setLoading] = useState(false);
@@ -3943,56 +4289,177 @@ function TelaPerda() {
     sb.from('unidades').select('id,codigo,nome,fator_gramas').order('nome').then(r=>setUnidades(r.data||[]));
   }, []);
 
+  const produtosFiltrados = useMemo(() => {
+    if (!filtroTipo) return produtos.filter(p => p.tipo !== 'embalagem'); // por padrao oculta embalagem
+    return produtos.filter(p => p.tipo === filtroTipo);
+  }, [produtos, filtroTipo]);
+
   async function lancar() {
     if (!f.produto_id || !f.quantidade || !f.unidade_id) return toast('Preencha produto, quantidade e unidade','error');
     setLoading(true);
     try {
       const prod = produtos.find(p=>p.id===f.produto_id);
-      const { error } = await sb.rpc('rpc_lancar_perda', {
-        p_data_movimentacao: dateInputToIso(data),
-        p_produto_id: f.produto_id,
-        p_quantidade: parseDecimal(f.quantidade),
-        p_unidade_id: f.unidade_id,
-        p_motivo_perda: f.motivo,
-        p_observacoes: f.obs || null
-      });
-      if (error) throw error;
-      toast(`⚠️ Perda registrada: ${f.quantidade} ${unidades.find(u=>u.id===f.unidade_id)?.nome||''} de ${prod?.nome}`,'warn');
+      if (tipoLanc === 'perda') {
+        const { error } = await sb.rpc('rpc_lancar_perda', {
+          p_data_movimentacao: dateInputToIso(data),
+          p_produto_id: f.produto_id,
+          p_quantidade: parseDecimal(f.quantidade),
+          p_unidade_id: f.unidade_id,
+          p_motivo_perda: f.motivo,
+          p_observacoes: f.obs || null
+        });
+        if (error) throw error;
+        toast(`Perda registrada: ${f.quantidade} ${unidades.find(u=>u.id===f.unidade_id)?.nome||''} de ${prod?.nome}`,'warn');
+      } else {
+        const { error } = await sb.rpc('rpc_lancar_uso', {
+          p_data_movimentacao: dateInputToIso(data),
+          p_produto_id: f.produto_id,
+          p_quantidade: parseDecimal(f.quantidade),
+          p_unidade_id: f.unidade_id,
+          p_observacoes: f.obs || null
+        });
+        if (error) throw error;
+        toast(`Uso registrado: ${f.quantidade} ${unidades.find(u=>u.id===f.unidade_id)?.nome||''} de ${prod?.nome}`,'success');
+      }
       setF({ produto_id:'', quantidade:'', unidade_id:'', motivo:'vencimento', obs:'' });
       setRefreshHistKey(k=>k+1);
     } catch(e) { toast('Erro: '+e.message,'error'); }
     setLoading(false);
   }
 
+  const isPerda = tipoLanc === 'perda';
+
   return (
     <div className="content">
-      <div className="section-header"><div className="section-title">⚠️ Lançar Perda</div></div>
+      <div className="section-header"><div className="section-title">🪣 Usos e Perdas</div></div>
       <div className="card">
+        <div style={{display:'flex',gap:6,marginBottom:14}}>
+          <button className={`btn ${tipoLanc==='uso'?'btn-success':'btn-outline'}`} style={{flex:1}} onClick={()=>setTipoLanc('uso')}>USO (consumo operacional)</button>
+          <button className={`btn ${tipoLanc==='perda'?'btn-danger':'btn-outline'}`} style={{flex:1}} onClick={()=>setTipoLanc('perda')}>PERDA (desperdicio)</button>
+        </div>
+        <div className="muted" style={{fontSize:12,marginBottom:14,padding:'8px 12px',background:'var(--card-2)',borderRadius:6}}>
+          {isPerda
+            ? 'Use para registrar itens estragados, vencidos ou quebrados. Da baixa no estoque com etiqueta de PERDA.'
+            : 'Use para dar baixa de oleo, sal, acucar, gas, cafe etc — itens consumidos no dia a dia sem precisar de ficha tecnica. Da baixa no estoque sem mexer no caixa.'
+          }
+        </div>
+
         <div className="form-row">
           <div className="form-group"><label>Data</label><input type="date" value={data} onChange={e=>setData(e.target.value)}/></div>
           <div className="form-group">
-            <label>Motivo</label>
+            <label>Tipo de produto</label>
+            <select value={filtroTipo} onChange={e=>setFiltroTipo(e.target.value)}>
+              <option value="">Todos (cru + preparado + insumo)</option>
+              <option value="cru">Apenas In Natura (cru)</option>
+              <option value="preparado">Apenas Preparado</option>
+              <option value="insumo">Apenas Insumo</option>
+              <option value="embalagem">Apenas Embalagem</option>
+            </select>
+          </div>
+        </div>
+
+        {isPerda && (
+          <div className="form-group">
+            <label>Motivo da perda</label>
             <select value={f.motivo} onChange={e=>setF({...f,motivo:e.target.value})}>
               {MOTIVO_PERDA.map(m=><option key={m} value={m}>{MOTIVO_LABEL[m]}</option>)}
             </select>
           </div>
-        </div>
+        )}
+
         <div className="form-group">
           <label>Produto</label>
-          <SearchableDropdown value={f.produto_id} onChange={v=>setF({...f,produto_id:v})} options={produtos} placeholder="Buscar produto..." renderOption={p=><div>{p.nome} <span className="muted">({TIPO_LABEL[p.tipo]||p.tipo})</span></div>}/>
+          <SearchableDropdown value={f.produto_id} onChange={v=>setF({...f,produto_id:v})} options={produtosFiltrados} placeholder="Buscar produto..." renderOption={p=><div>{p.nome} <span className="muted">({TIPO_LABEL[p.tipo]||p.tipo})</span></div>}/>
         </div>
         <div className="form-row">
-          <div className="form-group"><label>Quantidade perdida</label><input type="number" step="0.001" value={f.quantidade} onChange={e=>setF({...f,quantidade:e.target.value})}/></div>
+          <div className="form-group"><label>Quantidade</label><input type="number" step="0.001" value={f.quantidade} onChange={e=>setF({...f,quantidade:e.target.value})}/></div>
           <div className="form-group"><label>Unidade</label><SearchableDropdown value={f.unidade_id} onChange={v=>setF({...f,unidade_id:v})} options={unidades} placeholder="Un..." getLabel={u=>u.nome}/></div>
         </div>
         <div className="form-group">
           <label>Observação (opcional)</label>
           <textarea rows="2" value={f.obs} onChange={e=>setF({...f,obs:e.target.value})} placeholder="Detalhes..."/>
         </div>
-        <button className="btn btn-danger btn-lg btn-block" onClick={lancar} disabled={loading}>{loading?'Registrando...':'Registrar Perda'}</button>
+        <button className={`btn ${isPerda?'btn-danger':'btn-success'} btn-lg btn-block`} onClick={lancar} disabled={loading}>
+          {loading?'Registrando...':(isPerda?'Registrar Perda':'Registrar Uso')}
+        </button>
       </div>
 
-      <PerdaHistorico sb={sb} produtos={produtos} unidades={unidades} toast={toast} refreshKey={refreshHistKey}/>
+      <UsoPerdaHistorico sb={sb} produtos={produtos} unidades={unidades} toast={toast} refreshKey={refreshHistKey}/>
+    </div>
+  );
+}
+
+function UsoPerdaHistorico({ sb, produtos, unidades, toast, refreshKey }) {
+  const [periodo, setPeriodo] = useState('mes');
+  const [custom, setCustom] = useState({});
+  const [filtroTipo, setFiltroTipo] = useState(''); // '' | 'uso' | 'perda'
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    const { from, to } = periodToDates(periodo, custom);
+    let q = sb.from('ajustes_estoque').select(`
+      id, tipo, quantidade, quantidade_gramas, motivo_perda, motivo, observacoes,
+      produto_id, produtos(nome,tipo),
+      unidade_id, unidades(nome,codigo),
+      movimentacao_id, movimentacoes!inner(data_movimentacao)
+    `).in('tipo', ['perda','ajuste_negativo'])
+      .gte('movimentacoes.data_movimentacao', from.toISOString())
+      .lte('movimentacoes.data_movimentacao', to.toISOString())
+      .order('id',{ascending:false}).limit(500);
+    if (filtroTipo === 'uso') q = q.eq('tipo','ajuste_negativo');
+    if (filtroTipo === 'perda') q = q.eq('tipo','perda');
+    const { data } = await q;
+    setRows(data||[]);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, [periodo, custom, filtroTipo, refreshKey]);
+
+  const totalQuantidadeG = sumBy(rows, 'quantidade_gramas');
+  const qtdUsos = rows.filter(r => r.tipo === 'ajuste_negativo').length;
+  const qtdPerdas = rows.filter(r => r.tipo === 'perda').length;
+
+  return (
+    <div className="card" style={{marginTop:14}}>
+      <div className="card-title">Histórico de usos e perdas</div>
+      <DatePeriodFilter value={periodo} onChange={setPeriodo} custom={custom} onCustomChange={setCustom}/>
+      <div className="form-row">
+        <div className="form-group">
+          <label>Filtrar tipo</label>
+          <select value={filtroTipo} onChange={e=>setFiltroTipo(e.target.value)}>
+            <option value="">Todos (usos + perdas)</option>
+            <option value="uso">Apenas Usos</option>
+            <option value="perda">Apenas Perdas</option>
+          </select>
+        </div>
+      </div>
+      <div className="stat-grid">
+        <div className="stat-card tinted-green"><div className="stat-value">{qtdUsos}</div><div className="stat-label">Usos no periodo</div></div>
+        <div className="stat-card tinted-red"><div className="stat-value">{qtdPerdas}</div><div className="stat-label">Perdas no periodo</div></div>
+        <div className="stat-card tinted-blue"><div className="stat-value">{fmtG(totalQuantidadeG)}</div><div className="stat-label">Total dado baixa</div></div>
+      </div>
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>Data</th><th>Tipo</th><th>Produto</th><th>Qtd</th><th>Motivo / Obs</th></tr></thead>
+          <tbody>
+            {loading && <tr><td colSpan="5"><Skeleton rows={3}/></td></tr>}
+            {!loading && rows.length === 0 && <tr><td colSpan="5" className="empty">Nenhum lançamento no periodo</td></tr>}
+            {!loading && rows.map(r => (
+              <tr key={r.id}>
+                <td className="muted">{fmtDate(r.movimentacoes?.data_movimentacao)}</td>
+                <td><span className={`badge badge-${r.tipo==='perda'?'red':'green'}`}>{r.tipo==='perda'?'PERDA':'USO'}</span></td>
+                <td><b>{r.produtos?.nome}</b> <span className="muted" style={{fontSize:11}}>({TIPO_LABEL[r.produtos?.tipo]||r.produtos?.tipo})</span></td>
+                <td>{fmt(r.quantidade,2)} {r.unidades?.codigo}</td>
+                <td className="muted" style={{fontSize:12}}>
+                  {r.tipo === 'perda' && r.motivo_perda && <span className="badge badge-yellow" style={{marginRight:6}}>{MOTIVO_LABEL[r.motivo_perda]}</span>}
+                  {r.observacoes || (r.tipo==='ajuste_negativo' ? 'Uso operacional' : '—')}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -5638,6 +6105,71 @@ function PratoExpand({ ingredientes }) {
   );
 }
 // ── FLUXO DE CAIXA ──────────────────────────────────────────────────────────
+function LancamentoCaixaModal({ open, onClose, tipo, categorias, sb, toast, onSaved }) {
+  const [f, setF] = useState({ valor:'', descricao:'', data:todayISO(), forma_pagamento:'pix', categoria_id:'', observacoes:'' });
+  const [loading, setLoading] = useState(false);
+  useEffect(() => { if (open) setF({ valor:'', descricao:'', data:todayISO(), forma_pagamento:'pix', categoria_id:'', observacoes:'' }); }, [open, tipo]);
+  if (!open) return null;
+  const catsDoTipo = (categorias||[]).filter(c => c.tipo === tipo);
+  const titulo = tipo === 'receita' ? '+ Entrada avulsa' : '- Saída avulsa';
+  const corBtn = tipo === 'receita' ? 'btn-success' : 'btn-danger';
+  async function salvar() {
+    if (!f.valor || parseDecimal(f.valor) <= 0) return toast('Informe o valor','error');
+    if (!f.descricao.trim()) return toast('Informe a descricao','error');
+    setLoading(true);
+    try {
+      const { error } = await sb.rpc('rpc_lancar_caixa_avulso', {
+        p_tipo: tipo,
+        p_valor: parseDecimal(f.valor),
+        p_descricao: f.descricao.trim(),
+        p_data: dateInputToIso(f.data),
+        p_forma_pagamento: f.forma_pagamento,
+        p_categoria_id: f.categoria_id || null,
+        p_observacoes: f.observacoes || null
+      });
+      if (error) throw error;
+      toast(`${tipo==='receita'?'Entrada':'Saída'} de ${fmtR$(parseDecimal(f.valor))} registrada`, 'success');
+      onClose();
+      onSaved && onSaved();
+    } catch(e) { toast('Erro: '+e.message,'error'); }
+    setLoading(false);
+  }
+  return (
+    <Modal open={true} onClose={onClose} title={titulo} size="md">
+      <div className="form-row">
+        <div className="form-group"><label>Data</label><input type="date" value={f.data} onChange={e=>setF({...f,data:e.target.value})}/></div>
+        <div className="form-group"><label>Valor (R$)</label><input type="number" step="0.01" value={f.valor} onChange={e=>setF({...f,valor:e.target.value})} autoFocus/></div>
+      </div>
+      <div className="form-group">
+        <label>Descrição</label>
+        <input value={f.descricao} onChange={e=>setF({...f,descricao:e.target.value})} placeholder={tipo==='receita'?'Ex: Pix do João, devolução do fornecedor':'Ex: Conta de luz, cerâmica quebrada'}/>
+      </div>
+      <div className="form-row">
+        <div className="form-group">
+          <label>Categoria</label>
+          <select value={f.categoria_id} onChange={e=>setF({...f,categoria_id:e.target.value})}>
+            <option value="">Sem categoria</option>
+            {catsDoTipo.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
+        </div>
+        <div className="form-group">
+          <label>Forma de pagamento</label>
+          <select value={f.forma_pagamento} onChange={e=>setF({...f,forma_pagamento:e.target.value})}>
+            {FORMA_PGTO.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </div>
+      </div>
+      <div className="form-group">
+        <label>Observações (opcional)</label>
+        <textarea rows="2" value={f.observacoes} onChange={e=>setF({...f,observacoes:e.target.value})} placeholder="Detalhes adicionais..."/>
+      </div>
+      <button className={`btn ${corBtn} btn-lg btn-block`} onClick={salvar} disabled={loading}>
+        {loading?'Registrando...':`Registrar ${tipo==='receita'?'entrada':'saída'} de ${fmtR$(parseDecimal(f.valor)||0)}`}
+      </button>
+    </Modal>
+  );
+}
+
 function TelaCaixa() {
   const sb = getClient();
   const [periodo, setPeriodo] = useState('mes');
@@ -5645,7 +6177,10 @@ function TelaCaixa() {
   const [rows, setRows] = useState([]);
   const [vendas, setVendas] = useState([]);
   const [vendasItens, setVendasItens] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [modalLanc, setModalLanc] = useState(null); // null | 'receita' | 'despesa'
   const [loading, setLoading] = useState(true);
+  const toast = useToast();
   const chartBarRef = useRef(null);
   const chartPieRef = useRef(null);
   const chartLineRef = useRef(null);
@@ -5654,12 +6189,13 @@ function TelaCaixa() {
   async function load() {
     setLoading(true);
     const { from, to } = periodToDates(periodo, custom);
-    const [fc, vd, vi] = await Promise.all([
+    const [fc, vd, vi, cats] = await Promise.all([
       sb.from('fluxo_caixa').select('id,tipo,valor,descricao,pago,forma_pagamento,created_at,categoria_id,categorias_caixa(nome,tipo),movimentacoes!inner(data_movimentacao)').gte('movimentacoes.data_movimentacao', from.toISOString()).lte('movimentacoes.data_movimentacao', to.toISOString()).order('created_at',{ascending:false}),
       sb.from('vendas').select('id,valor_bruto,valor_liquido,desconto_plataforma,canal_venda,movimentacao_id,movimentacoes!inner(data_movimentacao)').gte('movimentacoes.data_movimentacao', from.toISOString()).lte('movimentacoes.data_movimentacao', to.toISOString()),
       sb.from('vendas_itens').select('cmv_total,vendas!inner(movimentacao_id,movimentacoes!inner(data_movimentacao))').gte('vendas.movimentacoes.data_movimentacao', from.toISOString()).lte('vendas.movimentacoes.data_movimentacao', to.toISOString()),
+      sb.from('categorias_caixa').select('id,tipo,nome').order('tipo').order('nome'),
     ]);
-    setRows(fc.data||[]); setVendas(vd.data||[]); setVendasItens(vi.data||[]);
+    setRows(fc.data||[]); setVendas(vd.data||[]); setVendasItens(vi.data||[]); setCategorias(cats.data||[]);
     setLoading(false);
   }
   useEffect(() => { load(); }, [periodo, custom]);
@@ -5756,7 +6292,13 @@ function TelaCaixa() {
 
   return (
     <div className="content">
-      <div className="section-header"><div className="section-title">💵 Fluxo de Caixa</div></div>
+      <div className="section-header" style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+        <div className="section-title">💵 Fluxo de Caixa</div>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+          <button className="btn btn-success btn-sm" onClick={()=>setModalLanc('receita')}>+ Entrada avulsa</button>
+          <button className="btn btn-danger btn-sm" onClick={()=>setModalLanc('despesa')}>- Saída avulsa</button>
+        </div>
+      </div>
       <DatePeriodFilter value={periodo} onChange={setPeriodo} custom={custom} onCustomChange={setCustom}/>
 
       <div className="stat-grid">
@@ -5825,6 +6367,16 @@ function TelaCaixa() {
           </table>
         </div>
       </div>
+
+      <LancamentoCaixaModal
+        open={!!modalLanc}
+        onClose={()=>setModalLanc(null)}
+        tipo={modalLanc}
+        categorias={categorias}
+        sb={sb}
+        toast={toast}
+        onSaved={load}
+      />
     </div>
   );
 }
@@ -6333,17 +6885,25 @@ function TelaDashboardBackend({ refreshKey }) {
   const [periodo, setPeriodo] = useState('hoje');
   const [custom, setCustom] = useState({});
   const [data, setData] = useState(null);
+  const [qtdPratos, setQtdPratos] = useState(0);
   const [loading, setLoading] = useState(true);
   const chartRef = useRef(null);
 
   async function load() {
     setLoading(true);
     const { from, to } = periodToDates(periodo, custom);
-    const { data: res, error } = await sb.rpc('rpc_dashboard_financeiro_v1', {
-      p_inicio: from.toISOString(),
-      p_fim: to.toISOString()
-    });
-    if (!error) setData(res);
+    const [resp, pratos] = await Promise.all([
+      sb.rpc('rpc_dashboard_financeiro_v1', { p_inicio: from.toISOString(), p_fim: to.toISOString() }),
+      sb.from('vendas_itens')
+        .select('quantidade,tipo_item,cancelado,vendas!inner(movimentacao_id,movimentacoes!inner(data_movimentacao))', { count:'exact' })
+        .eq('tipo_item','principal')
+        .eq('cancelado', false)
+        .gte('vendas.movimentacoes.data_movimentacao', from.toISOString())
+        .lte('vendas.movimentacoes.data_movimentacao', to.toISOString())
+    ]);
+    if (!resp.error) setData(resp.data);
+    const totalQtd = (pratos.data||[]).reduce((acc,r)=>acc + Number(r.quantidade||0), 0);
+    setQtdPratos(totalQtd);
     setLoading(false);
   }
   useEffect(() => { load(); }, [periodo, custom, refreshKey]);
@@ -6351,6 +6911,8 @@ function TelaDashboardBackend({ refreshKey }) {
   const cards = data?.cards || {};
   const serie = data?.serie || [];
   const foodCost = Number(cards.food_cost_percentual || 0);
+  const custosExtras = Number(cards.custos_fixos_diluidos || 0) + Number(cards.custos_variaveis_periodo || 0);
+  const custoExtraPorPrato = qtdPratos > 0 ? (custosExtras / qtdPratos) : 0;
 
   useChart(chartRef, () => {
     if (!serie.length) return null;
@@ -6394,6 +6956,7 @@ function TelaDashboardBackend({ refreshKey }) {
         <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(cards.custos_variaveis_mes)}</div><div className="stat-label">Custos variaveis do mes</div><div className="stat-sub">Perdas/ajustes no periodo: {fmtR$(cards.custos_variaveis_periodo)}</div></div>
         <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(cards.taxas_plataforma)}</div><div className="stat-label">Taxas de plataforma</div><div className="stat-sub">Comissao, pagamento online e promocao</div></div>
         <div className="stat-card tinted-blue"><div className={`stat-value ${Number(cards.lucro_real||0)>=0?'green':'red'}`}>{fmtR$(cards.lucro_real)}</div><div className="stat-label">Lucro real</div><div className="stat-sub">Conta - CMV - fixos - variaveis</div></div>
+        <div className="stat-card tinted-yellow"><div className="stat-value yellow">{fmtR$(custoExtraPorPrato)}</div><div className="stat-label">Custo extra por prato</div><div className="stat-sub">{qtdPratos} prato(s) · {fmtR$(custosExtras)} de fixos + perdas</div></div>
       </div>
 
       {(Number(cards.cancelamentos_mes||0) > 0 || Number(cards.cortesias_mes||0) > 0) && (
@@ -6821,7 +7384,7 @@ const SCREENS = [
   { id:'compra',        label:'Lançar Compra',    icon:'🛒', group:'lancamentos' },
   { id:'producao',      label:'Lançar Produção',  icon:'🍳', group:'lancamentos' },
   { id:'venda',         label:'Lançar Venda',     icon:'💰', group:'lancamentos' },
-  { id:'perda',         label:'Lançar Perda',     icon:'⚠️', group:'lancamentos' },
+  { id:'perda',         label:'Usos e Perdas',    icon:'🪣', group:'lancamentos' },
   { id:'despesa',       label:'Despesa Fixa',     icon:'💸', group:'lancamentos' },
   { id:'fichas',        label:'Fichas Técnicas',  icon:'📋', group:'gestao' },
   { id:'estoque-cru',   label:'Estoque In Natura',icon:'📦', group:'gestao' },
