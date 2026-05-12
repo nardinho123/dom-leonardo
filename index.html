@@ -6993,6 +6993,8 @@ function TelaDashboardBackend({ refreshKey }) {
   const [qtdPratos, setQtdPratos] = useState(0);
   const [lucroMes, setLucroMes] = useState(0);
   const [perdasMes, setPerdasMes] = useState(0);
+  const [periodoEstoque, setPeriodoEstoque] = useState('7d');
+  const [evolEstoque, setEvolEstoque] = useState(null);
   const [showContas, setShowContas] = useState(false);
   const [loading, setLoading] = useState(true);
   const chartRef = useRef(null);
@@ -7023,7 +7025,20 @@ function TelaDashboardBackend({ refreshKey }) {
     }
     setLoading(false);
   }
+
+  async function loadEvolEstoque() {
+    const dias = { 'hoje':0, '7d':6, '30d':29 }[periodoEstoque] ?? 6;
+    const fim = new Date();
+    const inicio = new Date(); inicio.setDate(inicio.getDate() - dias); inicio.setHours(0,0,0,0);
+    const { data: r, error } = await sb.rpc('rpc_evolucao_estoque', {
+      p_inicio: inicio.toISOString(),
+      p_fim: fim.toISOString()
+    });
+    if (!error) setEvolEstoque(r);
+  }
+
   useEffect(() => { load(); }, [periodo, custom, refreshKey]);
+  useEffect(() => { loadEvolEstoque(); }, [periodoEstoque, refreshKey]);
 
   const cards = data?.cards || {};
   const serie = data?.serie || [];
@@ -7128,6 +7143,81 @@ function TelaDashboardBackend({ refreshKey }) {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Evolução do Estoque */}
+      <div className="card" style={{borderLeft:'6px solid var(--blue)',padding:18}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:10,marginBottom:14}}>
+          <div className="card-title" style={{margin:0}}>📦 Evolução do Estoque</div>
+          <div style={{display:'flex',gap:6}}>
+            {[['hoje','Hoje'],['7d','7 dias'],['30d','30 dias']].map(([v,l]) => (
+              <button key={v} className={`btn btn-sm ${periodoEstoque===v?'btn-success':'btn-outline'}`} onClick={()=>setPeriodoEstoque(v)}>{l}</button>
+            ))}
+          </div>
+        </div>
+        {!evolEstoque && <Skeleton rows={3}/>}
+        {evolEstoque && (() => {
+          const variacao = Number(evolEstoque.variacao||0);
+          const corVar = variacao > 0 ? 'blue' : variacao < 0 ? 'yellow' : 'muted';
+          const setaVar = variacao > 0 ? '↑ Cresceu' : variacao < 0 ? '↓ Reduziu' : '= Estável';
+          return (
+            <Fragment>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:18,flexWrap:'wrap',marginBottom:14}}>
+                <div style={{textAlign:'center'}}>
+                  <div className="muted" style={{fontSize:12}}>Início do período</div>
+                  <div style={{fontSize:24,fontWeight:700}}>{fmtR$(evolEstoque.valor_inicio)}</div>
+                </div>
+                <div style={{fontSize:32,opacity:.5}}>→</div>
+                <div style={{textAlign:'center'}}>
+                  <div className="muted" style={{fontSize:12}}>Estoque hoje</div>
+                  <div style={{fontSize:24,fontWeight:700}}>{fmtR$(evolEstoque.valor_fim)}</div>
+                </div>
+                <div style={{textAlign:'center',marginLeft:18,padding:'10px 16px',background:'var(--card-2)',borderRadius:8}}>
+                  <div className="muted" style={{fontSize:11}}>{setaVar}</div>
+                  <div style={{fontSize:22,fontWeight:800}} className={corVar}>{variacao >= 0 ? '+' : ''}{fmtR$(variacao)}</div>
+                </div>
+              </div>
+
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+                <div style={{padding:12,background:'var(--card-2)',borderRadius:8}}>
+                  <div className="muted" style={{fontSize:11,marginBottom:6}}>📥 ENTRADAS NO PERÍODO</div>
+                  <div style={{display:'flex',justifyContent:'space-between',padding:'4px 0',fontSize:13}}>
+                    <span>+ Compras</span><span className="green">{fmtR$(evolEstoque.compras)}</span>
+                  </div>
+                  <div style={{display:'flex',justifyContent:'space-between',padding:'4px 0',fontSize:13}}>
+                    <span>+ Auditoria positiva</span><span className="green">{fmtR$(evolEstoque.ajustes_positivos)}</span>
+                  </div>
+                  <div style={{display:'flex',justifyContent:'space-between',paddingTop:6,marginTop:4,borderTop:'1px solid var(--border)',fontSize:13,fontWeight:700}}>
+                    <span>Total entrada</span>
+                    <span className="green">{fmtR$(Number(evolEstoque.compras)+Number(evolEstoque.ajustes_positivos))}</span>
+                  </div>
+                </div>
+                <div style={{padding:12,background:'var(--card-2)',borderRadius:8}}>
+                  <div className="muted" style={{fontSize:11,marginBottom:6}}>📤 SAÍDAS NO PERÍODO</div>
+                  <div style={{display:'flex',justifyContent:'space-between',padding:'4px 0',fontSize:13}}>
+                    <span>− Vendas (CMV)</span><span className="red">{fmtR$(evolEstoque.vendas_cmv)}</span>
+                  </div>
+                  <div style={{display:'flex',justifyContent:'space-between',padding:'4px 0',fontSize:13}}>
+                    <span>− Perdas</span><span className="red">{fmtR$(evolEstoque.perdas)}</span>
+                  </div>
+                  <div style={{display:'flex',justifyContent:'space-between',padding:'4px 0',fontSize:13}}>
+                    <span>− Auditoria negativa</span><span className="red">{fmtR$(evolEstoque.ajustes_negativos)}</span>
+                  </div>
+                  <div style={{display:'flex',justifyContent:'space-between',paddingTop:6,marginTop:4,borderTop:'1px solid var(--border)',fontSize:13,fontWeight:700}}>
+                    <span>Total saída</span>
+                    <span className="red">{fmtR$(Number(evolEstoque.vendas_cmv)+Number(evolEstoque.perdas)+Number(evolEstoque.ajustes_negativos))}</span>
+                  </div>
+                </div>
+              </div>
+
+              {Number(evolEstoque.itens_negativos_ignorados||0) > 0 && (
+                <div className="muted" style={{fontSize:11,marginTop:10,textAlign:'center'}}>
+                  ⚠️ {evolEstoque.itens_negativos_ignorados} item(ns) com saldo negativo ignorado(s) no cálculo
+                </div>
+              )}
+            </Fragment>
+          );
+        })()}
       </div>
 
       <div className="card" style={{background:'var(--card-2)'}}>
