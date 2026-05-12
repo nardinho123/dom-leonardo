@@ -6995,6 +6995,11 @@ function TelaDashboardBackend({ refreshKey }) {
   const [perdasMes, setPerdasMes] = useState(0);
   const [periodoEstoque, setPeriodoEstoque] = useState('7d');
   const [evolEstoque, setEvolEstoque] = useState(null);
+  const [planejamento, setPlanejamento] = useState(null);
+  const [diasCobertura, setDiasCobertura] = useState(7);
+  const [mesesReserva, setMesesReserva] = useState(3);
+  const [showItensComprar, setShowItensComprar] = useState(false);
+  const [showItensProduzir, setShowItensProduzir] = useState(false);
   const [showContas, setShowContas] = useState(false);
   const [loading, setLoading] = useState(true);
   const chartRef = useRef(null);
@@ -7037,8 +7042,18 @@ function TelaDashboardBackend({ refreshKey }) {
     if (!error) setEvolEstoque(r);
   }
 
+  async function loadPlanejamento() {
+    const { data: r, error } = await sb.rpc('rpc_planejamento_gerencial', {
+      p_meta_breakeven_mes: META_BREAKEVEN_MES,
+      p_dias_cobertura: diasCobertura,
+      p_meses_reserva: mesesReserva
+    });
+    if (!error) setPlanejamento(r);
+  }
+
   useEffect(() => { load(); }, [periodo, custom, refreshKey]);
   useEffect(() => { loadEvolEstoque(); }, [periodoEstoque, refreshKey]);
+  useEffect(() => { loadPlanejamento(); }, [diasCobertura, mesesReserva, refreshKey]);
 
   const cards = data?.cards || {};
   const serie = data?.serie || [];
@@ -7122,6 +7137,36 @@ function TelaDashboardBackend({ refreshKey }) {
           <div style={{height:'100%',width:`${Math.min(100, breakevenPct)}%`,background:corBarra,transition:'width .5s ease',borderRadius:12}}/>
           {breakevenPct > 100 && <div style={{position:'absolute',top:0,right:8,height:'100%',display:'flex',alignItems:'center',fontSize:12,fontWeight:700,color:'#fff'}}>+{fmtPct(breakevenPct-100)} acima!</div>}
         </div>
+
+        {planejamento && (() => {
+          const m = planejamento.metricas || {};
+          const b = planejamento.breakeven || {};
+          if (Number(b.pedidos_faltam||0) === 0) return null;
+          return (
+            <div style={{marginTop:14,padding:12,background:'var(--card-2)',borderRadius:8}}>
+              <div className="muted" style={{fontSize:11,marginBottom:6}}>📐 QUANTOS PEDIDOS FALTAM PRA FECHAR O MÊS</div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:10,fontSize:13}}>
+                <div>
+                  <div className="muted" style={{fontSize:11}}>Ticket médio líquido</div>
+                  <div style={{fontWeight:700}}>{fmtR$(m.ticket_medio_liquido)}</div>
+                </div>
+                <div>
+                  <div className="muted" style={{fontSize:11}}>Lucro líquido / pedido</div>
+                  <div style={{fontWeight:700}}>{fmtR$(m.lucro_liquido_por_pedido)} <span className="muted" style={{fontSize:11}}>({fmtPct(m.margem_pct)})</span></div>
+                </div>
+                <div>
+                  <div className="muted" style={{fontSize:11}}>Faltam</div>
+                  <div style={{fontWeight:800,fontSize:20}} className="yellow">≈ {b.pedidos_faltam} pedidos</div>
+                </div>
+                <div>
+                  <div className="muted" style={{fontSize:11}}>No ritmo de {fmt(m.media_pedidos_dia,1)}/dia</div>
+                  <div style={{fontWeight:700}}>≈ {b.dias_estimados_no_ritmo} dias</div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         <div style={{marginTop:12,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
           <span className="muted" style={{fontSize:12}}>Lucro real (bruto − descontos − CMV) do mês atual</span>
           <button className="btn btn-outline btn-sm" onClick={()=>setShowContas(s=>!s)}>{showContas?'Ocultar':'Ver'} detalhes das contas</button>
@@ -7220,6 +7265,80 @@ function TelaDashboardBackend({ refreshKey }) {
         })()}
       </div>
 
+      {/* Zona 2: Próximas Compras & Produções */}
+      <div className="card" style={{borderLeft:'6px solid var(--yellow)',padding:18}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:10,marginBottom:14}}>
+          <div className="card-title" style={{margin:0}}>🛒 Próximas Compras & Produções</div>
+          <div style={{display:'flex',gap:6}}>
+            {[5,7,10,15].map(d => (
+              <button key={d} className={`btn btn-sm ${diasCobertura===d?'btn-success':'btn-outline'}`} onClick={()=>setDiasCobertura(d)}>{d}d</button>
+            ))}
+          </div>
+        </div>
+        <div className="muted" style={{fontSize:12,marginBottom:12}}>Cobertura alvo: <b>{diasCobertura} dias</b> · baseado no consumo dos últimos 7 dias</div>
+
+        {!planejamento && <Skeleton rows={3}/>}
+        {planejamento && (() => {
+          const e = planejamento.estoque || {};
+          const itensC = e.itens_comprar || [];
+          const itensP = e.itens_produzir || [];
+          if (!itensC.length && !itensP.length) {
+            return <div className="empty" style={{padding:20,textAlign:'center'}}>✅ Estoque coberto pra {diasCobertura} dias — nada pra repor</div>;
+          }
+          return (
+            <Fragment>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:10,marginBottom:14}}>
+                <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(e.total_comprar_valor)}</div><div className="stat-label">Total a comprar</div><div className="stat-sub">{itensC.length} item(ns) in natura</div></div>
+                <div className="stat-card tinted-yellow"><div className="stat-value yellow">{fmtR$(e.total_produzir_valor)}</div><div className="stat-label">Total a produzir</div><div className="stat-sub">{itensP.length} preparado(s)</div></div>
+                <div className="stat-card tinted-blue"><div className="stat-value blue">{fmtR$(e.total_geral)}</div><div className="stat-label">Total geral</div><div className="stat-sub">≈ {e.pedidos_para_repor} pedidos pra repor</div></div>
+              </div>
+
+              {itensC.length > 0 && (
+                <div style={{marginBottom:12}}>
+                  <div onClick={()=>setShowItensComprar(s=>!s)} style={{cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 12px',background:'var(--card-2)',borderRadius:8}}>
+                    <b>📦 COMPRAR (in natura) — {itensC.length} item(ns)</b>
+                    <span className="muted">{showItensComprar?'▾':'▸'} Ver lista</span>
+                  </div>
+                  {showItensComprar && (
+                    <div style={{padding:'10px 12px',background:'var(--card-2)',borderTop:'1px solid var(--border)',borderRadius:'0 0 8px 8px'}}>
+                      {itensC.map((it,i) => (
+                        <div key={i} style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr',gap:8,padding:'6px 0',borderBottom:i===itensC.length-1?'none':'1px dashed var(--border)',fontSize:13,alignItems:'center'}}>
+                          <span><b>{it.nome}</b> <span className="muted" style={{fontSize:11}}>({TIPO_LABEL[it.tipo]||it.tipo})</span></span>
+                          <span className={`badge badge-${it.dias_cobertura<1?'red':it.dias_cobertura<3?'yellow':'green'}`} style={{justifySelf:'start'}}>{fmt(it.dias_cobertura,1)}d cobertura</span>
+                          <span>Faltam <b>{fmtG(it.gramas_falta)}</b></span>
+                          <span className="red" style={{textAlign:'right',fontWeight:600}}>{fmtR$(it.custo_estimado)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {itensP.length > 0 && (
+                <div>
+                  <div onClick={()=>setShowItensProduzir(s=>!s)} style={{cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 12px',background:'var(--card-2)',borderRadius:8}}>
+                    <b>🍳 PRODUZIR (preparados) — {itensP.length} item(ns)</b>
+                    <span className="muted">{showItensProduzir?'▾':'▸'} Ver lista</span>
+                  </div>
+                  {showItensProduzir && (
+                    <div style={{padding:'10px 12px',background:'var(--card-2)',borderTop:'1px solid var(--border)',borderRadius:'0 0 8px 8px'}}>
+                      {itensP.map((it,i) => (
+                        <div key={i} style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr',gap:8,padding:'6px 0',borderBottom:i===itensP.length-1?'none':'1px dashed var(--border)',fontSize:13,alignItems:'center'}}>
+                          <span><b>{it.nome}</b></span>
+                          <span className={`badge badge-${it.dias_cobertura<1?'red':it.dias_cobertura<3?'yellow':'green'}`} style={{justifySelf:'start'}}>{fmt(it.dias_cobertura,1)}d cobertura</span>
+                          <span>Produzir <b>{fmtG(it.gramas_falta)}</b></span>
+                          <span className="yellow" style={{textAlign:'right',fontWeight:600}}>{fmtR$(it.custo_estimado)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </Fragment>
+          );
+        })()}
+      </div>
+
       <div className="card" style={{background:'var(--card-2)'}}>
         <div className="card-title">📈 Indicadores secundários do período</div>
         <div className="stat-grid" style={{marginBottom:0}}>
@@ -7243,6 +7362,76 @@ function TelaDashboardBackend({ refreshKey }) {
       <div className="card">
         <div className="card-title">Receita menos despesas no filtro</div>
         <div className="chart-wrap"><canvas ref={chartRef}/></div>
+      </div>
+
+      {/* Zona 3: Construção de Reserva (Runway) */}
+      <div className="card" style={{borderLeft:'6px solid var(--purple)',padding:18}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:10,marginBottom:14}}>
+          <div className="card-title" style={{margin:0}}>💰 Construção de Reserva</div>
+          <div style={{display:'flex',gap:6}}>
+            {[1,3,6].map(m => (
+              <button key={m} className={`btn btn-sm ${mesesReserva===m?'btn-success':'btn-outline'}`} onClick={()=>setMesesReserva(m)}>{m}m</button>
+            ))}
+          </div>
+        </div>
+        <div className="muted" style={{fontSize:12,marginBottom:14}}>
+          Meta: ter <b>{mesesReserva} {mesesReserva===1?'mês':'meses'}</b> de despesas pessoais cobertas pra rodar sem vender nada
+        </div>
+
+        {!planejamento && <Skeleton rows={3}/>}
+        {planejamento && (() => {
+          const r = planejamento.reserva || {};
+          const m = planejamento.metricas || {};
+          const caixaAtual = Number(r.caixa_atual||0);
+          const meta = Number(r.meta_reserva||0);
+          const pct = meta > 0 ? Math.max(-100, Math.min(100, (caixaAtual / meta) * 100)) : 0;
+          const corBarra = caixaAtual < 0 ? 'var(--red)' : pct >= 100 ? 'var(--green)' : pct >= 50 ? 'var(--yellow)' : 'var(--blue)';
+          return (
+            <Fragment>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:10,marginBottom:10}}>
+                <div>
+                  <div className="muted" style={{fontSize:12}}>Caixa atual</div>
+                  <div style={{fontSize:24,fontWeight:800}} className={caixaAtual<0?'red':'green'}>{fmtR$(caixaAtual)}</div>
+                </div>
+                <div style={{textAlign:'center'}}>
+                  <div className="muted" style={{fontSize:12}}>Meta {mesesReserva}m</div>
+                  <div style={{fontSize:24,fontWeight:800}}>{fmtR$(meta)}</div>
+                </div>
+                <div style={{textAlign:'right'}}>
+                  <div className="muted" style={{fontSize:12}}>Progresso</div>
+                  <div style={{fontSize:24,fontWeight:800}} className={caixaAtual<0?'red':'blue'}>{fmtPct(pct)}</div>
+                </div>
+              </div>
+              <div style={{height:24,background:'var(--card-2)',borderRadius:12,overflow:'hidden',position:'relative'}}>
+                <div style={{height:'100%',width:`${Math.max(0,Math.min(100, pct))}%`,background:corBarra,transition:'width .5s ease',borderRadius:12}}/>
+              </div>
+
+              <div style={{marginTop:14,padding:12,background:'var(--card-2)',borderRadius:8}}>
+                <div className="muted" style={{fontSize:11,marginBottom:6}}>📐 PRA CONSTRUIR ESSA RESERVA</div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:10,fontSize:13}}>
+                  <div>
+                    <div className="muted" style={{fontSize:11}}>Falta construir</div>
+                    <div style={{fontWeight:700,fontSize:18}} className="red">{fmtR$(r.falta_para_reserva)}</div>
+                  </div>
+                  <div>
+                    <div className="muted" style={{fontSize:11}}>Pedidos necessários</div>
+                    <div style={{fontWeight:700,fontSize:18}} className="purple">≈ {r.pedidos_para_reserva}</div>
+                    <div className="muted" style={{fontSize:11}}>× {fmtR$(m.ticket_medio_bruto)} = {fmtR$(r.receita_bruta_necessaria)}</div>
+                  </div>
+                  <div>
+                    <div className="muted" style={{fontSize:11}}>No ritmo de {fmt(m.media_pedidos_dia,1)}/dia</div>
+                    <div style={{fontWeight:700,fontSize:18}}>≈ {r.dias_estimados_ritmo_atual} dias</div>
+                    <div className="muted" style={{fontSize:11}}>(~{fmt(r.meses_estimados,1)} meses)</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="muted" style={{fontSize:11,marginTop:10,padding:'8px 10px',background:'var(--card-2)',borderRadius:6,opacity:.7}}>
+                ⓘ Tecnicamente isso se chama <b>runway</b> ou <b>fundo de reserva operacional</b>. EBITDA é outra coisa — uma métrica de lucro do DRE, não de reserva de caixa.
+              </div>
+            </Fragment>
+          );
+        })()}
       </div>
     </div>
   );
