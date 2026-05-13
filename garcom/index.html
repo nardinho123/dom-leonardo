@@ -363,7 +363,7 @@ const PRATOS = [
   }
 ];
 
-// Frases mock do Marco (depois virão do LLM)
+// Frases de RONDA/IDLE (UI local, antes do chat abrir)
 const FALAS_RONDA = ['Passando...', 'Tô por aqui.', 'Tudo certo?', 'Tô de olho 😉'];
 const FALAS_IDLE_45S = [
   'Tá tudo certo aí?',
@@ -371,13 +371,49 @@ const FALAS_IDLE_45S = [
   'Se quiser uma sugestão, é só pedir.',
   'Posso te contar o que tá saindo melhor hoje.'
 ];
-const SAUDACOES = [
-  'Ciao! Tudo bem por aí?',
-  'Boa noite! Vamos cuidar do jantar?',
-  'E aí, tudo certo?',
-  'Olá! Que bom te ver aqui.',
-  'Bem-vindo(a)! Tem alguma coisa em mente ou prefere uma sugestão?'
-];
+
+// ============================================================================
+// SUPABASE / EDGE FUNCTION
+// ============================================================================
+const SUPABASE_URL = 'https://jewamqbdonudiapxbzay.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY';
+const GARCOM_RESPONDER_URL = SUPABASE_URL + '/functions/v1/garcom-responder';
+
+function deviceId() {
+  let id = localStorage.getItem('garcom_device_id');
+  if (!id) {
+    id = 'dev_' + crypto.randomUUID();
+    localStorage.setItem('garcom_device_id', id);
+  }
+  return id;
+}
+
+function getSessaoId() { return localStorage.getItem('garcom_sessao_id'); }
+function setSessaoId(id) { if (id) localStorage.setItem('garcom_sessao_id', id); }
+function limparSessao() { localStorage.removeItem('garcom_sessao_id'); }
+
+async function chamarMarco(mensagem) {
+  const r = await fetch(GARCOM_RESPONDER_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({
+      sessao_id: getSessaoId(),
+      mensagem,
+      device_id: deviceId(),
+    }),
+  });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error(t || ('HTTP ' + r.status));
+  }
+  const data = await r.json();
+  if (data?.sessao_id) setSessaoId(data.sessao_id);
+  return data;
+}
 
 function sortear(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function vibrate(ms) { try { navigator.vibrate?.(ms); } catch (_) {} }
@@ -539,24 +575,25 @@ function App() {
     abrirChat();
   };
 
-  const abrirChat = () => {
+  const abrirChat = async () => {
     setChatOpen(true);
     setBalaoTexto(null);
     setGarcomState('peek');
-    // Saudação inicial mockada
+    // Primeira abertura → chama o Marco de verdade com uma saudação implícita
     if (mensagens.length === 0) {
       setDigitando(true);
-      setTimeout(() => {
+      try {
+        const resp = await chamarMarco('(cliente acabou de abrir o chat, sauda ele)');
         setDigitando(false);
-        setMensagens([{ id: 1, autor: 'marco', texto: sortear(SAUDACOES) }]);
-        setTimeout(() => {
-          setDigitando(true);
-          setTimeout(() => {
-            setDigitando(false);
-            setMensagens(m => [...m, { id: 2, autor: 'marco', texto: 'Como posso te chamar?' }]);
-          }, 1200);
-        }, 800);
-      }, 1500);
+        const f = resp?.falas?.[0];
+        if (f) {
+          setMensagens([{ id: Date.now(), autor: 'marco', texto: f.texto }]);
+        }
+      } catch (err) {
+        setDigitando(false);
+        setMensagens([{ id: Date.now(), autor: 'marco', texto: 'Eita, o salão tá com problema técnico. Tenta de novo daqui a pouco?' }]);
+        console.error(err);
+      }
     }
   };
 
@@ -576,45 +613,47 @@ function App() {
     clearTimeout(lpTimer.current);
   };
 
-  const assobiar = () => {
+  const assobiar = async () => {
     vibrate([30, 60, 30]);
     setQuickMenu(false);
-    abrirChat();
-    // Resposta acelerada
-    setTimeout(() => {
-      setDigitando(true);
-      setTimeout(() => {
-        setDigitando(false);
-        setMensagens(m => [...m, {
-          id: Date.now(),
-          autor: 'marco',
-          texto: sortear([
-            'Ouvido aguçado! kkk Cheguei. Manda.',
-            'Eita, esse assobio chegou até a cozinha. Tô aqui.',
-            'Pera, derrubei o guardanapo correndo. Mas cheguei! Diz aí.'
-          ])
-        }]);
-      }, 600);
-    }, 200);
+    setChatOpen(true);
+    setBalaoTexto(null);
+    setDigitando(true);
+    try {
+      const resp = await chamarMarco('(o cliente acabou de assobiar pra te chamar, atende ele de pronto)');
+      setDigitando(false);
+      const f = resp?.falas?.[0];
+      if (f) setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: f.texto }]);
+    } catch (err) {
+      setDigitando(false);
+      console.error(err);
+    }
   };
 
-  const enviarMsg = () => {
+  const enviarMsg = async () => {
     if (!input.trim()) return;
     const msg = input.trim();
     setMensagens(m => [...m, { id: Date.now(), autor: 'cliente', texto: msg }]);
     setInput('');
-    // Mock: Marco responde algo
-    setTimeout(() => {
-      setDigitando(true);
+    setDigitando(true);
+    try {
+      const resp = await chamarMarco(msg);
+      const f = resp?.falas?.[0];
+      // Respeita o delay humano calculado pelo servidor
+      const delay = Math.max(400, Math.min(f?.delay_ms ?? 1500, 5000));
       setTimeout(() => {
         setDigitando(false);
-        setMensagens(m => [...m, {
-          id: Date.now(),
-          autor: 'marco',
-          texto: 'Aqui é só esqueleto ainda — quando conectarmos a IA, eu respondo de verdade 😉'
-        }]);
-      }, 1400);
-    }, 400);
+        if (f) setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: f.texto }]);
+      }, delay);
+    } catch (err) {
+      setDigitando(false);
+      setMensagens(m => [...m, {
+        id: Date.now(),
+        autor: 'marco',
+        texto: 'Ops, deu uma travada aqui. Manda de novo, por favor.'
+      }]);
+      console.error(err);
+    }
   };
 
   // Long-press num prato → fala do Marco
