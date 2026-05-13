@@ -14,6 +14,7 @@ const cors = {
 
 type Humor = { humor_nome: string; prompt_modifier?: string; peso: number };
 type Fala = { autor: "marco"; destinatario: "cliente"; texto: string; delay_ms: number; tipo: "salao" };
+type MemoryMessage = { role: "user" | "assistant"; content: string };
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -60,6 +61,18 @@ function partOfDay(): string {
 
 function fala(texto: string, humor = "anfitriao_classico"): Fala {
   return { autor: "marco", destinatario: "cliente", texto, delay_ms: calcDelay(texto, humor), tipo: "salao" };
+}
+
+function msg(role: "user" | "assistant", content: string): MemoryMessage | null {
+  const text = String(content || "").trim();
+  if (!text) return null;
+  return { role, content: text.slice(0, 1400) };
+}
+
+function withMemory(memoria: Record<string, any>, entries: Array<MemoryMessage | null>) {
+  const current = Array.isArray(memoria.mensagens) ? memoria.mensagens : [];
+  const cleanEntries = entries.filter(Boolean) as MemoryMessage[];
+  return { ...memoria, mensagens: [...current, ...cleanEntries].slice(-20) };
 }
 
 function normalizarTelefone(v: string): string {
@@ -186,24 +199,38 @@ Deno.serve(async (req: Request) => {
     if (acao === "salvar_nome") {
       const nomeFinal = String(nome || cliente?.nome || "").trim().slice(0, 80);
       if (!nomeFinal) return json({ error: "nome obrigatorio" }, 400);
-      const nextMemoria = { ...memoria, cliente: { ...(memoria.cliente ?? {}), nome: nomeFinal } };
+      const resposta = `Prazer, ${nomeFinal}. Agora ficou mais bonito de atender.`;
+      const nextMemoria = withMemory(
+        { ...memoria, cliente: { ...(memoria.cliente ?? {}), nome: nomeFinal } },
+        [msg("user", `Meu nome e ${nomeFinal}`), msg("assistant", resposta)],
+      );
       await sb.from("sessoes").update({ cliente_nome: nomeFinal, memoria: nextMemoria }).eq("id", sessao.id);
-      return json({ sessao_id: sessao.id, cliente_nome: nomeFinal, falas: [fala(`Prazer, ${nomeFinal}. Agora ficou mais bonito de atender.`)] });
+      return json({ sessao_id: sessao.id, cliente_nome: nomeFinal, falas: [fala(resposta)] });
     }
 
     if (acao === "salvar_endereco") {
       const enderecoFinal = String(endereco_texto || cliente?.endereco_texto || "").trim();
       if (!enderecoFinal) return json({ error: "endereco obrigatorio" }, 400);
-      const nextMemoria = { ...memoria, cliente: { ...(memoria.cliente ?? {}), endereco_texto: enderecoFinal } };
+      const resposta = "Anotei o endereco. Ja da pra trabalhar com uma estimativa mais honesta.";
+      const nextMemoria = withMemory(
+        { ...memoria, cliente: { ...(memoria.cliente ?? {}), endereco_texto: enderecoFinal } },
+        [msg("user", `Meu endereco e ${enderecoFinal}`), msg("assistant", resposta)],
+      );
       await sb.from("sessoes").update({ memoria: nextMemoria }).eq("id", sessao.id);
+      return json({ sessao_id: sessao.id, falas: [fala(resposta)] });
       return json({ sessao_id: sessao.id, falas: [fala("Anotei o endereço. Já dá pra trabalhar com uma estimativa mais honesta.")] });
     }
 
     if (acao === "salvar_telefone") {
       const telefoneFinal = normalizarTelefone(telefone || cliente?.telefone || "");
       if (!telefoneFinal) return json({ error: "telefone obrigatorio" }, 400);
-      const nextMemoria = { ...memoria, cliente: { ...(memoria.cliente ?? {}), telefone: telefoneFinal } };
+      const resposta = "Telefone anotado. So uso pra entrega nao virar caca ao tesouro, prometo.";
+      const nextMemoria = withMemory(
+        { ...memoria, cliente: { ...(memoria.cliente ?? {}), telefone: telefoneFinal } },
+        [msg("user", `Meu telefone e ${telefoneFinal}`), msg("assistant", resposta)],
+      );
       await sb.from("sessoes").update({ memoria: nextMemoria }).eq("id", sessao.id);
+      return json({ sessao_id: sessao.id, falas: [fala(resposta)] });
       return json({ sessao_id: sessao.id, falas: [fala("Telefone anotado. Só uso pra entrega não virar caça ao tesouro, prometo.")] });
     }
 
@@ -215,9 +242,12 @@ Deno.serve(async (req: Request) => {
       const texto = enderecoFinal
         ? `Pra ${enderecoFinal}, eu trabalharia com algo perto de ${min}-${max} min agora. Não vou te vender milagre: se a rua travar ou o movimento subir, eu te aviso.`
         : `Sem endereço eu fico no chute bonito: hoje a base está perto de ${min}-${max} min. Me passa rua, número e bairro que eu afino isso.`;
-      const nextMemoria = enderecoFinal
-        ? { ...memoria, cliente: { ...(memoria.cliente ?? {}), endereco_texto: enderecoFinal }, ultima_estimativa: { min, max, em: new Date().toISOString() } }
-        : memoria;
+      const nextMemoria = withMemory(
+        enderecoFinal
+          ? { ...memoria, cliente: { ...(memoria.cliente ?? {}), endereco_texto: enderecoFinal }, ultima_estimativa: { min, max, em: new Date().toISOString() } }
+          : { ...memoria, ultima_estimativa: { min, max, em: new Date().toISOString() } },
+        [msg("user", enderecoFinal ? `Quero saber o tempo para ${enderecoFinal}` : "Quero saber o tempo de entrega"), msg("assistant", texto)],
+      );
       await sb.from("sessoes").update({ memoria: nextMemoria }).eq("id", sessao.id);
       return json({ sessao_id: sessao.id, estimativa: { min, max }, falas: [fala(texto)] });
     }
@@ -261,12 +291,17 @@ Deno.serve(async (req: Request) => {
       const { data: pedido, error } = await sbPub.rpc("criar_pedido", payload);
       if (error) throw error;
 
-      const nextMemoria = {
-        ...memoria,
-        cliente: { ...(memoria.cliente ?? {}), nome: nomeFinal, telefone: telefoneFinal, endereco_texto: enderecoTextoFinal },
-        ultimo_pedido_draft: compactCartForMemory(carrinho || []),
-        ultimo_pedido_admin: pedido,
-      };
+      const numero = pedido?.numero_pedido ? ` #${pedido.numero_pedido}` : "";
+      const respostaPedido = `Perfeito, ${nomeFinal}. Enviei seu pedido${numero} para o Dom analisar. Agora ele aceita ou recusa no painel antes da cozinha comecar.`;
+      const nextMemoria = withMemory(
+        {
+          ...memoria,
+          cliente: { ...(memoria.cliente ?? {}), nome: nomeFinal, telefone: telefoneFinal, endereco_texto: enderecoTextoFinal },
+          ultimo_pedido_draft: compactCartForMemory(carrinho || []),
+          ultimo_pedido_admin: pedido,
+        },
+        [msg("user", `Finalizar pedido: ${compactCartForMemory(carrinho || []).map((it) => `${it.quantidade}x ${it.nome}`).join(", ")}`), msg("assistant", respostaPedido)],
+      );
       await sb.from("sessoes").update({
         cliente_nome: nomeFinal,
         memoria: nextMemoria,
@@ -283,7 +318,16 @@ Deno.serve(async (req: Request) => {
         contexto: { pedido, total_estimado: cartTotal(carrinho || []) },
       });
 
-      const numero = pedido?.numero_pedido ? ` #${pedido.numero_pedido}` : "";
+      const numeroLegado = pedido?.numero_pedido ? ` #${pedido.numero_pedido}` : "";
+      return json({
+        sessao_id: sessao.id,
+        cliente_nome: nomeFinal,
+        pedido,
+        carrinho: [],
+        total: cartTotal(carrinho || []),
+        eventos: [{ tipo: "pedido_enviado_admin", payload: pedido }],
+        falas: [fala(respostaPedido)],
+      });
       return json({
         sessao_id: sessao.id,
         cliente_nome: nomeFinal,
@@ -325,7 +369,9 @@ Deno.serve(async (req: Request) => {
       .eq("dia", new Date().toISOString().split("T")[0])
       .maybeSingle();
 
-    const historico: Array<{ role: "user" | "assistant"; content: string }> = memoria.mensagens ?? [];
+    const historico: Array<{ role: "user" | "assistant"; content: string }> = Array.isArray(memoria.mensagens)
+      ? memoria.mensagens.slice(-20)
+      : [];
     const clienteMem = memoria.cliente ?? {};
     const clienteNome = sessao.cliente_nome || clienteMem.nome || null;
     const enderecoMem = clienteMem.endereco_texto || null;
@@ -443,14 +489,13 @@ REGRAS:
     }
 
     const texto = String(respMsg.content ?? "").trim() || "Tô aqui, pode mandar.";
-    const novoHistorico = [
-      ...historico,
-      { role: "user" as const, content: mensagem },
-      { role: "assistant" as const, content: texto },
-    ].slice(-20);
+    const memoriaComHistorico = withMemory(
+      nextMemoria,
+      [msg("user", mensagem), msg("assistant", texto)],
+    );
 
     await sb.from("sessoes").update({
-      memoria: { ...nextMemoria, mensagens: novoHistorico, ultimo_humor: humor.humor_nome },
+      memoria: { ...memoriaComHistorico, ultimo_humor: humor.humor_nome },
       ultima_interacao_em: new Date().toISOString(),
     }).eq("id", sessao.id);
 
