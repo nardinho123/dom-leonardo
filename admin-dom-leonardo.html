@@ -666,7 +666,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useEffect, useMemo, useState } = React;
+    const { useEffect, useMemo, useRef, useState } = React;
 
     const SUPABASE_URL = 'https://jewamqbdonudiapxbzay.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY';
@@ -940,8 +940,43 @@
       const [orderDetail, setOrderDetail] = useState(null);
       const [selectedVisitor, setSelectedVisitor] = useState(null);
       const [adminChatText, setAdminChatText] = useState('');
+      const [soundEnabled, setSoundEnabled] = useState(false);
+      const audioCtxRef = useRef(null);
 
       const toast = (message, type = 'ok') => setToastState({ message, type });
+
+      function playOrderSound(force = false) {
+        if (!force && !soundEnabled) return;
+        try {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          if (!Ctx) return;
+          const ctx = audioCtxRef.current || new Ctx();
+          audioCtxRef.current = ctx;
+          if (ctx.state === 'suspended') ctx.resume();
+          const now = ctx.currentTime;
+          [0, 0.18, 0.36].forEach((offset, index) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = index === 1 ? 920 : 740;
+            gain.gain.setValueAtTime(0.0001, now + offset);
+            gain.gain.exponentialRampToValueAtTime(0.18, now + offset + 0.018);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.13);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + offset);
+            osc.stop(now + offset + 0.15);
+          });
+        } catch (error) {
+          console.warn('Som bloqueado pelo navegador', error);
+        }
+      }
+
+      function enableOrderSound() {
+        setSoundEnabled(true);
+        playOrderSound(true);
+        toast('Som dos pedidos ativado.');
+      }
 
       useEffect(() => {
         sb.auth.getSession().then(({ data }) => {
@@ -959,10 +994,18 @@
       useEffect(() => {
         if (!session) return;
         const channel = sb.channel('admin-pedidos')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, () => loadPedidos())
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos' }, payload => {
+            if (payload?.new?.status === 'novo') {
+              toast(`Novo pedido chegou${payload.new.numero_pedido ? `: #${payload.new.numero_pedido}` : ''}.`);
+              playOrderSound();
+            }
+            loadPedidos();
+          })
+          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pedidos' }, () => loadPedidos())
+          .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'pedidos' }, () => loadPedidos())
           .subscribe();
         return () => { sb.removeChannel(channel); };
-      }, [session, statusFilter]);
+      }, [session, statusFilter, soundEnabled]);
 
       useEffect(() => {
         if (!session) return;
@@ -1425,6 +1468,7 @@
               </div>
               <div className="actions">
                 <a className="btn" href="cardapio-cliente.html" target="_blank">Abrir cardápio</a>
+                <button className={`btn ${soundEnabled ? 'btn-primary' : ''}`} onClick={enableOrderSound}>{soundEnabled ? 'Som ativo' : 'Ativar som'}</button>
                 <button className="btn" onClick={loadAll}>Atualizar dados</button>
                 <button className="btn btn-danger" onClick={logout}>Sair</button>
               </div>
@@ -2050,7 +2094,12 @@
                 </div>
                 <div className="actions">
                   <button className="btn btn-small" onClick={() => openOrder(p)}>Detalhes</button>
-                  {STATUS.map(s => <button key={s} className="btn btn-small" disabled={s === p.status} onClick={() => updateStatus(p, s)}>{STATUS_LABEL[s]}</button>)}
+                  {p.status === 'novo'
+                    ? <>
+                        <button className="btn btn-small btn-primary" onClick={() => updateStatus(p, 'em_preparo')}>Aceitar</button>
+                        <button className="btn btn-small btn-danger" onClick={() => updateStatus(p, 'cancelado')}>Recusar</button>
+                      </>
+                    : STATUS.map(s => <button key={s} className="btn btn-small" disabled={s === p.status} onClick={() => updateStatus(p, s)}>{STATUS_LABEL[s]}</button>)}
                 </div>
               </div>
             ))}

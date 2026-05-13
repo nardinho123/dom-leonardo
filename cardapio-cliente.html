@@ -1,257 +1,249 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0908" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="format-detection" content="telephone=no" />
 <title>Dom Leonardo - Cardapio</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
 :root{
-  --red:#EA1D2C;--red-dark:#c91825;--green:#50A773;--purple:#9B59E5;--blue:#2F80ED;--yellow:#F2C94C;--orange:#F2994A;
-  --bg:#F2F2F2;--text:#3F3E3E;--muted:#717171;--line:#E8E8E8;--white:#FFFFFF;
-  --shadow:0 10px 28px rgba(0,0,0,.12);
+  --safe-top:env(safe-area-inset-top);
+  --safe-bottom:env(safe-area-inset-bottom);
+  --gold:#d4af37;
+  --gold-2:#e7c66d;
+  --gold-dim:#8a6f1f;
+  --bg:#0a0908;
+  --bg-soft:#110f0c;
+  --card:#1c1814;
+  --card-2:#15120e;
+  --line:rgba(212,175,55,.18);
+  --line-strong:rgba(212,175,55,.32);
+  --text:#f3ece0;
+  --muted:#9f978b;
+  --danger:#d95b4b;
+  --ok:#72c18b;
+  --shadow:0 22px 60px rgba(0,0,0,.46);
 }
-*{box-sizing:border-box}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);overflow-x:hidden}
 html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Inter",Roboto,sans-serif;padding-top:var(--safe-top);padding-bottom:var(--safe-bottom);overscroll-behavior-y:contain}
 button,input,textarea,select{font:inherit}
-button{cursor:pointer}
-.app{min-height:100vh;padding-bottom:96px;background:var(--bg)}
-.app.theme-cinza{--bg:#ededed;--white:#fff}
-.app.theme-preto{--bg:#161616;--text:#f5f5f5;--muted:#bdbdbd;--line:#333;--white:#222}
-.app.theme-preto .store-card,.app.theme-preto .coupon,.app.theme-preto .dish-card,.app.theme-preto .sheet,.app.theme-preto .category-tabs,.app.theme-preto .bottom-bag,.app.theme-preto .group,.app.theme-preto .upsell{background:#222;color:var(--text)}
-.app.theme-preto .meta-chip,.app.theme-preto .category-tabs button,.app.theme-preto .tag,.app.theme-preto .icon-btn{background:#303030;color:#ddd}
-.hero{position:relative;background:#2d1512;height:188px;overflow:hidden}
-.hero-img{position:absolute;inset:0;background:linear-gradient(135deg,#5d211b,#17100f 58%,#2b150f);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:48px;letter-spacing:.03em}
-.hero-img.has-photo{background-size:cover;background-position:center}
-.hero-video{width:100%;height:100%;object-fit:cover}
-.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.12),rgba(0,0,0,.56))}
-.top-pill{position:absolute;left:14px;top:12px;z-index:2;background:rgba(255,255,255,.94);border:0;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:800;color:var(--text)}
-.store-card{position:relative;margin:-44px 12px 10px;background:#fff;border-radius:18px;padding:54px 14px 14px;box-shadow:var(--shadow);z-index:3}
-.logo{position:absolute;top:-42px;left:16px;width:82px;height:82px;border-radius:50%;border:4px solid #fff;background:#fff;box-shadow:0 8px 20px rgba(0,0,0,.16);display:grid;place-items:center;font-size:34px;font-weight:900;color:var(--red);overflow:hidden}
-.logo img{width:100%;height:100%;object-fit:cover}
-.store-title{display:flex;align-items:flex-start;gap:8px;justify-content:space-between}
-h1{font-size:22px;margin:0 0 4px;font-weight:900;line-height:1.1}
-.small{font-size:12px;color:var(--muted)}
-.rating{display:flex;align-items:center;gap:4px;color:#E6A100;font-size:12px;font-weight:800;white-space:nowrap;margin-top:2px}
-.store-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.meta-chip{background:#f7f7f7;border-radius:999px;padding:6px 8px;color:var(--muted);font-size:12px;font-weight:650}
-.open{color:var(--green)}.closed{color:var(--red)}
-.coupon-section{padding:0 12px 8px}
-.coupon-section-title{display:flex;align-items:end;justify-content:space-between;gap:10px;margin-bottom:7px}
-.coupon-section-title h2{font-size:14px;margin:0;font-weight:950}
-.coupon-section-title span{font-size:11px;color:var(--muted)}
-.coupon-row{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
-.coupon{min-width:156px;background:#fff;border:0;border-radius:10px;padding:9px 10px;box-shadow:0 3px 12px rgba(0,0,0,.07);text-align:left}
-.coupon strong{display:block;font-size:12px}
-.coupon span{font-size:11px;color:var(--muted)}
-.category-tabs{position:sticky;top:0;background:#fff;z-index:9;display:flex;gap:8px;overflow-x:auto;padding:10px 12px;scrollbar-width:none}
-.category-tabs button{border:0;background:#f5f5f5;color:#555;border-radius:999px;padding:9px 13px;font-size:13px;font-weight:800;white-space:nowrap}
-.category-tabs button.active{background:var(--red);color:#fff}
-.section{padding:16px 12px 4px}
-.section h2{font-size:18px;margin:0 0 4px;font-weight:900}
-.section p{font-size:12px;margin:0;color:var(--muted)}
-.highlights{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px 12px 4px}
-.highlight-card{background:transparent;border:0;box-shadow:none;overflow:visible}
-.highlight-photo-wrap{position:relative;background:#111;overflow:hidden}
-.highlight-photo{aspect-ratio:1/1;width:100%;background:linear-gradient(135deg,#efdfd0,#b64033);display:grid;place-items:center;color:#fff;font-weight:900;text-align:center;padding:6px;overflow:hidden}
-.highlight-body{padding:7px 0 0}
-.highlight-body h3{font-size:12px;line-height:1.15;margin:0 0 3px;font-weight:950;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.highlight-body p{font-size:10.5px;line-height:1.25;margin:0;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.highlight-label{position:absolute;left:5px;top:5px;z-index:2}
-.badge{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:4px 7px;font-size:10px;font-weight:850}
-.tone-vermelho{background:#fff0f1;color:var(--red)}
-.tone-roxo{background:#f3e9ff;color:var(--purple)}
-.tone-azul{background:#eaf2ff;color:var(--blue)}
-.tone-verde{background:#ebf7f0;color:var(--green)}
-.tone-cinza{background:#f5f5f5;color:#666}
-.tone-amarelo{background:#fff7d6;color:#8a6900}
-.tone-laranja{background:#fff0df;color:var(--orange)}
-.badge-red{background:#fff0f1;color:var(--red)}
-.badge-purple{background:#f3e9ff;color:var(--purple)}
-.badge-gray{background:#f5f5f5;color:#666}
-.dish-list{padding:0 12px}
-.dish-card{background:#fff;border-radius:14px;margin:10px 0;padding:12px;display:grid;grid-template-columns:1fr 104px;gap:12px;border:0;min-height:132px;box-shadow:0 3px 14px rgba(0,0,0,.045)}
-.dish-card h3{font-size:15px;line-height:1.2;margin:0 0 6px;font-weight:900}
-.dish-card p{font-size:12px;line-height:1.35;margin:0;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.dish-coupons{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
-.price{margin-top:10px;font-weight:900;color:var(--green);font-size:14px}
-.old-price{color:#999;text-decoration:line-through;font-weight:700;margin-right:4px}
-.dish-photo{width:104px;height:104px;border-radius:12px;background:linear-gradient(135deg,#f7d8ca,#aa2c24);display:grid;place-items:center;text-align:center;color:#fff;font-weight:900;padding:0;overflow:hidden}
-.dish-photo img,.detail-photo img,.option-photo img,.cart-thumb img,.highlight-photo img{width:100%;height:100%;object-fit:cover}
-.loading{padding:24px 12px}
-.skeleton{height:122px;border-radius:14px;margin:10px 0;background:linear-gradient(90deg,#e7e7e7,#f7f7f7,#e7e7e7);background-size:220% 100%;animation:pulse 1.2s linear infinite}
-@keyframes pulse{to{background-position:-220% 0}}
-.empty{padding:28px;text-align:center;color:var(--muted)}
-.empty-menu{margin:18px 12px;padding:32px 18px;border:0;border-radius:16px;background:#fff;text-align:center;color:var(--muted)}
-.empty-menu strong{display:block;color:var(--text);font-size:18px;margin-bottom:6px}
-.bottom-bag{position:fixed;left:0;right:0;bottom:0;background:#fff;padding:10px 12px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -8px 22px rgba(0,0,0,.12);z-index:30}
-.bag-btn{width:100%;border:0;border-radius:12px;background:var(--red);color:#fff;padding:14px 16px;font-weight:900;font-size:15px;display:flex;justify-content:space-between;align-items:center}
-.waiter-btn{position:fixed;right:12px;bottom:84px;z-index:31;border:0;border-radius:999px;background:#222;color:#fff;padding:11px 14px;font-size:13px;font-weight:950;box-shadow:0 8px 22px rgba(0,0,0,.22)}
-.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:40;display:flex;justify-content:center;align-items:flex-end}
-.sheet{background:#fff;width:100%;max-width:560px;max-height:94vh;border-radius:20px 20px 0 0;overflow:auto;position:relative}
-.sheet.full{height:100vh;max-height:100vh;border-radius:0}
-.sheet-head{position:sticky;top:0;z-index:3;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:12px}
-.icon-btn{border:0;background:#f5f5f5;border-radius:999px;width:38px;height:38px;font-weight:900}
-.detail-photo{height:230px;background:linear-gradient(135deg,#5e2118,#e05a4b);display:grid;place-items:center;text-align:center;color:#fff;font-size:30px;font-weight:900;padding:22px;overflow:hidden}
+button{border:0;background:none;color:inherit;cursor:pointer}
+input,textarea,select{font-size:16px}
+::-webkit-scrollbar{width:0;height:0}
+.font-serif{font-family:"Cormorant Garamond","Playfair Display",Georgia,serif}
+.app{min-height:100dvh;background:
+  radial-gradient(circle at 20% -10%,rgba(212,175,55,.18),transparent 28%),
+  radial-gradient(circle at 100% 12%,rgba(139,46,26,.22),transparent 30%),
+  linear-gradient(180deg,#0a0908 0%,#110d0a 48%,#080706 100%);
+  padding-bottom:calc(112px + var(--safe-bottom));
+}
+.shell{width:100%;max-width:760px;margin:0 auto;position:relative}
+.hero{padding:18px 18px 12px}
+.hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.hero-top>div:first-child{min-width:0}
+.eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:800}
+h1{margin:2px 0 0;font-size:34px;line-height:.95;color:var(--gold);font-weight:500}
+.hero-copy{margin:12px 0 0;color:var(--muted);font-size:14px;line-height:1.5;max-width:430px}
+.store-status{display:none;text-align:right;font-size:12px;color:var(--muted);flex:0 0 auto;min-width:92px}
+.store-status strong{display:block;color:var(--gold);font-size:13px;margin-top:2px}
+.meta-row{display:flex;gap:8px;overflow-x:auto;padding:12px 0 0}
+.chip{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;border:1px solid var(--line);background:rgba(28,24,20,.68);border-radius:999px;padding:8px 11px;color:var(--text);font-size:12px;font-weight:750}
+.chip.gold{background:linear-gradient(180deg,rgba(212,175,55,.20),rgba(212,175,55,.08));color:var(--gold);border-color:var(--line-strong)}
+.help-card{margin:0 18px 12px;padding:14px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(145deg,rgba(28,24,20,.94),rgba(17,15,12,.96));box-shadow:0 14px 42px rgba(0,0,0,.32);display:grid;grid-template-columns:48px 1fr;gap:12px;align-items:center}
+.help-card p{margin:2px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
+.help-card strong{color:var(--text);font-size:15px}
+.help-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.mini-btn{border:1px solid var(--line-strong);border-radius:999px;padding:8px 11px;color:var(--gold);font-size:12px;font-weight:850;background:rgba(212,175,55,.08)}
+.category-rail{position:sticky;top:0;z-index:20;display:flex;gap:8px;overflow-x:auto;padding:10px 18px;background:linear-gradient(180deg,rgba(10,9,8,.98),rgba(10,9,8,.84));backdrop-filter:blur(14px);border-bottom:1px solid rgba(212,175,55,.08)}
+.cat-btn{white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:10px 13px;background:rgba(28,24,20,.78);font-size:13px;font-weight:850;color:var(--muted)}
+.cat-btn.active{color:#1a1305;background:linear-gradient(180deg,var(--gold-2),var(--gold-dim));border-color:transparent}
+.section{padding:16px 18px 4px}
+.section h2{font-size:22px;margin:0;color:var(--gold);font-weight:500}
+.section p{font-size:13px;color:var(--muted);margin:4px 0 0;line-height:1.4}
+.dish-list{padding:0 18px 10px;display:grid;gap:12px}
+.dish-card{border:1px solid var(--line);border-radius:24px;background:linear-gradient(145deg,rgba(28,24,20,.98),rgba(17,15,12,.98));box-shadow:0 14px 44px rgba(0,0,0,.28);overflow:hidden;display:grid;grid-template-columns:1fr 116px;gap:12px;min-height:152px}
+.dish-info{padding:14px 0 14px 14px;min-width:0}
+.dish-card h3{font-size:17px;margin:0 0 7px;line-height:1.18;font-weight:850;color:var(--text)}
+.dish-card p{font-size:12.5px;line-height:1.42;color:var(--muted);margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.dish-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
+.price{color:var(--gold);font-weight:900;font-size:15px}
+.old-price{color:var(--muted);font-size:12px;text-decoration:line-through;margin-right:4px}
+.order-btn{background:linear-gradient(180deg,var(--gold-2),var(--gold-dim));color:#1a1305;border-radius:999px;padding:9px 12px;font-size:12px;font-weight:950;box-shadow:0 8px 20px rgba(212,175,55,.18)}
+.photo{background:linear-gradient(135deg,#4b2418,#a45032 52%,#22140f);display:grid;place-items:center;text-align:center;color:#f6df9d;font-weight:950;overflow:hidden}
+.dish-photo{height:100%;min-height:152px;border-radius:20px 0 0 20px}
+.photo img{width:100%;height:100%;object-fit:cover}
+.badge{display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(212,175,55,.26);background:rgba(212,175,55,.12);color:var(--gold);border-radius:999px;padding:5px 8px;font-size:10px;font-weight:900;margin-bottom:8px}
+.empty,.loading{margin:16px 18px;padding:22px;border:1px solid var(--line);border-radius:20px;background:rgba(28,24,20,.8);color:var(--muted);text-align:center}
+.skeleton{height:152px;margin:12px 18px;border-radius:24px;background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(212,175,55,.11),rgba(255,255,255,.04));background-size:220% 100%;animation:skeleton 1.3s linear infinite}
+@keyframes skeleton{to{background-position:-220% 0}}
+.bag-bar{position:fixed;left:0;right:0;bottom:0;z-index:70;padding:10px 14px calc(10px + var(--safe-bottom));background:linear-gradient(180deg,rgba(10,9,8,.35),rgba(10,9,8,.96) 24%);backdrop-filter:blur(14px);pointer-events:none}
+.bag-inner{max-width:760px;margin:0 auto;pointer-events:auto;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+.bag-btn{width:100%;height:56px;border-radius:18px;background:linear-gradient(180deg,var(--gold-2),var(--gold-dim));color:#1a1305;font-weight:950;display:flex;align-items:center;justify-content:space-between;padding:0 16px;box-shadow:0 16px 36px rgba(0,0,0,.38)}
+.bag-secondary{height:56px;border:1px solid var(--line-strong);border-radius:18px;padding:0 14px;background:rgba(28,24,20,.94);color:var(--gold);font-weight:900;white-space:nowrap}
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:90;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(8px)}
+.sheet{width:100%;max-width:760px;max-height:94dvh;background:var(--bg-soft);border:1px solid var(--line);border-bottom:0;border-radius:28px 28px 0 0;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.sheet.full{height:96dvh}
+.sheet-head{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);background:rgba(17,15,12,.96);backdrop-filter:blur(12px)}
+.sheet-title{font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon-btn{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);display:grid;place-items:center;font-weight:950;color:var(--text)}
+.sheet-scroll{overflow:auto;flex:1}
+.detail-photo{height:260px;font-size:28px}
 .detail-body{padding:16px}
-.detail-body h2{font-size:24px;margin:0 0 8px;line-height:1.1}
-.detail-desc{font-size:14px;color:#5b5b5b;line-height:1.45;margin-bottom:16px}
-.group{border-top:8px solid #f5f5f5;padding:14px 16px}
-.group-title{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}
-.group-title h3{font-size:15px;margin:0;font-weight:900}
-.group-title small{display:block;color:var(--muted);margin-top:2px}
-.req{background:#222;color:#fff;border-radius:999px;padding:4px 7px;font-size:10px;font-weight:900;white-space:nowrap}
-.choice{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:13px 0}
+.detail-body h2{font-size:28px;line-height:1.02;margin:0 0 8px;color:var(--gold);font-weight:500}
+.detail-desc{color:var(--muted);font-size:14px;line-height:1.55;margin-bottom:12px}
+.group{border-top:8px solid rgba(255,255,255,.035);padding:15px 16px}
+.group-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px}
+.group-title h3{margin:0;font-size:16px}
+.group-title small{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.req{background:rgba(212,175,55,.16);border:1px solid var(--line-strong);color:var(--gold);border-radius:999px;padding:5px 8px;font-size:10px;font-weight:950;white-space:nowrap}
+.choice{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.055)}
 .choice:last-child{border-bottom:0}
-.choice-title{font-size:14px;font-weight:800}
-.choice-desc{font-size:12px;color:var(--muted);margin-top:2px}
-.choice-price{font-size:12px;color:var(--green);font-weight:900;margin-top:4px}
-.radio{width:22px;height:22px;border-radius:50%;border:2px solid #d6d6d6;display:grid;place-items:center}
-.radio.active{border-color:var(--red)}
-.radio.active::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--red)}
-.plus{width:32px;height:32px;border:1px solid var(--red);color:var(--red);background:#fff;border-radius:50%;font-size:18px;font-weight:900}
-.plus.active{background:var(--red);color:#fff}
-.option-line{display:grid;grid-template-columns:54px 1fr auto;gap:10px;align-items:center;padding:11px 0}
-.option-photo{width:54px;height:54px;border-radius:10px;background:linear-gradient(135deg,#efdfd0,#bc4a38);display:grid;place-items:center;color:#fff;font-size:11px;font-weight:900;text-align:center;overflow:hidden}
-.detail-footer{position:sticky;bottom:0;background:#fff;padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:grid;grid-template-columns:114px 1fr;gap:10px;box-shadow:0 -8px 20px rgba(0,0,0,.08)}
-.stepper{height:48px;border:1px solid var(--line);border-radius:12px;display:flex;align-items:center;justify-content:space-around;font-weight:900}
-.stepper button{border:0;background:transparent;color:var(--red);font-size:20px;font-weight:900}
-.add-btn,.continue-btn{border:0;background:var(--red);color:#fff;border-radius:12px;font-weight:900}
-.add-btn:disabled,.continue-btn:disabled{opacity:.55}
-.cart-item{display:grid;grid-template-columns:62px 1fr auto;gap:10px;padding:14px 12px}
-.cart-thumb{width:62px;height:62px;border-radius:10px;background:linear-gradient(135deg,#efdfd0,#aa2c24);display:grid;place-items:center;color:#fff;font-weight:900;font-size:11px;text-align:center;overflow:hidden}
-.cart-title{font-weight:900;font-size:14px}
-.cart-desc{font-size:12px;color:var(--muted);margin:3px 0}
-.cart-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
-.tag{background:#f4f4f4;border-radius:999px;padding:4px 7px;font-size:10px;color:#666}
-.cart-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
-.danger{border:0;background:#fff;color:var(--red);font-weight:900}
-.cart-footer{position:sticky;bottom:0;background:#fff;padding:12px calc(12px) calc(12px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;box-shadow:0 -8px 20px rgba(0,0,0,.08)}
-.total-label{font-size:12px;color:var(--muted)}
-.total-value{font-size:18px;font-weight:950}
-.upsell{padding:14px 12px;background:#fff}
-.upsell-row{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none}
-.upsell-card{min-width:132px;border:0;border-radius:12px;padding:8px;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.045)}
-.form{padding:14px 12px}
-.form label{display:block;font-size:12px;color:var(--muted);font-weight:800;margin:12px 0 6px}
-.form input,.form textarea,.form select{width:100%;border:1px solid #ddd;border-radius:12px;padding:12px;background:#fff;color:var(--text);outline:none}
-.form textarea{min-height:78px;resize:vertical}
-.form-row{display:grid;grid-template-columns:1fr 110px;gap:8px}
-.warn{background:#fff8dc;color:#7a4a00;border-radius:12px;padding:10px 12px;font-size:12px;margin:10px 12px}
-.toast{position:fixed;left:12px;right:12px;bottom:88px;background:#222;color:#fff;border-radius:12px;padding:12px 14px;z-index:70;font-size:13px}
-.chat-body{padding:14px;display:grid;gap:10px;max-height:52vh;overflow:auto;background:#f7f7f7}
-.chat-modal-back{align-items:center;padding:18px}
-.chat-sheet{width:min(420px,100%);max-height:76vh;border-radius:22px;box-shadow:0 18px 48px rgba(0,0,0,.25);overflow:hidden}
-.chat-close{background:var(--red)!important;color:#fff!important}
-.chat-bubble{max-width:82%;border-radius:14px;padding:10px 12px;font-size:13px;line-height:1.35;background:#fff;border:0;box-shadow:0 2px 10px rgba(0,0,0,.045)}
-.chat-bubble.admin{justify-self:start}
-.chat-bubble.visitante{justify-self:end;background:var(--red);color:#fff;border-color:var(--red)}
-.chat-bubble.chat-typing{padding:14px 16px;display:flex;gap:5px;align-items:center}
-.chat-bubble.chat-typing span{width:7px;height:7px;border-radius:50%;background:#bbb;animation:typingDot 1.2s infinite ease-in-out}
-.chat-bubble.chat-typing span:nth-child(2){animation-delay:.15s}
-.chat-bubble.chat-typing span:nth-child(3){animation-delay:.3s}
-@keyframes typingDot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-3px);opacity:1}}
-.chat-input{display:grid;grid-template-columns:1fr auto;gap:8px;padding:12px;background:#fff}
-.chat-input input{border:1px solid #ddd;border-radius:12px;padding:12px}
-.chat-input button{border:0;border-radius:12px;background:var(--red);color:#fff;font-weight:900;padding:0 14px}
-.coupon-detail-body{padding:16px}
-.coupon-detail-head{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
-.coupon-code{border-radius:10px;padding:8px 10px;font-weight:950;font-size:13px}
-.timer{font-size:12px;font-weight:900;color:var(--red);margin-top:8px}
-.coupon-dishes{display:grid;gap:8px;margin-top:14px}
-.coupon-dish{display:grid;grid-template-columns:46px 1fr;gap:8px;align-items:center;border:0;border-radius:10px;padding:8px;background:#f8f8f8}
-.coupon-dish .cart-thumb{width:46px;height:46px}
+.choice-title{font-size:14px;font-weight:850}
+.choice-desc{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.35}
+.choice-price{font-size:12px;color:var(--gold);font-weight:900;margin-top:4px}
+.radio{width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,.18);display:grid;place-items:center}
+.radio.active{border-color:var(--gold)}
+.radio.active:after{content:"";width:10px;height:10px;border-radius:50%;background:var(--gold)}
+.option-line{grid-template-columns:54px 1fr auto}
+.option-photo{width:54px;height:54px;border-radius:14px;font-size:11px}
+.plus{width:34px;height:34px;border-radius:50%;border:1px solid var(--line-strong);color:var(--gold);font-size:18px;font-weight:950;background:rgba(212,175,55,.06)}
+.plus.active{background:linear-gradient(180deg,var(--gold-2),var(--gold-dim));color:#1a1305}
+.form{padding:16px}
+.form label{display:block;font-size:12px;color:var(--muted);font-weight:850;margin:0 0 7px}
+.form textarea,.form input{width:100%;border:1px solid var(--line);border-radius:16px;background:rgba(0,0,0,.18);color:var(--text);padding:13px;outline:none}
+.form textarea{min-height:80px;resize:vertical}
+.detail-footer,.cart-footer{flex:none;position:sticky;bottom:0;background:rgba(17,15,12,.98);padding:12px 14px calc(12px + var(--safe-bottom));border-top:1px solid var(--line);display:grid;grid-template-columns:114px 1fr;gap:10px}
+.stepper{height:50px;border:1px solid var(--line);border-radius:16px;display:flex;align-items:center;justify-content:space-around;font-weight:950;background:rgba(255,255,255,.03)}
+.stepper button{font-size:21px;color:var(--gold);font-weight:950;width:36px;height:36px}
+.primary-btn{height:50px;border-radius:16px;background:linear-gradient(180deg,var(--gold-2),var(--gold-dim));color:#1a1305;font-weight:950;padding:0 14px}
+.primary-btn:disabled{opacity:.55}
+.ghost-btn{height:50px;border-radius:16px;border:1px solid var(--line-strong);color:var(--gold);font-weight:900;background:rgba(212,175,55,.06);padding:0 14px}
+.warn{margin:12px 16px;padding:12px;border:1px solid rgba(217,91,75,.34);background:rgba(217,91,75,.10);border-radius:16px;color:#ffb2a8;font-size:13px;line-height:1.35}
+.cart-list{padding:10px 14px 120px;display:grid;gap:10px}
+.cart-item{border:1px solid var(--line);border-radius:20px;background:rgba(28,24,20,.86);padding:12px;display:grid;grid-template-columns:64px 1fr;gap:10px}
+.cart-thumb{width:64px;height:64px;border-radius:16px;font-size:11px}
+.cart-title{font-size:14px;font-weight:900}
+.cart-desc{font-size:12px;color:var(--muted);margin:4px 0;line-height:1.35}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.tag{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.045);border-radius:999px;padding:4px 7px;font-size:10px;color:var(--muted)}
+.cart-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
+.danger{color:#ff9b8f;font-weight:900;font-size:13px}
+.toast{position:fixed;left:14px;right:14px;bottom:calc(96px + var(--safe-bottom));z-index:130;max-width:732px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:13px 14px;color:var(--text);box-shadow:0 16px 44px rgba(0,0,0,.45);font-size:14px}
+.marco-sticker{position:fixed;right:16px;bottom:calc(84px + var(--safe-bottom));width:64px;height:64px;z-index:74;filter:drop-shadow(0 4px 18px rgba(212,175,55,.25));transition:transform 480ms cubic-bezier(.34,1.56,.64,1)}
+.marco-sticker.attention{animation:balanca 1.6s ease-in-out infinite}
+@keyframes balanca{0%,100%{transform:rotate(-2deg) translateY(0)}50%{transform:rotate(3deg) translateY(-2px)}}
+.marco-badge{position:absolute;top:-4px;right:-4px;min-width:22px;height:22px;border-radius:999px;background:linear-gradient(180deg,var(--gold-2),var(--gold-dim));color:#1a1305;font-size:12px;font-weight:950;display:grid;place-items:center;border:2px solid var(--bg)}
+.balao{position:fixed;right:88px;bottom:calc(92px + var(--safe-bottom));max-width:64vw;background:var(--card-2);border:1px solid var(--line);padding:10px 14px;border-radius:18px 18px 4px 18px;font-size:14px;line-height:1.35;z-index:75;box-shadow:0 8px 22px rgba(0,0,0,.45);opacity:0;transform:translateY(8px);pointer-events:none;transition:.28s}
+.balao.shown{opacity:1;transform:translateY(0)}
+.chat-back{z-index:100}
+.chat-sheet{height:84dvh}
+.messages{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:82%;padding:11px 14px;border-radius:17px;font-size:15px;line-height:1.42}
+.msg.marco{align-self:flex-start;background:var(--card);border:1px solid var(--line);border-bottom-left-radius:5px}
+.msg.cliente{align-self:flex-end;background:linear-gradient(180deg,var(--gold-2),var(--gold-dim));color:#1a1305;border-bottom-right-radius:5px;font-weight:650}
+.msg small{display:block;color:var(--gold);font-weight:900;font-size:11px;margin-bottom:3px}
+.typing{align-self:flex-start;background:var(--card);border:1px solid var(--line);padding:14px 18px;border-radius:16px;display:flex;gap:5px}
+.typing span{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:typing 1.2s infinite ease-in-out}
+.typing span:nth-child(2){animation-delay:.15s}.typing span:nth-child(3){animation-delay:.3s}
+@keyframes typing{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-3px);opacity:1}}
+.chat-input{flex:none;display:grid;grid-template-columns:44px 1fr 48px;gap:8px;padding:12px 14px calc(12px + var(--safe-bottom));border-top:1px solid var(--line);background:rgba(17,15,12,.98)}
+.chat-input input{border:1px solid var(--line);background:rgba(0,0,0,.16);color:var(--text);border-radius:16px;padding:0 13px;outline:none;min-width:0}
+.chat-input button{height:44px;border-radius:15px;background:rgba(212,175,55,.10);border:1px solid var(--line-strong);color:var(--gold);font-weight:950}
+.chat-input .send{background:linear-gradient(180deg,var(--gold-2),var(--gold-dim));color:#1a1305;border:0}
 @media(min-width:760px){
-  .app{max-width:760px;margin:0 auto;background:var(--bg);box-shadow:0 0 0 1px #ddd}
-  .bottom-bag{left:50%;right:auto;transform:translateX(-50%);max-width:760px;width:100%}
+  .app{background:#070604}
+  .shell{box-shadow:0 0 0 1px var(--line);min-height:100dvh;background:linear-gradient(180deg,#0a0908,#110d0a)}
+  .bag-inner,.toast{max-width:760px}
+}
+@media(max-width:430px){
+  .store-status{display:none}
+  h1{font-size:32px}
 }
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useEffect, useMemo, useState, useRef } = React;
+const { useEffect, useMemo, useRef, useState } = React;
 
 const SUPABASE_URL = 'https://jewamqbdonudiapxbzay.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY';
+const GARCOM_URL = `${SUPABASE_URL}/functions/v1/garcom-responder`;
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-function fmtR$(v){ return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
-function initials(name){ return (name||'Dom').split(/\s+/).slice(0,2).map(s=>s[0]).join('').toUpperCase(); }
-function minPrice(prato){ return Number(prato.preco_promocional ?? prato.preco_base ?? 0); }
-function allPratos(cardapio){ return (cardapio?.categorias||[]).flatMap(c => (c.pratos||[]).map(p => ({...p,categoria_nome:c.nome,categoria_slug:c.slug}))); }
-function toneClass(color){ return `tone-${color || 'vermelho'}`; }
-function couponValue(c){
-  if(!c) return '';
-  if(c.tipo === 'percentual') return `${Number(c.valor || 0)}% off`;
-  if(c.tipo === 'valor_fixo') return `${fmtR$(c.valor)} off`;
-  if(c.tipo === 'frete_gratis') return 'Entrega gratis';
-  return 'Cupom';
+function fmtR(v){ return Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function makeId(){ return (crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`); }
+function minPrice(p){ return Number(p?.preco_promocional ?? p?.preco_base ?? 0); }
+function cleanPhone(v){ return String(v || '').replace(/\D/g,''); }
+function allPratos(cardapio){ return (cardapio?.categorias || []).flatMap(c => (c.pratos || []).map(p => ({...p,categoria_nome:c.nome,categoria_slug:c.slug}))); }
+function itemTotal(it){ return Number(it.preco_unitario || 0) * Number(it.quantidade || 1); }
+function vibrate(ms){ try{ navigator.vibrate?.(ms); }catch(_){} }
+
+function deviceId(){
+  const key = 'garcom_device_id';
+  let id = localStorage.getItem(key);
+  if(!id){ id = makeId(); localStorage.setItem(key,id); }
+  return id;
 }
-function timeLeft(date){
-  if(!date) return '';
-  const ms = new Date(date).getTime() - Date.now();
-  if(ms <= 0) return 'Expira agora';
-  const min = Math.floor(ms / 60000);
-  if(min < 60) return `Expira em ${min} min`;
-  const h = Math.floor(min / 60);
-  if(h < 24) return `Expira em ${h}h ${min % 60}min`;
-  return `Expira em ${Math.floor(h / 24)} dia(s)`;
-}
-function getVisitorKey(){
-  const key = 'dom_visitor_key';
-  let value = localStorage.getItem(key);
-  if(!value){ value = makeId(); localStorage.setItem(key, value); }
-  return value;
-}
-async function resolveVisitorKey(){
-  const key = 'dom_visitor_key';
-  const local = localStorage.getItem(key);
-  try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/cardapio-bind-visitor`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
-      body: JSON.stringify({ visitor_key: local || null })
-    });
-    if(res.ok){
-      const data = await res.json();
-      if(data?.visitor_key){
-        localStorage.setItem(key, data.visitor_key);
-        return data.visitor_key;
-      }
-    }
-  } catch(_) { /* fallback abaixo */ }
-  if(local) return local;
-  const novo = makeId();
-  localStorage.setItem(key, novo);
-  return novo;
-}
-function browserInfo(){
-  return {
-    user_agent: navigator.userAgent,
-    language: navigator.language,
-    platform: navigator.platform,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    screen: `${window.screen?.width || 0}x${window.screen?.height || 0}`,
-    viewport: `${window.innerWidth}x${window.innerHeight}`
-  };
-}
-function makeId(){
-  if(window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
+function getSessaoId(){ return localStorage.getItem('garcom_sessao_id'); }
+function setSessaoId(id){ if(id) localStorage.setItem('garcom_sessao_id', id); }
+
+async function callGarcom(body){
+  const res = await fetch(GARCOM_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
+    body: JSON.stringify({ sessao_id:getSessaoId(), device_id:deviceId(), ...body })
   });
+  const json = await res.json().catch(() => ({}));
+  if(!res.ok) throw new Error(json?.error || `HTTP ${res.status}`);
+  if(json?.sessao_id) setSessaoId(json.sessao_id);
+  return json;
+}
+
+function saveCustomer(data){
+  localStorage.setItem('dom_cliente_hibrido', JSON.stringify(data));
+}
+function loadCustomer(){
+  try { return JSON.parse(localStorage.getItem('dom_cliente_hibrido') || '{}'); }
+  catch(_){ return {}; }
 }
 
 function Photo({ url, name, className }){
-  return <div className={className}>{url ? <img src={url} alt={name}/> : <span>{initials(name)}</span>}</div>;
+  return <div className={`photo ${className || ''}`}>{url ? <img src={url} alt={name || 'Item'} loading="lazy"/> : <span>{String(name || 'DOM').slice(0,16)}</span>}</div>;
+}
+
+function MarcoSticker(){
+  return (
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bgMarco" cx="50%" cy="40%" r="55%">
+          <stop offset="0%" stopColor="#2a2520"/><stop offset="100%" stopColor="#15120e"/>
+        </radialGradient>
+        <linearGradient id="goldMarco" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#e7c66d"/><stop offset="100%" stopColor="#a47e1e"/>
+        </linearGradient>
+      </defs>
+      <circle cx="32" cy="32" r="30" fill="url(#bgMarco)" stroke="url(#goldMarco)" strokeWidth="1.5"/>
+      <circle cx="32" cy="24" r="9" fill="#f3d8b8"/>
+      <path d="M22 22 Q22 14 32 14 Q42 14 42 22 L42 19 Q40 16 32 16 Q24 16 22 19 Z" fill="#3b2818"/>
+      <path d="M28 26 Q32 28 36 26" stroke="#3b2818" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+      <circle cx="29" cy="23" r="1" fill="#1a1305"/><circle cx="35" cy="23" r="1" fill="#1a1305"/>
+      <path d="M29 27 Q32 29 35 27" stroke="#1a1305" strokeWidth="0.9" fill="none" strokeLinecap="round"/>
+      <path d="M28 34 L32 32 L36 34 L36 38 L32 36 L28 38 Z" fill="url(#goldMarco)"/>
+      <path d="M20 38 Q32 36 44 38 L44 50 Q32 52 20 50 Z" fill="#1a1305"/>
+      <path d="M28 36 L28 50 L36 50 L36 36 Z" fill="#f3ece0"/>
+      <rect x="14" y="40" width="6" height="14" rx="2" fill="url(#goldMarco)" transform="rotate(-12 17 47)"/>
+    </svg>
+  );
 }
 
 function App(){
@@ -262,277 +254,328 @@ function App(){
   const [detail,setDetail] = useState(null);
   const [editingIndex,setEditingIndex] = useState(null);
   const [bagOpen,setBagOpen] = useState(false);
-  const [checkoutOpen,setCheckoutOpen] = useState(false);
-  const [couponDetail,setCouponDetail] = useState(null);
-  const [chatOpen,setChatOpen] = useState(false);
-  const [tracking,setTracking] = useState(null);
   const [cart,setCart] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('dom_cart')||'[]'); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem('dom_cart_hibrido') || '[]'); }
+    catch(_){ return []; }
   });
   const [toast,setToast] = useState('');
+  const [chatOpen,setChatOpen] = useState(false);
+  const [messages,setMessages] = useState([]);
+  const [typing,setTyping] = useState(false);
+  const [input,setInput] = useState('');
+  const [flow,setFlow] = useState(null);
+  const [customer,setCustomer] = useState(loadCustomer);
+  const [pedido,setPedido] = useState(null);
+  const msgEndRef = useRef(null);
 
-  useEffect(()=>{ load(); initTracking(); },[]);
-  useEffect(()=>{ localStorage.setItem('dom_cart', JSON.stringify(cart)); },[cart]);
-  useEffect(()=>{ if(toast){ const t=setTimeout(()=>setToast(''),2600); return ()=>clearTimeout(t); } },[toast]);
-  useEffect(()=>{
-    if(!tracking) return;
-    const id = setInterval(() => track('heartbeat', { url: location.pathname }), 45000);
-    return () => clearInterval(id);
-  },[tracking]);
-
-  async function initTracking(){
-    try {
-      const visitorKey = await resolveVisitorKey();
-      const sessionKey = sessionStorage.getItem('dom_session_key') || makeId();
-      sessionStorage.setItem('dom_session_key', sessionKey);
-      const { data } = await sb.rpc('cardapio_identificar_visitante', {
-        p_visitor_key: visitorKey,
-        p_session_key: sessionKey,
-        p_browser_info: browserInfo(),
-        p_url: location.pathname + location.search,
-        p_referrer: document.referrer || null
-      });
-      setTracking({ visitor_key: visitorKey, sessao_id: data?.sessao_id });
-    } catch (error) {
-      console.warn('tracking off', error.message);
-    }
-  }
-
-  async function track(tipo, metadata = {}){
-    if(!tracking?.visitor_key) return;
-    try {
-      await sb.rpc('cardapio_track_event', {
-        p_visitor_key: tracking.visitor_key,
-        p_sessao_id: tracking.sessao_id || null,
-        p_tipo: tipo,
-        p_metadata: { ...metadata, url: location.pathname + location.search }
-      });
-    } catch (error) {
-      console.warn('track failed', error.message);
-    }
-  }
+  useEffect(() => { load(); }, []);
+  useEffect(() => { localStorage.setItem('dom_cart_hibrido', JSON.stringify(cart)); }, [cart]);
+  useEffect(() => { saveCustomer(customer); }, [customer]);
+  useEffect(() => { if(toast){ const t = setTimeout(()=>setToast(''),2600); return ()=>clearTimeout(t); } }, [toast]);
+  useEffect(() => { msgEndRef.current?.scrollIntoView({behavior:'smooth',block:'end'}); }, [messages,typing,chatOpen]);
 
   async function load(){
     setLoading(true); setError('');
     const { data, error } = await sb.rpc('get_cardapio_publico');
-    if(error){ setError(error.message); }
+    if(error) setError(error.message);
     else { setCardapio(data); setActiveCat(data?.categorias?.[0]?.id || ''); }
     setLoading(false);
   }
 
-  const pratos = useMemo(()=>allPratos(cardapio),[cardapio]);
-  const destaques = pratos.filter(p=>p.badge_destaque).slice(0,6);
-  const bebidas = (cardapio?.categorias||[]).find(c=>c.slug==='bebidas')?.pratos || [];
-  const subtotal = cart.reduce((s,it)=>s + Number(it.preco_unitario||0) * Number(it.quantidade||1),0);
-  const totalQtd = cart.reduce((s,it)=>s + Number(it.quantidade||1),0);
+  const rest = cardapio?.restaurante || {};
+  const subtotal = cart.reduce((sum,it) => sum + itemTotal(it), 0);
+  const qtd = cart.reduce((sum,it) => sum + Number(it.quantidade || 1), 0);
+  const bebidas = (cardapio?.categorias || []).find(c => c.slug === 'bebidas')?.pratos || [];
 
-  const detailRef = useRef(null);
-
-  function openDetail(prato, index=null){
-    track('item_click', { prato_id: prato.id, prato_nome: prato.nome, origem: index != null ? 'cart_edit' : 'cardapio' });
-    detailRef.current = { prato_id: prato.id, prato_nome: prato.nome, opened_at: Date.now() };
-    setEditingIndex(index);
-    setDetail({ prato, preset:index!=null ? cart[index] : null });
+  function pushMsg(autor,texto){
+    setMessages(prev => [...prev, { id:makeId(), autor, texto }]);
   }
+  function marco(texto){ pushMsg('marco', texto); }
 
-  function closeDetail(extra = {}){
-    if(detailRef.current){
-      const { prato_id, prato_nome, opened_at } = detailRef.current;
-      track('item_close', { prato_id, prato_nome, duracao_ms: Date.now() - opened_at, ...extra });
-      detailRef.current = null;
-    }
-    setDetail(null); setEditingIndex(null);
+  function openDetail(prato, index = null){
+    vibrate(12);
+    setEditingIndex(index);
+    setDetail({ prato, preset:index !== null ? cart[index] : null });
   }
 
   function onSaved(item){
-    track('add_to_cart', { prato_id: item.prato.id, prato_nome: item.prato.nome, quantidade: item.quantidade, valor: item.preco_unitario });
-    setCart(prev => {
-      if(editingIndex!=null) return prev.map((x,i)=>i===editingIndex ? item : x);
-      return [...prev, item];
-    });
-    closeDetail({ resultado: 'add_to_cart' });
-    setToast('O Dom colocou na sacola.');
+    setCart(prev => editingIndex !== null ? prev.map((it,i) => i === editingIndex ? item : it) : [...prev,item]);
+    setDetail(null);
+    setEditingIndex(null);
+    setToast('Anotado na sacola. Pode escolher mais alguma coisa.');
+    vibrate([20,40,20]);
   }
 
-  async function addBebida(prato){
-    track('add_to_cart', { prato_id: prato.id, prato_nome: prato.nome, quantidade: 1, origem: 'upsell_bebida' });
-    const { data, error } = await sb.rpc('calcular_preco_item', {
-      p_prato_id: prato.id, p_tamanho_id: null, p_opcionais_ids: []
-    });
-    if(error) return setToast(error.message);
-    setCart(prev => [...prev, {
-      uid: makeId(), prato, tamanho:null, opcionais:[], quantidade:1,
-      observacoes:'', preco_unitario:Number(data||0)
-    }]);
-    setToast('Bebida adicionada.');
+  function updateQty(index, delta){
+    setCart(prev => prev.map((it,i) => i === index ? {...it, quantidade:Math.max(1, Number(it.quantidade || 1) + delta)} : it));
   }
 
-  function openChat(){
-    track('chat_open', { origem: 'botao_fixo' });
+  function resumoCarrinho(){
+    return cart.map(it => `${it.quantidade}x ${it.prato.nome}${it.tamanho ? ` (${it.tamanho.nome})` : ''}`).join(', ');
+  }
+
+  function openChatFromButton(){
     setChatOpen(true);
+    if(!messages.length) {
+      setTimeout(() => marco(customer.nome ? `Oi, ${customer.nome}. Tô por aqui se quiser ajuda pra escolher.` : 'Opa, tô por aqui. Se quiser, eu te ajudo a escolher sem enrolar.'), 180);
+    }
   }
 
-  if(loading) return <SkeletonApp/>;
-  if(error) return <div className="empty">Nao consegui carregar o cardapio.<br/>{error}<br/><button className="top-pill" onClick={load}>Tentar de novo</button></div>;
+  function startDeliveryEstimate(){
+    setChatOpen(true);
+    const step = customer.nome ? 'endereco' : 'nome';
+    setFlow({ type:'tempo', step });
+    if(step === 'nome') marco('Claro. Antes de calcular, como posso te chamar?');
+    else marco(`Boa, ${customer.nome}. Me passa rua, número e bairro que eu calculo uma estimativa honesta pra você.`);
+  }
 
-  const rest = cardapio.restaurante || {};
-  return <div className={`app theme-${rest.tema || 'branco'}`}>
-    <header className="hero">
-      <button className="top-pill">{rest.aberta_agora ? 'Aberto agora' : 'Dom fora do horario'}</button>
-      {rest.capa_tipo === 'video' && rest.capa_video_url
-        ? <video className="hero-img hero-video" src={rest.capa_video_url} poster={rest.capa_url || ''} autoPlay muted loop playsInline />
-        : <div className={`hero-img${rest.capa_url?' has-photo':''}`} style={rest.capa_url?{backgroundImage:`url(${rest.capa_url})`}:null}>DOM</div>}
-    </header>
+  function startCheckout(){
+    if(!cart.length){ setToast('Sua sacola ainda está vazia.'); return; }
+    setBagOpen(false);
+    setChatOpen(true);
+    const missing = !customer.nome ? 'nome' : !customer.endereco_texto ? 'endereco' : !customer.telefone ? 'telefone' : 'enviar';
+    setFlow({ type:'checkout', step:missing });
+    const intro = `Opa, vi aqui: ${resumoCarrinho()}. Vou levar para o Dom analisar, mas antes te faço três perguntas rapidinhas pra entregar certo.`;
+    marco(intro);
+    setTimeout(() => {
+      if(missing === 'nome') marco('Como posso te chamar?');
+      else if(missing === 'endereco') marco(`${customer.nome}, qual é seu endereço? Pode mandar rua, número e bairro.`);
+      else if(missing === 'telefone') marco('E seu telefone? É só pro motoboy te ligar se não achar a casa.');
+      else submitPedido(customer);
+    }, 520);
+  }
 
-    <section className="store-card">
-      <div className="logo">{rest.logo_url ? <img src={rest.logo_url} alt="Dom Leonardo"/> : 'D'}</div>
-      <div className="store-title">
-        <div>
-          <h1>{rest.nome}</h1>
-          <div className="small">{rest.descricao}</div>
-        </div>
-        <div className="rating">★ {Number(rest.avaliacao||4.9).toFixed(1)}</div>
-      </div>
-      <div className="store-meta">
-        <span className={`meta-chip ${rest.aberta_agora?'open':'closed'}`}>{rest.aberta_agora?'Aberto':'Fechado'}</span>
-        <span className="meta-chip">{rest.tempo_entrega_min}-{rest.tempo_entrega_max} min</span>
-        <span className="meta-chip">{Number(rest.taxa_entrega||0)>0?fmtR$(rest.taxa_entrega):'Entrega a combinar'}</span>
-        <span className="meta-chip">Pedido minimo {fmtR$(rest.pedido_minimo)}</span>
-        <span className="meta-chip">Entrega rastreavel</span>
-      </div>
-    </section>
+  async function saveField(acao, payload){
+    try { await callGarcom({ acao, ...payload }); }
+    catch(err){ console.warn('garcom save failed', err.message); }
+  }
 
-    <section className="coupon-section">
-      <div className="coupon-section-title">
-        <h2>{rest.cupons_titulo || 'Cupons do Dom'}</h2>
-        <span>{rest.cupons_descricao || 'Toque para ver os detalhes.'}</span>
-      </div>
-      <div className="coupon-row">
-        {(cardapio.cupons || []).map(c => <button className="coupon" key={c.id} onClick={() => { track('coupon_open', { cupom: c.codigo }); setCouponDetail(c); }}>
-          <strong className={toneClass(c.cor)} style={{background:'transparent'}}>{c.codigo}</strong>
-          <span>{c.descricao || couponValue(c)}</span>
-        </button>)}
-        <button className="coupon" onClick={() => { track('coupon_open', { cupom: 'Canal proprio' }); setCouponDetail({codigo:'Canal proprio', cor:'cinza', descricao:'Sem comissao pesada. Mais tempero, menos taxa.', pratos:[]}); }}>
-          <strong className={toneClass('cinza')} style={{background:'transparent'}}>Canal proprio</strong>
-          <span>Sem comissao pesada. Mais tempero, menos taxa.</span>
-        </button>
-      </div>
-    </section>
+  async function submitPedido(clienteAtual){
+    setTyping(true);
+    try {
+      const resp = await callGarcom({
+        acao:'enviar_pedido_admin',
+        cliente: {
+          nome: clienteAtual.nome,
+          telefone: clienteAtual.telefone,
+          endereco_texto: clienteAtual.endereco_texto
+        },
+        carrinho: cart,
+        observacoes: 'Pedido criado pelo Cardapio Garcom Hibrido'
+      });
+      setPedido(resp.pedido || null);
+      setTyping(false);
+      marco(resp?.falas?.[0]?.texto || 'Perfeito. Enviei seu pedido para o Dom analisar. Quando ele aceitar, a cozinha começa.');
+      setCart([]);
+      localStorage.removeItem('dom_cart_hibrido');
+      setFlow(null);
+      setToast('Pedido enviado para o painel do Dom.');
+    } catch(err) {
+      setTyping(false);
+      marco(`Hum, não consegui enviar agora: ${err.message}. Quer tentar de novo?`);
+    }
+  }
 
-    {(cardapio.categorias||[]).length > 0 && <nav className="category-tabs">
-      {(cardapio.categorias||[]).map(c => <button key={c.id} className={activeCat===c.id?'active':''} onClick={()=>{track('category_click', { categoria_id:c.id, categoria_nome:c.nome }); setActiveCat(c.id); document.getElementById(c.id)?.scrollIntoView({block:'start'});}}>{c.icone||''} {c.nome}</button>)}
-    </nav>}
+  async function handleFlowAnswer(text){
+    const current = flow;
+    if(!current) return false;
+    if(current.type === 'tempo'){
+      if(current.step === 'nome'){
+        const next = {...customer, nome:text};
+        setCustomer(next);
+        await saveField('salvar_nome', { nome:text });
+        setFlow({ type:'tempo', step:'endereco' });
+        marco(`Prazer, ${text}. Agora me passa rua, número e bairro que eu vejo o tempo pra você.`);
+        return true;
+      }
+      if(current.step === 'endereco'){
+        const next = {...customer, endereco_texto:text};
+        setCustomer(next);
+        setTyping(true);
+        await saveField('salvar_endereco', { endereco_texto:text });
+        try {
+          const resp = await callGarcom({ acao:'estimar_entrega', endereco_texto:text });
+          setTyping(false);
+          marco(resp?.falas?.[0]?.texto || estimativaLocal(rest));
+        } catch(_) {
+          setTyping(false);
+          marco(estimativaLocal(rest));
+        }
+        setFlow(null);
+        return true;
+      }
+    }
+    if(current.type === 'checkout'){
+      if(current.step === 'nome'){
+        const next = {...customer, nome:text};
+        setCustomer(next);
+        await saveField('salvar_nome', { nome:text });
+        setFlow({ type:'checkout', step:'endereco' });
+        marco(`Fechado, ${text}. Qual é o endereço? Rua, número e bairro já resolve.`);
+        return true;
+      }
+      if(current.step === 'endereco'){
+        const next = {...customer, endereco_texto:text};
+        setCustomer(next);
+        await saveField('salvar_endereco', { endereco_texto:text });
+        setFlow({ type:'checkout', step:'telefone' });
+        marco('Agora o telefone, por favor. É só pro motoboy te ligar se não achar a casa.');
+        return true;
+      }
+      if(current.step === 'telefone'){
+        const next = {...customer, telefone:text};
+        setCustomer(next);
+        await saveField('salvar_telefone', { telefone:text });
+        setFlow({ type:'checkout', step:'enviar' });
+        marco('Perfeito. Vou mandar para o Dom analisar agora.');
+        await submitPedido(next);
+        return true;
+      }
+    }
+    return false;
+  }
 
-    {(cardapio.categorias||[]).length === 0 && <div className="empty-menu">
-      <strong>O Dom ainda esta montando o cardapio.</strong>
-      Assim que os itens forem cadastrados no painel, eles aparecem aqui automaticamente.
-    </div>}
+  function estimativaLocal(rest){
+    const min = rest.tempo_entrega_min || 35;
+    const max = rest.tempo_entrega_max || 50;
+    return `Pra esse endereço, eu trabalharia com algo perto de ${min}-${max} min por enquanto. Se a rua estiver muito travada, eu te aviso antes de prometer milagre.`;
+  }
 
-    {destaques.length > 0 && <>
-      <div className="section"><h2>{rest.destaques_titulo || 'O Dom recomenda'}</h2><p>{rest.destaques_descricao || 'Os pratos que mais saem por aqui.'}</p></div>
-      <div className="highlights">
-        {destaques.map(p => <article className="highlight-card" key={p.id} onClick={()=>openDetail(p)}>
-          <div className="highlight-photo-wrap">
-            <Photo url={p.foto_url} name={p.nome} className="highlight-photo"/>
-            <span className={`badge highlight-label ${toneClass(p.badge_cor)}`}>{p.badge_destaque}</span>
+  async function sendChat(){
+    const text = input.trim();
+    if(!text) return;
+    setInput('');
+    pushMsg('cliente', text);
+    if(await handleFlowAnswer(text)) return;
+    setTyping(true);
+    try {
+      const resp = await callGarcom({ mensagem:text, cliente_nome_provisorio:customer.nome || null });
+      if(resp.cliente_nome && resp.cliente_nome !== customer.nome) setCustomer(prev => ({...prev, nome:resp.cliente_nome}));
+      const falas = Array.isArray(resp.falas) ? resp.falas.filter(f => f.autor === 'marco' || f.destinatario === 'cliente') : [];
+      setTyping(false);
+      if(falas.length) {
+        falas.forEach((f, i) => setTimeout(() => marco(f.texto), i * 450));
+      } else {
+        marco('Tô aqui. Me fala como posso ajudar.');
+      }
+    } catch(err) {
+      setTyping(false);
+      marco('Deu uma travadinha aqui, mas eu continuo por perto. Pode mandar de novo?');
+    }
+  }
+
+  if(loading) return <div className="app"><div className="shell"><HeaderSkeleton /></div></div>;
+  if(error) return <div className="app"><div className="shell"><div className="empty">Nao consegui carregar o cardapio.<br/>{error}<br/><button className="mini-btn" onClick={load}>Tentar de novo</button></div></div></div>;
+
+  return (
+    <div className="app">
+      <div className="shell">
+        <header className="hero">
+          <div className="hero-top">
+            <div>
+              <div className="eyebrow">Trattoria delivery</div>
+              <h1 className="font-serif">{rest.nome || 'Dom Leonardo'}</h1>
+            </div>
+            <div className="store-status">
+              {rest.aberta_agora ? 'Aberto agora' : 'Fora do horario'}
+              <strong>{rest.tempo_entrega_min || 35}-{rest.tempo_entrega_max || 50} min</strong>
+            </div>
           </div>
-          <div className="highlight-body">
-            <h3>{p.nome}</h3>
-            <p>{p.descricao_curta || p.descricao_completa}</p>
+          <p className="hero-copy">{rest.descricao || 'Gastronomia italiana feita com mão, história e um garçom digital bem atento.'}</p>
+          <div className="meta-row">
+            <span className="chip gold">Entrega {Number(rest.taxa_entrega || 0) ? fmtR(rest.taxa_entrega) : 'a combinar'}</span>
+            <span className="chip">Pedido minimo {fmtR(rest.pedido_minimo)}</span>
+            <button className="chip" onClick={startDeliveryEstimate}>Ver tempo de entrega</button>
           </div>
-        </article>)}
-      </div>
-    </>}
+        </header>
 
-    {(cardapio.categorias||[]).map(c => <section key={c.id} id={c.id}>
-      <div className="section"><h2>{c.nome}</h2><p>{c.descricao}</p></div>
-      <div className="dish-list">
-        {(c.pratos||[]).length === 0 && <div className="empty">Essa parte do Dom ainda vai ganhar prato.</div>}
-        {(c.pratos||[]).map(p => <DishCard key={p.id} prato={{...p,categoria_slug:c.slug}} onClick={()=>openDetail({...p,categoria_slug:c.slug})}/>)}
-      </div>
-    </section>)}
-
-    <div className="bottom-bag">
-      <button className="bag-btn" onClick={()=>{track('open_cart', { itens: totalQtd, subtotal }); setBagOpen(true);}}>
-        <span>{totalQtd ? `${totalQtd} item(ns) na sacola` : 'Ver sacola'}</span>
-        <b>{fmtR$(subtotal)}</b>
-      </button>
-    </div>
-    <button className="waiter-btn" onClick={openChat}>Chamar o Dom</button>
-
-    {detail && <DetailModal data={detail} onClose={()=>closeDetail({ resultado: 'fechou' })} onSaved={onSaved}/>}
-    {bagOpen && <CartModal cart={cart} setCart={setCart} subtotal={subtotal} bebidas={bebidas} onClose={()=>setBagOpen(false)} onEdit={openDetail} onAddBebida={addBebida} onCheckout={()=>setCheckoutOpen(true)}/>}
-    {checkoutOpen && <CheckoutModal cardapio={cardapio} cart={cart} subtotal={subtotal} tracking={tracking} track={track} onClose={()=>setCheckoutOpen(false)} onSuccess={()=>{track('order_created', { subtotal }); setCart([]); setBagOpen(false); setCheckoutOpen(false);}}/>}
-    {couponDetail && <CouponModal cupom={couponDetail} onClose={()=>setCouponDetail(null)} />}
-    {chatOpen && <ChatModal tracking={tracking} bot={rest.chatbot || {}} onClose={()=>setChatOpen(false)} />}
-    {toast && <div className="toast">{toast}</div>}
-  </div>;
-}
-
-function SkeletonApp(){
-  return <div className="app">
-    <div className="hero"><div className="hero-img">DOM</div></div>
-    <div className="store-card"><div className="logo">D</div><h1>Dom Leonardo</h1><div className="small">Carregando o cardapio...</div></div>
-    <div className="loading">{[1,2,3,4].map(i=><div className="skeleton" key={i}/>)}</div>
-  </div>;
-}
-
-function DishCard({ prato, onClick }){
-  return <article className="dish-card" onClick={onClick}>
-    <div>
-      {prato.badge_destaque && <span className={`badge ${toneClass(prato.badge_cor)}`}>{prato.badge_destaque}</span>}
-      {prato.exclusivo_clube && <span className="badge badge-purple">Exclusivo Clube</span>}
-      <h3>{prato.nome}</h3>
-      <p>{prato.descricao_curta || prato.descricao_completa}</p>
-      {!!(prato.cupons||[]).length && <div className="dish-coupons">
-        {(prato.cupons||[]).slice(0,2).map(c => <span className={`badge ${toneClass(c.cor || 'roxo')}`} key={c.id}>{c.codigo}</span>)}
-      </div>}
-      <div className="price">
-        {prato.preco_promocional && <span className="old-price">{fmtR$(prato.preco_base)}</span>}
-        a partir de {fmtR$(minPrice(prato))}
-      </div>
-    </div>
-    <Photo url={prato.foto_url} name={prato.nome} className="dish-photo"/>
-  </article>;
-}
-
-function CouponModal({ cupom, onClose }){
-  const pratos = cupom.pratos || [];
-  return <div className="modal-back" onClick={onClose}>
-    <div className="sheet" onClick={e=>e.stopPropagation()}>
-      <div className="sheet-head"><b>Cupom</b><button className="icon-btn" onClick={onClose}>x</button></div>
-      <div className="coupon-detail-body">
-        <div className="coupon-detail-head">
-          <span className={`coupon-code ${toneClass(cupom.cor || 'roxo')}`}>{cupom.codigo}</span>
+        <section className="help-card">
+          <MarcoSticker />
           <div>
-            <h2 style={{margin:'0 0 4px'}}>{couponValue(cupom)}</h2>
-            <div className="small">{cupom.descricao || 'Cupom disponivel no Dom Leonardo.'}</div>
-            {Number(cupom.valor_minimo_pedido || 0) > 0 && <div className="small">Pedido minimo {fmtR$(cupom.valor_minimo_pedido)}</div>}
-            {cupom.usos_max && <div className="small">{Number(cupom.usos_max) - Number(cupom.usos_atual || 0)} uso(s) restante(s)</div>}
-            {(cupom.expira_em || cupom.fim_em || cupom.valido_ate) && <div className="timer">{timeLeft(cupom.expira_em || cupom.fim_em || cupom.valido_ate)}</div>}
+            <strong>Peça sozinho ou chame o Marco.</strong>
+            <p>Você monta a sacola como no app. Se travar, o garçom entra sem bagunçar a tela.</p>
+            <div className="help-actions">
+              <button className="mini-btn" onClick={openChatFromButton}>Chamar garçom</button>
+              <button className="mini-btn" onClick={startDeliveryEstimate}>Ver tempo</button>
+            </div>
           </div>
-        </div>
-        <h3>{pratos.length ? 'Disponivel nesses pratos' : 'Disponivel no cardapio'}</h3>
-        <div className="coupon-dishes">
-          {pratos.map(p => <div className="coupon-dish" key={p.id}>
-            <Photo url={p.foto_url} name={p.nome} className="cart-thumb"/>
-            <b>{p.nome}</b>
-          </div>)}
-          {!pratos.length && <p className="small">Use esse cupom no fechamento do pedido.</p>}
-        </div>
+        </section>
+
+        <nav className="category-rail">
+          {(cardapio?.categorias || []).map(c => (
+            <button key={c.id} className={`cat-btn ${activeCat === c.id ? 'active' : ''}`} onClick={() => { setActiveCat(c.id); document.getElementById('cat-'+c.id)?.scrollIntoView({block:'start'}); }}>
+              {c.icone ? `${c.icone} ` : ''}{c.nome}
+            </button>
+          ))}
+        </nav>
+
+        {(cardapio?.categorias || []).map(c => (
+          <section key={c.id} id={'cat-'+c.id}>
+            <div className="section">
+              <h2 className="font-serif">{c.nome}</h2>
+              {c.descricao && <p>{c.descricao}</p>}
+            </div>
+            <div className="dish-list">
+              {(c.pratos || []).map(p => <DishCard key={p.id} prato={{...p,categoria_slug:c.slug}} onOpen={() => openDetail({...p,categoria_slug:c.slug})}/>)}
+              {!(c.pratos || []).length && <div className="empty">Essa parte ainda vai ganhar prato.</div>}
+            </div>
+          </section>
+        ))}
       </div>
+
+      <button className="marco-sticker attention" onClick={openChatFromButton} aria-label="Chamar Marco">
+        <MarcoSticker />
+        {!!qtd && <span className="marco-badge">{qtd}</span>}
+      </button>
+      <div className={`balao ${!chatOpen && !cart.length ? 'shown' : ''}`}>Se ficar em dúvida, me chama.</div>
+
+      {!!cart.length && <div className="bag-bar">
+        <div className="bag-inner">
+          <button className="bag-btn" onClick={() => setBagOpen(true)}><span>{qtd} item(ns) na sacola</span><b>{fmtR(subtotal)}</b></button>
+          <button className="bag-secondary" onClick={startCheckout}>Finalizar</button>
+        </div>
+      </div>}
+
+      {detail && <DetailSheet data={detail} onClose={() => { setDetail(null); setEditingIndex(null); }} onSaved={onSaved} startDeliveryEstimate={startDeliveryEstimate} />}
+      {bagOpen && <CartSheet cart={cart} setCart={setCart} subtotal={subtotal} bebidas={bebidas} onClose={() => setBagOpen(false)} onEdit={(prato,i) => { setBagOpen(false); openDetail(prato,i); }} onCheckout={startCheckout} />}
+      {chatOpen && <ChatSheet messages={messages} typing={typing} input={input} setInput={setInput} send={sendChat} onClose={() => setChatOpen(false)} msgEndRef={msgEndRef} startDeliveryEstimate={startDeliveryEstimate} />}
+      {toast && <div className="toast">{toast}</div>}
     </div>
-  </div>;
+  );
 }
 
-function DetailModal({ data, onClose, onSaved }){
+function HeaderSkeleton(){
+  return <>
+    <div className="hero"><div className="eyebrow">Trattoria delivery</div><h1 className="font-serif">Dom Leonardo</h1><p className="hero-copy">Carregando o cardápio...</p></div>
+    {[1,2,3].map(i => <div className="skeleton" key={i}/>)}
+  </>;
+}
+
+function DishCard({ prato, onOpen }){
+  return (
+    <article className="dish-card" onClick={onOpen}>
+      <div className="dish-info">
+        {prato.badge_destaque && <span className="badge">{prato.badge_destaque}</span>}
+        <h3>{prato.nome}</h3>
+        <p>{prato.descricao_curta || prato.descricao_completa || 'Feito na cozinha do Dom.'}</p>
+        <div className="dish-bottom">
+          <span className="price">{prato.preco_promocional && <span className="old-price">{fmtR(prato.preco_base)}</span>}a partir de {fmtR(minPrice(prato))}</span>
+          <button className="order-btn" onClick={e => { e.stopPropagation(); onOpen(); }}>Pedir</button>
+        </div>
+      </div>
+      <Photo url={prato.foto_url} name={prato.nome} className="dish-photo" />
+    </article>
+  );
+}
+
+function DetailSheet({ data, onClose, onSaved, startDeliveryEstimate }){
   const prato = data.prato;
   const preset = data.preset;
-  const defaultSize = preset?.tamanho || (prato.tamanhos||[]).find(t=>t.padrao) || (prato.tamanhos||[])[0] || null;
+  const defaultSize = preset?.tamanho || (prato.tamanhos || []).find(t => t.padrao) || (prato.tamanhos || [])[0] || null;
   const [tamanho,setTamanho] = useState(defaultSize);
   const [selected,setSelected] = useState(() => {
     const map = {};
-    (preset?.opcionais||[]).forEach(o => { if(!map[o.grupo_id]) map[o.grupo_id]=[]; map[o.grupo_id].push(o.id); });
+    (preset?.opcionais || []).forEach(o => { if(!map[o.grupo_id]) map[o.grupo_id] = []; map[o.grupo_id].push(o.id); });
     return map;
   });
   const [qty,setQty] = useState(preset?.quantidade || 1);
@@ -542,7 +585,7 @@ function DetailModal({ data, onClose, onSaved }){
   const [err,setErr] = useState('');
   const optionIds = Object.values(selected).flat();
 
-  useEffect(()=>{ recalc(); },[tamanho?.id, JSON.stringify(optionIds)]);
+  useEffect(() => { recalc(); }, [tamanho?.id, JSON.stringify(optionIds)]);
 
   async function recalc(){
     setPricing(true); setErr('');
@@ -551,7 +594,7 @@ function DetailModal({ data, onClose, onSaved }){
       p_tamanho_id: tamanho?.id || null,
       p_opcionais_ids: optionIds
     });
-    if(error) setErr(error.message); else setUnit(Number(data||0));
+    if(error) setErr(error.message); else setUnit(Number(data || 0));
     setPricing(false);
   }
 
@@ -560,20 +603,20 @@ function DetailModal({ data, onClose, onSaved }){
       const current = prev[group.id] || [];
       const has = current.includes(opt.id);
       let next = current;
-      if(has) next = current.filter(id=>id!==opt.id);
+      if(has) next = current.filter(id => id !== opt.id);
       else if(group.max_escolhas === 1 || group.tipo === 'unico') next = [opt.id];
-      else if(current.length < Number(group.max_escolhas||99)) next = [...current,opt.id];
+      else if(current.length < Number(group.max_escolhas || 99)) next = [...current,opt.id];
       else return prev;
       return {...prev,[group.id]:next};
     });
   }
 
   function validate(){
-    if((prato.tamanhos||[]).length && !tamanho) return 'Escolha um tamanho.';
-    for(const g of prato.grupos_opcionais||[]){
-      const count = (selected[g.id]||[]).length;
-      if(count < Number(g.min_escolhas||0)) return `Escolha pelo menos ${g.min_escolhas} opcao em ${g.nome}.`;
-      if(count > Number(g.max_escolhas||99)) return `Escolha no maximo ${g.max_escolhas} em ${g.nome}.`;
+    if((prato.tamanhos || []).length && !tamanho) return 'Escolha um tamanho.';
+    for(const g of (prato.grupos_opcionais || [])){
+      const count = (selected[g.id] || []).length;
+      if(count < Number(g.min_escolhas || 0)) return `Escolha pelo menos ${g.min_escolhas} opcao em ${g.nome}.`;
+      if(count > Number(g.max_escolhas || 99)) return `Escolha no maximo ${g.max_escolhas} em ${g.nome}.`;
     }
     if(err) return err;
     return '';
@@ -582,221 +625,116 @@ function DetailModal({ data, onClose, onSaved }){
   function save(){
     const problem = validate();
     if(problem){ setErr(problem); return; }
-    const opts = (prato.grupos_opcionais||[]).flatMap(g => (g.opcionais||[]).filter(o => (selected[g.id]||[]).includes(o.id)).map(o => ({...o, grupo_id:g.id, grupo_nome:g.nome})));
-    onSaved({
-      uid: preset?.uid || makeId(),
-      prato, tamanho, opcionais:opts, quantidade:qty, observacoes:obs, preco_unitario:unit
-    });
+    const opts = (prato.grupos_opcionais || []).flatMap(g => (g.opcionais || [])
+      .filter(o => (selected[g.id] || []).includes(o.id))
+      .map(o => ({...o, grupo_id:g.id, grupo_nome:g.nome})));
+    onSaved({ uid:preset?.uid || makeId(), prato, tamanho, opcionais:opts, quantidade:qty, observacoes:obs, preco_unitario:unit });
   }
 
-  return <div className="modal-back">
-    <div className="sheet full">
-      <div className="sheet-head"><button className="icon-btn" onClick={onClose}>×</button><b>{prato.nome}</b><span/></div>
-      <Photo url={prato.foto_url} name={prato.nome} className="detail-photo"/>
-      <div className="detail-body">
-        <h2>{prato.nome}</h2>
-        <div className="detail-desc">{prato.descricao_completa || prato.descricao_curta}</div>
-        {!!(prato.cupons||[]).length && <div className="dish-coupons" style={{marginBottom:10}}>
-          {(prato.cupons||[]).map(c => <span className={`badge ${toneClass(c.cor || 'roxo')}`} key={c.id}>{c.codigo}{c.valor ? ` · ${c.tipo === 'percentual' ? `${c.valor}%` : fmtR$(c.valor)}` : ''}</span>)}
-        </div>}
-        <div className="price">
-          {prato.preco_promocional && <span className="old-price">{fmtR$(prato.preco_base)}</span>}
-          a partir de {fmtR$(minPrice(prato))}
-        </div>
-      </div>
-      {(prato.tamanhos||[]).length > 0 && <div className="group">
-        <div className="group-title"><div><h3>Tamanho</h3><small>Escolha 1 opcao</small></div><span className="req">OBRIGATORIO</span></div>
-        {prato.tamanhos.map(t => <div className="choice" key={t.id} onClick={()=>setTamanho(t)}>
-          <div><div className="choice-title">{t.nome}</div>{t.peso_g && <div className="choice-desc">{t.peso_g}g</div>}<div className="choice-price">{Number(t.preco_delta)>0?`+ ${fmtR$(t.preco_delta)}`:'incluido'}</div></div>
-          <span className={`radio ${tamanho?.id===t.id?'active':''}`}/>
-        </div>)}
-      </div>}
-      {(prato.grupos_opcionais||[]).map(g => <div className="group" key={g.id}>
-        <div className="group-title">
-          <div><h3>{g.nome}</h3><small>Escolha {g.min_escolhas ? `de ${g.min_escolhas} a ` : 'ate '}{g.max_escolhas} opcao(oes)</small></div>
-          {Number(g.min_escolhas)>0 && <span className="req">OBRIGATORIO</span>}
-        </div>
-        {(g.opcionais||[]).map(o => {
-          const active = (selected[g.id]||[]).includes(o.id);
-          return <div className="option-line" key={o.id} onClick={()=>toggle(g,o)}>
-            <Photo url={o.foto_url} name={o.nome} className="option-photo"/>
-            <div><div className="choice-title">{o.nome}</div><div className="choice-desc">{o.descricao}</div><div className="choice-price">{Number(o.preco_delta)>0?`+ ${fmtR$(o.preco_delta)}`:'sem acrescimo'}</div></div>
-            <button className={`plus ${active?'active':''}`}>{active?'✓':'+'}</button>
-          </div>;
-        })}
-      </div>)}
-      <div className="form"><label>Observacao do item</label><textarea value={obs} onChange={e=>setObs(e.target.value)} placeholder="Ex: sem cebola, capricha no parmesao..."/></div>
-      {err && <div className="warn">{err}</div>}
-      <div className="detail-footer">
-        <div className="stepper"><button onClick={()=>setQty(Math.max(1,qty-1))}>-</button><span>{qty}</span><button onClick={()=>setQty(qty+1)}>+</button></div>
-        <button className="add-btn" disabled={pricing} onClick={save}>{pricing?'Calculando...':`Adicionar — ${fmtR$(unit*qty)}`}</button>
-      </div>
-    </div>
-  </div>;
-}
-
-function ChatModal({ tracking, bot, onClose }){
-  const [messages,setMessages] = useState([]);
-  const [text,setText] = useState('');
-  const [loading,setLoading] = useState(false);
-  const [err,setErr] = useState('');
-  const visitorKey = tracking?.visitor_key || getVisitorKey();
-
-  useEffect(()=>{
-    if(!visitorKey) return;
-    let cancelled = false;
-    let timer = null;
-    async function tick(){
-      if(cancelled) return;
-      if(document.visibilityState === 'visible'){
-        await loadMessages();
-      }
-      if(cancelled) return;
-      timer = setTimeout(tick, 8000);
-    }
-    tick();
-    function onVis(){ if(document.visibilityState === 'visible') loadMessages(); }
-    document.addEventListener('visibilitychange', onVis);
-    return () => {
-      cancelled = true;
-      if(timer) clearTimeout(timer);
-      document.removeEventListener('visibilitychange', onVis);
-    };
-  },[visitorKey]);
-
-  async function loadMessages(){
-    if(!visitorKey) return;
-    const { data } = await sb.rpc('cardapio_listar_mensagens_visitante', { p_visitor_key: visitorKey });
-    setMessages(Array.isArray(data) ? data : []);
-  }
-
-  async function send(){
-    const msg = text.trim();
-    if(!msg) return;
-    setLoading(true);
-    setErr('');
-    setText('');
-    const optimistic = { id: `tmp-${Date.now()}`, autor: 'visitante', mensagem: msg, criado_em: new Date().toISOString(), _optimistic: true };
-    setMessages(prev => [...prev, optimistic]);
-    const { error } = await sb.functions.invoke('garcom-bot', {
-      body: {
-        visitor_key: visitorKey,
-        sessao_id: tracking?.sessao_id || null,
-        mensagem: msg
-      }
-    });
-    setLoading(false);
-    if(error){
-      setErr(error.message || 'Nao consegui chamar o garcom virtual agora.');
-      setMessages(prev => prev.filter(m => m.id !== optimistic.id));
-      setText(msg);
-      return;
-    }
-    await loadMessages();
-  }
-
-  return <div className="modal-back chat-modal-back" onClick={onClose}>
-    <div className="sheet chat-sheet" onClick={e=>e.stopPropagation()}>
-      <div className="sheet-head"><b>{bot?.nome || 'Falar com o Dom'}</b><button className="icon-btn chat-close" onClick={onClose}>x</button></div>
-      <div className="chat-body">
-        {!messages.length && !loading && <div className="chat-bubble admin">Me chama por aqui que eu vejo no painel em tempo real.</div>}
-        {messages.map(m => <div key={m.id} className={`chat-bubble ${m.autor === 'visitante' ? 'visitante' : 'admin'}`}>{m.mensagem}</div>)}
-        {loading && <div className="chat-bubble admin chat-typing"><span/><span/><span/></div>}
-      </div>
-      {err && <div className="warn">{err}</div>}
-      <div className="chat-input">
-        <input value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')send();}} placeholder="Escreva sua mensagem..." disabled={loading} />
-        <button disabled={loading || !text.trim()} onClick={send}>{loading ? '...' : 'Enviar'}</button>
-      </div>
-    </div>
-  </div>;
-}
-
-function CartModal({ cart,setCart,subtotal,bebidas,onClose,onEdit,onAddBebida,onCheckout }){
-  return <div className="modal-back">
-    <div className="sheet full">
-      <div className="sheet-head"><button className="icon-btn" onClick={onClose}>×</button><b>SACOLA</b><button className="danger" onClick={()=>setCart([])}>Limpar</button></div>
-      <div className="store-card" style={{margin:'12px',padding:'14px'}}><b>Dom Leonardo</b><div className="small">Adicionar mais itens do cardapio do Dom.</div></div>
-      {cart.length === 0 && <div className="empty">Sua sacola esta vazia.</div>}
-      {cart.map((it,i) => <div className="cart-item" key={it.uid}>
-        <Photo url={it.prato.foto_url} name={it.prato.nome} className="cart-thumb"/>
-        <div>
-          <div className="cart-title">{it.prato.nome}</div>
-          <div className="cart-desc">{it.prato.descricao_curta}</div>
-          <div className="cart-tags">
-            {it.tamanho && <span className="tag">{it.tamanho.nome}</span>}
-            {it.opcionais.map(o=><span className="tag" key={o.id}>{o.nome}</span>)}
-            {it.observacoes && <span className="tag">{it.observacoes}</span>}
+  return (
+    <div className="modal-back">
+      <div className="sheet full">
+        <div className="sheet-head"><button className="icon-btn" onClick={onClose}>x</button><b className="sheet-title">{prato.nome}</b><button className="mini-btn" onClick={startDeliveryEstimate}>Tempo</button></div>
+        <div className="sheet-scroll">
+          <Photo url={prato.foto_url} name={prato.nome} className="detail-photo" />
+          <div className="detail-body">
+            <h2 className="font-serif">{prato.nome}</h2>
+            <div className="detail-desc">{prato.descricao_completa || prato.descricao_curta || 'Prato feito na cozinha do Dom Leonardo.'}</div>
+            <div className="price">{prato.preco_promocional && <span className="old-price">{fmtR(prato.preco_base)}</span>}a partir de {fmtR(minPrice(prato))}</div>
           </div>
-          <button className="danger" onClick={()=>onEdit(it.prato,i)}>Editar</button>
+          {(prato.tamanhos || []).length > 0 && <div className="group">
+            <div className="group-title"><div><h3>Tamanho</h3><small>Escolha 1 opcao</small></div><span className="req">OBRIGATORIO</span></div>
+            {prato.tamanhos.map(t => <div className="choice" key={t.id} onClick={() => setTamanho(t)}>
+              <div><div className="choice-title">{t.nome}</div>{t.peso_g && <div className="choice-desc">{t.peso_g}g</div>}<div className="choice-price">{Number(t.preco_delta) > 0 ? `+ ${fmtR(t.preco_delta)}` : 'incluido'}</div></div>
+              <span className={`radio ${tamanho?.id === t.id ? 'active' : ''}`} />
+            </div>)}
+          </div>}
+          {(prato.grupos_opcionais || []).map(g => <div className="group" key={g.id}>
+            <div className="group-title">
+              <div><h3>{g.nome}</h3><small>Escolha {g.min_escolhas ? `de ${g.min_escolhas} a ` : 'ate '}{g.max_escolhas} opcao(oes)</small></div>
+              {Number(g.min_escolhas) > 0 && <span className="req">OBRIGATORIO</span>}
+            </div>
+            {(g.opcionais || []).map(o => {
+              const active = (selected[g.id] || []).includes(o.id);
+              return <div className="choice option-line" key={o.id} onClick={() => toggle(g,o)}>
+                <Photo url={o.foto_url} name={o.nome} className="option-photo"/>
+                <div><div className="choice-title">{o.nome}</div><div className="choice-desc">{o.descricao}</div><div className="choice-price">{Number(o.preco_delta) > 0 ? `+ ${fmtR(o.preco_delta)}` : 'sem acrescimo'}</div></div>
+                <button className={`plus ${active ? 'active' : ''}`}>{active ? '✓' : '+'}</button>
+              </div>;
+            })}
+          </div>)}
+          <div className="form"><label>Observacao do item</label><textarea value={obs} onChange={e => setObs(e.target.value)} placeholder="Ex: sem cebola, capricha no parmesao..." /></div>
+          {err && <div className="warn">{err}</div>}
         </div>
-        <div className="cart-actions">
-          <button className="danger" onClick={()=>setCart(prev=>prev.filter((_,idx)=>idx!==i))}>Excluir</button>
-          <div className="stepper" style={{width:92,height:34}}><button onClick={()=>setCart(prev=>prev.map((x,idx)=>idx===i?{...x,quantidade:Math.max(1,x.quantidade-1)}:x))}>-</button><span>{it.quantidade}</span><button onClick={()=>setCart(prev=>prev.map((x,idx)=>idx===i?{...x,quantidade:x.quantidade+1}:x))}>+</button></div>
-          <b>{fmtR$(it.preco_unitario*it.quantidade)}</b>
+        <div className="detail-footer">
+          <div className="stepper"><button onClick={() => setQty(Math.max(1,qty-1))}>-</button><span>{qty}</span><button onClick={() => setQty(qty+1)}>+</button></div>
+          <button className="primary-btn" disabled={pricing} onClick={save}>{pricing ? 'Calculando...' : `Adicionar - ${fmtR(unit * qty)}`}</button>
         </div>
-      </div>)}
-      {bebidas.length > 0 && <div className="upsell"><h3>O Dom tambem recomenda</h3><div className="upsell-row">{bebidas.map(b=><div className="upsell-card" key={b.id}><Photo url={b.foto_url} name={b.nome} className="cart-thumb"/><b>{b.nome}</b><div className="price">{fmtR$(b.preco_base)}</div><button className="plus" onClick={()=>onAddBebida(b)}>+</button></div>)}</div></div>}
-      <div className="cart-footer"><div><div className="total-label">Total</div><div className="total-value">{fmtR$(subtotal)}</div></div><button className="continue-btn" disabled={!cart.length} onClick={onCheckout}>Continuar</button></div>
+      </div>
     </div>
-  </div>;
+  );
 }
 
-function CheckoutModal({ cardapio, cart, subtotal, tracking, track, onClose, onSuccess }){
-  const rest = cardapio.restaurante || {};
-  const [form,setForm] = useState({nome:'',whatsapp:'',cep:'',logradouro:'',numero:'',complemento:'',bairro:'',cidade:'Curitiba',uf:'PR',referencia:'',pagamento:'pix_manual',troco:'',cupom:'',obs:''});
-  const [loading,setLoading] = useState(false);
-  const [msg,setMsg] = useState('');
-  function set(k,v){ setForm({...form,[k]:v}); }
-
-  async function confirm(){
-    setMsg('');
-    if(!form.nome || !form.whatsapp || !form.logradouro || !form.numero || !form.bairro) return setMsg('Preencha nome, WhatsApp e endereco.');
-    setLoading(true);
-    const visitorKey = tracking?.visitor_key || getVisitorKey();
-    if(visitorKey){
-      try { await sb.rpc('cardapio_resolver_visitante', { p_visitor_key: visitorKey, p_whatsapp: form.whatsapp, p_nome: form.nome }); } catch(_) { /* segue sem mesclar */ }
-    }
-    const payload = {
-      p_cliente:{ nome:form.nome, whatsapp:form.whatsapp },
-      p_endereco:{ cep:form.cep, logradouro:form.logradouro, numero:form.numero, complemento:form.complemento, bairro:form.bairro, cidade:form.cidade, uf:form.uf, ponto_referencia:form.referencia },
-      p_itens:cart.map(it=>({ prato_id:it.prato.id, tamanho_id:it.tamanho?.id || null, opcionais_ids:it.opcionais.map(o=>o.id), quantidade:it.quantidade, observacoes:it.observacoes || null })),
-      p_forma_pagamento:form.pagamento,
-      p_troco_para:form.troco ? Number(form.troco) : null,
-      p_cupom_codigo:form.cupom || null,
-      p_observacoes:form.obs || null,
-      p_origem:'cardapio_html'
-    };
-    const { data, error } = await sb.rpc('criar_pedido', payload);
-    setLoading(false);
-    if(error) return setMsg(error.message);
-    const whatsapp = (rest.whatsapp || '5541000000000').replace(/\D/g,'');
-    const text = data?.mensagem_whatsapp || `Pedido Dom Leonardo ${data?.numero_pedido||''}`;
-    window.open(`https://wa.me/${whatsapp}?text=${encodeURIComponent(text)}`,'_blank');
-    onSuccess();
-  }
-  useEffect(()=>{ track?.('checkout_open', { subtotal, itens: cart.length }); },[]);
-  return <div className="modal-back">
-    <div className="sheet full">
-      <div className="sheet-head"><button className="icon-btn" onClick={onClose}>×</button><b>Finalizar pedido</b><span/></div>
-      <div className="warn">O pagamento e a entrega sao combinados pelo WhatsApp. O pedido tambem fica salvo no sistema.</div>
-      <div className="form">
-        <label>Nome</label><input value={form.nome} onChange={e=>set('nome',e.target.value)} placeholder="Seu nome"/>
-        <label>WhatsApp</label><input value={form.whatsapp} onChange={e=>set('whatsapp',e.target.value)} placeholder="41999999999"/>
-        <label>Endereco</label><input value={form.logradouro} onChange={e=>set('logradouro',e.target.value)} placeholder="Rua / Avenida"/>
-        <div className="form-row"><div><label>Bairro</label><input value={form.bairro} onChange={e=>set('bairro',e.target.value)}/></div><div><label>Numero</label><input value={form.numero} onChange={e=>set('numero',e.target.value)}/></div></div>
-        <div className="form-row"><div><label>Complemento</label><input value={form.complemento} onChange={e=>set('complemento',e.target.value)}/></div><div><label>CEP</label><input value={form.cep} onChange={e=>set('cep',e.target.value)}/></div></div>
-        <div className="form-row"><div><label>Cidade</label><input value={form.cidade} onChange={e=>set('cidade',e.target.value)}/></div><div><label>UF</label><input value={form.uf} onChange={e=>set('uf',e.target.value)}/></div></div>
-        <label>Referencia</label><input value={form.referencia} onChange={e=>set('referencia',e.target.value)} placeholder="Portao, bloco, ponto de referencia..."/>
-        <label>Forma de pagamento</label><select value={form.pagamento} onChange={e=>set('pagamento',e.target.value)}><option value="pix_manual">Pix manual</option><option value="cartao_entrega">Cartao na entrega</option><option value="dinheiro">Dinheiro</option><option value="nao_definido">Combinar no WhatsApp</option></select>
-        {form.pagamento==='dinheiro' && <><label>Troco para</label><input type="number" value={form.troco} onChange={e=>set('troco',e.target.value)}/></>}
-        <label>Cupom</label><input value={form.cupom} onChange={e=>set('cupom',e.target.value.toUpperCase())} placeholder="BEMVINDO10"/>
-        <label>Observacoes do pedido</label><textarea value={form.obs} onChange={e=>set('obs',e.target.value)} placeholder="Alguma informacao para o Dom?"/>
+function CartSheet({ cart, setCart, subtotal, bebidas, onClose, onEdit, onCheckout }){
+  return (
+    <div className="modal-back">
+      <div className="sheet full">
+        <div className="sheet-head"><button className="icon-btn" onClick={onClose}>x</button><b>Sacola do Dom</b><button className="danger" onClick={() => setCart([])}>Limpar</button></div>
+        <div className="sheet-scroll">
+          <div className="cart-list">
+            {!cart.length && <div className="empty">Sua sacola esta vazia.</div>}
+            {cart.map((it,i) => <div className="cart-item" key={it.uid}>
+              <Photo url={it.prato.foto_url} name={it.prato.nome} className="cart-thumb"/>
+              <div>
+                <div className="cart-title">{it.prato.nome}</div>
+                <div className="cart-desc">{it.prato.descricao_curta}</div>
+                <div className="tags">
+                  {it.tamanho && <span className="tag">{it.tamanho.nome}</span>}
+                  {it.opcionais.map(o => <span className="tag" key={o.id}>{o.nome}</span>)}
+                  {it.observacoes && <span className="tag">{it.observacoes}</span>}
+                </div>
+                <div className="cart-actions">
+                  <button className="danger" onClick={() => onEdit(it.prato,i)}>Editar</button>
+                  <div className="stepper" style={{width:96,height:36}}><button onClick={() => setCart(prev => prev.map((x,idx) => idx === i ? {...x,quantidade:Math.max(1,x.quantidade-1)} : x))}>-</button><span>{it.quantidade}</span><button onClick={() => setCart(prev => prev.map((x,idx) => idx === i ? {...x,quantidade:x.quantidade+1} : x))}>+</button></div>
+                  <button className="danger" onClick={() => setCart(prev => prev.filter((_,idx) => idx !== i))}>Remover</button>
+                </div>
+                <div className="price" style={{marginTop:8}}>{fmtR(itemTotal(it))}</div>
+              </div>
+            </div>)}
+          </div>
+        </div>
+        <div className="cart-footer">
+          <div><div style={{color:'var(--muted)',fontSize:12}}>Total da sacola</div><div className="price" style={{fontSize:20}}>{fmtR(subtotal)}</div></div>
+          <button className="primary-btn" disabled={!cart.length} onClick={onCheckout}>Finalizar pedido</button>
+        </div>
       </div>
-      {msg && <div className="warn">{msg}</div>}
-      <div className="cart-footer"><div><div className="total-label">Subtotal estimado</div><div className="total-value">{fmtR$(subtotal)}</div></div><button className="continue-btn" disabled={loading} onClick={confirm}>{loading?'Enviando...':'Confirmar'}</button></div>
     </div>
-  </div>;
+  );
+}
+
+function ChatSheet({ messages, typing, input, setInput, send, onClose, msgEndRef, startDeliveryEstimate }){
+  return (
+    <div className="modal-back chat-back">
+      <div className="sheet chat-sheet">
+        <div className="sheet-head">
+          <div style={{width:42,height:42}}><MarcoSticker /></div>
+          <div style={{flex:1}}><b>Marco</b><div style={{fontSize:12,color:'var(--muted)'}}>Garçom do Dom Leonardo</div></div>
+          <button className="icon-btn" onClick={onClose}>x</button>
+        </div>
+        <div className="messages">
+          {!messages.length && <div className="msg marco"><small>Marco</small>Me chama por aqui. Eu ajudo sem tirar você do cardápio.</div>}
+          {messages.map(m => <div className={`msg ${m.autor}`} key={m.id}>{m.autor === 'marco' && <small>Marco</small>}{m.texto}</div>)}
+          {typing && <div className="typing"><span/><span/><span/></div>}
+          <div ref={msgEndRef} />
+        </div>
+        <div className="chat-input">
+          <button onClick={startDeliveryEstimate}>⏱</button>
+          <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') send(); }} placeholder="Mensagem para o Marco..." />
+          <button className="send" onClick={send}>➤</button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
