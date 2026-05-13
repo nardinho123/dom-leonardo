@@ -1,7 +1,6 @@
 // Edge Function: garcom-responder
-// Marco (garcom virtual) responde mensagem do cliente via GPT-4o.
-// Fase 3 do projeto Garcom Digital - conversacional, com humor sorteado,
-// memoria de sessao e 1 tool (set_cliente_nome).
+// Marco (garcom virtual) responde + opera o carrinho via GPT-4o.
+// Fase 3 + 4 do projeto Garcom Digital.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -51,6 +50,12 @@ function partOfDay(): string {
   return "madrugada";
 }
 
+type CartItem = { prato_id: string; nome: string; qtd: number; preco: number; obs?: string };
+
+function calcTotal(carrinho: CartItem[]): number {
+  return carrinho.reduce((s, it) => s + (it.preco * it.qtd), 0);
+}
+
 // ---------- handler ----------
 
 Deno.serve(async (req) => {
@@ -74,11 +79,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { db: { schema: "garcom" } }
-    );
+    const url = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Dois clients: garcom (escrita) e public (leitura dos pratos)
+    const sb = createClient(url, serviceKey, { db: { schema: "garcom" } });
+    const sbPub = createClient(url, serviceKey);
 
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openaiKey) {
@@ -92,61 +98,72 @@ Deno.serve(async (req) => {
     // 1) Carrega ou cria sessao
     let sessao: any = null;
     if (sessao_id) {
-      const { data } = await supabase.from("sessoes").select("*").eq("id", sessao_id).maybeSingle();
+      const { data } = await sb.from("sessoes").select("*").eq("id", sessao_id).maybeSingle();
       sessao = data;
     }
     if (!sessao) {
-      const { data, error } = await supabase
-        .from("sessoes")
-        .insert({
-          cliente_nome: cliente_nome_provisorio ?? null,
-          device_id: device_id ?? null,
-          memoria: {},
-          carrinho: [],
-        })
-        .select()
-        .single();
+      const { data, error } = await sb.from("sessoes").insert({
+        cliente_nome: cliente_nome_provisorio ?? null,
+        device_id: device_id ?? null,
+        memoria: {},
+        carrinho: [],
+      }).select().single();
       if (error) throw error;
       sessao = data;
     }
 
-    // 2) Sorteia humor do Marco
-    const { data: humoresRaw } = await supabase
-      .from("persona_humores")
-      .select("*")
-      .eq("personagem_id", "marco")
+    // 2) Carrega pratos ativos
+    const { data: pratosRaw } = await sbPub
+      .from("pratos")
+      .select("id, nome, descricao_curta, descricao_completa, preco_base, preco_promocional, badge_destaque, tempo_preparo_min")
       .eq("ativo", true);
+    const pratos = (pratosRaw ?? []).map((p: any) => ({
+      id: p.id,
+      nome: p.nome,
+      descricao: p.descricao_curta ?? p.descricao_completa ?? "",
+      preco: parseFloat(p.preco_promocional ?? p.preco_base ?? 0),
+      badge: p.badge_destaque,
+      tempo: p.tempo_preparo_min,
+    }));
+
+    // 3) Sorteia humor do Marco
+    const { data: humoresRaw } = await sb.from("persona_humores")
+      .select("*").eq("personagem_id", "marco").eq("ativo", true);
     const humor = sortearPonderado(humoresRaw ?? []) ?? { humor_nome: "anfitriao_classico", prompt_modifier: "" };
 
-    // 3) Curiosidades ainda nao usadas nesta sessao
-    const { data: usadas } = await supabase
-      .from("interaction_logs")
+    // 4) Curiosidades ainda nao usadas nesta sessao
+    const { data: usadas } = await sb.from("interaction_logs")
       .select("curiosidade_usada_id")
       .eq("sessao_id", sessao.id)
       .not("curiosidade_usada_id", "is", null);
     const usadasIds = (usadas ?? []).map((u: any) => u.curiosidade_usada_id).filter(Boolean);
 
-    let curQuery = supabase.from("curiosidades").select("id, categoria, texto, tom").eq("ativo", true);
+    let curQuery = sb.from("curiosidades").select("id, categoria, texto, tom").eq("ativo", true);
     if (usadasIds.length > 0) {
       curQuery = curQuery.not("id", "in", `(${usadasIds.join(",")})`);
     }
     const { data: curiosidadesDisp } = await curQuery.limit(10);
 
-    // 4) Fato do dia
+    // 5) Fato do dia
     const hoje = new Date().toISOString().split("T")[0];
-    const { data: fato } = await supabase
-      .from("fato_do_dia")
-      .select("texto")
-      .eq("dia", hoje)
-      .maybeSingle();
+    const { data: fato } = await sb.from("fato_do_dia")
+      .select("texto").eq("dia", hoje).maybeSingle();
 
-    // 5) Historico
+    // 6) Historico + carrinho atual
     const memoria = (sessao.memoria as any) ?? {};
     const historico: Array<{ role: "user" | "assistant"; content: string }> = memoria.mensagens ?? [];
+    let carrinho: CartItem[] = (sessao.carrinho as any) ?? [];
     const cliente_nome = sessao.cliente_nome;
 
-    // 6) System prompt
-    const systemPrompt = `Voce e o Marco, garcom virtual do restaurante Dom Leonardo (trattoria italiana de delivery). Voce e brasileiro com sotaque italiano leve. Tem opiniao propria, paixao pela cozinha do chef Leo, e atende como um anfitriao real.
+    // 7) System prompt
+    const carrinhoStr = carrinho.length === 0
+      ? "(vazio)"
+      : carrinho.map((it, i) =>
+          `  [${i}] ${it.qtd}x ${it.nome} (R$ ${it.preco.toFixed(2)}${it.obs ? `, obs: ${it.obs}` : ""})`
+        ).join("\n");
+    const totalAtual = calcTotal(carrinho);
+
+    const systemPrompt = `Voce e o Marco, garcom virtual do restaurante Dom Leonardo (trattoria italiana de delivery). Brasileiro com sotaque italiano leve. Tem opiniao, paixao pela cozinha do chef Leo, atende como anfitriao real.
 
 ==============================
 PERSONALIDADE DE HOJE (humor sorteado): ${humor.humor_nome}
@@ -156,30 +173,36 @@ ${humor.prompt_modifier ?? ""}
 CONTEXTO:
 - Cliente: ${cliente_nome ? `chamado(a) ${cliente_nome}` : "ainda nao sei o nome"}
 - Periodo do dia: ${partOfDay()} (${nowSP()})
-- Fato do dia (use se vier a calhar, sem forcar): ${fato?.texto ?? "(sem fato hoje)"}
+- Fato do dia (use se vier a calhar): ${fato?.texto ?? "(sem fato hoje)"}
 
-CURIOSIDADES DO LEO DISPONIVEIS (cada uma pode aparecer no maximo uma vez; cite no maximo UMA por mensagem se realmente couber, marcando o id no final da fala assim: [N]; se nao usar nenhuma, nao marque nada):
+CARRINHO ATUAL (total R$ ${totalAtual.toFixed(2)}):
+${carrinhoStr}
+
+CURIOSIDADES DO LEO DISPONIVEIS (cada uma pode aparecer no maximo uma vez; cite no maximo UMA por mensagem se realmente couber, marcando o id no final da fala assim: [N]):
 ${(curiosidadesDisp ?? []).map((c: any) => `[${c.id}] (${c.categoria ?? "geral"}) ${c.texto}`).join("\n")}
 
 PRATOS DO MENU HOJE:
-- Risoto Cremoso de Alcatra na Manteiga (R$ 49,90, "mais pedido"): alcatra selada na manteiga, arroz arboreo cozido no caldo da casa, cremoso.
-- Spaghetti a Carbonara (R$ 49,90, "o mais elogiado"): emulsao de ovos, parmesao, pimenta-do-reino, bacon. SEM creme de leite (Carbonara de verdade).
-- Pao Italiano Recheado (R$ 88,90, "premium"): gorgonzola+vinho branco+creme servido no pao artesanal. Acompanha alcatra, linguica Blumenau e costela suina. Serve 3 a 4.
-- Nhoque Rose (R$ 45,90): nhoque artesanal ao molho rose, equilibrado e cremoso.
+${pratos.map((p: any) => `- ID: ${p.id}\n  Nome: ${p.nome}\n  Preco: R$ ${p.preco.toFixed(2)}\n  Badge: ${p.badge ?? "-"}\n  Descricao: ${p.descricao}`).join("\n\n")}
 
 REGRAS DE COMUNICACAO (nao-negociaveis):
-1. NUNCA mencione que e IA, bot, assistente virtual, sistema, modelo, GPT, OpenAI ou qualquer termo do tipo. Se perguntarem, fuja com humor leve ("ah, sou so o Marco daqui mesmo, viu?").
-2. Frases curtas, conversacionais. Nada de listas longas, nada de markdown, nada de bullet points. Texto corrido.
-3. Espelhe o cliente: se ele e curto, voce e curto. Se ele usa emoji, voce pode. Se ele e formal, voce e formal.
-4. Tenha OPINIAO propria. Se perguntarem "qual voce recomenda?", escolha e defenda. Marco nao e neutro.
-5. Antecipe duvidas. Se o cliente parece em duvida, sugira.
-6. Se cliente ficar irritado/impaciente, abandone humor e seja empatico+eficiente.
-7. NAO de precos exatos de coisas que voce nao tem certeza, NAO prometa tempo de entrega -- diga "ja te confirmo".
-8. Se o cliente ainda NAO se apresentou, EM ALGUM momento natural da conversa pergunte: "Como posso te chamar?". Quando ele responder, use a tool set_cliente_nome. NAO pergunte na primeira frase se voce ja esta saudando.
+1. NUNCA mencione que e IA, bot, sistema, modelo, GPT, OpenAI. Se perguntarem, fuja com humor leve ("ah, sou so o Marco daqui mesmo, viu?").
+2. Frases CURTAS, conversacionais. Nada de listas longas, markdown ou bullet points. Texto corrido.
+3. Espelhe o cliente: curto/longo, emoji/sem-emoji, formal/informal.
+4. Tenha OPINIAO. Se perguntarem o que recomenda, escolha e defenda.
+5. Antecipe duvidas.
+6. Se cliente irritado/impaciente, abandone humor e seja empatico+eficiente.
+7. NAO de tempo de entrega exato -- diga "ja te confirmo".
+8. Se ainda nao sabe o nome, em algum momento pergunte "como posso te chamar?". Use a tool set_cliente_nome quando ele responder.
 
-Responda SEMPRE em portugues brasileiro. Resposta curta -- 1 a 3 frases idealmente.`;
+USO DE TOOLS (importante):
+- Quando o cliente CONFIRMAR que quer pedir um prato, use adicionar_ao_carrinho com o ID exato do prato (UUID acima). NAO confirme verbalmente sem chamar a tool.
+- Se o cliente pedir pra remover/alterar, use remover_do_carrinho ou alterar_observacao com o INDICE (0, 1, 2...) do item no carrinho atual.
+- Use sugerir_harmonizacao quando o cliente ja tiver escolhido prato principal e voce quiser oferecer bebida ou sobremesa.
+- Apos chamar uma tool de carrinho, na proxima fala CONFIRME pro cliente o que foi feito de forma natural ("anotado: 1 Risoto, vai mais alguma coisa?").
 
-    // 7) Tools
+Responda em PORTUGUES BRASILEIRO. Respostas curtas -- 1 a 3 frases idealmente.`;
+
+    // 8) Tools
     const tools = [
       {
         type: "function" as const,
@@ -188,16 +211,69 @@ Responda SEMPRE em portugues brasileiro. Resposta curta -- 1 a 3 frases idealmen
           description: "Use quando o cliente disser como quer ser chamado. Registra no perfil.",
           parameters: {
             type: "object",
-            properties: {
-              nome: { type: "string", description: "Nome ou apelido do cliente" },
-            },
+            properties: { nome: { type: "string", description: "Nome ou apelido" } },
             required: ["nome"],
+          },
+        },
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "adicionar_ao_carrinho",
+          description: "Adiciona um prato ao carrinho. Use o prato_id (UUID) do menu. Se quantidade nao for dita, assuma 1.",
+          parameters: {
+            type: "object",
+            properties: {
+              prato_id: { type: "string", description: "UUID do prato (vem do menu acima)" },
+              qtd: { type: "integer", minimum: 1, default: 1 },
+              observacoes: { type: "string", description: "Ex: 'sem cebola', 'bem passado'" },
+            },
+            required: ["prato_id"],
+          },
+        },
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "remover_do_carrinho",
+          description: "Remove um item do carrinho pelo indice (0-based, conforme listado em CARRINHO ATUAL).",
+          parameters: {
+            type: "object",
+            properties: { indice: { type: "integer", minimum: 0 } },
+            required: ["indice"],
+          },
+        },
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "alterar_observacao",
+          description: "Altera a observacao de um item do carrinho.",
+          parameters: {
+            type: "object",
+            properties: {
+              indice: { type: "integer", minimum: 0 },
+              observacoes: { type: "string" },
+            },
+            required: ["indice", "observacoes"],
+          },
+        },
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "sugerir_harmonizacao",
+          description: "Sugere uma bebida ou sobremesa pra acompanhar o prato principal. NAO adiciona ao carrinho, so retorna sugestao texto que voce pode usar na fala.",
+          parameters: {
+            type: "object",
+            properties: { prato_id: { type: "string", description: "UUID do prato principal" } },
+            required: ["prato_id"],
           },
         },
       },
     ];
 
-    // 8) Chamada inicial
+    // 9) Chamada inicial
     const novaMsgUsuario = { role: "user" as const, content: mensagem };
     const messages: any[] = [
       { role: "system", content: systemPrompt },
@@ -211,36 +287,109 @@ Responda SEMPRE em portugues brasileiro. Resposta curta -- 1 a 3 frases idealmen
       tools,
       tool_choice: "auto",
       temperature: 0.9,
-      max_tokens: 400,
+      max_tokens: 500,
     });
 
     let respMsg: any = completion.choices[0].message;
     let nomeRegistrado: string | null = null;
+    const toolsUsadas: string[] = [];
+    const eventos: Array<{ tipo: string; payload: any }> = [];
 
-    // 9) Tool call loop (uma volta basta para fase 3)
-    if (respMsg.tool_calls && respMsg.tool_calls.length > 0) {
+    // 10) Tool call loop (max 2 iteracoes pra prevenir loops infinitos)
+    let iter = 0;
+    while (respMsg.tool_calls && respMsg.tool_calls.length > 0 && iter < 2) {
+      iter++;
       messages.push(respMsg);
+
       for (const tc of respMsg.tool_calls) {
         let args: any = {};
         try { args = JSON.parse(tc.function.arguments ?? "{}"); } catch (_) {}
         let resultado = "ok";
-        if (tc.function.name === "set_cliente_nome" && args.nome) {
-          nomeRegistrado = String(args.nome).slice(0, 60);
-          await supabase
-            .from("sessoes")
-            .update({ cliente_nome: nomeRegistrado })
-            .eq("id", sessao.id);
-          resultado = `Nome registrado: ${nomeRegistrado}`;
+        toolsUsadas.push(tc.function.name);
+
+        switch (tc.function.name) {
+          case "set_cliente_nome": {
+            if (args.nome) {
+              nomeRegistrado = String(args.nome).slice(0, 60);
+              await sb.from("sessoes").update({ cliente_nome: nomeRegistrado }).eq("id", sessao.id);
+              resultado = `Nome registrado: ${nomeRegistrado}`;
+            } else resultado = "Erro: nome vazio";
+            break;
+          }
+          case "adicionar_ao_carrinho": {
+            const prato = pratos.find((p: any) => p.id === args.prato_id);
+            if (!prato) {
+              resultado = `Erro: prato_id ${args.prato_id} nao existe no menu`;
+            } else {
+              const qtd = Math.max(1, parseInt(args.qtd ?? 1, 10));
+              const obs = (args.observacoes ?? "").trim();
+              // Se ja tem o mesmo prato com mesma obs, incrementa
+              const idxIgual = carrinho.findIndex(
+                (it) => it.prato_id === prato.id && (it.obs ?? "") === obs
+              );
+              if (idxIgual >= 0) {
+                carrinho[idxIgual].qtd += qtd;
+              } else {
+                carrinho.push({
+                  prato_id: prato.id,
+                  nome: prato.nome,
+                  preco: prato.preco,
+                  qtd,
+                  obs: obs || undefined,
+                });
+              }
+              eventos.push({ tipo: "carrinho_adicionado", payload: { prato_id: prato.id, nome: prato.nome, qtd } });
+              resultado = `OK. Carrinho agora: ${carrinho.length} item(ns), total R$ ${calcTotal(carrinho).toFixed(2)}.`;
+            }
+            break;
+          }
+          case "remover_do_carrinho": {
+            const idx = parseInt(args.indice ?? -1, 10);
+            if (idx >= 0 && idx < carrinho.length) {
+              const removido = carrinho[idx];
+              carrinho.splice(idx, 1);
+              eventos.push({ tipo: "carrinho_removido", payload: removido });
+              resultado = `OK. Removido: ${removido.nome}. Carrinho agora: ${carrinho.length} item(ns).`;
+            } else {
+              resultado = `Erro: indice ${idx} invalido (carrinho tem ${carrinho.length} itens).`;
+            }
+            break;
+          }
+          case "alterar_observacao": {
+            const idx = parseInt(args.indice ?? -1, 10);
+            if (idx >= 0 && idx < carrinho.length) {
+              carrinho[idx].obs = String(args.observacoes ?? "").trim() || undefined;
+              eventos.push({ tipo: "carrinho_alterado", payload: { indice: idx, obs: carrinho[idx].obs } });
+              resultado = `OK. Observacao atualizada no item ${idx}.`;
+            } else {
+              resultado = `Erro: indice ${idx} invalido.`;
+            }
+            break;
+          }
+          case "sugerir_harmonizacao": {
+            const prato = pratos.find((p: any) => p.id === args.prato_id);
+            // Implementacao simples por categoria do nome - depois pode virar logica mais rica
+            const nome = (prato?.nome ?? "").toLowerCase();
+            let sugestao = "agua com gas e uma sobremesa leve";
+            if (nome.includes("risot") || nome.includes("carbonara") || nome.includes("nhoque")) {
+              sugestao = "um vinho branco seco ou suco de uva integral; e o Tiramisu pra fechar.";
+            } else if (nome.includes("pao") || nome.includes("costela")) {
+              sugestao = "vinho tinto encorpado ou cerveja artesanal; sobremesa pode ser leve.";
+            }
+            resultado = `Sugestao de harmonizacao para ${prato?.nome ?? "esse prato"}: ${sugestao}`;
+            break;
+          }
         }
-        messages.push({
-          role: "tool",
-          tool_call_id: tc.id,
-          content: resultado,
-        });
+
+        messages.push({ role: "tool", tool_call_id: tc.id, content: resultado });
       }
+
+      // Apos as tools, pede uma fala final
       completion = await openai.chat.completions.create({
         model: "gpt-4o",
         messages,
+        tools,
+        tool_choice: "auto",
         temperature: 0.9,
         max_tokens: 400,
       });
@@ -249,7 +398,7 @@ Responda SEMPRE em portugues brasileiro. Resposta curta -- 1 a 3 frases idealmen
 
     const falaBruta = (respMsg.content ?? "").trim();
 
-    // 10) Extrai marca de curiosidade [N]
+    // 11) Extrai marca de curiosidade [N]
     let curiosidadeUsadaId: number | null = null;
     let fala = falaBruta;
     const m = falaBruta.match(/\[(\d+)\]/);
@@ -258,28 +407,22 @@ Responda SEMPRE em portugues brasileiro. Resposta curta -- 1 a 3 frases idealmen
       fala = falaBruta.replace(/\s*\[\d+\]\s*/g, " ").trim();
     }
 
-    // 11) Atualiza memoria de sessao (mantem ultimas 20 mensagens)
+    // 12) Atualiza memoria + carrinho no banco
     const novoHistorico = [
       ...historico,
       novaMsgUsuario,
       { role: "assistant" as const, content: fala },
     ].slice(-20);
 
-    await supabase
-      .from("sessoes")
-      .update({
-        memoria: { ...memoria, mensagens: novoHistorico, ultimo_humor: humor.humor_nome },
-        ultima_interacao_em: new Date().toISOString(),
-      })
-      .eq("id", sessao.id);
+    await sb.from("sessoes").update({
+      memoria: { ...memoria, mensagens: novoHistorico, ultimo_humor: humor.humor_nome },
+      carrinho,
+      ultima_interacao_em: new Date().toISOString(),
+    }).eq("id", sessao.id);
 
-    // 12) Loga interacoes
-    await supabase.from("interaction_logs").insert([
-      {
-        sessao_id: sessao.id,
-        papel: "cliente",
-        fala: mensagem,
-      },
+    // 13) Loga interacoes
+    await sb.from("interaction_logs").insert([
+      { sessao_id: sessao.id, papel: "cliente", fala: mensagem },
       {
         sessao_id: sessao.id,
         personagem_id: "marco",
@@ -287,7 +430,8 @@ Responda SEMPRE em portugues brasileiro. Resposta curta -- 1 a 3 frases idealmen
         fala,
         humor_sorteado: humor.humor_nome,
         curiosidade_usada_id: curiosidadeUsadaId,
-        tool_usada: nomeRegistrado ? "set_cliente_nome" : null,
+        tool_usada: toolsUsadas.length > 0 ? toolsUsadas.join(",") : null,
+        contexto: { eventos },
       },
     ]);
 
@@ -296,12 +440,10 @@ Responda SEMPRE em portugues brasileiro. Resposta curta -- 1 a 3 frases idealmen
         sessao_id: sessao.id,
         cliente_nome: nomeRegistrado ?? sessao.cliente_nome,
         humor: humor.humor_nome,
-        falas: [
-          {
-            texto: fala,
-            delay_ms: calcDelay(fala, humor.humor_nome),
-          },
-        ],
+        falas: [{ texto: fala, delay_ms: calcDelay(fala, humor.humor_nome) }],
+        carrinho,
+        total: calcTotal(carrinho),
+        eventos,
       }),
       { headers: { ...cors, "Content-Type": "application/json" } }
     );
@@ -309,10 +451,7 @@ Responda SEMPRE em portugues brasileiro. Resposta curta -- 1 a 3 frases idealmen
     console.error("garcom-responder error:", err);
     return new Response(
       JSON.stringify({ error: String((err as any)?.message ?? err) }),
-      {
-        status: 500,
-        headers: { ...cors, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
     );
   }
 });

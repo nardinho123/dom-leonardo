@@ -71,6 +71,33 @@
     opacity: 0;
     transition: opacity 400ms;
   }
+  /* Badge do carrinho sobre o Marco */
+  .marco-cart-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 11px;
+    background: linear-gradient(180deg, #e7c66d 0%, #a47e1e 100%);
+    color: #1a1305;
+    font-size: 12px;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+    border: 2px solid var(--bg);
+    z-index: 1;
+    transform: scale(0);
+    transition: transform 240ms cubic-bezier(.34,1.56,.64,1);
+  }
+  .marco-cart-badge.show { transform: scale(1); }
+  .marco-cart-badge.pulse { animation: badgePulse 700ms ease-out; }
+  @keyframes badgePulse {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.35); }
+    100% { transform: scale(1); }
+  }
   .marco-sticker.attention .halo { opacity: 1; animation: pulse 2s ease-in-out infinite; }
   @keyframes pulse {
     0%, 100% { opacity: 0.4; transform: scale(1); }
@@ -205,6 +232,80 @@
   @keyframes typing {
     0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
     30% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  /* Carrinho pill (dentro do bottom sheet, abaixo do header) */
+  .cart-pill {
+    margin: 8px 14px;
+    padding: 10px 14px;
+    background: linear-gradient(180deg, rgba(212,175,55,0.18) 0%, rgba(212,175,55,0.08) 100%);
+    border: 1px solid rgba(212,175,55,0.45);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: transform 200ms;
+    min-height: 48px;
+  }
+  .cart-pill:active { transform: scale(0.98); }
+  .cart-pill.pulse { animation: cartPulse 700ms ease-out; }
+  @keyframes cartPulse {
+    0%   { transform: scale(1); box-shadow: 0 0 0 0 rgba(212,175,55,0.6); }
+    40%  { transform: scale(1.04); box-shadow: 0 0 0 10px rgba(212,175,55,0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(212,175,55,0); }
+  }
+  .cart-left { display: flex; align-items: center; gap: 10px; }
+  .cart-emoji { font-size: 22px; line-height: 1; }
+  .cart-count {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.15;
+  }
+  .cart-count strong { color: var(--gold); font-weight: 700; }
+  .cart-total {
+    font-weight: 700;
+    color: var(--gold);
+    font-size: 16px;
+  }
+
+  /* Drawer expandido do carrinho (dentro do bottom sheet) */
+  .cart-drawer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 320ms cubic-bezier(.4,0,.2,1);
+    background: var(--bg);
+    border-top: 1px solid var(--line);
+  }
+  .cart-drawer.open { max-height: 50vh; overflow-y: auto; }
+  .cart-item {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .cart-item:last-child { border-bottom: none; }
+  .cart-item .qty {
+    flex: 0 0 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--gold);
+    color: #1a1305;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .cart-item .info { flex: 1; }
+  .cart-item .info .nome { font-size: 14px; font-weight: 600; }
+  .cart-item .info .obs { font-size: 12px; color: var(--text-dim); margin-top: 2px; font-style: italic; }
+  .cart-item .preco { font-size: 14px; font-weight: 600; color: var(--gold); }
+  .cart-empty {
+    text-align: center;
+    padding: 24px 16px;
+    color: var(--text-dim);
+    font-size: 13px;
   }
 
   .bottom-sheet footer {
@@ -371,6 +472,10 @@ const FALAS_IDLE_45S = [
   'Se quiser uma sugestão, é só pedir.',
   'Posso te contar o que tá saindo melhor hoje.'
 ];
+const SAUDACOES_INICIAIS = [
+  'Ciao!', 'Boa, vê o que tem!', 'Bem-vindo(a)!', 'E aí, bora?',
+  'Salve!', 'Ó eu aqui!'
+];
 
 // ============================================================================
 // SUPABASE / EDGE FUNCTION
@@ -504,6 +609,11 @@ function App() {
   const [muted, setMuted] = useState(false);
   const [leoVisivel, setLeoVisivel] = useState(false);
   const [input, setInput] = useState('');
+  const [carrinho, setCarrinho] = useState([]);
+  const [carrinhoTotal, setCarrinhoTotal] = useState(0);
+  const [carrinhoPulse, setCarrinhoPulse] = useState(false);
+  const [carrinhoOpen, setCarrinhoOpen] = useState(false);
+  const [clienteNome, setClienteNome] = useState(null);
 
   const lpTimer = useRef(null);
   const balaoTimer = useRef(null);
@@ -532,8 +642,7 @@ function App() {
     // Primeira aparição em 3s
     setTimeout(() => {
       setGarcomState('peek');
-      const saudacao = sortear(SAUDACOES);
-      setBalaoTexto(saudacao);
+      setBalaoTexto(sortear(SAUDACOES_INICIAIS));
       setTimeout(() => setBalaoTexto(null), 5000);
       setTimeout(() => setGarcomState('attention'), 5500);
       agendarRonda();
@@ -568,6 +677,22 @@ function App() {
     };
   }, []);
 
+  // Processa a resposta do Marco: atualiza carrinho, nome, pulse, etc
+  const aplicarResposta = (resp) => {
+    if (!resp) return;
+    if (typeof resp.cliente_nome === 'string') setClienteNome(resp.cliente_nome);
+    if (Array.isArray(resp.carrinho)) {
+      const teveAdicao = (resp.eventos ?? []).some(e => e.tipo === 'carrinho_adicionado');
+      setCarrinho(resp.carrinho);
+      setCarrinhoTotal(typeof resp.total === 'number' ? resp.total : resp.carrinho.reduce((s, it) => s + (it.preco * it.qtd), 0));
+      if (teveAdicao) {
+        setCarrinhoPulse(true);
+        vibrate(25);
+        setTimeout(() => setCarrinhoPulse(false), 700);
+      }
+    }
+  };
+
   // Tap no Marco - abre chat
   const tapMarco = () => {
     vibrate(15);
@@ -585,6 +710,7 @@ function App() {
       try {
         const resp = await chamarMarco('(cliente acabou de abrir o chat, sauda ele)');
         setDigitando(false);
+        aplicarResposta(resp);
         const f = resp?.falas?.[0];
         if (f) {
           setMensagens([{ id: Date.now(), autor: 'marco', texto: f.texto }]);
@@ -622,6 +748,7 @@ function App() {
     try {
       const resp = await chamarMarco('(o cliente acabou de assobiar pra te chamar, atende ele de pronto)');
       setDigitando(false);
+      aplicarResposta(resp);
       const f = resp?.falas?.[0];
       if (f) setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: f.texto }]);
     } catch (err) {
@@ -639,10 +766,10 @@ function App() {
     try {
       const resp = await chamarMarco(msg);
       const f = resp?.falas?.[0];
-      // Respeita o delay humano calculado pelo servidor
       const delay = Math.max(400, Math.min(f?.delay_ms ?? 1500, 5000));
       setTimeout(() => {
         setDigitando(false);
+        aplicarResposta(resp);
         if (f) setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: f.texto }]);
       }, delay);
     } catch (err) {
@@ -714,10 +841,27 @@ function App() {
                   <button
                     className="px-4 py-2 rounded-full text-sm font-semibold"
                     style={{background:'linear-gradient(180deg, var(--gold) 0%, var(--gold-dim) 100%)', color:'#1a1305', minHeight:'44px'}}
-                    onClick={() => {
+                    onClick={async () => {
                       vibrate(20);
-                      setBalaoTexto(`Anotado: ${p.nome.split(' ').slice(0,2).join(' ')} ✍️`);
-                      setTimeout(() => setBalaoTexto(null), 2500);
+                      // Abre chat e manda "quero esse" pro Marco processar via tool
+                      setChatOpen(true);
+                      setBalaoTexto(null);
+                      const msgUsuario = `quero ${p.nome.toLowerCase()}`;
+                      setMensagens(m => [...m, { id: Date.now(), autor: 'cliente', texto: msgUsuario }]);
+                      setDigitando(true);
+                      try {
+                        const resp = await chamarMarco(msgUsuario);
+                        const f = resp?.falas?.[0];
+                        const delay = Math.max(400, Math.min(f?.delay_ms ?? 1500, 4000));
+                        setTimeout(() => {
+                          setDigitando(false);
+                          aplicarResposta(resp);
+                          if (f) setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: f.texto }]);
+                        }, delay);
+                      } catch (err) {
+                        setDigitando(false);
+                        console.error(err);
+                      }
                     }}
                   >
                     Adicionar
@@ -746,6 +890,9 @@ function App() {
         aria-label="Chamar o Marco"
       >
         <span className="halo"></span>
+        <span className={`marco-cart-badge ${carrinho.length > 0 ? 'show' : ''} ${carrinhoPulse ? 'pulse' : ''}`}>
+          {carrinho.reduce((s, it) => s + it.qtd, 0)}
+        </span>
         <MarcoSticker />
       </button>
 
@@ -777,6 +924,38 @@ function App() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M6 18L18 6"/></svg>
           </button>
         </header>
+
+        {/* Carrinho pill - aparece quando tem itens */}
+        {carrinho.length > 0 && (
+          <>
+            <div
+              className={`cart-pill ${carrinhoPulse ? 'pulse' : ''}`}
+              onClick={() => { vibrate(15); setCarrinhoOpen(o => !o); }}
+            >
+              <div className="cart-left">
+                <span className="cart-emoji">🛒</span>
+                <div className="cart-count">
+                  <strong>{carrinho.reduce((s, it) => s + it.qtd, 0)}</strong> {carrinho.reduce((s, it) => s + it.qtd, 0) === 1 ? 'item' : 'itens'}
+                  <br/>
+                  <span style={{fontSize: '11px', color: 'var(--text-dim)'}}>{carrinhoOpen ? 'tap pra esconder' : 'tap pra ver'}</span>
+                </div>
+              </div>
+              <span className="cart-total">{fmtBRL(carrinhoTotal)}</span>
+            </div>
+            <div className={`cart-drawer ${carrinhoOpen ? 'open' : ''}`}>
+              {carrinho.map((it, i) => (
+                <div key={i} className="cart-item">
+                  <div className="qty">{it.qtd}</div>
+                  <div className="info">
+                    <div className="nome">{it.nome}</div>
+                    {it.obs && <div className="obs">obs: {it.obs}</div>}
+                  </div>
+                  <div className="preco">{fmtBRL(it.preco * it.qtd)}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         <div className="messages">
           {mensagens.map(m => (
