@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0908" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Dom Leonardo" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="format-detection" content="telephone=no" />
+<link rel="manifest" href="manifest.json" />
+<title>Dom Leonardo — Cardápio</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root {
+    --safe-top: env(safe-area-inset-top);
+    --safe-bottom: env(safe-area-inset-bottom);
+    --gold: #d4af37;
+    --gold-dim: #8a6f1f;
+    --bg: #0a0908;
+    --bg-elev: #15120e;
+    --bg-card: #1c1814;
+    --line: rgba(212, 175, 55, 0.18);
+    --text: #f3ece0;
+    --text-dim: #8d8579;
+  }
+  * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, sans-serif;
+    overscroll-behavior-y: contain;
+    min-height: 100dvh;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+  }
+  input, textarea, button, select { font-size: 16px; }
+  button { background: none; border: 0; color: inherit; padding: 0; cursor: pointer; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+
+  /* Title font */
+  .font-serif { font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif; }
+
+  /* Sticker do Marco - ronda */
+  .marco-sticker {
+    position: fixed;
+    bottom: calc(var(--safe-bottom) + 24px);
+    right: 16px;
+    width: 64px;
+    height: 64px;
+    z-index: 50;
+    cursor: pointer;
+    filter: drop-shadow(0 4px 18px rgba(212,175,55,0.25));
+    transition: transform 600ms cubic-bezier(.34,1.56,.64,1), opacity 600ms;
+    will-change: transform, opacity;
+  }
+  .marco-sticker.hidden { transform: translateY(120px); opacity: 0; }
+  .marco-sticker.peek { transform: translateY(0); opacity: 1; }
+  .marco-sticker.attention { animation: balanca 1.6s ease-in-out infinite; }
+  @keyframes balanca {
+    0%, 100% { transform: rotate(-2deg) translateY(0); }
+    50% { transform: rotate(3deg) translateY(-2px); }
+  }
+  .marco-sticker .halo {
+    position: absolute; inset: -6px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(212,175,55,0.28) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 400ms;
+  }
+  .marco-sticker.attention .halo { opacity: 1; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.08); }
+  }
+
+  /* Balão de fala */
+  .balao {
+    position: fixed;
+    right: 88px;
+    bottom: calc(var(--safe-bottom) + 30px);
+    max-width: 64vw;
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 18px 18px 4px 18px;
+    font-size: 14px;
+    line-height: 1.35;
+    z-index: 51;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.45);
+    transform: translateY(8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 320ms cubic-bezier(.4,0,.2,1), opacity 320ms;
+  }
+  .balao.shown {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .balao::after {
+    content: '';
+    position: absolute;
+    right: -6px;
+    bottom: 12px;
+    width: 12px; height: 12px;
+    background: var(--bg-elev);
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    transform: rotate(-45deg);
+  }
+
+  /* Bottom sheet do chat */
+  .bottom-sheet-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(6px) saturate(120%);
+    -webkit-backdrop-filter: blur(6px) saturate(120%);
+    z-index: 80;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 280ms;
+  }
+  .bottom-sheet-backdrop.open { opacity: 1; pointer-events: auto; }
+
+  .bottom-sheet {
+    position: fixed;
+    left: 0; right: 0;
+    bottom: 0;
+    height: 85vh;
+    background: var(--bg-elev);
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
+    z-index: 90;
+    transform: translateY(100%);
+    transition: transform 360ms cubic-bezier(.25,.8,.25,1);
+    display: flex;
+    flex-direction: column;
+    padding-bottom: var(--safe-bottom);
+  }
+  .bottom-sheet.open { transform: translateY(0); }
+  .bottom-sheet .grip {
+    width: 44px; height: 4px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 2px;
+    margin: 10px auto 6px;
+  }
+  .bottom-sheet header {
+    padding: 8px 18px 14px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .bottom-sheet .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .msg {
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 15px;
+    line-height: 1.4;
+  }
+  .msg.marco {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+  }
+  .msg.cliente {
+    background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dim) 100%);
+    color: #1a1305;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+    font-weight: 600;
+  }
+  .msg-typing {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    padding: 14px 18px;
+    border-radius: 16px;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+    display: flex;
+    gap: 4px;
+  }
+  .msg-typing span {
+    width: 6px; height: 6px;
+    background: var(--text-dim);
+    border-radius: 50%;
+    animation: typing 1.4s infinite ease-in-out;
+  }
+  .msg-typing span:nth-child(2) { animation-delay: 0.18s; }
+  .msg-typing span:nth-child(3) { animation-delay: 0.36s; }
+  @keyframes typing {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  .bottom-sheet footer {
+    padding: 12px 16px calc(12px + var(--safe-bottom));
+    border-top: 1px solid var(--line);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .input-msg {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 10px 16px;
+    color: var(--text);
+    outline: none;
+    min-height: 44px;
+  }
+  .input-msg:focus { border-color: var(--gold-dim); }
+  .btn-icon {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    display: grid; place-items: center;
+    transition: transform 120ms, background 120ms;
+  }
+  .btn-icon:active { transform: scale(0.92); background: var(--bg-elev); }
+  .btn-send {
+    background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dim) 100%);
+    border-color: var(--gold-dim);
+    color: #1a1305;
+  }
+
+  /* Long-press action menu */
+  .quick-menu {
+    position: fixed;
+    right: 16px;
+    bottom: calc(var(--safe-bottom) + 100px);
+    z-index: 70;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 8px;
+    transform: scale(0.85) translateY(8px);
+    transform-origin: bottom right;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 220ms, transform 220ms cubic-bezier(.34,1.56,.64,1);
+  }
+  .quick-menu.open { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+  .quick-menu button {
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    padding: 10px 16px;
+    border-radius: 22px;
+    font-size: 14px;
+    min-height: 44px;
+    color: var(--text);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .quick-menu button:active { background: var(--bg-card); }
+
+  /* Cartões de prato */
+  .prato-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    transition: transform 200ms;
+  }
+  .prato-card:active { transform: scale(0.985); }
+  .prato-card img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    display: block;
+  }
+  .prato-badge {
+    position: absolute;
+    top: 12px; left: 12px;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(6px);
+    color: var(--gold);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Léo PIP (futuro) */
+  .leo-pip {
+    position: fixed;
+    top: calc(var(--safe-top) + 12px);
+    right: 12px;
+    width: 80px;
+    height: 80px;
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    z-index: 60;
+    display: grid;
+    place-items: center;
+    transform: translateY(-110%);
+    transition: transform 400ms cubic-bezier(.34,1.56,.64,1);
+  }
+  .leo-pip.shown { transform: translateY(0); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ============================================================================
+// DADOS MOCKADOS (depois virão do Supabase via Edge Function)
+// ============================================================================
+const PRATOS = [
+  {
+    id: '874571e0-2af2-4ab9-9f9d-68366fa80b42',
+    nome: 'Risoto Cremoso de Alcatra na Manteiga',
+    descricao: 'Alcatra selada na manteiga até criar crosta, arroz arbóreo cozido no caldo da casa. Cremoso, suculento.',
+    preco: 49.90,
+    foto: 'https://jewamqbdonudiapxbzay.supabase.co/storage/v1/object/public/cardapio/pratos/874571e0-2af2-4ab9-9f9d-68366fa80b42-1778188022181.webp',
+    badge: 'mais pedido'
+  },
+  {
+    id: '15067563-1c40-4c7c-b3a0-cd1a3c7462be',
+    nome: 'Spaghetti à Carbonara',
+    descricao: 'Emulsão de ovos com água do cozimento, parmesão, pimenta-do-reino e bacon crocante.',
+    preco: 49.90,
+    foto: 'https://jewamqbdonudiapxbzay.supabase.co/storage/v1/object/public/cardapio/pratos/15067563-1c40-4c7c-b3a0-cd1a3c7462be-1778196437748.webp',
+    badge: 'o mais elogiado'
+  },
+  {
+    id: 'b32cb961-e22b-49b6-b788-cbf8f9a248c3',
+    nome: 'Pão Italiano Recheado',
+    descricao: 'Redução de gorgonzola com vinho branco e creme de leite no pão italiano artesanal. Acompanha alcatra, linguiça Blumenau e costela suína. Serve 3 a 4.',
+    preco: 88.90,
+    foto: 'https://jewamqbdonudiapxbzay.supabase.co/storage/v1/object/public/cardapio/pratos/b32cb961-e22b-49b6-b788-cbf8f9a248c3-1778196189581.webp',
+    badge: 'premium'
+  },
+  {
+    id: '1f1924da-89a4-491d-9cec-a5e8965b41d4',
+    nome: 'Nhoque Rosé',
+    descricao: 'Nhoque artesanal ao molho rosé, equilibrado e cremoso.',
+    preco: 45.90,
+    foto: 'https://jewamqbdonudiapxbzay.supabase.co/storage/v1/object/public/cardapio/pratos/1f1924da-89a4-491d-9cec-a5e8965b41d4-1778196851559.webp',
+    badge: null
+  }
+];
+
+// Frases mock do Marco (depois virão do LLM)
+const FALAS_RONDA = ['Passando...', 'Tô por aqui.', 'Tudo certo?', 'Tô de olho 😉'];
+const FALAS_IDLE_45S = [
+  'Tá tudo certo aí?',
+  'Se ficar na dúvida, é só assobiar 😉',
+  'Se quiser uma sugestão, é só pedir.',
+  'Posso te contar o que tá saindo melhor hoje.'
+];
+const SAUDACOES = [
+  'Ciao! Tudo bem por aí?',
+  'Boa noite! Vamos cuidar do jantar?',
+  'E aí, tudo certo?',
+  'Olá! Que bom te ver aqui.',
+  'Bem-vindo(a)! Tem alguma coisa em mente ou prefere uma sugestão?'
+];
+
+function sortear(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function vibrate(ms) { try { navigator.vibrate?.(ms); } catch (_) {} }
+function fmtBRL(v) { return 'R$ ' + v.toFixed(2).replace('.', ','); }
+
+// ============================================================================
+// MARCO STICKER (SVG inline, placeholder até gerar arte definitiva)
+// ============================================================================
+function MarcoSticker() {
+  return (
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bg" cx="50%" cy="40%" r="55%">
+          <stop offset="0%" stopColor="#2a2520"/>
+          <stop offset="100%" stopColor="#15120e"/>
+        </radialGradient>
+        <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#e7c66d"/>
+          <stop offset="100%" stopColor="#a47e1e"/>
+        </linearGradient>
+      </defs>
+      <circle cx="32" cy="32" r="30" fill="url(#bg)" stroke="url(#gold)" strokeWidth="1.5"/>
+      {/* Cabeça */}
+      <circle cx="32" cy="24" r="9" fill="#f3d8b8"/>
+      {/* Cabelo */}
+      <path d="M22 22 Q22 14 32 14 Q42 14 42 22 L42 19 Q40 16 32 16 Q24 16 22 19 Z" fill="#3b2818"/>
+      {/* Bigodinho */}
+      <path d="M28 26 Q32 28 36 26" stroke="#3b2818" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+      {/* Olhos */}
+      <circle cx="29" cy="23" r="1" fill="#1a1305"/>
+      <circle cx="35" cy="23" r="1" fill="#1a1305"/>
+      {/* Sorriso */}
+      <path d="M29 27 Q32 29 35 27" stroke="#1a1305" strokeWidth="0.9" fill="none" strokeLinecap="round"/>
+      {/* Gravata borboleta */}
+      <path d="M28 34 L32 32 L36 34 L36 38 L32 36 L28 38 Z" fill="url(#gold)"/>
+      {/* Colete preto */}
+      <path d="M20 38 Q32 36 44 38 L44 50 Q32 52 20 50 Z" fill="#1a1305"/>
+      {/* Camisa branca */}
+      <path d="M28 36 L28 50 L36 50 L36 36 Z" fill="#f3ece0"/>
+      {/* Toalha no braço (acento dourado) */}
+      <rect x="14" y="40" width="6" height="14" rx="2" fill="url(#gold)" transform="rotate(-12 17 47)"/>
+    </svg>
+  );
+}
+
+function LeoSticker() {
+  return (
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="chef" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#f3ece0"/>
+          <stop offset="100%" stopColor="#c7bca8"/>
+        </linearGradient>
+      </defs>
+      {/* Cabeça */}
+      <circle cx="32" cy="28" r="11" fill="#f3d8b8"/>
+      {/* Chapéu de chef */}
+      <path d="M20 24 Q20 14 26 14 Q26 10 32 10 Q38 10 38 14 Q44 14 44 24 L42 24 L42 20 L40 22 L38 18 L36 22 L34 18 L32 22 L30 18 L28 22 L26 18 L24 22 L22 20 L22 24 Z" fill="url(#chef)" stroke="#1a1305" strokeWidth="0.5"/>
+      {/* Olhos sorrindo */}
+      <path d="M28 28 Q29 30 30 28" stroke="#1a1305" strokeWidth="1" fill="none"/>
+      <path d="M34 28 Q35 30 36 28" stroke="#1a1305" strokeWidth="1" fill="none"/>
+      {/* Sorrisão */}
+      <path d="M28 32 Q32 35 36 32" stroke="#1a1305" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+      {/* Bochecha rosada */}
+      <circle cx="25" cy="31" r="1.5" fill="#e8a4a0" opacity="0.7"/>
+      <circle cx="39" cy="31" r="1.5" fill="#e8a4a0" opacity="0.7"/>
+      {/* Jaleco branco */}
+      <path d="M20 42 Q32 40 44 42 L44 58 L20 58 Z" fill="#f3ece0" stroke="#c7bca8" strokeWidth="0.5"/>
+      {/* Botões */}
+      <circle cx="28" cy="46" r="0.8" fill="#1a1305"/>
+      <circle cx="28" cy="50" r="0.8" fill="#1a1305"/>
+      {/* Manchinha de molho */}
+      <circle cx="38" cy="48" r="1.2" fill="#8b2e1a" opacity="0.6"/>
+    </svg>
+  );
+}
+
+// ============================================================================
+// APP
+// ============================================================================
+function App() {
+  const [garcomState, setGarcomState] = useState('hidden'); // hidden | peek | attention
+  const [balaoTexto, setBalaoTexto] = useState(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [quickMenu, setQuickMenu] = useState(false);
+  const [mensagens, setMensagens] = useState([]);
+  const [digitando, setDigitando] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [leoVisivel, setLeoVisivel] = useState(false);
+  const [input, setInput] = useState('');
+
+  const lpTimer = useRef(null);
+  const balaoTimer = useRef(null);
+  const rondaTimer = useRef(null);
+  const idleTimer = useRef(null);
+  const ultimaInteracao = useRef(Date.now());
+
+  // Ronda do Marco - aparece a cada 40-90s
+  useEffect(() => {
+    const agendarRonda = () => {
+      const delay = 40000 + Math.random() * 50000;
+      rondaTimer.current = setTimeout(() => {
+        if (!chatOpen) {
+          setGarcomState('peek');
+          const fala = sortear(FALAS_RONDA);
+          setBalaoTexto(fala);
+          // Some depois de 4-5s
+          setTimeout(() => setBalaoTexto(null), 4500);
+          setTimeout(() => {
+            if (!chatOpen) setGarcomState('attention');
+          }, 5000);
+        }
+        agendarRonda();
+      }, delay);
+    };
+    // Primeira aparição em 3s
+    setTimeout(() => {
+      setGarcomState('peek');
+      const saudacao = sortear(SAUDACOES);
+      setBalaoTexto(saudacao);
+      setTimeout(() => setBalaoTexto(null), 5000);
+      setTimeout(() => setGarcomState('attention'), 5500);
+      agendarRonda();
+    }, 2500);
+    return () => clearTimeout(rondaTimer.current);
+  }, [chatOpen]);
+
+  // Idle de 45s
+  useEffect(() => {
+    const checkIdle = () => {
+      idleTimer.current = setTimeout(() => {
+        if (!chatOpen && Date.now() - ultimaInteracao.current > 45000) {
+          const fala = sortear(FALAS_IDLE_45S);
+          setBalaoTexto(fala);
+          setTimeout(() => setBalaoTexto(null), 5000);
+        }
+        checkIdle();
+      }, 50000);
+    };
+    checkIdle();
+    return () => clearTimeout(idleTimer.current);
+  }, [chatOpen]);
+
+  // Reseta idle ao tocar a tela
+  useEffect(() => {
+    const reset = () => { ultimaInteracao.current = Date.now(); };
+    window.addEventListener('touchstart', reset, { passive: true });
+    window.addEventListener('scroll', reset, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', reset);
+      window.removeEventListener('scroll', reset);
+    };
+  }, []);
+
+  // Tap no Marco - abre chat
+  const tapMarco = () => {
+    vibrate(15);
+    if (quickMenu) { setQuickMenu(false); return; }
+    abrirChat();
+  };
+
+  const abrirChat = () => {
+    setChatOpen(true);
+    setBalaoTexto(null);
+    setGarcomState('peek');
+    // Saudação inicial mockada
+    if (mensagens.length === 0) {
+      setDigitando(true);
+      setTimeout(() => {
+        setDigitando(false);
+        setMensagens([{ id: 1, autor: 'marco', texto: sortear(SAUDACOES) }]);
+        setTimeout(() => {
+          setDigitando(true);
+          setTimeout(() => {
+            setDigitando(false);
+            setMensagens(m => [...m, { id: 2, autor: 'marco', texto: 'Como posso te chamar?' }]);
+          }, 1200);
+        }, 800);
+      }, 1500);
+    }
+  };
+
+  const fecharChat = () => {
+    setChatOpen(false);
+    setQuickMenu(false);
+  };
+
+  // Long-press no Marco
+  const onPressStart = () => {
+    lpTimer.current = setTimeout(() => {
+      vibrate(40);
+      setQuickMenu(true);
+    }, 500);
+  };
+  const onPressEnd = () => {
+    clearTimeout(lpTimer.current);
+  };
+
+  const assobiar = () => {
+    vibrate([30, 60, 30]);
+    setQuickMenu(false);
+    abrirChat();
+    // Resposta acelerada
+    setTimeout(() => {
+      setDigitando(true);
+      setTimeout(() => {
+        setDigitando(false);
+        setMensagens(m => [...m, {
+          id: Date.now(),
+          autor: 'marco',
+          texto: sortear([
+            'Ouvido aguçado! kkk Cheguei. Manda.',
+            'Eita, esse assobio chegou até a cozinha. Tô aqui.',
+            'Pera, derrubei o guardanapo correndo. Mas cheguei! Diz aí.'
+          ])
+        }]);
+      }, 600);
+    }, 200);
+  };
+
+  const enviarMsg = () => {
+    if (!input.trim()) return;
+    const msg = input.trim();
+    setMensagens(m => [...m, { id: Date.now(), autor: 'cliente', texto: msg }]);
+    setInput('');
+    // Mock: Marco responde algo
+    setTimeout(() => {
+      setDigitando(true);
+      setTimeout(() => {
+        setDigitando(false);
+        setMensagens(m => [...m, {
+          id: Date.now(),
+          autor: 'marco',
+          texto: 'Aqui é só esqueleto ainda — quando conectarmos a IA, eu respondo de verdade 😉'
+        }]);
+      }, 1400);
+    }, 400);
+  };
+
+  // Long-press num prato → fala do Marco
+  const longPressPrato = (prato) => {
+    vibrate(30);
+    setBalaoTexto(`Boa escolha! ${prato.nome.split(' ').slice(0,2).join(' ')} é dos meus favoritos.`);
+    setTimeout(() => setBalaoTexto(null), 3500);
+  };
+
+  return (
+    <div className="min-h-dvh">
+      {/* Cabeçalho */}
+      <header className="px-5 pt-4 pb-3 border-b border-[var(--line)]">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Trattoria</div>
+            <h1 className="font-serif text-3xl mt-0.5" style={{color:'var(--gold)'}}>Dom Leonardo</h1>
+          </div>
+          <div className="text-right text-xs text-[var(--text-dim)]">
+            <div>Aberto agora</div>
+            <div className="text-[var(--gold)] font-semibold">⏱ 35 — 45 min</div>
+          </div>
+        </div>
+      </header>
+
+      {/* Apresentação */}
+      <section className="px-5 py-5">
+        <p className="text-sm leading-relaxed text-[var(--text-dim)]">
+          Gastronomia italiana feita com mão e história. Cardápio enxuto, ingredientes vivos.
+        </p>
+      </section>
+
+      {/* Cardápio */}
+      <section className="px-5 pb-32">
+        <h2 className="font-serif text-xl mb-3" style={{color:'var(--gold)'}}>Pratos</h2>
+        <div className="grid gap-4">
+          {PRATOS.map(p => (
+            <article
+              key={p.id}
+              className="prato-card relative"
+              onContextMenu={(e) => { e.preventDefault(); longPressPrato(p); }}
+              onTouchStart={() => { lpTimer.current = setTimeout(() => longPressPrato(p), 500); }}
+              onTouchEnd={() => clearTimeout(lpTimer.current)}
+            >
+              <div className="relative">
+                <img src={p.foto} alt={p.nome} loading="lazy" />
+                {p.badge && <span className="prato-badge">{p.badge}</span>}
+              </div>
+              <div className="p-4">
+                <h3 className="font-serif text-lg leading-tight">{p.nome}</h3>
+                {p.descricao && (
+                  <p className="text-[13px] text-[var(--text-dim)] mt-1.5 leading-relaxed">
+                    {p.descricao}
+                  </p>
+                )}
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="text-lg font-semibold" style={{color:'var(--gold)'}}>{fmtBRL(p.preco)}</span>
+                  <button
+                    className="px-4 py-2 rounded-full text-sm font-semibold"
+                    style={{background:'linear-gradient(180deg, var(--gold) 0%, var(--gold-dim) 100%)', color:'#1a1305', minHeight:'44px'}}
+                    onClick={() => {
+                      vibrate(20);
+                      setBalaoTexto(`Anotado: ${p.nome.split(' ').slice(0,2).join(' ')} ✍️`);
+                      setTimeout(() => setBalaoTexto(null), 2500);
+                    }}
+                  >
+                    Adicionar
+                  </button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* Léo PIP (escondido por padrão, futuro: aparece após pedido) */}
+      <div className={`leo-pip ${leoVisivel ? 'shown' : ''}`}>
+        <div style={{width: '56px', height: '56px'}}><LeoSticker /></div>
+      </div>
+
+      {/* Marco sticker */}
+      <button
+        className={`marco-sticker ${garcomState}`}
+        onClick={tapMarco}
+        onTouchStart={onPressStart}
+        onTouchEnd={onPressEnd}
+        onMouseDown={onPressStart}
+        onMouseUp={onPressEnd}
+        onMouseLeave={onPressEnd}
+        aria-label="Chamar o Marco"
+      >
+        <span className="halo"></span>
+        <MarcoSticker />
+      </button>
+
+      {/* Balão de fala */}
+      <div className={`balao ${balaoTexto && !chatOpen ? 'shown' : ''}`}>
+        {balaoTexto}
+      </div>
+
+      {/* Quick menu (long-press) */}
+      <div className={`quick-menu ${quickMenu ? 'open' : ''}`}>
+        <button onClick={assobiar}>🎵 Assobiar</button>
+        <button onClick={() => { setMuted(m => !m); setQuickMenu(false); }}>
+          {muted ? '🔊 Ativar som' : '🔇 Mutar som'}
+        </button>
+        <button onClick={() => { setQuickMenu(false); abrirChat(); }}>💬 Abrir chat</button>
+      </div>
+
+      {/* Backdrop + Bottom sheet */}
+      <div className={`bottom-sheet-backdrop ${chatOpen ? 'open' : ''}`} onClick={fecharChat}></div>
+      <div className={`bottom-sheet ${chatOpen ? 'open' : ''}`}>
+        <div className="grip" />
+        <header>
+          <div style={{width:'40px', height:'40px'}}><MarcoSticker /></div>
+          <div className="flex-1">
+            <div className="font-serif text-lg leading-none" style={{color:'var(--gold)'}}>Marco</div>
+            <div className="text-xs text-[var(--text-dim)] mt-0.5">Garçom · online</div>
+          </div>
+          <button className="btn-icon" onClick={fecharChat} aria-label="Fechar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M6 18L18 6"/></svg>
+          </button>
+        </header>
+
+        <div className="messages">
+          {mensagens.map(m => (
+            <div key={m.id} className={`msg ${m.autor}`}>{m.texto}</div>
+          ))}
+          {digitando && (
+            <div className="msg-typing">
+              <span></span><span></span><span></span>
+            </div>
+          )}
+        </div>
+
+        <footer>
+          <button className="btn-icon" onClick={assobiar} aria-label="Assobiar">
+            <span style={{fontSize:'18px'}}>🎵</span>
+          </button>
+          <input
+            className="input-msg"
+            placeholder="Mensagem para o Marco..."
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && enviarMsg()}
+          />
+          <button className="btn-icon btn-send" onClick={enviarMsg} aria-label="Enviar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+<script>
+  // Service Worker (PWA)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
