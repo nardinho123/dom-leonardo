@@ -47,15 +47,22 @@ input,textarea,select{font-size:16px}
   padding-bottom:calc(112px + var(--safe-bottom));
 }
 .shell{width:100%;max-width:760px;margin:0 auto;position:relative}
-.hero{padding:18px 18px 12px}
-.hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.hero{padding:20px 18px 12px;text-align:center}
+.hero-top{display:flex;align-items:center;justify-content:center;gap:14px;position:relative}
 .hero-top>div:first-child{min-width:0}
 .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:800}
 h1{margin:2px 0 0;font-size:34px;line-height:.95;color:var(--gold);font-weight:500}
-.hero-copy{margin:12px 0 0;color:var(--muted);font-size:14px;line-height:1.5;max-width:430px}
-.store-status{display:none;text-align:right;font-size:12px;color:var(--muted);flex:0 0 auto;min-width:92px}
+.hero-copy{margin:10px auto 0;color:var(--muted);font-size:13px;line-height:1.45;max-width:430px}
+.store-status{position:absolute;right:0;top:4px;display:none;text-align:right;font-size:12px;color:var(--muted);flex:0 0 auto;min-width:92px}
 .store-status strong{display:block;color:var(--gold);font-size:13px;margin-top:2px}
-.meta-row{display:flex;gap:8px;overflow-x:auto;padding:12px 0 0}
+.brand-logo-wrap{width:94px;height:94px;margin:0 auto 9px;position:relative;border-radius:50%;display:grid;place-items:center;filter:drop-shadow(0 12px 26px rgba(139,46,26,.34))}
+.brand-logo-wrap:before{content:"";position:absolute;inset:-7px;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,210,82,.05),rgba(255,107,28,.9),rgba(212,175,55,.45),rgba(255,51,0,.85),rgba(255,210,82,.05));animation:fireSpin 4.8s linear infinite;filter:blur(.2px)}
+.brand-logo-wrap:after{content:"";position:absolute;inset:-14px;border-radius:50%;background:radial-gradient(circle at 50% 100%,rgba(255,109,31,.28),transparent 58%);animation:firePulse 1.7s ease-in-out infinite;pointer-events:none}
+.brand-logo{position:relative;z-index:2;width:86px;height:86px;border-radius:50%;overflow:hidden;border:2px solid rgba(243,236,224,.85);background:radial-gradient(circle at 50% 30%,#3b2113,#0a0908 72%);display:grid;place-items:center;color:var(--gold);font-size:29px;font-weight:950;box-shadow:0 0 0 4px rgba(10,9,8,.9),0 10px 28px rgba(0,0,0,.44)}
+.brand-logo img{width:100%;height:100%;object-fit:cover}
+@keyframes fireSpin{to{transform:rotate(360deg)}}
+@keyframes firePulse{0%,100%{opacity:.45;transform:scale(.96)}50%{opacity:.9;transform:scale(1.04)}}
+.meta-row{display:flex;justify-content:center;gap:8px;overflow-x:auto;padding:12px 0 0}
 .chip{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;border:1px solid var(--line);background:rgba(28,24,20,.68);border-radius:999px;padding:8px 11px;color:var(--text);font-size:12px;font-weight:750}
 .chip.gold{background:linear-gradient(180deg,rgba(212,175,55,.20),rgba(212,175,55,.08));color:var(--gold);border-color:var(--line-strong)}
 .help-card{margin:0 18px 12px;padding:14px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(145deg,rgba(28,24,20,.94),rgba(17,15,12,.96));box-shadow:0 14px 42px rgba(0,0,0,.32);display:grid;grid-template-columns:48px 1fr;gap:12px;align-items:center}
@@ -69,17 +76,28 @@ h1{margin:2px 0 0;font-size:34px;line-height:.95;color:var(--gold);font-weight:5
 .section{padding:16px 18px 4px}
 .section h2{font-size:22px;margin:0;color:var(--gold);font-weight:500}
 .section p{font-size:13px;color:var(--muted);margin:4px 0 0;line-height:1.4}
-.dish-list{padding:0 18px 10px;display:grid;gap:12px}
-.dish-card{border:1px solid var(--line);border-radius:24px;background:linear-gradient(145deg,rgba(28,24,20,.98),rgba(17,15,12,.98));box-shadow:0 14px 44px rgba(0,0,0,.28);overflow:hidden;display:grid;grid-template-columns:1fr 116px;gap:12px;min-height:152px}
-.dish-info{padding:14px 0 14px 14px;min-width:0}
-.dish-card h3{font-size:17px;margin:0 0 7px;line-height:1.18;font-weight:850;color:var(--text)}
-.dish-card p{font-size:12.5px;line-height:1.42;color:var(--muted);margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.dish-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
-.price{color:var(--gold);font-weight:900;font-size:15px}
+.highlight-wrap{padding:2px 0 12px}
+.highlight-title{padding:0 18px 9px;display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+.highlight-title h2{font-size:20px;margin:0;color:var(--gold);font-weight:500}
+.highlight-title span{font-size:11px;color:var(--muted);font-weight:850;text-transform:uppercase;letter-spacing:.08em}
+.highlight-rail{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:0 18px 4px}
+.highlight-card{position:relative;flex:0 0 calc((100vw - 56px) / 3);max-width:154px;min-width:108px;scroll-snap-align:start;border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,rgba(28,24,20,.98),rgba(17,15,12,.98));overflow:hidden;box-shadow:0 10px 28px rgba(0,0,0,.25)}
+.highlight-card .photo{height:104px;border-radius:0}
+.highlight-badge{position:absolute;top:7px;left:7px;right:7px;z-index:3;text-align:center;border-radius:999px;padding:4px 6px;font-size:9px;font-weight:950;color:#1a1305;background:linear-gradient(180deg,var(--gold-2),var(--gold-dim));box-shadow:0 6px 14px rgba(0,0,0,.28)}
+.highlight-body{padding:9px 8px 10px;text-align:center}
+.highlight-body h3{font-size:12.5px;line-height:1.15;margin:0 0 5px;font-weight:950;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.highlight-body p{font-size:10.5px;color:var(--muted);line-height:1.25;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dish-list{padding:0 18px 10px;display:grid;gap:10px}
+.dish-card{border:1px solid var(--line);border-radius:22px;background:linear-gradient(145deg,rgba(28,24,20,.98),rgba(17,15,12,.98));box-shadow:0 12px 36px rgba(0,0,0,.25);overflow:hidden;display:grid;grid-template-columns:1fr 112px;gap:10px;min-height:128px}
+.dish-info{padding:12px 0 12px 13px;min-width:0;text-align:left}
+.dish-card h3{font-size:15.5px;margin:0 0 6px;line-height:1.16;font-weight:900;color:var(--text)}
+.dish-card p{font-size:11.6px;line-height:1.34;color:var(--muted);margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dish-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
+.price{color:var(--gold);font-weight:900;font-size:14px}
 .old-price{color:var(--muted);font-size:12px;text-decoration:line-through;margin-right:4px}
 .order-btn{background:linear-gradient(180deg,var(--gold-2),var(--gold-dim));color:#1a1305;border-radius:999px;padding:9px 12px;font-size:12px;font-weight:950;box-shadow:0 8px 20px rgba(212,175,55,.18)}
 .photo{background:linear-gradient(135deg,#4b2418,#a45032 52%,#22140f);display:grid;place-items:center;text-align:center;color:#f6df9d;font-weight:950;overflow:hidden}
-.dish-photo{height:100%;min-height:152px;border-radius:20px 0 0 20px}
+.dish-photo{width:100px;height:100px;margin:14px 12px 14px 0;border-radius:18px}
 .photo img{width:100%;height:100%;object-fit:cover}
 .badge{display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(212,175,55,.26);background:rgba(212,175,55,.12);color:var(--gold);border-radius:999px;padding:5px 8px;font-size:10px;font-weight:900;margin-bottom:8px}
 .empty,.loading{margin:16px 18px;padding:22px;border:1px solid var(--line);border-radius:20px;background:rgba(28,24,20,.8);color:var(--muted);text-align:center}
@@ -286,6 +304,11 @@ function App(){
   const subtotal = cart.reduce((sum,it) => sum + itemTotal(it), 0);
   const qtd = cart.reduce((sum,it) => sum + Number(it.quantidade || 1), 0);
   const bebidas = (cardapio?.categorias || []).find(c => c.slug === 'bebidas')?.pratos || [];
+  const pratos = useMemo(() => allPratos(cardapio), [cardapio]);
+  const destaques = useMemo(() => {
+    const withBadge = pratos.filter(p => p.badge_destaque);
+    return (withBadge.length ? withBadge : pratos).slice(0, 9);
+  }, [pratos]);
 
   function pushMsg(autor,texto){
     setMessages(prev => [...prev, { id:makeId(), autor, texto }]);
@@ -451,6 +474,11 @@ function App(){
     try {
       const resp = await callGarcom({ mensagem:text, cliente_nome_provisorio:customer.nome || null });
       if(resp.cliente_nome && resp.cliente_nome !== customer.nome) setCustomer(prev => ({...prev, nome:resp.cliente_nome}));
+      if(Array.isArray(resp.carrinho) && resp.eventos?.some(e => String(e.tipo || '').startsWith('carrinho_'))) {
+        setCart(resp.carrinho);
+        const total = Number(resp.total || 0);
+        setToast(total > 0 ? `Sacola atualizada: ${fmtR(total)}` : 'Sacola atualizada.');
+      }
       const falas = Array.isArray(resp.falas) ? resp.falas.filter(f => f.autor === 'marco' || f.destinatario === 'cliente') : [];
       setTyping(false);
       if(falas.length) {
@@ -471,6 +499,7 @@ function App(){
     <div className="app">
       <div className="shell">
         <header className="hero">
+          <LogoFlame rest={rest} />
           <div className="hero-top">
             <div>
               <div className="eyebrow">Trattoria delivery</div>
@@ -500,6 +529,8 @@ function App(){
             </div>
           </div>
         </section>
+
+        {!!destaques.length && <HighlightsRail pratos={destaques} onOpen={openDetail} />}
 
         <nav className="category-rail">
           {(cardapio?.categorias || []).map(c => (
@@ -549,6 +580,45 @@ function HeaderSkeleton(){
     <div className="hero"><div className="eyebrow">Trattoria delivery</div><h1 className="font-serif">Dom Leonardo</h1><p className="hero-copy">Carregando o cardápio...</p></div>
     {[1,2,3].map(i => <div className="skeleton" key={i}/>)}
   </>;
+}
+
+function LogoFlame({ rest }){
+  const src = rest?.logo_url || rest?.logo || rest?.foto_logo_url || '';
+  return (
+    <div className="brand-logo-wrap" aria-hidden="true">
+      <div className="brand-logo">
+        {src ? <img src={src} alt="" /> : <span className="font-serif">DL</span>}
+      </div>
+    </div>
+  );
+}
+
+function destaqueLabel(prato, index){
+  if(prato.badge_destaque) return prato.badge_destaque;
+  return ['Mais pedido','Mais elogiado','Promocao do dia'][index % 3];
+}
+
+function HighlightsRail({ pratos, onOpen }){
+  return (
+    <section className="highlight-wrap" aria-label="Destaques do cardapio">
+      <div className="highlight-title">
+        <h2 className="font-serif">Destaques do Dom</h2>
+        <span>arraste para o lado</span>
+      </div>
+      <div className="highlight-rail">
+        {pratos.map((p,i) => (
+          <button className="highlight-card" key={p.id} onClick={() => onOpen(p)}>
+            <span className="highlight-badge">{destaqueLabel(p,i)}</span>
+            <Photo url={p.foto_url} name={p.nome} className="" />
+            <div className="highlight-body">
+              <h3>{p.nome}</h3>
+              <p>{p.descricao_curta || p.descricao_completa || 'Escolha certeira da casa.'}</p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 function DishCard({ prato, onOpen }){

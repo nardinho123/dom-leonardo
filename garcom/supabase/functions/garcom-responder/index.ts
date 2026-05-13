@@ -128,6 +128,34 @@ function cartTotal(carrinho: any[]) {
   }, 0);
 }
 
+function carrinhoResumo(carrinho: any[]) {
+  if (!(carrinho || []).length) return "(vazio)";
+  return carrinho.map((it: any, i: number) => {
+    const nome = it?.prato?.nome ?? it?.nome ?? "item";
+    const qtd = Number(it?.quantidade ?? it?.qtd ?? 1);
+    const tamanho = it?.tamanho?.nome ? ` (${it.tamanho.nome})` : "";
+    const obs = it?.observacoes || it?.obs ? `, obs: ${it.observacoes || it.obs}` : "";
+    const unit = Number(it?.preco_unitario ?? it?.preco ?? 0);
+    return `[${i}] ${qtd}x ${nome}${tamanho} - R$ ${unit.toFixed(2)}${obs}`;
+  }).join("\n");
+}
+
+function makeUid() {
+  return crypto.randomUUID();
+}
+
+function normText(v: string) {
+  return String(v || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function parecePedido(texto: string) {
+  const t = normText(texto);
+  return /\b(quero|manda|mandar|bota|coloca|adiciona|adicionar|pede|pedir|me ve|me vê|vou querer)\b/.test(t);
+}
+
 async function ensureSession(sb: any, sessaoId: string | null, clienteNome: string | null, deviceId: string | null) {
   if (sessaoId) {
     const { data } = await sb.from("sessoes").select("*").eq("id", sessaoId).maybeSingle();
@@ -218,7 +246,6 @@ Deno.serve(async (req: Request) => {
       );
       await sb.from("sessoes").update({ memoria: nextMemoria }).eq("id", sessao.id);
       return json({ sessao_id: sessao.id, falas: [fala(resposta)] });
-      return json({ sessao_id: sessao.id, falas: [fala("Anotei o endereço. Já dá pra trabalhar com uma estimativa mais honesta.")] });
     }
 
     if (acao === "salvar_telefone") {
@@ -231,7 +258,6 @@ Deno.serve(async (req: Request) => {
       );
       await sb.from("sessoes").update({ memoria: nextMemoria }).eq("id", sessao.id);
       return json({ sessao_id: sessao.id, falas: [fala(resposta)] });
-      return json({ sessao_id: sessao.id, falas: [fala("Telefone anotado. Só uso pra entrega não virar caça ao tesouro, prometo.")] });
     }
 
     if (acao === "estimar_entrega") {
@@ -318,7 +344,6 @@ Deno.serve(async (req: Request) => {
         contexto: { pedido, total_estimado: cartTotal(carrinho || []) },
       });
 
-      const numeroLegado = pedido?.numero_pedido ? ` #${pedido.numero_pedido}` : "";
       return json({
         sessao_id: sessao.id,
         cliente_nome: nomeFinal,
@@ -327,15 +352,6 @@ Deno.serve(async (req: Request) => {
         total: cartTotal(carrinho || []),
         eventos: [{ tipo: "pedido_enviado_admin", payload: pedido }],
         falas: [fala(respostaPedido)],
-      });
-      return json({
-        sessao_id: sessao.id,
-        cliente_nome: nomeFinal,
-        pedido,
-        carrinho: [],
-        total: cartTotal(carrinho || []),
-        eventos: [{ tipo: "pedido_enviado_admin", payload: pedido }],
-        falas: [fala(`Perfeito, ${nomeFinal}. Enviei seu pedido${numero} para o Dom analisar. Agora ele aceita ou recusa no painel antes da cozinha começar.`)],
       });
     }
 
@@ -360,7 +376,7 @@ Deno.serve(async (req: Request) => {
       .limit(8);
 
     const { data: pratosRaw } = await sbPub.from("pratos")
-      .select("id, nome, descricao_curta, descricao_completa, preco_base, preco_promocional, badge_destaque")
+      .select("id, nome, descricao_curta, descricao_completa, preco_base, preco_promocional, foto_url, badge_destaque")
       .eq("ativo", true)
       .limit(20);
 
@@ -376,8 +392,59 @@ Deno.serve(async (req: Request) => {
     const clienteNome = sessao.cliente_nome || clienteMem.nome || null;
     const enderecoMem = clienteMem.endereco_texto || null;
     const telefoneMem = clienteMem.telefone || null;
+    let carrinhoAtual: any[] = Array.isArray(sessao.carrinho) ? sessao.carrinho : [];
+    const eventos: Array<{ tipo: string; payload: any }> = [];
 
-    const systemPrompt = `Voce e o Marco, garcom virtual do Dom Leonardo. Mantenha o tom atual: humano, rapido quando precisa, brincalhao leve, com hospitalidade italiana-brasileira.
+    async function adicionarPratoAoCarrinho(prato: any, qtdRaw = 1, observacoesRaw = "") {
+      const { data: tamanhoPadrao } = await sbPub.from("pratos_tamanhos")
+        .select("id, prato_id, nome, preco_delta, padrao, ordem")
+        .eq("prato_id", prato.id)
+        .eq("ativo", true)
+        .order("padrao", { ascending: false })
+        .order("ordem", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      let precoUnitario = Number(prato.preco_promocional ?? prato.preco_base ?? 0) + Number(tamanhoPadrao?.preco_delta ?? 0);
+      const { data: precoCalc, error: precoError } = await sbPub.rpc("calcular_preco_item", {
+        p_prato_id: prato.id,
+        p_tamanho_id: tamanhoPadrao?.id ?? null,
+        p_opcionais_ids: [],
+      });
+      if (!precoError && precoCalc !== null && precoCalc !== undefined) {
+        precoUnitario = Number(precoCalc);
+      }
+
+      const qtd = Math.max(1, Number(qtdRaw || 1));
+      const obs = String(observacoesRaw || "").trim();
+      const novoItem = {
+        uid: makeUid(),
+        prato: {
+          id: prato.id,
+          nome: prato.nome,
+          descricao_curta: prato.descricao_curta,
+          descricao_completa: prato.descricao_completa,
+          foto_url: prato.foto_url,
+          preco_base: prato.preco_base,
+          preco_promocional: prato.preco_promocional,
+          badge_destaque: prato.badge_destaque,
+        },
+        tamanho: tamanhoPadrao ? {
+          id: tamanhoPadrao.id,
+          nome: tamanhoPadrao.nome,
+          preco_delta: tamanhoPadrao.preco_delta,
+        } : null,
+        opcionais: [],
+        quantidade: qtd,
+        observacoes: obs,
+        preco_unitario: precoUnitario,
+      };
+      carrinhoAtual = [...carrinhoAtual, novoItem];
+      eventos.push({ tipo: "carrinho_adicionado", payload: { nome: prato.nome, qtd, preco_unitario: precoUnitario } });
+      return novoItem;
+    }
+
+    const systemPrompt = `Voce e o Marco, garcom virtual do restaurante Dom Leonardo, uma trattoria italiana de delivery. Voce nao e um formulario: voce e o garcom da casa. Tem opiniao propria, paixao pela comida do Leo, humor leve e a missao de transformar duvida em fome e fome em pedido, sem pressionar.
 
 HUMOR SORTEADO: ${humor.humor_nome}
 ${humor.prompt_modifier ?? ""}
@@ -389,22 +456,35 @@ CONTEXTO:
 - Periodo: ${partOfDay()} (${nowSP()})
 - Fato do dia: ${fato?.texto ?? "(sem fato hoje)"}
 
+CARRINHO ATUAL (total R$ ${cartTotal(carrinhoAtual).toFixed(2)}):
+${carrinhoResumo(carrinhoAtual)}
+
 PRATOS ATIVOS:
-${(pratosRaw ?? []).map((p: any) => `- ${p.nome}: ${p.descricao_curta ?? p.descricao_completa ?? ""} (${p.badge_destaque ?? "sem etiqueta"})`).join("\n")}
+${(pratosRaw ?? []).map((p: any) => `- ID: ${p.id}\n  Nome: ${p.nome}\n  Preco base: R$ ${Number(p.preco_promocional ?? p.preco_base ?? 0).toFixed(2)}\n  Etiqueta: ${p.badge_destaque ?? "sem etiqueta"}\n  Descricao: ${p.descricao_curta ?? p.descricao_completa ?? ""}`).join("\n\n")}
 
 CURIOSIDADES DO LEO (use no maximo uma se encaixar):
 ${(curiosidadesDisp ?? []).map((c: any) => `- ${c.texto}`).join("\n")}
 
-REGRAS:
+REGRAS DE HUMANIZACAO:
 1. Nunca diga que e IA, bot, GPT, OpenAI ou sistema.
 2. Nada de conversa entre Marco e Leo. Quem fala com o cliente e so Marco.
-3. Responda curto, natural, sem listas longas.
-4. Se o cliente pedir tempo de entrega, peca nome antes se nao souber, depois rua, numero e bairro.
-5. Se o cliente estiver fechando pedido, explique que voce precisa de nome, endereco e telefone, nessa ordem.
-6. Telefone sempre com justificativa: "so pro motoboy te ligar se nao achar a casa".
-7. Nao invente preco, disponibilidade, pagamento ou tempo exato. Quando faltar dado, diga que confere.
-8. Se o cliente quiser fazer sozinho, respeite: "vai pela sacola embaixo que e mais rapido".
-9. Preserve o jeito que ficou bom: calor humano, opiniao propria e humor do Dom, sem forcar piada.`;
+3. Responda curto, natural, sem listas longas. Normalmente 1 a 3 frases.
+4. Espelhe o cliente: curto com cliente curto, mais explicativo com cliente detalhista, informal se ele for informal.
+5. Todo turno precisa avancar um passo: escolher prato, tirar duvida, customizar, colocar na sacola, pedir nome, pedir endereco, pedir telefone ou enviar ao Dom.
+6. Quando perguntarem de um prato, nao entregue ficha tecnica fria. Faca a pessoa sentir: textura, aroma, molho, calor, cremosidade, crocancia, tamanho real. Depois feche com um proximo passo.
+7. Tenha opiniao. Garcom bom nao lista tudo; ele compara e recomenda. Ex: "se sua fome e conforto, vai de carbonara; se quer algo mais serio, risoto".
+8. Se o cliente hesitar, reduza a decisao para A/B e pergunte preferencia.
+9. Use curiosidades do Leo com parcimonia, como bastidor de restaurante, nao como palestra.
+10. Se o cliente pedir tempo de entrega, peca nome antes se nao souber, depois rua, numero e bairro.
+11. Se estiver fechando pedido, colete aos poucos: nome -> endereco -> telefone. Telefone sempre com a justificativa: "so pro motoboy te ligar se nao achar a casa".
+12. Nao invente disponibilidade, pagamento ou tempo exato. Preco do cardapio vem das tools/dados.
+13. Se o cliente quiser fazer sozinho, respeite e guie: "abre o prato e toca em Adicionar; eu fico aqui se travar".
+
+USO DE TOOLS:
+- Se o cliente disser "quero", "manda", "bota", "adiciona", "pede", "coloca", ou confirmar um prato pelo chat, use adicionar_ao_carrinho com o ID exato.
+- Se ele pedir para tirar item, use remover_do_carrinho pelo indice do carrinho.
+- Se ele pedir observacao ("sem cebola", "mais bacon", "capricha"), use alterar_observacao quando o item ja estiver no carrinho.
+- Depois de tool de carrinho, confirme naturalmente e convide para o proximo passo: "anotei; quer sobremesa, bebida ou ja fechamos?".`;
 
     const tools = [
       {
@@ -429,6 +509,49 @@ REGRAS:
           name: "salvar_telefone",
           description: "Registra telefone do cliente para entrega.",
           parameters: { type: "object", properties: { telefone: { type: "string" } }, required: ["telefone"] },
+        },
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "adicionar_ao_carrinho",
+          description: "Adiciona um prato ao carrinho quando o cliente confirma pelo chat.",
+          parameters: {
+            type: "object",
+            properties: {
+              prato_id: { type: "string", description: "UUID exato do prato listado no menu" },
+              qtd: { type: "integer", minimum: 1, default: 1 },
+              observacoes: { type: "string", description: "Observacoes do cliente, se houver" },
+            },
+            required: ["prato_id"],
+          },
+        },
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "remover_do_carrinho",
+          description: "Remove item do carrinho pelo indice mostrado em CARRINHO ATUAL.",
+          parameters: {
+            type: "object",
+            properties: { indice: { type: "integer", minimum: 0 } },
+            required: ["indice"],
+          },
+        },
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "alterar_observacao",
+          description: "Atualiza observacao de um item que ja esta no carrinho.",
+          parameters: {
+            type: "object",
+            properties: {
+              indice: { type: "integer", minimum: 0 },
+              observacoes: { type: "string" },
+            },
+            required: ["indice", "observacoes"],
+          },
         },
       },
     ];
@@ -476,6 +599,80 @@ REGRAS:
           await sb.from("sessoes").update({ memoria: nextMemoria }).eq("id", sessao.id);
           result = "Telefone salvo";
         }
+        if (tc.function.name === "adicionar_ao_carrinho" && args.prato_id) {
+          const prato = (pratosRaw ?? []).find((p: any) => p.id === args.prato_id);
+          if (!prato) {
+            result = `Prato nao encontrado para o ID ${args.prato_id}`;
+          } else {
+            const { data: tamanhoPadrao } = await sbPub.from("pratos_tamanhos")
+              .select("id, prato_id, nome, preco_delta, padrao, ordem")
+              .eq("prato_id", prato.id)
+              .eq("ativo", true)
+              .order("padrao", { ascending: false })
+              .order("ordem", { ascending: true })
+              .limit(1)
+              .maybeSingle();
+
+            let precoUnitario = Number(prato.preco_promocional ?? prato.preco_base ?? 0) + Number(tamanhoPadrao?.preco_delta ?? 0);
+            const { data: precoCalc, error: precoError } = await sbPub.rpc("calcular_preco_item", {
+              p_prato_id: prato.id,
+              p_tamanho_id: tamanhoPadrao?.id ?? null,
+              p_opcionais_ids: [],
+            });
+            if (!precoError && precoCalc !== null && precoCalc !== undefined) {
+              precoUnitario = Number(precoCalc);
+            }
+
+            const qtd = Math.max(1, Number(args.qtd ?? 1));
+            const obs = String(args.observacoes ?? "").trim();
+            const novoItem = {
+              uid: makeUid(),
+              prato: {
+                id: prato.id,
+                nome: prato.nome,
+                descricao_curta: prato.descricao_curta,
+                descricao_completa: prato.descricao_completa,
+                foto_url: prato.foto_url,
+                preco_base: prato.preco_base,
+                preco_promocional: prato.preco_promocional,
+                badge_destaque: prato.badge_destaque,
+              },
+              tamanho: tamanhoPadrao ? {
+                id: tamanhoPadrao.id,
+                nome: tamanhoPadrao.nome,
+                preco_delta: tamanhoPadrao.preco_delta,
+              } : null,
+              opcionais: [],
+              quantidade: qtd,
+              observacoes: obs,
+              preco_unitario: precoUnitario,
+            };
+            carrinhoAtual = [...carrinhoAtual, novoItem];
+            eventos.push({ tipo: "carrinho_adicionado", payload: { nome: prato.nome, qtd, preco_unitario: precoUnitario } });
+            result = `Adicionado: ${qtd}x ${prato.nome}. Total atual R$ ${cartTotal(carrinhoAtual).toFixed(2)}.`;
+          }
+        }
+        if (tc.function.name === "remover_do_carrinho") {
+          const idx = Number(args.indice);
+          if (Number.isInteger(idx) && idx >= 0 && idx < carrinhoAtual.length) {
+            const removido = carrinhoAtual[idx];
+            carrinhoAtual = carrinhoAtual.filter((_, i) => i !== idx);
+            eventos.push({ tipo: "carrinho_removido", payload: { indice: idx, nome: removido?.prato?.nome ?? removido?.nome } });
+            result = `Removido. Total atual R$ ${cartTotal(carrinhoAtual).toFixed(2)}.`;
+          } else {
+            result = "Indice invalido para remover.";
+          }
+        }
+        if (tc.function.name === "alterar_observacao" && args.observacoes) {
+          const idx = Number(args.indice);
+          if (Number.isInteger(idx) && idx >= 0 && idx < carrinhoAtual.length) {
+            carrinhoAtual = carrinhoAtual.map((it, i) => i === idx ? { ...it, observacoes: String(args.observacoes).trim() } : it);
+            eventos.push({ tipo: "carrinho_alterado", payload: { indice: idx, observacoes: String(args.observacoes).trim() } });
+            result = "Observacao atualizada.";
+          } else {
+            result = "Indice invalido para alterar observacao.";
+          }
+        }
         messages.push({ role: "tool", tool_call_id: tc.id, content: result });
       }
 
@@ -488,7 +685,26 @@ REGRAS:
       respMsg = completion.choices[0].message;
     }
 
-    const texto = String(respMsg.content ?? "").trim() || "Tô aqui, pode mandar.";
+    let texto = String(respMsg.content ?? "").trim() || "To aqui, pode mandar.";
+    const jaMexeuCarrinho = eventos.some((e) => String(e.tipo || "").startsWith("carrinho_"));
+    if (!jaMexeuCarrinho && parecePedido(mensagem)) {
+      const pedidoTxt = normText(mensagem);
+      const candidatos = (pratosRaw ?? [])
+        .map((p: any) => {
+          const nome = normText(p.nome);
+          const tokens = nome.split(/[^a-z0-9]+/).filter((t) => t.length >= 4);
+          const score = (pedidoTxt.includes(nome) ? 6 : 0) + tokens.reduce((s, token) => s + (pedidoTxt.includes(token) ? 1 : 0), 0);
+          return { prato: p, score };
+        })
+        .filter((x: any) => x.score > 0)
+        .sort((a: any, b: any) => b.score - a.score);
+      if (candidatos.length) {
+        const item = await adicionarPratoAoCarrinho(candidatos[0].prato, 1, "");
+        if (!/anot|sacola|adic|carrinho/i.test(normText(texto))) {
+          texto = `Anotado: ${item.prato.nome}. ${texto}`;
+        }
+      }
+    }
     const memoriaComHistorico = withMemory(
       nextMemoria,
       [msg("user", mensagem), msg("assistant", texto)],
@@ -496,6 +712,7 @@ REGRAS:
 
     await sb.from("sessoes").update({
       memoria: { ...memoriaComHistorico, ultimo_humor: humor.humor_nome },
+      carrinho: carrinhoAtual,
       ultima_interacao_em: new Date().toISOString(),
     }).eq("id", sessao.id);
 
@@ -516,9 +733,9 @@ REGRAS:
       cliente_nome: nomeRegistrado ?? sessao.cliente_nome ?? nextMemoria?.cliente?.nome ?? null,
       humor: humor.humor_nome,
       falas: [fala(texto, humor.humor_nome)],
-      carrinho: sessao.carrinho ?? [],
-      total: 0,
-      eventos: toolsUsadas.map((t) => ({ tipo: t, payload: {} })),
+      carrinho: carrinhoAtual,
+      total: cartTotal(carrinhoAtual),
+      eventos: eventos.length ? eventos : toolsUsadas.map((t) => ({ tipo: t, payload: {} })),
       pedido: null,
     });
   } catch (err) {
