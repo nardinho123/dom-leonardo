@@ -123,6 +123,47 @@ function respondeuPizza(v: string): boolean {
   return /\b(brotinho|pequena|media|média|grande|familia|família|gigante)\b/.test(t);
 }
 
+function pick<T>(items: T[]): T {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+function fraseContextual(tipo: string, pratoNome = "", carrinhoTotal = 0): string {
+  const nome = pratoNome || "esse prato";
+  const partesNome = nome.split(" ").slice(0, 4);
+  while (partesNome.length > 1 && /^(de|da|do|das|dos|e)$/i.test(partesNome[partesNome.length - 1])) {
+    partesNome.pop();
+  }
+  const nomeCurto = partesNome.join(" ");
+
+  if (tipo === "prato_hesitacao") {
+    return pick([
+      `Ta namorando o ${nomeCurto}? Se a duvida for fome, eu te ajudo a escolher sem erro.`,
+      `Olha, ${nomeCurto} e daqueles que parecem simples na foto, mas chegam com presenca. Quer que eu te explique o tamanho?`,
+      `Boa parada nesse aqui. Se quiser, eu te conto rapidinho se ele e mais leve ou mais jantar de respeito.`,
+    ]);
+  }
+
+  if (tipo === "prato_passou") {
+    return pick([
+      `Passou pelo ${nomeCurto} rapidinho... esse ai merecia pelo menos uma olhada torta, viu.`,
+      `So avisando: o ${nomeCurto} costuma decidir pedido de gente indecisa.`,
+    ]);
+  }
+
+  if (tipo === "carrinho_idle" && carrinhoTotal > 0) {
+    return pick([
+      `Quer que eu revise essa sacola antes de mandar pro Dom? Prometo ser rapido.`,
+      `Sua sacola ja ta com cara de jantar. Quer fechar ou quer que eu sugira um ultimo complemento?`,
+      `Se quiser, eu confiro tamanho, observacao e tempo antes de voce mandar.`,
+    ]);
+  }
+
+  return pick([
+    "To por aqui. Se bater duvida, me chama que eu traduzo o cardapio sem enrolar.",
+    "Se quiser uma recomendacao sincera, eu tenho opiniao forte hoje.",
+  ]);
+}
+
 // ---------- handler ----------
 
 Deno.serve(async (req) => {
@@ -145,6 +186,57 @@ Deno.serve(async (req) => {
     // Dois clients: garcom (escrita) e public (leitura dos pratos)
     const sb = createClient(url, serviceKey, { db: { schema: "garcom" } });
     const sbPub = createClient(url, serviceKey);
+
+    async function carregarOuCriarSessaoLeve() {
+      let sessaoLeve: any = null;
+      if (sessao_id) {
+        const { data } = await sb.from("sessoes").select("*").eq("id", sessao_id).maybeSingle();
+        sessaoLeve = data;
+      }
+      if (!sessaoLeve) {
+        const { data, error } = await sb.from("sessoes").insert({
+          cliente_nome: cliente_nome_provisorio ?? null,
+          device_id: device_id ?? null,
+          memoria: {},
+          carrinho: [],
+        }).select().single();
+        if (error) throw error;
+        sessaoLeve = data;
+      }
+      return sessaoLeve;
+    }
+
+    if (acao === "registrar_evento") {
+      const sessaoEvento = await carregarOuCriarSessaoLeve();
+      const evento = body?.evento ?? {};
+      await sb.from("interaction_logs").insert({
+        sessao_id: sessaoEvento.id,
+        papel: "evento",
+        fala: String(evento?.tipo ?? "evento_cardapio"),
+        contexto: { evento },
+      });
+      return new Response(JSON.stringify({ ok: true, sessao_id: sessaoEvento.id }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
+    if (acao === "sugestao_contextual") {
+      const sessaoSugestao = await carregarOuCriarSessaoLeve();
+      const tipo = String(body?.tipo ?? "geral");
+      const pratoNome = String(body?.prato_nome ?? "");
+      const carrinhoTotal = Number(body?.carrinho_total ?? 0);
+      const texto = fraseContextual(tipo, pratoNome, carrinhoTotal);
+      await sb.from("interaction_logs").insert({
+        sessao_id: sessaoSugestao.id,
+        papel: "evento",
+        fala: `sugestao_contextual:${tipo}`,
+        contexto: { tipo, prato_nome: pratoNome, carrinho_total: carrinhoTotal, texto },
+      });
+      return new Response(JSON.stringify({
+        sessao_id: sessaoSugestao.id,
+        falas: [{ texto, delay_ms: calcDelay(texto, "anfitriao_classico") }],
+      }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
 
     if (acao === "listar_pratos") {
       const { data, error } = await sbPub.from("pratos")
@@ -466,6 +558,18 @@ REGRAS DE COMUNICACAO (nao-negociaveis):
 7. NAO de tempo de entrega exato -- diga "ja te confirmo".
 8. Se ainda nao sabe o nome, em algum momento pergunte "como posso te chamar?". Use a tool set_cliente_nome quando ele responder.
 9. Se o cliente quiser FECHAR o pedido, nao mande formulario. Va como garcom: se faltar nome, pergunte so o nome; se faltar endereco, pergunte rua, numero e bairro; se faltar telefone, pergunte por ultimo dizendo que e so pro motoboy ligar se nao achar a casa.
+
+NUCLEO DE UM BOM GARCOM:
+- Nunca responda como FAQ. Responda como alguem que quer ajudar a pessoa a comer bem.
+- Toda resposta deve abrir uma proxima acao natural: recomendar, anotar, comparar tamanhos, tirar ingrediente, calcular entrega ou fechar.
+- Quando falar de prato, cause fome antes do dado tecnico. Ex: fale de cremosidade, crosta, cheiro, peso do prato, molho, queijo, carne, conforto.
+- Reduza indecisao com contraste simples: "Carbonara e conforto mais intenso; Risoto e mais encorpado; Nhoque e mais macio".
+- Use aprovacao social sem parecer propaganda: "esse sai bastante", "esse e escolha segura", "eu iria nele hoje".
+- Se o cliente pedir tamanho/fome, use analogia de pizza ou jantar de casal. 400g = individual bem servido; 800g = serve 2 ou uma fome muito forte.
+- Se o cliente pedir tempo de entrega, colete nome primeiro se faltar, depois rua/numero/bairro. Nao prometa milagre.
+- Se o cliente estiver com carrinho, tente avancar: "quer que eu mande pro Dom?" ou "quer revisar antes?".
+- Evite textao. Garcom bom fala em goles pequenos, nao em manual.
+- Se a resposta passar de 280 caracteres, corte sem do. O ideal e 1 ou 2 frases, com uma pergunta de avanco no final.
 
 USO DE TOOLS (importante):
 - Quando o cliente CONFIRMAR que quer pedir um prato, use adicionar_ao_carrinho com o ID exato do prato (UUID acima). NAO confirme verbalmente sem chamar a tool.

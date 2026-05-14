@@ -593,6 +593,41 @@ async function listarPratos() {
   };
 }
 
+async function acaoGarcom(payload) {
+  const r = await fetch(GARCOM_RESPONDER_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({
+      sessao_id: getSessaoId(),
+      device_id: deviceId(),
+      ...payload,
+    }),
+  });
+  if (!r.ok) throw new Error(await r.text());
+  const data = await r.json();
+  if (data?.sessao_id) setSessaoId(data.sessao_id);
+  return data;
+}
+
+async function registrarEventoCardapio(tipo, payload = {}) {
+  return acaoGarcom({
+    acao: 'registrar_evento',
+    evento: { tipo, ...payload, at: new Date().toISOString() },
+  });
+}
+
+async function pedirSugestaoContextual(tipo, payload = {}) {
+  return acaoGarcom({
+    acao: 'sugestao_contextual',
+    tipo,
+    ...payload,
+  });
+}
+
 function sortear(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function vibrate(ms) { try { navigator.vibrate?.(ms); } catch (_) {} }
 function fmtBRL(v) { return 'R$ ' + v.toFixed(2).replace('.', ','); }
@@ -697,6 +732,10 @@ function App() {
   const rondaTimer = useRef(null);
   const idleTimer = useRef(null);
   const ultimaInteracao = useRef(Date.now());
+  const pratosVistos = useRef(new Set());
+  const hesitacaoTimers = useRef(new Map());
+  const ultimaSugestaoContextual = useRef(0);
+  const cartIdleTimer = useRef(null);
 
   // Ronda do Marco - aparece a cada 40-90s
   useEffect(() => {
@@ -789,6 +828,84 @@ function App() {
       }
     }
   };
+
+  const mostrarSugestaoContextual = useCallback(async (tipo, prato = null) => {
+    if (chatOpen) return;
+    const agora = Date.now();
+    if (agora - ultimaSugestaoContextual.current < 22000) return;
+    ultimaSugestaoContextual.current = agora;
+
+    try {
+      const payload = {
+        prato_id: prato?.id,
+        prato_nome: prato?.nome,
+        carrinho_total: carrinhoTotal,
+      };
+      const resp = await pedirSugestaoContextual(tipo, payload);
+      const f = resp?.falas?.[0];
+      if (!f?.texto || chatOpen) return;
+
+      setGarcomState('peek');
+      setBalaoTexto(f.texto);
+      clearTimeout(balaoTimer.current);
+      balaoTimer.current = setTimeout(() => {
+        setBalaoTexto(null);
+        if (!chatOpen) setGarcomState('attention');
+      }, Math.max(4200, Math.min(f.delay_ms ?? 4500, 6500)));
+    } catch (err) {
+      console.error(err);
+    }
+  }, [chatOpen, carrinhoTotal]);
+
+  useEffect(() => {
+    if (!pratos.length) return;
+    const pratosById = new Map(pratos.map(p => [String(p.id), p]));
+    const elementos = Array.from(document.querySelectorAll('.prato-card[data-prato-id]'));
+    if (!elementos.length) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const id = entry.target.getAttribute('data-prato-id');
+        const prato = pratosById.get(String(id));
+        if (!prato) return;
+
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.62) {
+          if (!pratosVistos.current.has(id)) {
+            pratosVistos.current.add(id);
+            registrarEventoCardapio('dish_viewed', { prato_id: id, prato_nome: prato.nome }).catch(() => {});
+          }
+
+          if (!hesitacaoTimers.current.has(id)) {
+            const timer = setTimeout(() => {
+              hesitacaoTimers.current.delete(id);
+              mostrarSugestaoContextual('prato_hesitacao', prato);
+            }, 9000 + Math.random() * 4500);
+            hesitacaoTimers.current.set(id, timer);
+          }
+        } else {
+          const timer = hesitacaoTimers.current.get(id);
+          if (timer) clearTimeout(timer);
+          hesitacaoTimers.current.delete(id);
+        }
+      });
+    }, { threshold: [0, 0.62, 0.9] });
+
+    elementos.forEach(el => observer.observe(el));
+    return () => {
+      observer.disconnect();
+      hesitacaoTimers.current.forEach(timer => clearTimeout(timer));
+      hesitacaoTimers.current.clear();
+    };
+  }, [pratos, mostrarSugestaoContextual]);
+
+  useEffect(() => {
+    clearTimeout(cartIdleTimer.current);
+    if (!carrinho.length || chatOpen) return;
+    cartIdleTimer.current = setTimeout(() => {
+      mostrarSugestaoContextual('carrinho_idle');
+    }, 42000);
+    return () => clearTimeout(cartIdleTimer.current);
+  }, [carrinho.length, carrinhoTotal, chatOpen, mostrarSugestaoContextual]);
 
   // Tap no Marco - abre chat
   const tapMarco = () => {
@@ -968,6 +1085,8 @@ function App() {
             <article
               key={p.id}
               className="prato-card relative"
+              data-prato-id={p.id}
+              data-prato-nome={p.nome}
               onContextMenu={(e) => { e.preventDefault(); longPressPrato(p); }}
               onTouchStart={() => { lpTimer.current = setTimeout(() => longPressPrato(p), 500); }}
               onTouchEnd={() => clearTimeout(lpTimer.current)}
