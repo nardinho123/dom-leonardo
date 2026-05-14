@@ -29,7 +29,7 @@
     --text-dim: #8d8579;
   }
   * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, sans-serif;
     overscroll-behavior-y: contain;
@@ -204,25 +204,6 @@
     align-self: flex-start;
     border-bottom-left-radius: 4px;
   }
-  .msg.leo {
-    background: rgba(212,175,55,0.1);
-    border: 1px solid rgba(212,175,55,0.28);
-    align-self: flex-start;
-    border-bottom-left-radius: 4px;
-  }
-  .msg.stela {
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.18);
-    align-self: flex-start;
-    border-bottom-left-radius: 4px;
-  }
-  .msg-author {
-    display: block;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--gold);
-    margin-bottom: 4px;
-  }
   .msg.cliente {
     background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dim) 100%);
     color: #1a1305;
@@ -326,6 +307,16 @@
     color: var(--text-dim);
     font-size: 13px;
   }
+  .checkout-btn {
+    width: calc(100% - 28px);
+    margin: 10px 14px 14px;
+    min-height: 46px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dim) 100%);
+    color: #1a1305;
+    font-weight: 800;
+    box-shadow: 0 10px 22px rgba(212,175,55,0.14);
+  }
 
   .bottom-sheet footer {
     padding: 12px 16px calc(12px + var(--safe-bottom));
@@ -397,27 +388,14 @@
     border: 1px solid var(--line);
     border-radius: 18px;
     overflow: hidden;
-    width: min(340px, 100%);
-    min-width: 0;
-    max-width: 100%;
-    justify-self: start;
     transition: transform 200ms;
   }
   .prato-card:active { transform: scale(0.985); }
   .prato-card img {
     width: 100%;
-    max-width: 100%;
     aspect-ratio: 4 / 3;
     object-fit: cover;
     display: block;
-  }
-  .prato-card h3,
-  .prato-card p {
-    min-width: 0;
-    overflow-wrap: anywhere;
-  }
-  section p {
-    max-width: 340px;
   }
   .prato-badge {
     position: absolute;
@@ -438,34 +416,18 @@
     position: fixed;
     top: calc(var(--safe-top) + 12px);
     right: 12px;
-    width: 176px;
-    min-height: 80px;
+    width: 80px;
+    height: 80px;
     background: var(--bg-elev);
     border: 1px solid var(--line);
     border-radius: 16px;
     z-index: 60;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px;
+    display: grid;
+    place-items: center;
     transform: translateY(-110%);
     transition: transform 400ms cubic-bezier(.34,1.56,.64,1);
-    box-shadow: 0 8px 26px rgba(0,0,0,0.45);
   }
   .leo-pip.shown { transform: translateY(0); }
-  .leo-pip .pip-text {
-    font-size: 11px;
-    line-height: 1.25;
-    color: var(--text);
-  }
-  .menu-loading, .menu-error {
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    padding: 18px;
-    color: var(--text-dim);
-    background: var(--bg-card);
-    font-size: 14px;
-  }
 </style>
 </head>
 <body>
@@ -473,6 +435,44 @@
 
 <script type="text/babel" data-presets="env,react">
 const { useState, useEffect, useRef, useCallback } = React;
+
+// ============================================================================
+// DADOS MOCKADOS (depois virão do Supabase via Edge Function)
+// ============================================================================
+const PRATOS = [
+  {
+    id: '874571e0-2af2-4ab9-9f9d-68366fa80b42',
+    nome: 'Risoto Cremoso de Alcatra na Manteiga',
+    descricao: 'Alcatra selada na manteiga até criar crosta, arroz arbóreo cozido no caldo da casa. Cremoso, suculento.',
+    preco: 49.90,
+    foto: 'https://jewamqbdonudiapxbzay.supabase.co/storage/v1/object/public/cardapio/pratos/874571e0-2af2-4ab9-9f9d-68366fa80b42-1778188022181.webp',
+    badge: 'mais pedido'
+  },
+  {
+    id: '15067563-1c40-4c7c-b3a0-cd1a3c7462be',
+    nome: 'Spaghetti à Carbonara',
+    descricao: 'Emulsão de ovos com água do cozimento, parmesão, pimenta-do-reino e bacon crocante.',
+    preco: 49.90,
+    foto: 'https://jewamqbdonudiapxbzay.supabase.co/storage/v1/object/public/cardapio/pratos/15067563-1c40-4c7c-b3a0-cd1a3c7462be-1778196437748.webp',
+    badge: 'o mais elogiado'
+  },
+  {
+    id: 'b32cb961-e22b-49b6-b788-cbf8f9a248c3',
+    nome: 'Pão Italiano Recheado',
+    descricao: 'Redução de gorgonzola com vinho branco e creme de leite no pão italiano artesanal. Acompanha alcatra, linguiça Blumenau e costela suína. Serve 3 a 4.',
+    preco: 88.90,
+    foto: 'https://jewamqbdonudiapxbzay.supabase.co/storage/v1/object/public/cardapio/pratos/b32cb961-e22b-49b6-b788-cbf8f9a248c3-1778196189581.webp',
+    badge: 'premium'
+  },
+  {
+    id: '1f1924da-89a4-491d-9cec-a5e8965b41d4',
+    nome: 'Nhoque Rosé',
+    descricao: 'Nhoque artesanal ao molho rosé, equilibrado e cremoso.',
+    preco: 45.90,
+    foto: 'https://jewamqbdonudiapxbzay.supabase.co/storage/v1/object/public/cardapio/pratos/1f1924da-89a4-491d-9cec-a5e8965b41d4-1778196851559.webp',
+    badge: null
+  }
+];
 
 // Frases de RONDA/IDLE (UI local, antes do chat abrir)
 const FALAS_RONDA = ['Passando...', 'Tô por aqui.', 'Tudo certo?', 'Tô de olho 😉'];
@@ -547,7 +547,7 @@ async function listarPratos() {
 
 function sortear(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function vibrate(ms) { try { navigator.vibrate?.(ms); } catch (_) {} }
-function fmtBRL(v) { return 'R$ ' + Number(v || 0).toFixed(2).replace('.', ','); }
+function fmtBRL(v) { return 'R$ ' + v.toFixed(2).replace('.', ','); }
 
 // ============================================================================
 // MARCO STICKER (SVG inline, placeholder até gerar arte definitiva)
@@ -633,17 +633,15 @@ function App() {
   const [digitando, setDigitando] = useState(false);
   const [muted, setMuted] = useState(false);
   const [leoVisivel, setLeoVisivel] = useState(false);
-  const [leoTexto, setLeoTexto] = useState('');
   const [input, setInput] = useState('');
-  const [pratos, setPratos] = useState([]);
-  const [carregandoPratos, setCarregandoPratos] = useState(true);
-  const [menuErro, setMenuErro] = useState(null);
   const [carrinho, setCarrinho] = useState([]);
   const [carrinhoTotal, setCarrinhoTotal] = useState(0);
   const [carrinhoPulse, setCarrinhoPulse] = useState(false);
   const [carrinhoOpen, setCarrinhoOpen] = useState(false);
   const [clienteNome, setClienteNome] = useState(null);
-  const [pedidoAtual, setPedidoAtual] = useState(null);
+  const [pratos, setPratos] = useState(PRATOS);
+  const [carregandoPratos, setCarregandoPratos] = useState(true);
+  const [menuErro, setMenuErro] = useState(null);
 
   const lpTimer = useRef(null);
   const balaoTimer = useRef(null);
@@ -712,12 +710,12 @@ function App() {
     listarPratos()
       .then((dados) => {
         if (!vivo) return;
-        setPratos(dados);
+        if (dados.length) setPratos(dados);
         setMenuErro(null);
       })
       .catch((err) => {
         if (!vivo) return;
-        setMenuErro('Não consegui carregar o cardápio agora.');
+        setMenuErro('Nao consegui carregar o cardapio do painel. Mostrei o cardapio salvo por enquanto.');
         console.error(err);
       })
       .finally(() => {
@@ -730,7 +728,6 @@ function App() {
   const aplicarResposta = (resp) => {
     if (!resp) return;
     if (typeof resp.cliente_nome === 'string') setClienteNome(resp.cliente_nome);
-    if (resp.pedido) setPedidoAtual(resp.pedido);
     if (Array.isArray(resp.carrinho)) {
       const teveAdicao = (resp.eventos ?? []).some(e => e.tipo === 'carrinho_adicionado');
       setCarrinho(resp.carrinho);
@@ -741,52 +738,6 @@ function App() {
         setTimeout(() => setCarrinhoPulse(false), 700);
       }
     }
-  };
-
-  const nomeAutor = (autor) => {
-    if (autor === 'leo') return 'Léo';
-    if (autor === 'stela') return 'Dona Stela';
-    if (autor === 'cliente') return clienteNome || 'Você';
-    return 'Marco';
-  };
-
-  const mostrarFalas = (resp, opts = {}) => {
-    aplicarResposta(resp);
-    const falas = Array.isArray(resp?.falas) ? resp.falas : [];
-    if (falas.length === 0) {
-      setDigitando(false);
-      return;
-    }
-
-    setDigitando(true);
-    let acumulado = 0;
-    falas.forEach((fala, idx) => {
-      const delay = Math.max(300, Math.min(fala.delay_ms ?? 1200, 5000));
-      acumulado += delay;
-      setTimeout(() => {
-        setDigitando(false);
-        const autor = fala.autor || 'marco';
-        const msg = {
-          id: Date.now() + idx,
-          autor,
-          tipo: fala.tipo || 'salao',
-          texto: fala.texto || '',
-        };
-
-        if (autor === 'leo') {
-          setLeoTexto(fala.texto || '');
-          setLeoVisivel(true);
-          setTimeout(() => setLeoVisivel(false), 4200);
-        }
-
-        setMensagens((atuais) => (opts.replace && idx === 0) ? [msg] : [...atuais, msg]);
-        if (idx < falas.length - 1) {
-          setTimeout(() => setDigitando(true), 140);
-        }
-      }, acumulado);
-    });
-
-    setTimeout(() => setDigitando(false), acumulado + 200);
   };
 
   // Tap no Marco - abre chat
@@ -805,7 +756,12 @@ function App() {
       setDigitando(true);
       try {
         const resp = await chamarMarco('(cliente acabou de abrir o chat, sauda ele)');
-        mostrarFalas(resp, { replace: true });
+        setDigitando(false);
+        aplicarResposta(resp);
+        const f = resp?.falas?.[0];
+        if (f) {
+          setMensagens([{ id: Date.now(), autor: 'marco', texto: f.texto }]);
+        }
       } catch (err) {
         setDigitando(false);
         setMensagens([{ id: Date.now(), autor: 'marco', texto: 'Eita, o salão tá com problema técnico. Tenta de novo daqui a pouco?' }]);
@@ -838,7 +794,10 @@ function App() {
     setDigitando(true);
     try {
       const resp = await chamarMarco('(o cliente acabou de assobiar pra te chamar, atende ele de pronto)');
-      mostrarFalas(resp);
+      setDigitando(false);
+      aplicarResposta(resp);
+      const f = resp?.falas?.[0];
+      if (f) setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: f.texto }]);
     } catch (err) {
       setDigitando(false);
       console.error(err);
@@ -853,7 +812,13 @@ function App() {
     setDigitando(true);
     try {
       const resp = await chamarMarco(msg);
-      mostrarFalas(resp);
+      const f = resp?.falas?.[0];
+      const delay = Math.max(400, Math.min(f?.delay_ms ?? 1500, 5000));
+      setTimeout(() => {
+        setDigitando(false);
+        aplicarResposta(resp);
+        if (f) setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: f.texto }]);
+      }, delay);
     } catch (err) {
       setDigitando(false);
       setMensagens(m => [...m, {
@@ -861,6 +826,29 @@ function App() {
         autor: 'marco',
         texto: 'Ops, deu uma travada aqui. Manda de novo, por favor.'
       }]);
+      console.error(err);
+    }
+  };
+
+  const fecharPedido = async () => {
+    setChatOpen(true);
+    setCarrinhoOpen(false);
+    setBalaoTexto(null);
+    const msg = 'quero fechar meu pedido';
+    setMensagens(m => [...m, { id: Date.now(), autor: 'cliente', texto: msg }]);
+    setDigitando(true);
+    try {
+      const resp = await chamarMarco(msg);
+      const f = resp?.falas?.[0];
+      const delay = Math.max(400, Math.min(f?.delay_ms ?? 1500, 5000));
+      setTimeout(() => {
+        setDigitando(false);
+        aplicarResposta(resp);
+        if (f) setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: f.texto }]);
+      }, delay);
+    } catch (err) {
+      setDigitando(false);
+      setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: 'Deu uma travada pra fechar. Me chama de novo que eu tento outra vez.' }]);
       console.error(err);
     }
   };
@@ -873,14 +861,17 @@ function App() {
   };
 
   return (
-    <div className="min-h-dvh overflow-x-hidden">
+    <div className="min-h-dvh">
       {/* Cabeçalho */}
       <header className="px-5 pt-4 pb-3 border-b border-[var(--line)]">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
+        <div className="flex items-center justify-between">
+          <div>
             <div className="text-xs uppercase tracking-[0.18em] text-[var(--text-dim)]">Trattoria</div>
             <h1 className="font-serif text-3xl mt-0.5" style={{color:'var(--gold)'}}>Dom Leonardo</h1>
-            <div className="text-xs text-[var(--gold)] font-semibold mt-1">⏱ 35-45 min</div>
+          </div>
+          <div className="text-right text-xs text-[var(--text-dim)]">
+            <div>Aberto agora</div>
+            <div className="text-[var(--gold)] font-semibold">⏱ 35 — 45 min</div>
           </div>
         </div>
       </header>
@@ -896,9 +887,9 @@ function App() {
       <section className="px-5 pb-32">
         <h2 className="font-serif text-xl mb-3" style={{color:'var(--gold)'}}>Pratos</h2>
         <div className="grid gap-4">
-          {carregandoPratos && <div className="menu-loading">Carregando cardápio...</div>}
-          {menuErro && <div className="menu-error">{menuErro}</div>}
-          {!carregandoPratos && !menuErro && pratos.map(p => (
+          {carregandoPratos && <div className="cart-empty">Carregando cardapio...</div>}
+          {menuErro && <div className="cart-empty">{menuErro}</div>}
+          {pratos.map(p => (
             <article
               key={p.id}
               className="prato-card relative"
@@ -917,10 +908,10 @@ function App() {
                     {p.descricao}
                   </p>
                 )}
-                <div className="mt-3 flex items-center justify-between gap-3 min-w-0">
-                  <span className="text-lg font-semibold shrink-0" style={{color:'var(--gold)'}}>{fmtBRL(p.preco)}</span>
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="text-lg font-semibold" style={{color:'var(--gold)'}}>{fmtBRL(p.preco)}</span>
                   <button
-                    className="px-4 py-2 rounded-full text-sm font-semibold shrink-0 whitespace-nowrap"
+                    className="px-4 py-2 rounded-full text-sm font-semibold"
                     style={{background:'linear-gradient(180deg, var(--gold) 0%, var(--gold-dim) 100%)', color:'#1a1305', minHeight:'44px'}}
                     onClick={async () => {
                       vibrate(20);
@@ -932,14 +923,20 @@ function App() {
                       setDigitando(true);
                       try {
                         const resp = await chamarMarco(msgUsuario);
-                        mostrarFalas(resp);
+                        const f = resp?.falas?.[0];
+                        const delay = Math.max(400, Math.min(f?.delay_ms ?? 1500, 4000));
+                        setTimeout(() => {
+                          setDigitando(false);
+                          aplicarResposta(resp);
+                          if (f) setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: f.texto }]);
+                        }, delay);
                       } catch (err) {
                         setDigitando(false);
                         console.error(err);
                       }
                     }}
                   >
-                    Pedir
+                    Adicionar
                   </button>
                 </div>
               </div>
@@ -951,7 +948,6 @@ function App() {
       {/* Léo PIP (escondido por padrão, futuro: aparece após pedido) */}
       <div className={`leo-pip ${leoVisivel ? 'shown' : ''}`}>
         <div style={{width: '56px', height: '56px'}}><LeoSticker /></div>
-        <div className="pip-text">{leoTexto || 'Léo tá na cozinha.'}</div>
       </div>
 
       {/* Marco sticker */}
@@ -1029,16 +1025,14 @@ function App() {
                   <div className="preco">{fmtBRL(it.preco * it.qtd)}</div>
                 </div>
               ))}
+              <button className="checkout-btn" onClick={fecharPedido}>Fechar com o Marco</button>
             </div>
           </>
         )}
 
         <div className="messages">
           {mensagens.map(m => (
-            <div key={m.id} className={`msg ${m.autor}`}>
-              {m.autor !== 'cliente' && <span className="msg-author">{nomeAutor(m.autor)}</span>}
-              {m.texto}
-            </div>
+            <div key={m.id} className={`msg ${m.autor}`}>{m.texto}</div>
           ))}
           {digitando && (
             <div className="msg-typing">
