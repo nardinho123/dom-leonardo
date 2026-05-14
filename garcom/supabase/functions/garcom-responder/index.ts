@@ -108,6 +108,21 @@ function extrairNomeInformado(v: string): string {
   return match[1].replace(/\b(quero|manda|pede|pedir|adiciona|coloca)\b.*$/i, "").trim().slice(0, 60);
 }
 
+function querTempoExato(v: string): boolean {
+  const t = textoNormalizado(v);
+  return t.includes("tempo exato") || t.includes("saber o tempo") || t.includes("vai demorar") || t.includes("entrega");
+}
+
+function querSaberFome(v: string): boolean {
+  const t = textoNormalizado(v);
+  return t.includes("matar minha fome") || t.includes("mata minha fome") || t.includes("tamanho") || t.includes("serve duas") || t.includes("serve 2");
+}
+
+function respondeuPizza(v: string): boolean {
+  const t = textoNormalizado(v);
+  return /\b(brotinho|pequena|media|média|grande|familia|família|gigante)\b/.test(t);
+}
+
 // ---------- handler ----------
 
 Deno.serve(async (req) => {
@@ -137,6 +152,10 @@ Deno.serve(async (req) => {
         .eq("ativo", true)
         .order("ordem", { ascending: true });
       if (error) throw error;
+      const { data: config } = await sbPub.from("configuracoes")
+        .select("garcom_entrega_texto, garcom_entrega_botao_texto, garcom_tamanhos_texto, garcom_fome_botao_texto")
+        .eq("id", 1)
+        .maybeSingle();
       return new Response(JSON.stringify({
         pratos: (data ?? []).map((p: any) => ({
           id: p.id,
@@ -146,6 +165,12 @@ Deno.serve(async (req) => {
           foto: p.foto_url,
           badge: p.badge_destaque,
         })),
+        microcopy: {
+          entrega_texto: config?.garcom_entrega_texto ?? "tempo em media para chegar na sua casa 20 a 30 min",
+          entrega_botao_texto: config?.garcom_entrega_botao_texto ?? "quero saber o tempo exato",
+          tamanhos_texto: config?.garcom_tamanhos_texto ?? "400g individual | 800g serve 2",
+          fome_botao_texto: config?.garcom_fome_botao_texto ?? "quero saber se vai matar minha fome",
+        },
       }), { headers: { ...cors, "Content-Type": "application/json" } });
     }
 
@@ -270,6 +295,32 @@ Deno.serve(async (req) => {
       return pedido;
     }
 
+    async function responderDireto(texto: string, eventosDiretos: any[] = [], pedidoDireto: any = null) {
+      const novoHistorico = [
+        ...historico,
+        { role: "user" as const, content: mensagemTexto },
+        { role: "assistant" as const, content: texto },
+      ].slice(-20);
+
+      await sb.from("sessoes").update({
+        cliente_nome: cliente_nome || sessao.cliente_nome || null,
+        memoria: { ...memoria, mensagens: novoHistorico },
+        carrinho,
+        ultima_interacao_em: new Date().toISOString(),
+      }).eq("id", sessao.id);
+
+      return new Response(JSON.stringify({
+        sessao_id: sessao.id,
+        cliente_nome: cliente_nome || sessao.cliente_nome || null,
+        humor: "anfitriao_classico",
+        falas: [{ texto, delay_ms: calcDelay(texto, "anfitriao_classico") }],
+        carrinho,
+        total: calcTotal(carrinho),
+        eventos: eventosDiretos,
+        pedido: pedidoDireto,
+      }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
+
     const mensagemTexto = String(mensagem || "");
     let salvouDadoDeFechamento = false;
     const nomeDetectado = extrairNomeInformado(mensagemTexto);
@@ -285,6 +336,48 @@ Deno.serve(async (req) => {
     if (pareceTelefone(mensagemTexto)) {
       memoria.cliente = { ...(memoria.cliente ?? {}), telefone: normalizarTelefone(mensagemTexto) };
       salvouDadoDeFechamento = true;
+    }
+
+    if (memoria.acao_pendente === "tempo_entrega" && !cliente_nome && !pareceEndereco(mensagemTexto) && !pareceTelefone(mensagemTexto) && !querTempoExato(mensagemTexto)) {
+      cliente_nome = mensagemTexto.trim().slice(0, 60);
+      memoria.cliente = { ...(memoria.cliente ?? {}), nome: cliente_nome };
+      salvouDadoDeFechamento = true;
+    }
+
+    if (querTempoExato(mensagemTexto) || memoria.acao_pendente === "tempo_entrega") {
+      const nomeAtual = String(cliente_nome ?? memoria?.cliente?.nome ?? sessao.cliente_nome ?? "").trim();
+      const enderecoSalvo = String(memoria?.cliente?.endereco_texto ?? "").trim();
+      if (!nomeAtual) {
+        memoria.acao_pendente = "tempo_entrega";
+        return await responderDireto("Claro. Antes de calcular certinho, como posso te chamar?");
+      }
+      if (!pareceEndereco(enderecoSalvo)) {
+        memoria.acao_pendente = "tempo_entrega";
+        return await responderDireto(`Boa, ${nomeAtual}. Me passa rua, numero e bairro que eu calculo uma estimativa honesta pra voce.`);
+      }
+
+      const { data: configEntrega } = await sbPub.from("configuracoes")
+        .select("tempo_entrega_min, tempo_entrega_max")
+        .eq("id", 1)
+        .maybeSingle();
+      const min = Number(configEntrega?.tempo_entrega_min ?? 20);
+      const max = Number(configEntrega?.tempo_entrega_max ?? 30);
+      memoria.acao_pendente = null;
+      return await responderDireto(`Para esse endereco, eu trabalharia com ${min} a ${max} min. Nao vou te vender milagre: se o movimento ou a rua complicar, eu te aviso antes de prometer bonito.`);
+    }
+
+    if (memoria.acao_pendente === "duvida_fome" && respondeuPizza(mensagemTexto)) {
+      memoria.acao_pendente = null;
+      const t = textoNormalizado(mensagemTexto);
+      const textoFome = (t.includes("grande") || t.includes("familia") || t.includes("gigante"))
+        ? "Entao eu iria no 800g sem medo. Ele engana no pote porque risoto parece comportado, mas e bem mais encorpado que pizza: arroz cremoso, carne, molho, queijo... pesa gostoso."
+        : "Entao o 400g deve te atender bem se for uma fome normal. Se voce estiver naquela fome de jantar serio, ou for dividir beliscando, o 800g fica mais seguro.";
+      return await responderDireto(textoFome);
+    }
+
+    if (querSaberFome(mensagemTexto)) {
+      memoria.acao_pendente = "duvida_fome";
+      return await responderDireto("Boa pergunta. Deixa eu traduzir de um jeito facil: se fossem duas pessoas pedindo pizza, voce pediria pequena, media ou grande?");
     }
 
     if (carrinho.length && (querFecharPedido(mensagemTexto) || salvouDadoDeFechamento)) {

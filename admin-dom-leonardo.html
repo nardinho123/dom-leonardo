@@ -1354,6 +1354,10 @@
             raio_entrega_km: toNum(form.raio_entrega_km) || 5,
             tempo_entrega_min: toNum(form.tempo_entrega_min) || 45,
             tempo_entrega_max: toNum(form.tempo_entrega_max) || 60,
+            garcom_entrega_texto: form.garcom_entrega_texto || 'tempo em media para chegar na sua casa 20 a 30 min',
+            garcom_entrega_botao_texto: form.garcom_entrega_botao_texto || 'quero saber o tempo exato',
+            garcom_tamanhos_texto: form.garcom_tamanhos_texto || '400g individual | 800g serve 2',
+            garcom_fome_botao_texto: form.garcom_fome_botao_texto || 'quero saber se vai matar minha fome',
             horario_abertura: form.horario_abertura,
             horario_fechamento: form.horario_fechamento,
             aviso_topo: form.aviso_topo || null,
@@ -2243,6 +2247,10 @@
           raio_entrega_km: config.raio_entrega_km || 5,
           tempo_entrega_min: config.tempo_entrega_min || 45,
           tempo_entrega_max: config.tempo_entrega_max || 60,
+          garcom_entrega_texto: config.garcom_entrega_texto || 'tempo em media para chegar na sua casa 20 a 30 min',
+          garcom_entrega_botao_texto: config.garcom_entrega_botao_texto || 'quero saber o tempo exato',
+          garcom_tamanhos_texto: config.garcom_tamanhos_texto || '400g individual | 800g serve 2',
+          garcom_fome_botao_texto: config.garcom_fome_botao_texto || 'quero saber se vai matar minha fome',
           horario_abertura: config.horario_abertura || '18:00:00',
           horario_fechamento: config.horario_fechamento || '23:30:00',
           aviso_topo: config.aviso_topo || '',
@@ -2276,6 +2284,10 @@
             <TextField label="Pedido mínimo" type="number" value={form.pedido_minimo} onChange={v => set('pedido_minimo', v)} />
             <TextField label="Entrega min" type="number" step="1" value={form.tempo_entrega_min} onChange={v => set('tempo_entrega_min', v)} />
             <TextField label="Entrega max" type="number" step="1" value={form.tempo_entrega_max} onChange={v => set('tempo_entrega_max', v)} />
+            <div className="field full"><TextField label="Texto pequeno de entrega no Garcom" value={form.garcom_entrega_texto} onChange={v => set('garcom_entrega_texto', v)} /></div>
+            <TextField label="Botao tempo exato no Garcom" value={form.garcom_entrega_botao_texto} onChange={v => set('garcom_entrega_botao_texto', v)} />
+            <TextField label="Texto de tamanhos no Garcom" value={form.garcom_tamanhos_texto} onChange={v => set('garcom_tamanhos_texto', v)} />
+            <div className="field full"><TextField label="Botao duvida sobre fome no Garcom" value={form.garcom_fome_botao_texto} onChange={v => set('garcom_fome_botao_texto', v)} /></div>
             <TextField label="Abre" type="time" value={form.horario_abertura} onChange={v => set('horario_abertura', v)} />
             <TextField label="Fecha" type="time" value={form.horario_fechamento} onChange={v => set('horario_fechamento', v)} />
             <div className="field full"><TextField label="Aviso no topo" value={form.aviso_topo} onChange={v => set('aviso_topo', v)} textarea /></div>

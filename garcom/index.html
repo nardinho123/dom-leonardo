@@ -410,6 +410,45 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
   }
+  .prato-helper-block {
+    margin-top: 10px;
+    display: grid;
+    gap: 6px;
+  }
+  .prato-microcopy {
+    color: rgba(235, 229, 216, 0.64);
+    font-size: 11px;
+    line-height: 1.25;
+    letter-spacing: 0.01em;
+  }
+  .prato-sizecopy {
+    color: rgba(212, 175, 55, 0.82);
+    font-size: 11px;
+    line-height: 1.25;
+    font-weight: 700;
+    letter-spacing: 0.015em;
+  }
+  .prato-action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .prato-soft-btn {
+    background: #0a0908;
+    border: 1px solid rgba(212,175,55,0.18);
+    color: rgba(235, 229, 216, 0.82);
+    border-radius: 999px;
+    padding: 7px 10px;
+    min-height: 34px;
+    font-size: 11px;
+    font-weight: 750;
+    line-height: 1;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.24);
+  }
+  .prato-soft-btn:active {
+    transform: scale(0.97);
+    border-color: rgba(212,175,55,0.38);
+  }
 
   /* Léo PIP (futuro) */
   .leo-pip {
@@ -486,6 +525,12 @@ const SAUDACOES_INICIAIS = [
   'Ciao!', 'Boa, vê o que tem!', 'Bem-vindo(a)!', 'E aí, bora?',
   'Salve!', 'Ó eu aqui!'
 ];
+const DEFAULT_MICROCOPY = {
+  entrega_texto: 'tempo em media para chegar na sua casa 20 a 30 min',
+  entrega_botao_texto: 'quero saber o tempo exato',
+  tamanhos_texto: '400g individual | 800g serve 2',
+  fome_botao_texto: 'quero saber se vai matar minha fome',
+};
 
 // ============================================================================
 // SUPABASE / EDGE FUNCTION
@@ -542,7 +587,10 @@ async function listarPratos() {
   });
   if (!r.ok) throw new Error(await r.text());
   const data = await r.json();
-  return Array.isArray(data?.pratos) ? data.pratos : [];
+  return {
+    pratos: Array.isArray(data?.pratos) ? data.pratos : [],
+    microcopy: { ...DEFAULT_MICROCOPY, ...(data?.microcopy ?? {}) },
+  };
 }
 
 function sortear(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
@@ -640,6 +688,7 @@ function App() {
   const [carrinhoOpen, setCarrinhoOpen] = useState(false);
   const [clienteNome, setClienteNome] = useState(null);
   const [pratos, setPratos] = useState(PRATOS);
+  const [microcopy, setMicrocopy] = useState(DEFAULT_MICROCOPY);
   const [carregandoPratos, setCarregandoPratos] = useState(true);
   const [menuErro, setMenuErro] = useState(null);
 
@@ -710,7 +759,8 @@ function App() {
     listarPratos()
       .then((dados) => {
         if (!vivo) return;
-        if (dados.length) setPratos(dados);
+        if (dados.pratos?.length) setPratos(dados.pratos);
+        setMicrocopy({ ...DEFAULT_MICROCOPY, ...(dados.microcopy ?? {}) });
         setMenuErro(null);
       })
       .catch((err) => {
@@ -800,6 +850,31 @@ function App() {
       if (f) setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: f.texto }]);
     } catch (err) {
       setDigitando(false);
+      console.error(err);
+    }
+  };
+
+  const falarComMarco = async (msgUsuario) => {
+    setChatOpen(true);
+    setBalaoTexto(null);
+    setMensagens(m => [...m, { id: Date.now(), autor: 'cliente', texto: msgUsuario }]);
+    setDigitando(true);
+    try {
+      const resp = await chamarMarco(msgUsuario);
+      const f = resp?.falas?.[0];
+      const delay = Math.max(400, Math.min(f?.delay_ms ?? 1500, 5000));
+      setTimeout(() => {
+        setDigitando(false);
+        aplicarResposta(resp);
+        if (f) setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: f.texto }]);
+      }, delay);
+    } catch (err) {
+      setDigitando(false);
+      setMensagens(m => [...m, {
+        id: Date.now(),
+        autor: 'marco',
+        texto: 'Ops, deu uma travada aqui. Manda de novo, por favor.'
+      }]);
       console.error(err);
     }
   };
@@ -908,6 +983,36 @@ function App() {
                     {p.descricao}
                   </p>
                 )}
+                <div className="prato-helper-block">
+                  <div className="prato-microcopy">{microcopy.entrega_texto}</div>
+                  <div className="prato-action-row">
+                    <button
+                      className="prato-soft-btn"
+                      onTouchStart={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        vibrate(15);
+                        falarComMarco(`quero saber o tempo exato para ${p.nome}`);
+                      }}
+                    >
+                      {microcopy.entrega_botao_texto}
+                    </button>
+                  </div>
+                  <div className="prato-sizecopy">{microcopy.tamanhos_texto}</div>
+                  <div className="prato-action-row">
+                    <button
+                      className="prato-soft-btn"
+                      onTouchStart={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        vibrate(15);
+                        falarComMarco(`quero saber se ${p.nome} vai matar minha fome`);
+                      }}
+                    >
+                      {microcopy.fome_botao_texto}
+                    </button>
+                  </div>
+                </div>
                 <div className="mt-3 flex items-center justify-between">
                   <span className="text-lg font-semibold" style={{color:'var(--gold)'}}>{fmtBRL(p.preco)}</span>
                   <button
