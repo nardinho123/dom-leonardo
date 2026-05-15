@@ -525,6 +525,23 @@ const SAUDACOES_INICIAIS = [
   'Ciao!', 'Boa, vê o que tem!', 'Bem-vindo(a)!', 'E aí, bora?',
   'Salve!', 'Ó eu aqui!'
 ];
+const ATENDIMENTO_MSGS = [
+  'Tô aqui. Me manda sua dúvida que eu já aviso o pessoal do Dom.',
+  'Chamei o atendimento aqui. Pode escrever que chega lá no balcão.',
+  'Opa, tô por aqui. Se quiser pedir ou tirar dúvida, manda aqui que uma pessoa vê.',
+  'Pode falar comigo. Já deixo o pessoal atento por aqui.',
+];
+const ATENDIMENTO_ACKS = [
+  'Perfeito, mandei sua mensagem pro atendimento. Fica de olho aqui.',
+  'Boa, já avisei o pessoal do Dom. Se quiser complementar, manda mais uma mensagem.',
+  'Anotado. O atendimento já vai ver isso com carinho.',
+  'Chegou aqui. Vou deixar isso destacado pro pessoal te responder.',
+];
+const ASSOBIO_MSGS = [
+  'Ouvi o assobio. Chamei o pessoal aqui, pode mandar.',
+  'Eita, assobio forte. O atendimento já foi avisado.',
+  'Cheguei. Escreve aqui que eu mando pro balcão.',
+];
 const DEFAULT_MICROCOPY = {
   entrega_texto: 'tempo em media para chegar na sua casa 20 a 30 min',
   entrega_botao_texto: 'quero saber o tempo exato',
@@ -551,29 +568,6 @@ function deviceId() {
 function getSessaoId() { return localStorage.getItem('garcom_sessao_id'); }
 function setSessaoId(id) { if (id) localStorage.setItem('garcom_sessao_id', id); }
 function limparSessao() { localStorage.removeItem('garcom_sessao_id'); }
-
-async function chamarMarco(mensagem) {
-  const r = await fetch(GARCOM_RESPONDER_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify({
-      sessao_id: getSessaoId(),
-      mensagem,
-      device_id: deviceId(),
-    }),
-  });
-  if (!r.ok) {
-    const t = await r.text();
-    throw new Error(t || ('HTTP ' + r.status));
-  }
-  const data = await r.json();
-  if (data?.sessao_id) setSessaoId(data.sessao_id);
-  return data;
-}
 
 async function listarPratos() {
   const r = await fetch(GARCOM_RESPONDER_URL, {
@@ -736,6 +730,8 @@ function App() {
   const hesitacaoTimers = useRef(new Map());
   const ultimaSugestaoContextual = useRef(0);
   const cartIdleTimer = useRef(null);
+  const chatAbertoNotificado = useRef(false);
+  const cardapio2minNotificado = useRef(false);
 
   // Ronda do Marco - aparece a cada 40-90s
   useEffect(() => {
@@ -812,6 +808,27 @@ function App() {
       });
     return () => { vivo = false; };
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (cardapio2minNotificado.current) return;
+      cardapio2minNotificado.current = true;
+      registrarEventoCardapio('cardapio_2min', {
+        descricao: 'Cliente ficou mais de 2 minutos no cardapio do Marco',
+        carrinho_total: carrinhoTotal,
+      }).catch(() => {});
+      if (!chatOpen) {
+        setGarcomState('peek');
+        setBalaoTexto('Tô por aqui. Se quiser, chama que o pessoal do Dom te atende.');
+        clearTimeout(balaoTimer.current);
+        balaoTimer.current = setTimeout(() => {
+          setBalaoTexto(null);
+          if (!chatOpen) setGarcomState('attention');
+        }, 5200);
+      }
+    }, 120000);
+    return () => clearTimeout(timer);
+  }, [chatOpen, carrinhoTotal]);
 
   // Processa a resposta do Marco: atualiza carrinho, nome, pulse, etc
   const aplicarResposta = (resp) => {
@@ -918,22 +935,15 @@ function App() {
     setChatOpen(true);
     setBalaoTexto(null);
     setGarcomState('peek');
-    // Primeira abertura → chama o Marco de verdade com uma saudação implícita
+    if (!chatAbertoNotificado.current) {
+      chatAbertoNotificado.current = true;
+      registrarEventoCardapio('chat_aberto', {
+        descricao: 'Cliente abriu o chat do Marco',
+        carrinho_total: carrinhoTotal,
+      }).catch(() => {});
+    }
     if (mensagens.length === 0) {
-      setDigitando(true);
-      try {
-        const resp = await chamarMarco('(cliente acabou de abrir o chat, sauda ele)');
-        setDigitando(false);
-        aplicarResposta(resp);
-        const f = resp?.falas?.[0];
-        if (f) {
-          setMensagens([{ id: Date.now(), autor: 'marco', texto: f.texto }]);
-        }
-      } catch (err) {
-        setDigitando(false);
-        setMensagens([{ id: Date.now(), autor: 'marco', texto: 'Eita, o salão tá com problema técnico. Tenta de novo daqui a pouco?' }]);
-        console.error(err);
-      }
+      setMensagens([{ id: Date.now(), autor: 'marco', texto: sortear(ATENDIMENTO_MSGS) }]);
     }
   };
 
@@ -958,42 +968,27 @@ function App() {
     setQuickMenu(false);
     setChatOpen(true);
     setBalaoTexto(null);
-    setDigitando(true);
-    try {
-      const resp = await chamarMarco('(o cliente acabou de assobiar pra te chamar, atende ele de pronto)');
-      setDigitando(false);
-      aplicarResposta(resp);
-      const f = resp?.falas?.[0];
-      if (f) setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: f.texto }]);
-    } catch (err) {
-      setDigitando(false);
-      console.error(err);
-    }
+    registrarEventoCardapio('chat_assobio', {
+      descricao: 'Cliente assobiou/chamou atendimento',
+      carrinho_total: carrinhoTotal,
+    }).catch(() => {});
+    setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: sortear(ASSOBIO_MSGS) }]);
   };
 
   const falarComMarco = async (msgUsuario) => {
     setChatOpen(true);
     setBalaoTexto(null);
     setMensagens(m => [...m, { id: Date.now(), autor: 'cliente', texto: msgUsuario }]);
+    registrarEventoCardapio('mensagem_cliente', {
+      descricao: 'Cliente mandou mensagem no chat do Marco',
+      mensagem: msgUsuario,
+      carrinho_total: carrinhoTotal,
+    }).catch(() => {});
     setDigitando(true);
-    try {
-      const resp = await chamarMarco(msgUsuario);
-      const f = resp?.falas?.[0];
-      const delay = Math.max(400, Math.min(f?.delay_ms ?? 1500, 5000));
-      setTimeout(() => {
-        setDigitando(false);
-        aplicarResposta(resp);
-        if (f) setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: f.texto }]);
-      }, delay);
-    } catch (err) {
+    setTimeout(() => {
       setDigitando(false);
-      setMensagens(m => [...m, {
-        id: Date.now(),
-        autor: 'marco',
-        texto: 'Ops, deu uma travada aqui. Manda de novo, por favor.'
-      }]);
-      console.error(err);
-    }
+      setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: sortear(ATENDIMENTO_ACKS) }]);
+    }, 700 + Math.random() * 900);
   };
 
   const enviarMsg = async () => {
@@ -1001,25 +996,16 @@ function App() {
     const msg = input.trim();
     setMensagens(m => [...m, { id: Date.now(), autor: 'cliente', texto: msg }]);
     setInput('');
+    registrarEventoCardapio('mensagem_cliente', {
+      descricao: 'Cliente mandou mensagem no chat do Marco',
+      mensagem: msg,
+      carrinho_total: carrinhoTotal,
+    }).catch(() => {});
     setDigitando(true);
-    try {
-      const resp = await chamarMarco(msg);
-      const f = resp?.falas?.[0];
-      const delay = Math.max(400, Math.min(f?.delay_ms ?? 1500, 5000));
-      setTimeout(() => {
-        setDigitando(false);
-        aplicarResposta(resp);
-        if (f) setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: f.texto }]);
-      }, delay);
-    } catch (err) {
+    setTimeout(() => {
       setDigitando(false);
-      setMensagens(m => [...m, {
-        id: Date.now(),
-        autor: 'marco',
-        texto: 'Ops, deu uma travada aqui. Manda de novo, por favor.'
-      }]);
-      console.error(err);
-    }
+      setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: sortear(ATENDIMENTO_ACKS) }]);
+    }, 700 + Math.random() * 900);
   };
 
   const fecharPedido = async () => {
@@ -1028,21 +1014,16 @@ function App() {
     setBalaoTexto(null);
     const msg = 'quero fechar meu pedido';
     setMensagens(m => [...m, { id: Date.now(), autor: 'cliente', texto: msg }]);
+    registrarEventoCardapio('cliente_quer_fechar', {
+      descricao: 'Cliente quer fechar pedido pelo atendimento humano',
+      carrinho,
+      carrinho_total: carrinhoTotal,
+    }).catch(() => {});
     setDigitando(true);
-    try {
-      const resp = await chamarMarco(msg);
-      const f = resp?.falas?.[0];
-      const delay = Math.max(400, Math.min(f?.delay_ms ?? 1500, 5000));
-      setTimeout(() => {
-        setDigitando(false);
-        aplicarResposta(resp);
-        if (f) setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: f.texto }]);
-      }, delay);
-    } catch (err) {
+    setTimeout(() => {
       setDigitando(false);
-      setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: 'Deu uma travada pra fechar. Me chama de novo que eu tento outra vez.' }]);
-      console.error(err);
-    }
+      setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: 'Boa. Chamei o atendimento pra fechar com você. Se puder, já manda nome, endereço e telefone aqui.' }]);
+    }, 800);
   };
 
   // Long-press num prato → fala do Marco
@@ -1139,25 +1120,8 @@ function App() {
                     style={{background:'linear-gradient(180deg, var(--gold) 0%, var(--gold-dim) 100%)', color:'#1a1305', minHeight:'44px'}}
                     onClick={async () => {
                       vibrate(20);
-                      // Abre chat e manda "quero esse" pro Marco processar via tool
-                      setChatOpen(true);
-                      setBalaoTexto(null);
                       const msgUsuario = `quero ${p.nome.toLowerCase()}`;
-                      setMensagens(m => [...m, { id: Date.now(), autor: 'cliente', texto: msgUsuario }]);
-                      setDigitando(true);
-                      try {
-                        const resp = await chamarMarco(msgUsuario);
-                        const f = resp?.falas?.[0];
-                        const delay = Math.max(400, Math.min(f?.delay_ms ?? 1500, 4000));
-                        setTimeout(() => {
-                          setDigitando(false);
-                          aplicarResposta(resp);
-                          if (f) setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: f.texto }]);
-                        }, delay);
-                      } catch (err) {
-                        setDigitando(false);
-                        console.error(err);
-                      }
+                      falarComMarco(msgUsuario);
                     }}
                   >
                     Adicionar

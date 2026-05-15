@@ -670,6 +670,7 @@
 
     const SUPABASE_URL = 'https://jewamqbdonudiapxbzay.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY';
+    const GARCOM_RESPONDER_URL = SUPABASE_URL + '/functions/v1/garcom-responder';
     const BUCKET = 'cardapio';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -942,6 +943,8 @@
       const [adminChatText, setAdminChatText] = useState('');
       const [soundEnabled, setSoundEnabled] = useState(false);
       const audioCtxRef = useRef(null);
+      const garcomAlertLastId = useRef(Number(localStorage.getItem('garcom_alert_last_id') || 0));
+      const garcomAlertsReady = useRef(false);
 
       const toast = (message, type = 'ok') => setToastState({ message, type });
 
@@ -975,7 +978,65 @@
       function enableOrderSound() {
         setSoundEnabled(true);
         playOrderSound(true);
-        toast('Som dos pedidos ativado.');
+        toast('Som dos pedidos e atendimentos ativado.');
+      }
+
+      function formatGarcomAlert(alerta) {
+        const ctx = alerta?.contexto || {};
+        const tipo = alerta?.tipo;
+        if (tipo === 'chat_aberto') return 'Cliente abriu o chat do Marco.';
+        if (tipo === 'chat_assobio') return 'Cliente chamou/assobiou no Marco.';
+        if (tipo === 'cardapio_2min') return 'Cliente ficou mais de 2 minutos no cardápio.';
+        if (tipo === 'cliente_quer_fechar') return 'Cliente quer fechar pedido pelo atendimento.';
+        if (tipo === 'mensagem_cliente') {
+          const msg = String(ctx.mensagem || '').trim();
+          return msg ? `Mensagem no Marco: "${msg.slice(0, 90)}${msg.length > 90 ? '...' : ''}"` : 'Cliente mandou mensagem no Marco.';
+        }
+        return 'Novo movimento no atendimento do Marco.';
+      }
+
+      async function buscarAlertasGarcom({ inicial = false } = {}) {
+        if (!session?.access_token) return;
+        try {
+          const tinhaCursor = garcomAlertLastId.current > 0;
+          const response = await fetch(GARCOM_RESPONDER_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': SUPABASE_KEY,
+              'Authorization': 'Bearer ' + session.access_token,
+            },
+            body: JSON.stringify({
+              acao: 'listar_alertas_humanos',
+              since_id: garcomAlertLastId.current || 0,
+            }),
+          });
+          if (!response.ok) return;
+          const payload = await response.json();
+          const alertas = Array.isArray(payload?.alertas) ? payload.alertas : [];
+          if (!alertas.length) {
+            garcomAlertsReady.current = true;
+            return;
+          }
+
+          const maiorId = Math.max(...alertas.map(a => Number(a.id || 0)));
+          garcomAlertLastId.current = maiorId;
+          localStorage.setItem('garcom_alert_last_id', String(maiorId));
+
+          if (inicial && !garcomAlertsReady.current && !tinhaCursor) {
+            garcomAlertsReady.current = true;
+            return;
+          }
+
+          garcomAlertsReady.current = true;
+          alertas.forEach(alerta => {
+            toast(formatGarcomAlert(alerta));
+            playOrderSound();
+          });
+          await loadDesempenho();
+        } catch (error) {
+          console.warn('Falha ao buscar alertas do Marco', error);
+        }
       }
 
       useEffect(() => {
@@ -1006,6 +1067,13 @@
           .subscribe();
         return () => { sb.removeChannel(channel); };
       }, [session, statusFilter, soundEnabled]);
+
+      useEffect(() => {
+        if (!session) return;
+        buscarAlertasGarcom({ inicial: true });
+        const timer = setInterval(() => buscarAlertasGarcom(), 8000);
+        return () => clearInterval(timer);
+      }, [session, soundEnabled]);
 
       useEffect(() => {
         if (!session) return;
@@ -2184,14 +2252,14 @@
         <section className="card panel">
           <div className="panel-head">
             <div>
-              <h3>Garcom virtual</h3>
-              <p className="muted" style={{margin:0}}>O cliente conversa no cardapio; a IA responde usando o cardapio salvo no Supabase.</p>
+              <h3>Atendimento do Marco</h3>
+              <p className="muted" style={{margin:0}}>A LLM foi desligada. O chat agora chama atendimento humano e dispara alertas no painel.</p>
             </div>
             <button className="btn btn-primary" onClick={() => onSave(form)}>Salvar bot</button>
           </div>
           <div className="form-grid">
             <TextField label="Nome que o cliente ve" value={form.nome_bot} onChange={v => set('nome_bot', v)} />
-            <TextField label="Modelo" value={form.modelo} onChange={v => set('modelo', v)} />
+            <TextField label="Modelo (desligado)" value={form.modelo} onChange={v => set('modelo', v)} />
             <TextField label="Temperatura" type="number" value={form.temperatura} onChange={v => set('temperatura', v)} />
             <label className="field"><span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6}}>BOT ATIVO</span><div className="check-row"><input type="checkbox" checked={!!form.ativo} onChange={e => set('ativo', e.target.checked)} /><span>{form.ativo ? 'Sim' : 'Nao'}</span></div></label>
             <div className="field full"><TextField label="Prompt do garcom" value={form.prompt_base} onChange={v => set('prompt_base', v)} textarea /></div>
@@ -2215,7 +2283,7 @@
             ))}
             {!form.regras.length && <div className="empty">Nenhuma regra rigida ainda.</div>}
           </div>
-          <div className="hint">A chave OpenAI fica como secret OPENAI_API_KEY na Edge Function. Nunca coloque chave dentro do HTML.</div>
+          <div className="hint">Modo atual: sem LLM. O cardapio apenas mostra mensagens locais do Marco e notifica o atendimento humano.</div>
         </section>
       );
     }

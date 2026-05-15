@@ -4,7 +4,6 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import OpenAI from "https://esm.sh/openai@4.68.0";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -164,6 +163,14 @@ function fraseContextual(tipo: string, pratoNome = "", carrinhoTotal = 0): strin
   ]);
 }
 
+const ALERTAS_HUMANOS = [
+  "chat_aberto",
+  "chat_assobio",
+  "mensagem_cliente",
+  "cardapio_2min",
+  "cliente_quer_fechar",
+];
+
 // ---------- handler ----------
 
 Deno.serve(async (req) => {
@@ -186,6 +193,14 @@ Deno.serve(async (req) => {
     // Dois clients: garcom (escrita) e public (leitura dos pratos)
     const sb = createClient(url, serviceKey, { db: { schema: "garcom" } });
     const sbPub = createClient(url, serviceKey);
+
+    async function adminAutorizado() {
+      const auth = req.headers.get("Authorization") ?? "";
+      const token = auth.replace(/^Bearer\s+/i, "").trim();
+      if (!token || token.startsWith("sb_publishable_") || token.split(".").length < 3) return false;
+      const { data, error } = await sbPub.auth.getUser(token);
+      return !error && !!data?.user;
+    }
 
     async function carregarOuCriarSessaoLeve() {
       let sessaoLeve: any = null;
@@ -216,6 +231,39 @@ Deno.serve(async (req) => {
         contexto: { evento },
       });
       return new Response(JSON.stringify({ ok: true, sessao_id: sessaoEvento.id }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
+    if (acao === "listar_alertas_humanos") {
+      if (!(await adminAutorizado())) {
+        return new Response(JSON.stringify({ error: "admin nao autorizado" }), {
+          status: 401,
+          headers: { ...cors, "Content-Type": "application/json" },
+        });
+      }
+
+      const sinceId = Number(body?.since_id ?? 0);
+      let query = sb.from("interaction_logs")
+        .select("id,sessao_id,momento,fala,contexto")
+        .eq("papel", "evento")
+        .in("fala", ALERTAS_HUMANOS)
+        .order("id", { ascending: sinceId > 0 })
+        .limit(30);
+
+      if (sinceId > 0) query = query.gt("id", sinceId);
+      const { data, error } = await query;
+      if (error) throw error;
+
+      const alertas = (data ?? []).map((row: any) => ({
+        id: row.id,
+        sessao_id: row.sessao_id,
+        tipo: row.fala,
+        momento: row.momento,
+        contexto: row.contexto?.evento ?? row.contexto ?? {},
+      }));
+
+      return new Response(JSON.stringify({ alertas }), {
         headers: { ...cors, "Content-Type": "application/json" },
       });
     }
@@ -273,14 +321,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const openaiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiKey) {
-      return new Response(JSON.stringify({ error: "OPENAI_API_KEY nao configurada" }), {
-        status: 500,
-        headers: { ...cors, "Content-Type": "application/json" },
-      });
-    }
-    const openai = new OpenAI({ apiKey: openaiKey });
+    // LLM desligada: o Marco agora apenas registra eventos e chama atendimento humano.
 
     // 1) Carrega ou cria sessao
     let sessao: any = null;
@@ -517,432 +558,34 @@ Deno.serve(async (req) => {
       }), { headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    // 7) System prompt
-    const carrinhoStr = carrinho.length === 0
-      ? "(vazio)"
-      : carrinho.map((it, i) =>
-          `  [${i}] ${it.qtd}x ${it.nome} (R$ ${it.preco.toFixed(2)}${it.obs ? `, obs: ${it.obs}` : ""})`
-        ).join("\n");
-    const totalAtual = calcTotal(carrinho);
-
-    const systemPrompt = `Voce e o Marco, garcom virtual do restaurante Dom Leonardo (trattoria italiana de delivery). Brasileiro com sotaque italiano leve. Tem opiniao, paixao pela cozinha do chef Leo, atende como anfitriao real.
-
-==============================
-PERSONALIDADE DE HOJE (humor sorteado): ${humor.humor_nome}
-${humor.prompt_modifier ?? ""}
-==============================
-
-CONTEXTO:
-- Cliente: ${cliente_nome ? `chamado(a) ${cliente_nome}` : "ainda nao sei o nome"}
-- Endereco salvo: ${enderecoMem ? "sim" : "nao"}
-- Telefone salvo: ${telefoneMem ? "sim" : "nao"}
-- Periodo do dia: ${partOfDay()} (${nowSP()})
-- Fato do dia (use se vier a calhar): ${fato?.texto ?? "(sem fato hoje)"}
-
-CARRINHO ATUAL (total R$ ${totalAtual.toFixed(2)}):
-${carrinhoStr}
-
-CURIOSIDADES DO LEO DISPONIVEIS (cada uma pode aparecer no maximo uma vez; cite no maximo UMA por mensagem se realmente couber, marcando o id no final da fala assim: [N]):
-${(curiosidadesDisp ?? []).map((c: any) => `[${c.id}] (${c.categoria ?? "geral"}) ${c.texto}`).join("\n")}
-
-PRATOS DO MENU HOJE:
-${pratos.map((p: any) => `- ID: ${p.id}\n  Nome: ${p.nome}\n  Preco: R$ ${p.preco.toFixed(2)}\n  Badge: ${p.badge ?? "-"}\n  Descricao: ${p.descricao}`).join("\n\n")}
-
-REGRAS DE COMUNICACAO (nao-negociaveis):
-1. NUNCA mencione que e IA, bot, sistema, modelo, GPT, OpenAI. Se perguntarem, fuja com humor leve ("ah, sou so o Marco daqui mesmo, viu?").
-2. Frases CURTAS, conversacionais. Nada de listas longas, markdown ou bullet points. Texto corrido.
-3. Espelhe o cliente: curto/longo, emoji/sem-emoji, formal/informal.
-4. Tenha OPINIAO. Se perguntarem o que recomenda, escolha e defenda.
-5. Antecipe duvidas.
-6. Se cliente irritado/impaciente, abandone humor e seja empatico+eficiente.
-7. NAO de tempo de entrega exato -- diga "ja te confirmo".
-8. Se ainda nao sabe o nome, em algum momento pergunte "como posso te chamar?". Use a tool set_cliente_nome quando ele responder.
-9. Se o cliente quiser FECHAR o pedido, nao mande formulario. Va como garcom: se faltar nome, pergunte so o nome; se faltar endereco, pergunte rua, numero e bairro; se faltar telefone, pergunte por ultimo dizendo que e so pro motoboy ligar se nao achar a casa.
-
-NUCLEO DE UM BOM GARCOM:
-- Nunca responda como FAQ. Responda como alguem que quer ajudar a pessoa a comer bem.
-- Toda resposta deve abrir uma proxima acao natural: recomendar, anotar, comparar tamanhos, tirar ingrediente, calcular entrega ou fechar.
-- Quando falar de prato, cause fome antes do dado tecnico. Ex: fale de cremosidade, crosta, cheiro, peso do prato, molho, queijo, carne, conforto.
-- Reduza indecisao com contraste simples: "Carbonara e conforto mais intenso; Risoto e mais encorpado; Nhoque e mais macio".
-- Use aprovacao social sem parecer propaganda: "esse sai bastante", "esse e escolha segura", "eu iria nele hoje".
-- Se o cliente pedir tamanho/fome, use analogia de pizza ou jantar de casal. 400g = individual bem servido; 800g = serve 2 ou uma fome muito forte.
-- Se o cliente pedir tempo de entrega, colete nome primeiro se faltar, depois rua/numero/bairro. Nao prometa milagre.
-- Se o cliente estiver com carrinho, tente avancar: "quer que eu mande pro Dom?" ou "quer revisar antes?".
-- Evite textao. Garcom bom fala em goles pequenos, nao em manual.
-- Se a resposta passar de 280 caracteres, corte sem do. O ideal e 1 ou 2 frases, com uma pergunta de avanco no final.
-
-USO DE TOOLS (importante):
-- Quando o cliente CONFIRMAR que quer pedir um prato, use adicionar_ao_carrinho com o ID exato do prato (UUID acima). NAO confirme verbalmente sem chamar a tool.
-- Se o cliente pedir pra remover/alterar, use remover_do_carrinho ou alterar_observacao com o INDICE (0, 1, 2...) do item no carrinho atual.
-- Use sugerir_harmonizacao quando o cliente ja tiver escolhido prato principal e voce quiser oferecer bebida ou sobremesa.
-- Use salvar_endereco quando o cliente mandar rua, numero e bairro.
-- Use salvar_telefone quando o cliente mandar telefone/WhatsApp.
-- Use enviar_pedido_admin somente quando carrinho nao estiver vazio, nome, endereco e telefone ja estiverem salvos, e o cliente confirmar que quer fechar.
-- Apos chamar uma tool de carrinho, na proxima fala CONFIRME pro cliente o que foi feito de forma natural ("anotado: 1 Risoto, vai mais alguma coisa?").
-
-Responda em PORTUGUES BRASILEIRO. Respostas curtas -- 1 a 3 frases idealmente.`;
-
-    // 8) Tools
-    const tools = [
-      {
-        type: "function" as const,
-        function: {
-          name: "set_cliente_nome",
-          description: "Use quando o cliente disser como quer ser chamado. Registra no perfil.",
-          parameters: {
-            type: "object",
-            properties: { nome: { type: "string", description: "Nome ou apelido" } },
-            required: ["nome"],
-          },
+    await sb.from("interaction_logs").insert({
+      sessao_id: sessao.id,
+      papel: "evento",
+      fala: "mensagem_cliente",
+      contexto: {
+        evento: {
+          tipo: "mensagem_cliente",
+          mensagem: mensagemTexto,
+          descricao: "Cliente mandou mensagem no atendimento humano do Marco",
+          carrinho_total: calcTotal(carrinho),
         },
       },
-      {
-        type: "function" as const,
-        function: {
-          name: "adicionar_ao_carrinho",
-          description: "Adiciona um prato ao carrinho. Use o prato_id (UUID) do menu. Se quantidade nao for dita, assuma 1.",
-          parameters: {
-            type: "object",
-            properties: {
-              prato_id: { type: "string", description: "UUID do prato (vem do menu acima)" },
-              qtd: { type: "integer", minimum: 1, default: 1 },
-              observacoes: { type: "string", description: "Ex: 'sem cebola', 'bem passado'" },
-            },
-            required: ["prato_id"],
-          },
-        },
-      },
-      {
-        type: "function" as const,
-        function: {
-          name: "remover_do_carrinho",
-          description: "Remove um item do carrinho pelo indice (0-based, conforme listado em CARRINHO ATUAL).",
-          parameters: {
-            type: "object",
-            properties: { indice: { type: "integer", minimum: 0 } },
-            required: ["indice"],
-          },
-        },
-      },
-      {
-        type: "function" as const,
-        function: {
-          name: "alterar_observacao",
-          description: "Altera a observacao de um item do carrinho.",
-          parameters: {
-            type: "object",
-            properties: {
-              indice: { type: "integer", minimum: 0 },
-              observacoes: { type: "string" },
-            },
-            required: ["indice", "observacoes"],
-          },
-        },
-      },
-      {
-        type: "function" as const,
-        function: {
-          name: "sugerir_harmonizacao",
-          description: "Sugere uma bebida ou sobremesa pra acompanhar o prato principal. NAO adiciona ao carrinho, so retorna sugestao texto que voce pode usar na fala.",
-          parameters: {
-            type: "object",
-            properties: { prato_id: { type: "string", description: "UUID do prato principal" } },
-            required: ["prato_id"],
-          },
-        },
-      },
-      {
-        type: "function" as const,
-        function: {
-          name: "salvar_endereco",
-          description: "Registra o endereco em texto livre quando o cliente informar rua, numero e bairro.",
-          parameters: {
-            type: "object",
-            properties: {
-              endereco_texto: { type: "string", description: "Endereco completo em texto livre" },
-            },
-            required: ["endereco_texto"],
-          },
-        },
-      },
-      {
-        type: "function" as const,
-        function: {
-          name: "salvar_telefone",
-          description: "Registra telefone/WhatsApp do cliente para o motoboy ligar se nao achar a casa.",
-          parameters: {
-            type: "object",
-            properties: {
-              telefone: { type: "string", description: "Telefone ou WhatsApp do cliente" },
-            },
-            required: ["telefone"],
-          },
-        },
-      },
-      {
-        type: "function" as const,
-        function: {
-          name: "enviar_pedido_admin",
-          description: "Cria o pedido no painel admin quando nome, endereco, telefone e carrinho ja estiverem prontos.",
-          parameters: {
-            type: "object",
-            properties: {},
-          },
-        },
-      },
-    ];
-
-    // 9) Chamada inicial
-    const novaMsgUsuario = { role: "user" as const, content: mensagem };
-    const messages: any[] = [
-      { role: "system", content: systemPrompt },
-      ...historico,
-      novaMsgUsuario,
-    ];
-
-    let completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages,
-      tools,
-      tool_choice: "auto",
-      temperature: 0.9,
-      max_tokens: 500,
     });
 
-    let respMsg: any = completion.choices[0].message;
-    let nomeRegistrado: string | null = null;
-    let pedidoCriado: any = null;
-    const toolsUsadas: string[] = [];
-    const eventos: Array<{ tipo: string; payload: any }> = [];
-
-    // 10) Tool call loop (max 2 iteracoes pra prevenir loops infinitos)
-    let iter = 0;
-    while (respMsg.tool_calls && respMsg.tool_calls.length > 0 && iter < 2) {
-      iter++;
-      messages.push(respMsg);
-
-      for (const tc of respMsg.tool_calls) {
-        let args: any = {};
-        try { args = JSON.parse(tc.function.arguments ?? "{}"); } catch (_) {}
-        let resultado = "ok";
-        toolsUsadas.push(tc.function.name);
-
-        switch (tc.function.name) {
-          case "set_cliente_nome": {
-            if (args.nome) {
-              nomeRegistrado = String(args.nome).slice(0, 60);
-              memoria.cliente = { ...(memoria.cliente ?? {}), nome: nomeRegistrado };
-              await sb.from("sessoes").update({ cliente_nome: nomeRegistrado, memoria }).eq("id", sessao.id);
-              resultado = `Nome registrado: ${nomeRegistrado}`;
-            } else resultado = "Erro: nome vazio";
-            break;
-          }
-          case "adicionar_ao_carrinho": {
-            const prato = pratos.find((p: any) => p.id === args.prato_id);
-            if (!prato) {
-              resultado = `Erro: prato_id ${args.prato_id} nao existe no menu`;
-            } else {
-              const qtd = Math.max(1, parseInt(args.qtd ?? 1, 10));
-              const obs = (args.observacoes ?? "").trim();
-              // Se ja tem o mesmo prato com mesma obs, incrementa
-              const idxIgual = carrinho.findIndex(
-                (it) => it.prato_id === prato.id && (it.obs ?? "") === obs
-              );
-              if (idxIgual >= 0) {
-                carrinho[idxIgual].qtd += qtd;
-              } else {
-                carrinho.push({
-                  prato_id: prato.id,
-                  nome: prato.nome,
-                  preco: prato.preco,
-                  qtd,
-                  obs: obs || undefined,
-                });
-              }
-              eventos.push({ tipo: "carrinho_adicionado", payload: { prato_id: prato.id, nome: prato.nome, qtd } });
-              resultado = `OK. Carrinho agora: ${carrinho.length} item(ns), total R$ ${calcTotal(carrinho).toFixed(2)}.`;
-            }
-            break;
-          }
-          case "remover_do_carrinho": {
-            const idx = parseInt(args.indice ?? -1, 10);
-            if (idx >= 0 && idx < carrinho.length) {
-              const removido = carrinho[idx];
-              carrinho.splice(idx, 1);
-              eventos.push({ tipo: "carrinho_removido", payload: removido });
-              resultado = `OK. Removido: ${removido.nome}. Carrinho agora: ${carrinho.length} item(ns).`;
-            } else {
-              resultado = `Erro: indice ${idx} invalido (carrinho tem ${carrinho.length} itens).`;
-            }
-            break;
-          }
-          case "alterar_observacao": {
-            const idx = parseInt(args.indice ?? -1, 10);
-            if (idx >= 0 && idx < carrinho.length) {
-              carrinho[idx].obs = String(args.observacoes ?? "").trim() || undefined;
-              eventos.push({ tipo: "carrinho_alterado", payload: { indice: idx, obs: carrinho[idx].obs } });
-              resultado = `OK. Observacao atualizada no item ${idx}.`;
-            } else {
-              resultado = `Erro: indice ${idx} invalido.`;
-            }
-            break;
-          }
-          case "sugerir_harmonizacao": {
-            const prato = pratos.find((p: any) => p.id === args.prato_id);
-            // Implementacao simples por categoria do nome - depois pode virar logica mais rica
-            const nome = (prato?.nome ?? "").toLowerCase();
-            let sugestao = "agua com gas e uma sobremesa leve";
-            if (nome.includes("risot") || nome.includes("carbonara") || nome.includes("nhoque")) {
-              sugestao = "um vinho branco seco ou suco de uva integral; e o Tiramisu pra fechar.";
-            } else if (nome.includes("pao") || nome.includes("costela")) {
-              sugestao = "vinho tinto encorpado ou cerveja artesanal; sobremesa pode ser leve.";
-            }
-            resultado = `Sugestao de harmonizacao para ${prato?.nome ?? "esse prato"}: ${sugestao}`;
-            break;
-          }
-          case "salvar_endereco": {
-            const endereco = String(args.endereco_texto ?? "").trim();
-            if (endereco && pareceEndereco(endereco)) {
-              memoria.cliente = { ...(memoria.cliente ?? {}), endereco_texto: endereco };
-              await sb.from("sessoes").update({ memoria }).eq("id", sessao.id);
-              resultado = "Endereco registrado.";
-            } else {
-              resultado = "Erro: endereco invalido. Peca rua, numero e bairro.";
-            }
-            break;
-          }
-          case "salvar_telefone": {
-            const tel = normalizarTelefone(args.telefone ?? "");
-            if (tel) {
-              memoria.cliente = { ...(memoria.cliente ?? {}), telefone: tel };
-              await sb.from("sessoes").update({ memoria }).eq("id", sessao.id);
-              resultado = "Telefone registrado.";
-            } else {
-              resultado = "Erro: telefone vazio.";
-            }
-            break;
-          }
-          case "enviar_pedido_admin": {
-            const nomeFinal = String(nomeRegistrado ?? sessao.cliente_nome ?? memoria?.cliente?.nome ?? "").trim();
-            const enderecoSalvo = String(memoria?.cliente?.endereco_texto ?? "").trim();
-            const enderecoFinal = pareceEndereco(enderecoSalvo) ? enderecoSalvo : "";
-            const telefoneFinal = normalizarTelefone(memoria?.cliente?.telefone ?? "");
-            if (!carrinho.length) {
-              resultado = "Erro: carrinho vazio. Antes de enviar, ajude o cliente a escolher pelo menos um prato.";
-              break;
-            }
-            if (!nomeFinal || !enderecoFinal || !telefoneFinal) {
-              resultado = `Erro: dados faltando. nome=${!!nomeFinal}, endereco=${!!enderecoFinal}, telefone=${!!telefoneFinal}. Pergunte apenas o proximo dado faltante.`;
-              break;
-            }
-
-            const itens = [];
-            for (const item of carrinho) {
-              const { data: tamanhoPadrao } = await sbPub.from("pratos_tamanhos")
-                .select("id")
-                .eq("prato_id", item.prato_id)
-                .eq("ativo", true)
-                .order("padrao", { ascending: false })
-                .order("ordem", { ascending: true })
-                .limit(1)
-                .maybeSingle();
-              itens.push({
-                prato_id: item.prato_id,
-                tamanho_id: tamanhoPadrao?.id ?? null,
-                opcionais_ids: [],
-                quantidade: item.qtd,
-                observacoes: item.obs ?? null,
-              });
-            }
-
-            const { data: pedido, error } = await sbPub.rpc("criar_pedido", {
-              p_cliente: { nome: nomeFinal, whatsapp: telefoneFinal },
-              p_endereco: parseEndereco(enderecoFinal),
-              p_itens: itens,
-              p_forma_pagamento: "nao_definido",
-              p_troco_para: null,
-              p_cupom_codigo: null,
-              p_observacoes: "Pedido enviado pelo Marco antigo",
-              p_origem: "garcom_marco_antigo",
-            });
-            if (error) throw error;
-            pedidoCriado = pedido;
-            eventos.push({ tipo: "pedido_enviado_admin", payload: pedido });
-            carrinho = [];
-            memoria.ultimo_pedido_admin = pedido;
-            resultado = `Pedido enviado ao painel. Numero: ${pedido?.numero_pedido ?? "a confirmar"}.`;
-            break;
-          }
-        }
-
-        messages.push({ role: "tool", tool_call_id: tc.id, content: resultado });
-      }
-
-      // Apos as tools, pede uma fala final
-      completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages,
-        tools,
-        tool_choice: "auto",
-        temperature: 0.9,
-        max_tokens: 400,
-      });
-      respMsg = completion.choices[0].message;
-    }
-
-    const falaBruta = (respMsg.content ?? "").trim();
-
-    // 11) Extrai marca de curiosidade [N]
-    let curiosidadeUsadaId: number | null = null;
-    let fala = falaBruta;
-    const m = falaBruta.match(/\[(\d+)\]/);
-    if (m) {
-      curiosidadeUsadaId = parseInt(m[1], 10);
-      fala = falaBruta.replace(/\s*\[\d+\]\s*/g, " ").trim();
-    }
-
-    // 12) Atualiza memoria + carrinho no banco
-    const novoHistorico = [
-      ...historico,
-      novaMsgUsuario,
-      { role: "assistant" as const, content: fala },
-    ].slice(-20);
-
-    await sb.from("sessoes").update({
-      cliente_nome: cliente_nome ?? sessao.cliente_nome ?? null,
-      memoria: { ...memoria, mensagens: novoHistorico, ultimo_humor: humor.humor_nome },
-      carrinho,
-      ultima_interacao_em: new Date().toISOString(),
-    }).eq("id", sessao.id);
-
-    // 13) Loga interacoes
-    await sb.from("interaction_logs").insert([
-      { sessao_id: sessao.id, papel: "cliente", fala: mensagem },
-      {
-        sessao_id: sessao.id,
-        personagem_id: "marco",
-        papel: "garcom",
-        fala,
-        humor_sorteado: humor.humor_nome,
-        curiosidade_usada_id: curiosidadeUsadaId,
-        tool_usada: toolsUsadas.length > 0 ? toolsUsadas.join(",") : null,
-        contexto: { eventos },
-      },
+    const respostaAtendimento = pick([
+      "Perfeito, mandei sua mensagem pro atendimento. Fica de olho aqui.",
+      "Boa, ja avisei o pessoal do Dom. Se quiser complementar, manda mais uma mensagem.",
+      "Anotado. O atendimento ja vai ver isso com carinho.",
+      "Chegou aqui. Vou deixar isso destacado pro pessoal te responder.",
     ]);
 
-    return new Response(
-      JSON.stringify({
-        sessao_id: sessao.id,
-        cliente_nome: nomeRegistrado ?? cliente_nome ?? sessao.cliente_nome,
-        humor: humor.humor_nome,
-        falas: [{ texto: fala, delay_ms: calcDelay(fala, humor.humor_nome) }],
-        carrinho,
-        total: calcTotal(carrinho),
-        eventos,
-        pedido: pedidoCriado,
-      }),
-      { headers: { ...cors, "Content-Type": "application/json" } }
-    );
+    return await responderDireto(respostaAtendimento, [{
+      tipo: "mensagem_cliente",
+      payload: { atendimento_humano: true },
+    }]);
+
+    // LLM removida: atendimento humano usa respostas locais e eventos para o admin.
+
   } catch (err) {
     console.error("garcom-responder error:", err);
     return new Response(
