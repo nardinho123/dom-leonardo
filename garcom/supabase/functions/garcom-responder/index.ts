@@ -221,6 +221,157 @@ Deno.serve(async (req) => {
       return sessaoLeve;
     }
 
+    function tipoEventoPublico(tipo: string): string {
+      const mapa: Record<string, string> = {
+        page_view: "page_view",
+        dish_clicked: "item_click",
+        dish_viewed: "item_view",
+        add_to_bag: "add_to_cart",
+        open_cart: "open_cart",
+        chat_aberto: "chat_open",
+        chat_assobio: "call_waiter",
+        mensagem_cliente: "chat_message",
+        cliente_quer_fechar: "checkout_open",
+        cardapio_2min: "idle_2min",
+      };
+      return mapa[tipo] ?? tipo;
+    }
+
+    function mensagemEventoHumano(tipo: string, evento: any): string | null {
+      if (tipo === "mensagem_cliente") return String(evento?.mensagem ?? "").trim() || "Cliente mandou mensagem no Marco.";
+      if (tipo === "chat_aberto") return "Cliente abriu o chat do Marco.";
+      if (tipo === "chat_assobio") return "Cliente chamou/assobiou no Marco.";
+      if (tipo === "cliente_quer_fechar") return "Cliente quer fechar o pedido pelo atendimento.";
+      return null;
+    }
+
+    async function sincronizarEventoPublico(sessaoEvento: any, evento: any) {
+      const tipoOriginal = String(evento?.tipo ?? "evento_cardapio");
+      const tipoPublico = tipoEventoPublico(tipoOriginal);
+      const visitorKey = String(device_id || sessaoEvento?.device_id || evento?.visitor_key || "").trim();
+      if (!visitorKey) return null;
+
+      const browserInfo = evento?.browser_info ?? {};
+      const urlAtual = evento?.url_atual ?? null;
+      const urlInicial = evento?.url_inicial ?? urlAtual;
+      const referrer = evento?.referrer ?? null;
+      const userAgent = evento?.user_agent ?? null;
+
+      let visitante: any = null;
+      const { data: visitanteExistente } = await sbPub.from("cardapio_visitantes")
+        .select("id, visitor_key, total_eventos, total_sessoes")
+        .eq("visitor_key", visitorKey)
+        .maybeSingle();
+
+      if (visitanteExistente) {
+        const { data, error } = await sbPub.from("cardapio_visitantes")
+          .update({
+            browser_info: browserInfo,
+            ultimo_acesso_em: new Date().toISOString(),
+            ultima_url: urlAtual,
+            ultimo_referrer: referrer,
+            total_eventos: Number(visitanteExistente.total_eventos ?? 0) + 1,
+            atualizado_em: new Date().toISOString(),
+          })
+          .eq("id", visitanteExistente.id)
+          .select("id, visitor_key")
+          .single();
+        if (error) throw error;
+        visitante = data;
+      } else {
+        const { data, error } = await sbPub.from("cardapio_visitantes")
+          .insert({
+            visitor_key: visitorKey,
+            browser_info: browserInfo,
+            ultima_url: urlAtual,
+            ultimo_referrer: referrer,
+            total_sessoes: 1,
+            total_eventos: 1,
+          })
+          .select("id, visitor_key")
+          .single();
+        if (error) throw error;
+        visitante = data;
+      }
+
+      const sessionKey = String(sessaoEvento?.id ?? sessao_id ?? visitorKey);
+      const { data: sessaoPublica } = await sbPub.from("cardapio_sessoes")
+        .select("id")
+        .eq("session_key", sessionKey)
+        .maybeSingle();
+
+      let sessaoPublicaId = sessaoPublica?.id;
+      if (sessaoPublicaId) {
+        const { data, error } = await sbPub.from("cardapio_sessoes")
+          .update({
+            ultimo_ping_em: new Date().toISOString(),
+            url_atual: urlAtual,
+            browser_info: browserInfo,
+            user_agent: userAgent,
+          })
+          .eq("id", sessaoPublicaId)
+          .select("id")
+          .single();
+        if (error) throw error;
+        sessaoPublicaId = data.id;
+      } else {
+        const { data, error } = await sbPub.from("cardapio_sessoes")
+          .insert({
+            visitante_id: visitante.id,
+            visitor_key: visitorKey,
+            session_key: sessionKey,
+            browser_info: browserInfo,
+            url_inicial: urlInicial,
+            url_atual: urlAtual,
+            referrer,
+            user_agent: userAgent,
+          })
+          .select("id")
+          .single();
+        if (error) throw error;
+        sessaoPublicaId = data.id;
+      }
+
+      await sbPub.from("cardapio_eventos").insert({
+        visitante_id: visitante.id,
+        sessao_id: sessaoPublicaId,
+        visitor_key: visitorKey,
+        tipo: tipoPublico,
+        metadata: {
+          ...evento,
+          tipo_original: tipoOriginal,
+          garcom_sessao_id: sessaoEvento?.id ?? null,
+        },
+      });
+
+      const mensagemHumana = mensagemEventoHumano(tipoOriginal, evento);
+      if (mensagemHumana) {
+        const { data: conversaId, error: conversaError } = await sbPub.rpc("cardapio_abrir_conversa", {
+          p_visitante_id: visitante.id,
+          p_visitor_key: visitorKey,
+        });
+        if (conversaError) throw conversaError;
+        await sbPub.from("chat_mensagens").insert({
+          conversa_id: conversaId,
+          visitante_id: visitante.id,
+          visitor_key: visitorKey,
+          autor: "visitante",
+          mensagem: mensagemHumana,
+          lida_admin: false,
+          lida_visitante: true,
+        });
+        await sbPub.from("chat_conversas").update({
+          ultimo_autor: "visitante",
+          ultima_mensagem: mensagemHumana,
+          ultima_mensagem_em: new Date().toISOString(),
+          status: "aberta",
+          atualizado_em: new Date().toISOString(),
+        }).eq("id", conversaId);
+      }
+
+      return { visitante_id: visitante.id, sessao_publica_id: sessaoPublicaId, tipo: tipoPublico };
+    }
+
     if (acao === "registrar_evento") {
       const sessaoEvento = await carregarOuCriarSessaoLeve();
       const evento = body?.evento ?? {};
@@ -230,7 +381,8 @@ Deno.serve(async (req) => {
         fala: String(evento?.tipo ?? "evento_cardapio"),
         contexto: { evento },
       });
-      return new Response(JSON.stringify({ ok: true, sessao_id: sessaoEvento.id }), {
+      const publico = await sincronizarEventoPublico(sessaoEvento, evento);
+      return new Response(JSON.stringify({ ok: true, sessao_id: sessaoEvento.id, publico }), {
         headers: { ...cors, "Content-Type": "application/json" },
       });
     }

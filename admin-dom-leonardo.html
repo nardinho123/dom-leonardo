@@ -942,7 +942,10 @@
       const [selectedVisitor, setSelectedVisitor] = useState(null);
       const [adminChatText, setAdminChatText] = useState('');
       const [soundEnabled, setSoundEnabled] = useState(false);
+      const [customSoundName, setCustomSoundName] = useState(() => localStorage.getItem('admin_custom_sound_name') || '');
       const audioCtxRef = useRef(null);
+      const customAudioRef = useRef(null);
+      const soundInputRef = useRef(null);
       const garcomAlertLastId = useRef(Number(localStorage.getItem('garcom_alert_last_id') || 0));
       const garcomAlertsReady = useRef(false);
 
@@ -951,6 +954,14 @@
       function playOrderSound(force = false) {
         if (!force && !soundEnabled) return;
         try {
+          const customSound = localStorage.getItem('admin_custom_sound_data');
+          if (customSound) {
+            const audio = customAudioRef.current || new Audio(customSound);
+            customAudioRef.current = audio;
+            audio.currentTime = 0;
+            audio.play().catch(error => console.warn('Som importado bloqueado pelo navegador', error));
+            return;
+          }
           const Ctx = window.AudioContext || window.webkitAudioContext;
           if (!Ctx) return;
           const ctx = audioCtxRef.current || new Ctx();
@@ -979,6 +990,35 @@
         setSoundEnabled(true);
         playOrderSound(true);
         toast('Som dos pedidos e atendimentos ativado.');
+      }
+
+      function importarSomManual(file) {
+        if (!file) return;
+        if (!file.type.startsWith('audio/')) {
+          toast('Escolha um arquivo de audio.', 'error');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = String(reader.result || '');
+          localStorage.setItem('admin_custom_sound_data', dataUrl);
+          localStorage.setItem('admin_custom_sound_name', file.name);
+          customAudioRef.current = new Audio(dataUrl);
+          setCustomSoundName(file.name);
+          setSoundEnabled(true);
+          setTimeout(() => playOrderSound(true), 80);
+          toast(`Som importado: ${file.name}`);
+        };
+        reader.onerror = () => toast('Nao consegui ler esse audio.', 'error');
+        reader.readAsDataURL(file);
+      }
+
+      function limparSomManual() {
+        localStorage.removeItem('admin_custom_sound_data');
+        localStorage.removeItem('admin_custom_sound_name');
+        customAudioRef.current = null;
+        setCustomSoundName('');
+        toast('Som personalizado removido. Voltei para o alerta padrao.');
       }
 
       function formatGarcomAlert(alerta) {
@@ -1539,8 +1579,17 @@
                 <p>Monte o cardápio na mesma ordem que o cliente vê.</p>
               </div>
               <div className="actions">
-                <a className="btn" href="cardapio-cliente.html" target="_blank">Abrir cardápio</a>
+                <a className="btn" href="garcom/" target="_blank">Abrir Garçom</a>
                 <button className={`btn ${soundEnabled ? 'btn-primary' : ''}`} onClick={enableOrderSound}>{soundEnabled ? 'Som ativo' : 'Ativar som'}</button>
+                <input
+                  ref={soundInputRef}
+                  type="file"
+                  accept="audio/*"
+                  style={{display:'none'}}
+                  onChange={e => importarSomManual(e.target.files?.[0])}
+                />
+                <button className="btn" onClick={() => soundInputRef.current?.click()}>{customSoundName ? `Som: ${customSoundName}` : 'Importar som'}</button>
+                {customSoundName && <button className="btn btn-small" onClick={limparSomManual}>Som padrão</button>}
                 <button className="btn" onClick={loadAll}>Atualizar dados</button>
                 <button className="btn btn-danger" onClick={logout}>Sair</button>
               </div>

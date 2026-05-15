@@ -1039,7 +1039,21 @@ async function acaoGarcom(payload) {
 async function registrarEventoCardapio(tipo, payload = {}) {
   return acaoGarcom({
     acao: 'registrar_evento',
-    evento: { tipo, ...payload, at: new Date().toISOString() },
+    evento: {
+      tipo,
+      ...payload,
+      at: new Date().toISOString(),
+      url_atual: location.href,
+      url_inicial: location.origin + location.pathname,
+      referrer: document.referrer || '',
+      user_agent: navigator.userAgent,
+      browser_info: {
+        platform: navigator.platform,
+        language: navigator.language,
+        viewport: `${window.innerWidth}x${window.innerHeight}`,
+        touch: 'ontouchstart' in window,
+      },
+    },
   });
 }
 
@@ -1228,6 +1242,9 @@ function App() {
 
   useEffect(() => {
     let vivo = true;
+    registrarEventoCardapio('page_view', {
+      descricao: 'Cliente entrou no cardapio do Marco',
+    }).catch(() => {});
     listarPratos()
       .then((dados) => {
         if (!vivo) return;
