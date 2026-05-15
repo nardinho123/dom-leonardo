@@ -287,24 +287,118 @@ Deno.serve(async (req) => {
     }
 
     if (acao === "listar_pratos") {
-      const { data, error } = await sbPub.from("pratos")
-        .select("id, nome, descricao_curta, descricao_completa, preco_base, preco_promocional, foto_url, badge_destaque, ordem, ativo")
+      const { data: pratosRaw, error } = await sbPub.from("pratos")
+        .select("id, categoria_id, nome, descricao_curta, descricao_completa, preco_base, preco_promocional, foto_url, badge_destaque, ordem, ativo")
         .eq("ativo", true)
         .order("ordem", { ascending: true });
       if (error) throw error;
+
+      const pratoIds = (pratosRaw ?? []).map((p: any) => p.id);
+
+      const { data: categoriasRaw } = await sbPub.from("categorias")
+        .select("id, nome, slug, descricao, icone, ordem, ativo")
+        .eq("ativo", true)
+        .order("ordem", { ascending: true });
+
+      let tamanhosRaw: any[] = [];
+      let gruposRaw: any[] = [];
+      let opcionaisRaw: any[] = [];
+
+      if (pratoIds.length) {
+        const tamanhosResp = await sbPub.from("pratos_tamanhos")
+          .select("id, prato_id, nome, peso_g, preco_delta, ordem, padrao, ativo")
+          .in("prato_id", pratoIds)
+          .eq("ativo", true)
+          .order("ordem", { ascending: true });
+        if (tamanhosResp.error) throw tamanhosResp.error;
+        tamanhosRaw = tamanhosResp.data ?? [];
+
+        const gruposResp = await sbPub.from("grupos_opcionais")
+          .select("id, prato_id, nome, descricao, tipo, min_escolhas, max_escolhas, ordem, ativo")
+          .in("prato_id", pratoIds)
+          .eq("ativo", true)
+          .order("ordem", { ascending: true });
+        if (gruposResp.error) throw gruposResp.error;
+        gruposRaw = gruposResp.data ?? [];
+
+        const grupoIds = gruposRaw.map((g: any) => g.id);
+        if (grupoIds.length) {
+          const opcionaisResp = await sbPub.from("opcionais")
+            .select("id, grupo_id, nome, descricao, preco_delta, foto_url, ordem, ativo")
+            .in("grupo_id", grupoIds)
+            .eq("ativo", true)
+            .order("ordem", { ascending: true });
+          if (opcionaisResp.error) throw opcionaisResp.error;
+          opcionaisRaw = opcionaisResp.data ?? [];
+        }
+      }
+
       const { data: config } = await sbPub.from("configuracoes")
-        .select("garcom_entrega_texto, garcom_entrega_botao_texto, garcom_tamanhos_texto, garcom_fome_botao_texto")
+        .select("taxa_entrega_padrao, pedido_minimo, tempo_entrega_min, tempo_entrega_max, garcom_entrega_texto, garcom_entrega_botao_texto, garcom_tamanhos_texto, garcom_fome_botao_texto")
         .eq("id", 1)
         .maybeSingle();
-      return new Response(JSON.stringify({
-        pratos: (data ?? []).map((p: any) => ({
-          id: p.id,
-          nome: p.nome,
-          descricao: p.descricao_curta ?? p.descricao_completa ?? "",
-          preco: parseFloat(p.preco_promocional ?? p.preco_base ?? 0),
-          foto: p.foto_url,
-          badge: p.badge_destaque,
+
+      const groupByKey = (items: any[], key: string) => items.reduce((acc: Record<string, any[]>, item: any) => {
+        const value = String(item[key]);
+        if (!acc[value]) acc[value] = [];
+        acc[value].push(item);
+        return acc;
+      }, {});
+
+      const tamanhosByPrato = groupByKey(tamanhosRaw, "prato_id");
+      const gruposByPrato = groupByKey(gruposRaw, "prato_id");
+      const opcionaisByGrupo = groupByKey(opcionaisRaw, "grupo_id");
+
+      const pratos = (pratosRaw ?? []).map((p: any) => ({
+        id: p.id,
+        categoria_id: p.categoria_id,
+        nome: p.nome,
+        descricao: p.descricao_curta ?? p.descricao_completa ?? "",
+        descricao_completa: p.descricao_completa ?? p.descricao_curta ?? "",
+        preco: parseFloat(p.preco_promocional ?? p.preco_base ?? 0),
+        preco_base: parseFloat(p.preco_base ?? 0),
+        foto: p.foto_url,
+        badge: p.badge_destaque,
+        ordem: p.ordem ?? 0,
+        tamanhos: (tamanhosByPrato[p.id] ?? []).map((t: any) => ({
+          id: t.id,
+          nome: t.nome,
+          peso_g: t.peso_g,
+          preco_delta: parseFloat(t.preco_delta ?? 0),
+          ordem: t.ordem ?? 0,
+          padrao: !!t.padrao,
+          ativo: t.ativo !== false,
         })),
+        grupos: (gruposByPrato[p.id] ?? []).map((g: any) => ({
+          id: g.id,
+          nome: g.nome,
+          descricao: g.descricao,
+          tipo: g.tipo,
+          min_escolhas: Number(g.min_escolhas ?? 0),
+          max_escolhas: Number(g.max_escolhas ?? 1),
+          ordem: g.ordem ?? 0,
+          ativo: g.ativo !== false,
+          opcionais: (opcionaisByGrupo[g.id] ?? []).map((o: any) => ({
+            id: o.id,
+            nome: o.nome,
+            descricao: o.descricao,
+            preco_delta: parseFloat(o.preco_delta ?? 0),
+            foto: o.foto_url,
+            ordem: o.ordem ?? 0,
+            ativo: o.ativo !== false,
+          })),
+        })),
+      }));
+
+      return new Response(JSON.stringify({
+        categorias: categoriasRaw ?? [],
+        pratos,
+        config: {
+          taxa_entrega_padrao: parseFloat(config?.taxa_entrega_padrao ?? 0),
+          pedido_minimo: parseFloat(config?.pedido_minimo ?? 0),
+          tempo_entrega_min: Number(config?.tempo_entrega_min ?? 20),
+          tempo_entrega_max: Number(config?.tempo_entrega_max ?? 30),
+        },
         microcopy: {
           entrega_texto: config?.garcom_entrega_texto ?? "tempo em media para chegar na sua casa 20 a 30 min",
           entrega_botao_texto: config?.garcom_entrega_botao_texto ?? "quero saber o tempo exato",

@@ -1567,6 +1567,7 @@
                 onDeleteCategory={deleteCategory}
                 onAddDish={categoria => setModal({ type: 'prato', item: blankDish(categoria.id, data.pratos.length) })}
                 onEditDish={prato => setModal({ type: 'prato', item: dishToForm(prato, data) })}
+                onDuplicateDish={prato => setModal({ type: 'prato', item: duplicateDishToForm(prato, data.pratos.length) })}
                 onDeleteDish={deleteDish}
                 onToggleDish={toggleDish}
               />
@@ -1652,6 +1653,42 @@
         tamanhos: tamanhos.length ? tamanhos : [{ nome: 'Individual', peso_g: '', preco_delta: 0, padrao: true, ativo: true }],
         grupos,
         cupons,
+      };
+    }
+
+    function duplicateDishToForm(prato, ordem) {
+      const clone = JSON.parse(JSON.stringify(prato));
+      return {
+        ...clone,
+        id: null,
+        nome: `${clone.nome || 'Item'} (copia)`,
+        slug: '',
+        fotoFile: null,
+        ordem,
+        ativo: true,
+        tamanhos: (clone.tamanhos || []).map(t => ({
+          ...t,
+          id: null,
+          prato_id: null,
+        })),
+        grupos: (clone.grupos || []).map(g => ({
+          ...g,
+          id: null,
+          prato_id: null,
+          opcionais: (g.opcionais || []).map(o => ({
+            ...o,
+            id: null,
+            grupo_id: null,
+            localId: uuid(),
+            fotoFile: null,
+          })),
+        })),
+        cupons: (clone.cupons || []).map(c => ({
+          cupom_id: c.cupom_id,
+          inicio_em: c.inicio_em ? String(c.inicio_em).slice(0, 16) : '',
+          fim_em: c.fim_em ? String(c.fim_em).slice(0, 16) : '',
+          ativo: c.ativo !== false,
+        })),
       };
     }
 
@@ -1851,7 +1888,7 @@
       );
     }
 
-    function CardapioBuilder({ nested, data, onAddCategory, onEditCategory, onDeleteCategory, onAddDish, onEditDish, onDeleteDish, onToggleDish }) {
+    function CardapioBuilder({ nested, data, onAddCategory, onEditCategory, onDeleteCategory, onAddDish, onEditDish, onDuplicateDish, onDeleteDish, onToggleDish }) {
       if (!nested.length) {
         return (
           <div className="empty-builder">
@@ -1899,6 +1936,7 @@
                     </div>
                     <div className="actions">
                       <button className="btn btn-small" onClick={() => onEditDish(prato)}>Editar</button>
+                      <button className="btn btn-small" onClick={() => onDuplicateDish(prato)}>Duplicar</button>
                       <button className="btn btn-small" onClick={() => onToggleDish(prato)}>{prato.ativo ? 'Pausar' : 'Ativar'}</button>
                       <button className="btn btn-small btn-danger" onClick={() => onDeleteDish(prato)}>Excluir</button>
                     </div>
