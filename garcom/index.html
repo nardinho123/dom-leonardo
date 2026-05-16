@@ -905,7 +905,8 @@ const { useState, useEffect, useRef, useCallback } = React;
 // ============================================================================
 // DADOS MOCKADOS (depois virão do Supabase via Edge Function)
 // ============================================================================
-const PRATOS = [
+const PRATOS = [];
+/*
   {
     id: '874571e0-2af2-4ab9-9f9d-68366fa80b42',
     nome: 'Risoto Cremoso de Alcatra na Manteiga',
@@ -938,7 +939,7 @@ const PRATOS = [
     foto: 'https://jewamqbdonudiapxbzay.supabase.co/storage/v1/object/public/cardapio/pratos/1f1924da-89a4-491d-9cec-a5e8965b41d4-1778196851559.webp',
     badge: null
   }
-];
+*/
 
 // Frases de RONDA/IDLE (UI local, antes do chat abrir)
 const FALAS_RONDA = ['Passando...', 'Tô por aqui.', 'Tudo certo?', 'Tô de olho 😉'];
@@ -1002,7 +1003,6 @@ async function listarPratos() {
     cache: 'no-store',
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 'no-store',
       'apikey': SUPABASE_ANON_KEY,
       'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
     },
@@ -1258,8 +1258,8 @@ function App() {
       })
       .catch((err) => {
         if (!vivo) return;
-        setPratos(prev => prev.length ? prev : PRATOS);
-        setMenuErro('Nao consegui carregar o cardapio do painel. Mostrei o cardapio salvo por enquanto.');
+        setPratos([]);
+        setMenuErro('Nao consegui carregar o cardapio do painel agora. Recarregue a pagina em alguns segundos.');
         console.error(err);
       })
       .finally(() => {
@@ -2032,12 +2032,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 
 <script>
-  // Service Worker (PWA)
+  // Limpa service workers antigos do Garcom para o cardapio sempre vir do painel.
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('service-worker.js').then(reg => {
-        reg.update().catch(() => {});
-        if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(reg => {
+          if (reg.scope.includes('/garcom/')) reg.unregister().catch(() => {});
+        });
       }).catch(() => {});
     });
   }
