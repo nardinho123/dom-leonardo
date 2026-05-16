@@ -997,10 +997,12 @@ function setSessaoId(id) { if (id) localStorage.setItem('garcom_sessao_id', id);
 function limparSessao() { localStorage.removeItem('garcom_sessao_id'); }
 
 async function listarPratos() {
-  const r = await fetch(GARCOM_RESPONDER_URL, {
+  const r = await fetch(`${GARCOM_RESPONDER_URL}?_=${Date.now()}`, {
     method: 'POST',
+    cache: 'no-store',
     headers: {
       'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
       'apikey': SUPABASE_ANON_KEY,
       'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
     },
@@ -1159,7 +1161,7 @@ function App() {
   const [carrinhoPulse, setCarrinhoPulse] = useState(false);
   const [carrinhoOpen, setCarrinhoOpen] = useState(false);
   const [clienteNome, setClienteNome] = useState(null);
-  const [pratos, setPratos] = useState(PRATOS);
+  const [pratos, setPratos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [microcopy, setMicrocopy] = useState(DEFAULT_MICROCOPY);
   const [deliveryConfig, setDeliveryConfig] = useState({ taxa_entrega_padrao: 0, pedido_minimo: 0, tempo_entrega_min: 20, tempo_entrega_max: 30 });
@@ -1256,6 +1258,7 @@ function App() {
       })
       .catch((err) => {
         if (!vivo) return;
+        setPratos(prev => prev.length ? prev : PRATOS);
         setMenuErro('Nao consegui carregar o cardapio do painel. Mostrei o cardapio salvo por enquanto.');
         console.error(err);
       })
@@ -2032,7 +2035,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   // Service Worker (PWA)
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('service-worker.js').catch(() => {});
+      navigator.serviceWorker.register('service-worker.js').then(reg => {
+        reg.update().catch(() => {});
+        if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+      }).catch(() => {});
     });
   }
 </script>
