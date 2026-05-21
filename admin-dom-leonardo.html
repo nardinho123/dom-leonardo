@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -551,85 +551,6 @@
       text-align: center;
       padding: 34px 18px;
     }
-    .funnel {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-    .funnel-step {
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 14px;
-    }
-    .funnel-step span {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 850;
-      text-transform: uppercase;
-    }
-    .funnel-step strong { display:block; font-size: 28px; margin-top: 6px; }
-    .visitor-layout { display: grid; grid-template-columns: 360px minmax(0,1fr); gap: 14px; }
-    .visitor-list { display: grid; gap: 8px; max-height: 620px; overflow: auto; }
-    .visitor-card {
-      width: 100%;
-      text-align: left;
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 12px;
-      display: grid;
-      gap: 5px;
-    }
-    .visitor-card.active { border-color: var(--red); box-shadow: 0 0 0 3px rgba(234,29,44,.08); }
-    .visitor-card.temp-quente { border-left: 4px solid #EA1D2C; }
-    .visitor-card.temp-morno { border-left: 4px solid #F2994A; }
-    .visitor-card.temp-frio { border-left: 4px solid #B0B0B0; }
-    .visitor-card-row { display: flex; align-items: center; gap: 8px; }
-    .visitor-card-row.small { font-size: 12px; }
-    .visitor-card-icons { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 14px; }
-    .visitor-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .temp-dot { width: 10px; height: 10px; border-radius: 50%; background: #bbb; display: inline-block; flex-shrink: 0; }
-    .temp-dot.temp-quente { background: #EA1D2C; box-shadow: 0 0 0 0 rgba(234,29,44,.6); }
-    .temp-dot.temp-morno { background: #F2994A; }
-    .temp-dot.temp-frio { background: #B0B0B0; }
-    .temp-dot.online.temp-quente { animation: pulseRed 1.6s infinite; }
-    @keyframes pulseRed { 0%{box-shadow:0 0 0 0 rgba(234,29,44,.55)} 70%{box-shadow:0 0 0 8px rgba(234,29,44,0)} 100%{box-shadow:0 0 0 0 rgba(234,29,44,0)} }
-    .score-badge { padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 900; flex-shrink: 0; }
-    .score-badge.temp-quente { background: rgba(234,29,44,.12); color: #EA1D2C; }
-    .score-badge.temp-morno { background: rgba(242,153,74,.16); color: #C76A1F; }
-    .score-badge.temp-frio { background: #f0f0f0; color: #666; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #bbb; display:inline-block; margin-right: 6px; }
-    .dot.on { background: var(--green); }
-    .admin-chat { background:#fff; border:1px solid var(--line); border-radius:10px; min-height:520px; display:grid; grid-template-rows:auto auto 1fr auto; overflow:hidden; }
-    .admin-chat-head { padding:14px; border-bottom:1px solid var(--line); }
-    .profile-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
-    .score-big { display: flex; flex-direction: column; align-items: center; padding: 8px 14px; border-radius: 12px; line-height: 1; gap: 4px; }
-    .score-big .score-num { font-size: 28px; font-weight: 950; }
-    .score-big .score-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
-    .score-big.temp-quente { background: rgba(234,29,44,.08); color: #EA1D2C; }
-    .score-big.temp-morno { background: rgba(242,153,74,.12); color: #C76A1F; }
-    .score-big.temp-frio { background: #f4f4f4; color: #666; }
-    .profile-extra { padding: 12px 14px; border-bottom: 1px solid var(--line); display: grid; gap: 12px; max-height: 280px; overflow: auto; background: #fafafa; }
-    .profile-block-title { font-size: 11px; font-weight: 850; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
-    .profile-pratos, .profile-cupons { display: flex; gap: 6px; flex-wrap: wrap; }
-    .profile-prato { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; font-size: 12px; }
-    .profile-cupom { background: rgba(155,89,229,.12); color: var(--purple); border-radius: 8px; padding: 4px 8px; font-size: 12px; font-weight: 800; }
-    .profile-timeline { display: grid; gap: 4px; }
-    .timeline-row { display: grid; grid-template-columns: 76px 1fr; gap: 8px; font-size: 12px; padding: 4px 0; border-bottom: 1px dashed #ececec; }
-    .timeline-row:last-child { border-bottom: 0; }
-    .timeline-when { color: var(--muted); font-weight: 700; }
-    .timeline-text { color: var(--text); }
-    .admin-chat-body { padding:14px; display:grid; align-content:start; gap:8px; overflow:auto; background:#f7f7f7; }
-    .admin-msg { max-width:80%; padding:10px 12px; border-radius:14px; background:#fff; border:1px solid var(--line); }
-    .admin-msg.admin { justify-self:end; background:var(--red); color:#fff; border-color:var(--red); }
-    .admin-chat-input { display:grid; grid-template-columns:1fr auto; gap:8px; padding:12px; border-top:1px solid var(--line); }
-    @media (max-width: 900px) {
-      .funnel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .visitor-layout { grid-template-columns: 1fr; }
-    }
     @media (max-width: 940px) {
       .app-shell { grid-template-columns: 1fr; }
       .sidebar {
@@ -670,13 +591,10 @@
 
     const SUPABASE_URL = 'https://jewamqbdonudiapxbzay.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY';
-    const GARCOM_RESPONDER_URL = SUPABASE_URL + '/functions/v1/garcom-responder';
     const BUCKET = 'cardapio';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const NAV = [
-      { id: 'desempenho', icon: '>>', label: 'Desempenho' },
-      { id: 'bot', icon: 'IA', label: 'Bot' },
       { id: 'painel', icon: '📊', label: 'Painel' },
       { id: 'cardapio', icon: '🍝', label: 'Cardápio' },
       { id: 'pedidos', icon: '🧾', label: 'Pedidos' },
@@ -722,6 +640,8 @@
     const fmtDate = (value) => value ? new Date(value).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '-';
     const slugify = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     const toNum = (value) => value === '' || value === null || value === undefined ? null : Number(value);
+    const textToList = (value) => String(value || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    const listToText = (value) => Array.isArray(value) ? value.join('\n') : String(value || '');
     const uuid = () => {
       if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
       return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -933,21 +853,15 @@
       const [data, setData] = useState({
         categorias: [], pratos: [], tamanhos: [], grupos: [], opcionais: [], pratoCupons: [],
         cupons: [], pedidos: [], clientes: [], config: null,
-        desempenho: null, visitantes: [], chatMensagens: [],
-        chatbotConfig: null, chatbotRegras: [],
       });
       const [modal, setModal] = useState(null);
       const [statusFilter, setStatusFilter] = useState('');
       const [orderDetail, setOrderDetail] = useState(null);
-      const [selectedVisitor, setSelectedVisitor] = useState(null);
-      const [adminChatText, setAdminChatText] = useState('');
       const [soundEnabled, setSoundEnabled] = useState(false);
       const [customSoundName, setCustomSoundName] = useState(() => localStorage.getItem('admin_custom_sound_name') || '');
       const audioCtxRef = useRef(null);
       const customAudioRef = useRef(null);
       const soundInputRef = useRef(null);
-      const garcomAlertLastId = useRef(Number(localStorage.getItem('garcom_alert_last_id') || 0));
-      const garcomAlertsReady = useRef(false);
 
       const toast = (message, type = 'ok') => setToastState({ message, type });
 
@@ -989,7 +903,7 @@
       function enableOrderSound() {
         setSoundEnabled(true);
         playOrderSound(true);
-        toast('Som dos pedidos e atendimentos ativado.');
+        toast('Som dos pedidos ativado.');
       }
 
       function importarSomManual(file) {
@@ -1021,64 +935,6 @@
         toast('Som personalizado removido. Voltei para o alerta padrao.');
       }
 
-      function formatGarcomAlert(alerta) {
-        const ctx = alerta?.contexto || {};
-        const tipo = alerta?.tipo;
-        if (tipo === 'chat_aberto') return 'Cliente abriu o chat do Marco.';
-        if (tipo === 'chat_assobio') return 'Cliente chamou/assobiou no Marco.';
-        if (tipo === 'cardapio_2min') return 'Cliente ficou mais de 2 minutos no cardápio.';
-        if (tipo === 'cliente_quer_fechar') return 'Cliente quer fechar pedido pelo atendimento.';
-        if (tipo === 'mensagem_cliente') {
-          const msg = String(ctx.mensagem || '').trim();
-          return msg ? `Mensagem no Marco: "${msg.slice(0, 90)}${msg.length > 90 ? '...' : ''}"` : 'Cliente mandou mensagem no Marco.';
-        }
-        return 'Novo movimento no atendimento do Marco.';
-      }
-
-      async function buscarAlertasGarcom({ inicial = false } = {}) {
-        if (!session?.access_token) return;
-        try {
-          const tinhaCursor = garcomAlertLastId.current > 0;
-          const response = await fetch(GARCOM_RESPONDER_URL, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': SUPABASE_KEY,
-              'Authorization': 'Bearer ' + session.access_token,
-            },
-            body: JSON.stringify({
-              acao: 'listar_alertas_humanos',
-              since_id: garcomAlertLastId.current || 0,
-            }),
-          });
-          if (!response.ok) return;
-          const payload = await response.json();
-          const alertas = Array.isArray(payload?.alertas) ? payload.alertas : [];
-          if (!alertas.length) {
-            garcomAlertsReady.current = true;
-            return;
-          }
-
-          const maiorId = Math.max(...alertas.map(a => Number(a.id || 0)));
-          garcomAlertLastId.current = maiorId;
-          localStorage.setItem('garcom_alert_last_id', String(maiorId));
-
-          if (inicial && !garcomAlertsReady.current && !tinhaCursor) {
-            garcomAlertsReady.current = true;
-            return;
-          }
-
-          garcomAlertsReady.current = true;
-          alertas.forEach(alerta => {
-            toast(formatGarcomAlert(alerta));
-            playOrderSound();
-          });
-          await loadDesempenho();
-        } catch (error) {
-          console.warn('Falha ao buscar alertas do Marco', error);
-        }
-      }
-
       useEffect(() => {
         sb.auth.getSession().then(({ data }) => {
           setSession(data.session);
@@ -1108,21 +964,6 @@
         return () => { sb.removeChannel(channel); };
       }, [session, statusFilter, soundEnabled]);
 
-      useEffect(() => {
-        if (!session) return;
-        buscarAlertasGarcom({ inicial: true });
-        const timer = setInterval(() => buscarAlertasGarcom(), 8000);
-        return () => clearInterval(timer);
-      }, [session, soundEnabled]);
-
-      useEffect(() => {
-        if (!session) return;
-        const channel = sb.channel('admin-desempenho')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_mensagens' }, () => loadDesempenho())
-          .subscribe();
-        return () => { sb.removeChannel(channel); };
-      }, [session, selectedVisitor?.id]);
-
       async function run(label, promise) {
         const { data, error } = await promise;
         if (error) throw new Error(`${label}: ${error.message}`);
@@ -1132,7 +973,7 @@
       async function loadAll() {
         setLoading(true);
         try {
-          const [categorias, pratos, tamanhos, grupos, opcionais, pratoCupons, cupons, clientes, config, chatbotConfig, chatbotRegras] = await Promise.all([
+          const [categorias, pratos, tamanhos, grupos, opcionais, pratoCupons, cupons, clientes, config] = await Promise.all([
             run('categorias', sb.from('categorias').select('*').order('ordem').order('nome')),
             run('pratos', sb.from('pratos').select('*').order('ordem').order('nome')),
             run('tamanhos', sb.from('pratos_tamanhos').select('*').order('ordem').order('nome')),
@@ -1142,12 +983,9 @@
             run('cupons', sb.from('cupons').select('*').order('criado_em', { ascending: false })),
             run('clientes', sb.from('clientes').select('*').order('criado_em', { ascending: false }).limit(200)),
             run('config', sb.from('configuracoes').select('*').eq('id', 1).single()),
-            run('chatbot_config', sb.from('chatbot_config').select('*').eq('id', 1).single()),
-            run('chatbot_regras', sb.from('chatbot_regras').select('*').order('ordem').order('criado_em')),
           ]);
-          setData(prev => ({ ...prev, categorias, pratos, tamanhos, grupos, opcionais, pratoCupons, cupons, clientes, config, chatbotConfig, chatbotRegras }));
+          setData(prev => ({ ...prev, categorias, pratos, tamanhos, grupos, opcionais, pratoCupons, cupons, clientes, config }));
           await loadPedidos();
-          await loadDesempenho();
         } catch (error) {
           toast(error.message, 'error');
         } finally {
@@ -1162,76 +1000,6 @@
             p_limite: 100,
           }));
           setData(prev => ({ ...prev, pedidos }));
-        } catch (error) {
-          toast(error.message, 'error');
-        }
-      }
-
-      async function loadDesempenho() {
-        try {
-          const [desempenhoRes, visitantesRes] = await Promise.all([
-            sb.rpc('cardapio_admin_desempenho', { p_dias: 1 }),
-            sb.rpc('cardapio_admin_visitantes_online', { p_minutos: 10 }),
-          ]);
-          if (desempenhoRes.error) throw desempenhoRes.error;
-          if (visitantesRes.error) throw visitantesRes.error;
-
-          let chatMensagens = null;
-          let perfil = null;
-          if (selectedVisitor?.id) {
-            const [chatRes, perfilRes] = await Promise.all([
-              sb.rpc('cardapio_admin_mensagens', { p_visitante_id: selectedVisitor.id }),
-              sb.rpc('cardapio_admin_perfil_visitante', { p_visitante_id: selectedVisitor.id }),
-            ]);
-            if (chatRes.error) throw chatRes.error;
-            if (perfilRes.error) throw perfilRes.error;
-            chatMensagens = Array.isArray(chatRes.data) ? chatRes.data : [];
-            perfil = perfilRes.data || null;
-          }
-
-          setData(prev => ({
-            ...prev,
-            desempenho: desempenhoRes.data || {},
-            visitantes: Array.isArray(visitantesRes.data) ? visitantesRes.data : [],
-            ...(chatMensagens ? { chatMensagens } : {}),
-            ...(perfil ? { perfil } : {}),
-          }));
-        } catch (error) {
-          if (active === 'desempenho') toast(error.message, 'error');
-        }
-      }
-
-      async function openVisitor(visitor) {
-        setSelectedVisitor(visitor);
-        try {
-          const [chatRes, perfilRes] = await Promise.all([
-            sb.rpc('cardapio_admin_mensagens', { p_visitante_id: visitor.id }),
-            sb.rpc('cardapio_admin_perfil_visitante', { p_visitante_id: visitor.id }),
-          ]);
-          if (chatRes.error) throw chatRes.error;
-          if (perfilRes.error) throw perfilRes.error;
-          setData(prev => ({
-            ...prev,
-            chatMensagens: Array.isArray(chatRes.data) ? chatRes.data : [],
-            perfil: perfilRes.data || null,
-          }));
-          await loadDesempenho();
-        } catch (error) {
-          toast(error.message, 'error');
-        }
-      }
-
-      async function sendAdminMessage() {
-        const msg = adminChatText.trim();
-        if (!msg || !selectedVisitor) return;
-        try {
-          const { error } = await sb.rpc('cardapio_admin_enviar_mensagem', {
-            p_visitante_id: selectedVisitor.id,
-            p_mensagem: msg,
-          });
-          if (error) throw error;
-          setAdminChatText('');
-          await openVisitor(selectedVisitor);
         } catch (error) {
           toast(error.message, 'error');
         }
@@ -1466,6 +1234,8 @@
             garcom_entrega_botao_texto: form.garcom_entrega_botao_texto || 'quero saber o tempo exato',
             garcom_tamanhos_texto: form.garcom_tamanhos_texto || '400g individual | 800g serve 2',
             garcom_fome_botao_texto: form.garcom_fome_botao_texto || 'quero saber se vai matar minha fome',
+            garcom_chat_saudacoes: textToList(form.garcom_chat_saudacoes_texto).length ? textToList(form.garcom_chat_saudacoes_texto) : ['Ciao! Que bom te ver por aqui.', 'Boa noite! Fica a vontade para olhar com calma.'],
+            garcom_chat_mensagens_auto: textToList(form.garcom_chat_mensagens_auto_texto).length ? textToList(form.garcom_chat_mensagens_auto_texto) : ['Se algum prato chamar sua atencao, abre ele e escolhe tamanho e adicionais por ali.'],
             horario_abertura: form.horario_abertura,
             horario_fechamento: form.horario_fechamento,
             aviso_topo: form.aviso_topo || null,
@@ -1474,40 +1244,6 @@
           const { error } = await sb.from('configuracoes').update(payload).eq('id', 1);
           if (error) throw error;
           toast('Configurações salvas.');
-          await loadAll();
-        } catch (error) {
-          toast(error.message, 'error');
-        }
-      }
-
-      async function saveBot(form) {
-        try {
-          const payload = {
-            id: 1,
-            ativo: !!form.ativo,
-            nome_bot: form.nome_bot || 'Garcom do Dom',
-            modelo: form.modelo || 'gpt-4o-mini',
-            temperatura: Math.max(0, Math.min(2, Number(form.temperatura ?? 0.4))),
-            prompt_base: form.prompt_base || '',
-          };
-          const { error } = await sb.from('chatbot_config').upsert(payload, { onConflict: 'id' });
-          if (error) throw error;
-
-          const { error: delError } = await sb.from('chatbot_regras').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-          if (delError) throw delError;
-          const regras = (form.regras || [])
-            .map((regra, index) => ({
-              gatilho: regra.gatilho?.trim(),
-              resposta: regra.resposta?.trim(),
-              ativo: regra.ativo !== false,
-              ordem: index,
-            }))
-            .filter(regra => regra.gatilho && regra.resposta);
-          if (regras.length) {
-            const { error: insertError } = await sb.from('chatbot_regras').insert(regras);
-            if (insertError) throw insertError;
-          }
-          toast('Bot salvo.');
           await loadAll();
         } catch (error) {
           toast(error.message, 'error');
@@ -1596,17 +1332,6 @@
             </div>
 
             {active === 'painel' && <Painel stats={stats} data={data} setActive={setActive} />}
-            {active === 'desempenho' && (
-              <Desempenho
-                data={data}
-                selectedVisitor={selectedVisitor}
-                onSelect={openVisitor}
-                chatText={adminChatText}
-                setChatText={setAdminChatText}
-                sendMessage={sendAdminMessage}
-                reload={loadDesempenho}
-              />
-            )}
             {active === 'cardapio' && (
               <CardapioBuilder
                 nested={nested}
@@ -1624,7 +1349,6 @@
             {active === 'pedidos' && <Pedidos pedidos={data.pedidos} statusFilter={statusFilter} setStatusFilter={setStatusFilter} reload={loadPedidos} openOrder={openOrder} updateStatus={updateStatus} />}
             {active === 'clientes' && <Clientes clientes={data.clientes} />}
             {active === 'cupons' && <Cupons cupons={data.cupons} onNew={() => setModal({ type: 'cupom', item: null })} onEdit={item => setModal({ type: 'cupom', item })} onSave={saveCupom} reload={loadAll} toast={toast} />}
-            {active === 'bot' && <BotScreen config={data.chatbotConfig} regras={data.chatbotRegras} onSave={saveBot} />}
             {active === 'config' && <ConfigScreen config={data.config} onSave={saveConfig} />}
           </main>
 
@@ -1768,170 +1492,6 @@
               <p className="muted">Pratos/adicionais: 800×600. Logo: 400×400. Capa: 1600×368.</p>
               <p>O admin comprime e sobe no Supabase Storage automaticamente.</p>
             </div>
-          </div>
-        </div>
-      );
-    }
-
-    function Desempenho({ data, selectedVisitor, onSelect, chatText, setChatText, sendMessage, reload }) {
-      const desempenho = data.desempenho || {};
-      const visitantes = data.visitantes || [];
-      const mensagens = data.chatMensagens || [];
-      const perfil = data.perfil || null;
-      const pct = value => `${Number(value || 0).toFixed(1).replace('.', ',')}%`;
-      const shortKey = value => String(value || '').slice(0, 8) || 'visitante';
-      const browserLabel = info => {
-        const payload = info || {};
-        return [payload.platform, payload.language].filter(Boolean).join(' | ') || 'navegador';
-      };
-      const visitorLabel = v => v?.nome || (v?.whatsapp ? `WhatsApp ${v.whatsapp}` : `Anônimo ${shortKey(v?.visitor_key)}`);
-      const formatSessao = seg => {
-        const s = Number(seg || 0);
-        if (s < 60) return `${s}s na sessão`;
-        const m = Math.floor(s / 60);
-        if (m < 60) return `${m}min na sessão`;
-        return `${Math.floor(m / 60)}h${m % 60 ? ` ${m % 60}min` : ''} na sessão`;
-      };
-      const tempIcon = t => t === 'quente' ? '🔥' : t === 'morno' ? '⚡' : '❄️';
-      const steps = [
-        { label: 'Entraram', value: desempenho.entraram || 0, rate: 'base' },
-        { label: 'Clicaram item', value: desempenho.clicaram_item || 0, rate: pct(desempenho.taxa_click) },
-        { label: 'Adicionaram', value: desempenho.adicionaram_carrinho || 0, rate: pct(desempenho.taxa_carrinho) },
-        { label: 'Chamaram o Dom', value: desempenho.chamaram_garcom || 0, rate: pct(desempenho.taxa_garcom) },
-        { label: 'Pedidos', value: desempenho.pedidos || 0, rate: pct(desempenho.taxa_pedido) },
-      ];
-
-      return (
-        <div>
-          <div className="panel-head" style={{marginBottom: 12}}>
-            <div>
-              <h3>Desempenho em tempo real</h3>
-              <p className="muted" style={{margin: 0}}>Temperatura do cliente, funil e chat direto.</p>
-            </div>
-            <button className="btn" onClick={reload}>Atualizar agora</button>
-          </div>
-
-          <div className="funnel">
-            {steps.map(step => (
-              <div className="funnel-step" key={step.label}>
-                <span>{step.label}</span>
-                <strong>{step.value}</strong>
-                <small className="muted">{step.rate === 'base' ? 'base do funil' : `conversao ${step.rate}`}</small>
-              </div>
-            ))}
-          </div>
-
-          <div className="visitor-layout">
-            <section className="card panel">
-              <div className="panel-head">
-                <h3>Quem está aqui</h3>
-                <span className="badge">{visitantes.length} visitantes</span>
-              </div>
-              <div className="visitor-list">
-                {!visitantes.length && <div className="empty">Ainda não tem visitantes recentes.</div>}
-                {visitantes.map(visitor => (
-                  <button
-                    type="button"
-                    key={visitor.id}
-                    className={`visitor-card temp-${visitor.temperatura || 'frio'} ${selectedVisitor?.id === visitor.id ? 'active' : ''}`}
-                    onClick={() => onSelect(visitor)}
-                  >
-                    <div className="visitor-card-row">
-                      <span className={`temp-dot temp-${visitor.temperatura || 'frio'} ${visitor.online ? 'online' : ''}`} title={visitor.temperatura || 'frio'}></span>
-                      <strong className="visitor-name">{visitorLabel(visitor)}</strong>
-                      <span className={`score-badge temp-${visitor.temperatura || 'frio'}`}>{visitor.score ?? 0}</span>
-                    </div>
-                    <div className="visitor-card-row muted small">
-                      {visitor.online ? formatSessao(visitor.tempo_sessao_seg) : `${visitor.minutos_inativo}min inativo`}
-                      {visitor.pratos_distintos > 0 && <span> · {visitor.pratos_distintos} {visitor.pratos_distintos === 1 ? 'prato' : 'pratos'}</span>}
-                    </div>
-                    <div className="visitor-card-icons">
-                      {visitor.add_to_cart && <span title="adicionou ao carrinho">🛒</span>}
-                      {visitor.open_cart && <span title="abriu sacola">📦</span>}
-                      {visitor.checkout_open && <span title="iniciou checkout">💳</span>}
-                      {visitor.chat_engajou && <span title="conversou no chat">💬</span>}
-                      {!!Number(visitor.nao_lidas_admin || 0) && <span className="badge purple">{visitor.nao_lidas_admin} novas</span>}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            <section className="admin-chat">
-              <div className="admin-chat-head">
-                {selectedVisitor
-                  ? <>
-                      <div className="profile-header">
-                        <div>
-                          <strong>{visitorLabel(selectedVisitor)}</strong>
-                          <div className="muted small">{browserLabel(selectedVisitor.browser_info)} · {selectedVisitor.online ? formatSessao(selectedVisitor.tempo_sessao_seg) : `${selectedVisitor.minutos_inativo}min inativo`}</div>
-                        </div>
-                        <div className={`score-big temp-${perfil?.temperatura || selectedVisitor.temperatura || 'frio'}`}>
-                          <span className="score-num">{perfil?.score ?? selectedVisitor.score ?? 0}</span>
-                          <span className="score-label">{tempIcon(perfil?.temperatura || selectedVisitor.temperatura)} {perfil?.temperatura || selectedVisitor.temperatura || 'frio'}</span>
-                        </div>
-                      </div>
-                    </>
-                  : <><strong>Selecione um visitante</strong><div className="muted">A timeline e o chat aparecem aqui.</div></>}
-              </div>
-
-              {selectedVisitor && perfil && (
-                <div className="profile-extra">
-                  {perfil.pratos_vistos?.length > 0 && (
-                    <div className="profile-block">
-                      <div className="profile-block-title">Pratos olhados</div>
-                      <div className="profile-pratos">
-                        {perfil.pratos_vistos.slice(0, 5).map(p => (
-                          <span className="profile-prato" key={p.prato_id}>{p.prato_nome} · <b>{p.visualizacoes}x</b></span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {perfil.cupons_vistos?.length > 0 && (
-                    <div className="profile-block">
-                      <div className="profile-block-title">Cupons olhados</div>
-                      <div className="profile-cupons">
-                        {perfil.cupons_vistos.map((c, i) => <span className="profile-cupom" key={i}>{c}</span>)}
-                      </div>
-                    </div>
-                  )}
-                  {perfil.timeline?.length > 0 && (
-                    <div className="profile-block">
-                      <div className="profile-block-title">Timeline ({perfil.timeline.length})</div>
-                      <div className="profile-timeline">
-                        {perfil.timeline.slice(0, 12).map(ev => (
-                          <div className="timeline-row" key={ev.id}>
-                            <span className="timeline-when">{ev.minutos_atras === 0 ? 'agora' : `há ${ev.minutos_atras}min`}</span>
-                            <span className="timeline-text">{ev.descricao}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="admin-chat-body">
-                {!selectedVisitor && <div className="empty">Quando alguém chamar o Dom no cardápio, aparece aqui.</div>}
-                {selectedVisitor && !mensagens.length && <div className="empty">Nenhuma mensagem ainda. Você pode puxar conversa por aqui.</div>}
-                {mensagens.map(msg => (
-                  <div key={msg.id} className={`admin-msg ${msg.autor === 'admin' ? 'admin' : ''}`}>
-                    <div>{msg.mensagem}</div>
-                    <small>{msg.autor} | {fmtDate(msg.criado_em)}</small>
-                  </div>
-                ))}
-              </div>
-              <div className="admin-chat-input">
-                <input
-                  value={chatText}
-                  disabled={!selectedVisitor}
-                  onChange={e => setChatText(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') sendMessage(); }}
-                  placeholder={selectedVisitor ? 'Escreva para esse visitante...' : 'Selecione um visitante'}
-                />
-                <button className="btn btn-primary" disabled={!selectedVisitor || !chatText.trim()} onClick={sendMessage}>Enviar</button>
-              </div>
-            </section>
           </div>
         </div>
       );
@@ -2317,64 +1877,6 @@
       );
     }
 
-    function BotScreen({ config, regras, onSave }) {
-      const [form, setForm] = useState(null);
-      useEffect(() => {
-        setForm({
-          ativo: config?.ativo ?? true,
-          nome_bot: config?.nome_bot || 'Garcom do Dom',
-          modelo: config?.modelo || 'gpt-4o-mini',
-          temperatura: config?.temperatura ?? 0.4,
-          prompt_base: config?.prompt_base || '',
-          regras: (regras || []).map(r => ({ ...r })),
-        });
-      }, [config, regras]);
-      if (!form) return <div className="empty">Carregando bot...</div>;
-      const set = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
-      const patchRule = (index, patch) => setForm(prev => ({ ...prev, regras: prev.regras.map((r, i) => i === index ? { ...r, ...patch } : r) }));
-      const removeRule = index => setForm(prev => ({ ...prev, regras: prev.regras.filter((_, i) => i !== index) }));
-      const addRule = () => setForm(prev => ({ ...prev, regras: [...prev.regras, { gatilho: '', resposta: '', ativo: true }] }));
-
-      return (
-        <section className="card panel">
-          <div className="panel-head">
-            <div>
-              <h3>Atendimento do Marco</h3>
-              <p className="muted" style={{margin:0}}>A LLM foi desligada. O chat agora chama atendimento humano e dispara alertas no painel.</p>
-            </div>
-            <button className="btn btn-primary" onClick={() => onSave(form)}>Salvar bot</button>
-          </div>
-          <div className="form-grid">
-            <TextField label="Nome que o cliente ve" value={form.nome_bot} onChange={v => set('nome_bot', v)} />
-            <TextField label="Modelo (desligado)" value={form.modelo} onChange={v => set('modelo', v)} />
-            <TextField label="Temperatura" type="number" value={form.temperatura} onChange={v => set('temperatura', v)} />
-            <label className="field"><span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6}}>BOT ATIVO</span><div className="check-row"><input type="checkbox" checked={!!form.ativo} onChange={e => set('ativo', e.target.checked)} /><span>{form.ativo ? 'Sim' : 'Nao'}</span></div></label>
-            <div className="field full"><TextField label="Prompt do garcom" value={form.prompt_base} onChange={v => set('prompt_base', v)} textarea /></div>
-          </div>
-
-          <div className="editor-section">
-            <div className="panel-head">
-              <h4>Respostas rigidas</h4>
-              <button className="btn btn-small btn-primary" onClick={addRule}>Adicionar regra</button>
-            </div>
-            <p className="muted">Se a mensagem do cliente contiver o gatilho, o bot responde exatamente com a resposta cadastrada. Use varios gatilhos separados por |.</p>
-            {form.regras.map((regra, index) => (
-              <div className="row-card" key={regra.id || index}>
-                <div className="form-grid">
-                  <TextField label="Gatilho" value={regra.gatilho} onChange={v => patchRule(index, { gatilho: v })} />
-                  <TextField label="Resposta exata" value={regra.resposta} onChange={v => patchRule(index, { resposta: v })} textarea />
-                  <label className="field"><span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6}}>ATIVA</span><div className="check-row"><input type="checkbox" checked={regra.ativo !== false} onChange={e => patchRule(index, { ativo: e.target.checked })} /><span>{regra.ativo !== false ? 'Sim' : 'Nao'}</span></div></label>
-                  <button className="btn btn-danger" onClick={() => removeRule(index)}>Remover</button>
-                </div>
-              </div>
-            ))}
-            {!form.regras.length && <div className="empty">Nenhuma regra rigida ainda.</div>}
-          </div>
-          <div className="hint">Modo atual: sem LLM. O cardapio apenas mostra mensagens locais do Marco e notifica o atendimento humano.</div>
-        </section>
-      );
-    }
-
     function ConfigScreen({ config, onSave }) {
       const [form, setForm] = useState(null);
       useEffect(() => {
@@ -2406,6 +1908,15 @@
           garcom_entrega_botao_texto: config.garcom_entrega_botao_texto || 'quero saber o tempo exato',
           garcom_tamanhos_texto: config.garcom_tamanhos_texto || '400g individual | 800g serve 2',
           garcom_fome_botao_texto: config.garcom_fome_botao_texto || 'quero saber se vai matar minha fome',
+          garcom_chat_saudacoes_texto: listToText(config.garcom_chat_saudacoes || [
+            'Ciao! Que bom te ver por aqui.',
+            'Boa noite! Fica a vontade para olhar com calma.',
+            'Bem-vindo ao Dom Leonardo.',
+          ]),
+          garcom_chat_mensagens_auto_texto: listToText(config.garcom_chat_mensagens_auto || [
+            'Se algum prato chamar sua atencao, abre ele e escolhe tamanho e adicionais por ali.',
+            'Quando adicionar algo, a sacola aparece embaixo para voce revisar tudo com calma.',
+          ]),
           horario_abertura: config.horario_abertura || '18:00:00',
           horario_fechamento: config.horario_fechamento || '23:30:00',
           aviso_topo: config.aviso_topo || '',
@@ -2443,6 +1954,8 @@
             <TextField label="Botao tempo exato no Garcom" value={form.garcom_entrega_botao_texto} onChange={v => set('garcom_entrega_botao_texto', v)} />
             <TextField label="Texto de tamanhos no Garcom" value={form.garcom_tamanhos_texto} onChange={v => set('garcom_tamanhos_texto', v)} />
             <div className="field full"><TextField label="Botao duvida sobre fome no Garcom" value={form.garcom_fome_botao_texto} onChange={v => set('garcom_fome_botao_texto', v)} /></div>
+            <div className="field full"><TextField label="Saudacoes automaticas do Marco (uma por linha)" value={form.garcom_chat_saudacoes_texto} onChange={v => set('garcom_chat_saudacoes_texto', v)} textarea /></div>
+            <div className="field full"><TextField label="Mensagens automaticas do Marco (uma por linha)" value={form.garcom_chat_mensagens_auto_texto} onChange={v => set('garcom_chat_mensagens_auto_texto', v)} textarea /></div>
             <TextField label="Abre" type="time" value={form.horario_abertura} onChange={v => set('horario_abertura', v)} />
             <TextField label="Fecha" type="time" value={form.horario_fechamento} onChange={v => set('horario_fechamento', v)} />
             <div className="field full"><TextField label="Aviso no topo" value={form.aviso_topo} onChange={v => set('aviso_topo', v)} textarea /></div>
@@ -2453,6 +1966,6 @@
     }
 
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
+</script>
 </body>
 </html>

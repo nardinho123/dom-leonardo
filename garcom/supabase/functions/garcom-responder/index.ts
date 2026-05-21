@@ -1,6 +1,6 @@
 // Edge Function: garcom-responder
-// Marco (garcom virtual) responde + opera o carrinho via GPT-4o.
-// Fase 3 + 4 do projeto Garcom Digital.
+// API publica do cardapio do Garcom:
+// apenas entrega cardapio, configuracoes e mensagens automaticas do Marco.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -11,167 +11,98 @@ const cors = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// ---------- helpers ----------
-
-function sortearPonderado<T extends { peso: number }>(items: T[]): T | null {
-  if (!items || items.length === 0) return null;
-  const total = items.reduce((s, i) => s + (i.peso ?? 1), 0);
-  let r = Math.random() * total;
-  for (const it of items) {
-    r -= it.peso ?? 1;
-    if (r <= 0) return it;
-  }
-  return items[items.length - 1];
-}
-
-function calcDelay(texto: string, humor: string): number {
-  const base = 800 + Math.random() * 2200;
-  const lenMult = Math.min(2.5, (texto?.length ?? 0) / 80) * 200;
-  const humorMult: Record<string, number> = {
-    apressadinho: 0.5,
-    filosofo: 1.4,
-    sarcastico: 0.9,
-    el_bulli: 1.2,
-    anfitriao_classico: 1.0,
-  };
-  return Math.round((base + lenMult) * (humorMult[humor] ?? 1));
-}
-
-function nowSP(): string {
-  return new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-}
-
-function partOfDay(): string {
-  const h = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })).getHours();
-  if (h >= 5 && h < 12) return "manha";
-  if (h >= 12 && h < 18) return "tarde";
-  if (h >= 18 && h < 23) return "noite";
-  return "madrugada";
-}
-
-type CartItem = { prato_id: string; nome: string; qtd: number; preco: number; obs?: string };
-
-function calcTotal(carrinho: CartItem[]): number {
-  return carrinho.reduce((s, it) => s + (it.preco * it.qtd), 0);
-}
-
-function normalizarTelefone(v: string): string {
-  return String(v || "").replace(/\D/g, "").slice(0, 14);
-}
-
-function parseEndereco(enderecoTexto: string) {
-  const raw = String(enderecoTexto || "").trim();
-  const partes = raw.split(",").map((p) => p.trim()).filter(Boolean);
-  const numeroMatch = raw.match(/\b\d+[a-zA-Z]?\b/);
-  const numero = numeroMatch?.[0] || "s/n";
-  const logradouro = partes[0] || raw.replace(numero, "").trim() || raw;
-  let bairro = partes[2] || partes[1] || "";
-  bairro = bairro.replace(numero, "").replace(/^[-\s]+/, "").trim();
-  return {
-    cep: "",
-    logradouro,
-    numero,
-    complemento: "",
-    bairro: bairro || "A confirmar",
-    cidade: "Curitiba",
-    uf: "PR",
-    ponto_referencia: raw,
-  };
-}
-
-function textoNormalizado(v: string): string {
-  return String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-}
-
-function querFecharPedido(v: string): boolean {
-  const t = textoNormalizado(v);
-  return /\b(fechar|finalizar|enviar|manda pro dom|mandar pro dom|pode enviar|concluir)\b/.test(t);
-}
-
-function pareceTelefone(v: string): boolean {
-  return normalizarTelefone(v).length >= 10;
-}
-
-function pareceEndereco(v: string): boolean {
-  const t = textoNormalizado(v);
-  if (/\b(quero|manda|pede|pedir|adiciona|coloca|risoto|carbonara|nhoque|spaghetti|pao|pedido|fechar)\b/.test(t)) {
-    return false;
-  }
-  return /\d/.test(t) && (t.includes("rua") || t.includes("avenida") || t.includes("av ") || t.includes("av.") || t.includes("bairro") || /^[^,]+,\s*\d+/.test(t));
-}
-
-function extrairNomeInformado(v: string): string {
-  const raw = String(v || "").trim();
-  const match = raw.match(/\b(?:sou|me chamo|meu nome e|meu nome é)\s+(?:o|a)?\s*([^,.]+)/i);
-  if (!match) return "";
-  return match[1].replace(/\b(quero|manda|pede|pedir|adiciona|coloca)\b.*$/i, "").trim().slice(0, 60);
-}
-
-function querTempoExato(v: string): boolean {
-  const t = textoNormalizado(v);
-  return t.includes("tempo exato") || t.includes("saber o tempo") || t.includes("vai demorar") || t.includes("entrega");
-}
-
-function querSaberFome(v: string): boolean {
-  const t = textoNormalizado(v);
-  return t.includes("matar minha fome") || t.includes("mata minha fome") || t.includes("tamanho") || t.includes("serve duas") || t.includes("serve 2");
-}
-
-function respondeuPizza(v: string): boolean {
-  const t = textoNormalizado(v);
-  return /\b(brotinho|pequena|media|média|grande|familia|família|gigante)\b/.test(t);
-}
-
-function pick<T>(items: T[]): T {
-  return items[Math.floor(Math.random() * items.length)];
-}
-
-function fraseContextual(tipo: string, pratoNome = "", carrinhoTotal = 0): string {
-  const nome = pratoNome || "esse prato";
-  const partesNome = nome.split(" ").slice(0, 4);
-  while (partesNome.length > 1 && /^(de|da|do|das|dos|e)$/i.test(partesNome[partesNome.length - 1])) {
-    partesNome.pop();
-  }
-  const nomeCurto = partesNome.join(" ");
-
-  if (tipo === "prato_hesitacao") {
-    return pick([
-      `Ta namorando o ${nomeCurto}? Se a duvida for fome, eu te ajudo a escolher sem erro.`,
-      `Olha, ${nomeCurto} e daqueles que parecem simples na foto, mas chegam com presenca. Quer que eu te explique o tamanho?`,
-      `Boa parada nesse aqui. Se quiser, eu te conto rapidinho se ele e mais leve ou mais jantar de respeito.`,
-    ]);
-  }
-
-  if (tipo === "prato_passou") {
-    return pick([
-      `Passou pelo ${nomeCurto} rapidinho... esse ai merecia pelo menos uma olhada torta, viu.`,
-      `So avisando: o ${nomeCurto} costuma decidir pedido de gente indecisa.`,
-    ]);
-  }
-
-  if (tipo === "carrinho_idle" && carrinhoTotal > 0) {
-    return pick([
-      `Quer que eu revise essa sacola antes de mandar pro Dom? Prometo ser rapido.`,
-      `Sua sacola ja ta com cara de jantar. Quer fechar ou quer que eu sugira um ultimo complemento?`,
-      `Se quiser, eu confiro tamanho, observacao e tempo antes de voce mandar.`,
-    ]);
-  }
-
-  return pick([
-    "To por aqui. Se bater duvida, me chama que eu traduzo o cardapio sem enrolar.",
-    "Se quiser uma recomendacao sincera, eu tenho opiniao forte hoje.",
-  ]);
-}
-
-const ALERTAS_HUMANOS = [
-  "chat_aberto",
-  "chat_assobio",
-  "mensagem_cliente",
-  "cardapio_2min",
-  "cliente_quer_fechar",
+const CHAT_PADRAO_SAUDACOES = [
+  "Ciao! Que bom te ver por aqui.",
+  "Boa noite! Fica a vontade para olhar com calma.",
+  "Bem-vindo ao Dom Leonardo.",
+  "Opa, cheguei por aqui. Bom apetite desde ja.",
+  "Salve! Hoje o cardapio esta bonito.",
 ];
 
-// ---------- handler ----------
+const CHAT_PADRAO_MENSAGENS = [
+  "Se algum prato chamar sua atencao, abre ele e escolhe tamanho e adicionais por ali.",
+  "Quando adicionar algo, a sacola aparece embaixo para voce revisar tudo com calma.",
+  "Dica do Dom: os pratos maiores costumam valer muito a pena para dividir.",
+];
+
+function toNumber(value: unknown, fallback = 0): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function asList(value: unknown, fallback: string[]): string[] {
+  if (Array.isArray(value)) {
+    const list = value.map((item) => String(item || "").trim()).filter(Boolean);
+    return list.length ? list : fallback;
+  }
+
+  if (typeof value === "string") {
+    const list = value
+      .split(/\r?\n/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+    return list.length ? list : fallback;
+  }
+
+  return fallback;
+}
+
+function groupBy<T extends Record<string, unknown>>(items: T[], key: string): Record<string, T[]> {
+  return items.reduce<Record<string, T[]>>((acc, item) => {
+    const groupKey = String(item[key] ?? "");
+    if (!groupKey) return acc;
+    if (!acc[groupKey]) acc[groupKey] = [];
+    acc[groupKey].push(item);
+    return acc;
+  }, {});
+}
+
+function mapConfig(config: Record<string, unknown> | null) {
+  const cfg = config ?? {};
+  return {
+    restaurante_nome: cfg.restaurante_nome ?? "Dom Leonardo",
+    restaurante_descricao: cfg.restaurante_descricao ?? "",
+    restaurante_logo_url: cfg.restaurante_logo_url ?? null,
+    restaurante_capa_url: cfg.restaurante_capa_url ?? null,
+    restaurante_capa_tipo: cfg.restaurante_capa_tipo ?? "imagem",
+    restaurante_capa_video_url: cfg.restaurante_capa_video_url ?? null,
+    restaurante_avaliacao: toNumber(cfg.restaurante_avaliacao, 4.9),
+    restaurante_total_avaliacoes: toNumber(cfg.restaurante_total_avaliacoes, 0),
+    whatsapp_pedidos: cfg.whatsapp_pedidos ?? "",
+    taxa_entrega_padrao: toNumber(cfg.taxa_entrega_padrao, 0),
+    pedido_minimo: toNumber(cfg.pedido_minimo, 0),
+    raio_entrega_km: toNumber(cfg.raio_entrega_km, 5),
+    tempo_entrega_min: toNumber(cfg.tempo_entrega_min, 20),
+    tempo_entrega_max: toNumber(cfg.tempo_entrega_max, 30),
+    horario_abertura: cfg.horario_abertura ?? "18:00",
+    horario_fechamento: cfg.horario_fechamento ?? "23:30",
+    aviso_topo: cfg.aviso_topo ?? null,
+    loja_aberta_manual: cfg.loja_aberta_manual !== false,
+    tema_cardapio: cfg.tema_cardapio ?? "preto",
+    destaques_titulo: cfg.destaques_titulo ?? "O Dom recomenda",
+    destaques_descricao: cfg.destaques_descricao ?? "Os pratos que mais saem por aqui.",
+    cupons_titulo: cfg.cupons_titulo ?? "Cupons do Dom",
+    cupons_descricao: cfg.cupons_descricao ?? "Toque para ver onde usar e quando acaba.",
+  };
+}
+
+function mapMicrocopy(config: Record<string, unknown> | null) {
+  const cfg = config ?? {};
+  return {
+    entrega_texto: cfg.garcom_entrega_texto ?? "tempo em media para chegar na sua casa 20 a 30 min",
+    entrega_botao_texto: cfg.garcom_entrega_botao_texto ?? "quero saber o tempo exato",
+    tamanhos_texto: cfg.garcom_tamanhos_texto ?? "400g individual | 800g serve 2",
+    fome_botao_texto: cfg.garcom_fome_botao_texto ?? "quero saber se vai matar minha fome",
+  };
+}
+
+function mapChatConfig(config: Record<string, unknown> | null) {
+  const cfg = config ?? {};
+  return {
+    saudacoes: asList(cfg.garcom_chat_saudacoes, CHAT_PADRAO_SAUDACOES),
+    mensagens_automaticas: asList(cfg.garcom_chat_mensagens_auto, CHAT_PADRAO_MENSAGENS),
+  };
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -184,659 +115,96 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
-    const { acao, sessao_id, mensagem, cliente_nome_provisorio, device_id } = body ?? {};
+    const body = await req.json().catch(() => ({}));
+    const acao = String(body?.acao || "listar_pratos");
 
-    const url = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
 
-    // Dois clients: garcom (escrita) e public (leitura dos pratos)
-    const sb = createClient(url, serviceKey, { db: { schema: "garcom" } });
-    const sbPub = createClient(url, serviceKey);
-
-    async function adminAutorizado() {
-      const auth = req.headers.get("Authorization") ?? "";
-      const token = auth.replace(/^Bearer\s+/i, "").trim();
-      if (!token || token.startsWith("sb_publishable_") || token.split(".").length < 3) return false;
-      const { data, error } = await sbPub.auth.getUser(token);
-      return !error && !!data?.user;
-    }
-
-    async function carregarOuCriarSessaoLeve() {
-      let sessaoLeve: any = null;
-      if (sessao_id) {
-        const { data } = await sb.from("sessoes").select("*").eq("id", sessao_id).maybeSingle();
-        sessaoLeve = data;
-      }
-      if (!sessaoLeve) {
-        const { data, error } = await sb.from("sessoes").insert({
-          cliente_nome: cliente_nome_provisorio ?? null,
-          device_id: device_id ?? null,
-          memoria: {},
-          carrinho: [],
-        }).select().single();
-        if (error) throw error;
-        sessaoLeve = data;
-      }
-      return sessaoLeve;
-    }
-
-    function tipoEventoPublico(tipo: string): string {
-      const mapa: Record<string, string> = {
-        page_view: "page_view",
-        dish_clicked: "item_click",
-        dish_viewed: "item_view",
-        add_to_bag: "add_to_cart",
-        open_cart: "open_cart",
-        chat_aberto: "chat_open",
-        chat_assobio: "call_waiter",
-        mensagem_cliente: "chat_message",
-        cliente_quer_fechar: "checkout_open",
-        cardapio_2min: "idle_2min",
-      };
-      return mapa[tipo] ?? tipo;
-    }
-
-    function mensagemEventoHumano(tipo: string, evento: any): string | null {
-      if (tipo === "mensagem_cliente") return String(evento?.mensagem ?? "").trim() || "Cliente mandou mensagem no Marco.";
-      if (tipo === "chat_aberto") return "Cliente abriu o chat do Marco.";
-      if (tipo === "chat_assobio") return "Cliente chamou/assobiou no Marco.";
-      if (tipo === "cliente_quer_fechar") return "Cliente quer fechar o pedido pelo atendimento.";
-      return null;
-    }
-
-    async function sincronizarEventoPublico(sessaoEvento: any, evento: any) {
-      const tipoOriginal = String(evento?.tipo ?? "evento_cardapio");
-      const tipoPublico = tipoEventoPublico(tipoOriginal);
-      const visitorKey = String(device_id || sessaoEvento?.device_id || evento?.visitor_key || "").trim();
-      if (!visitorKey) return null;
-
-      const browserInfo = evento?.browser_info ?? {};
-      const urlAtual = evento?.url_atual ?? null;
-      const urlInicial = evento?.url_inicial ?? urlAtual;
-      const referrer = evento?.referrer ?? null;
-      const userAgent = evento?.user_agent ?? null;
-
-      let visitante: any = null;
-      const { data: visitanteExistente } = await sbPub.from("cardapio_visitantes")
-        .select("id, visitor_key, total_eventos, total_sessoes")
-        .eq("visitor_key", visitorKey)
-        .maybeSingle();
-
-      if (visitanteExistente) {
-        const { data, error } = await sbPub.from("cardapio_visitantes")
-          .update({
-            browser_info: browserInfo,
-            ultimo_acesso_em: new Date().toISOString(),
-            ultima_url: urlAtual,
-            ultimo_referrer: referrer,
-            total_eventos: Number(visitanteExistente.total_eventos ?? 0) + 1,
-            atualizado_em: new Date().toISOString(),
-          })
-          .eq("id", visitanteExistente.id)
-          .select("id, visitor_key")
-          .single();
-        if (error) throw error;
-        visitante = data;
-      } else {
-        const { data, error } = await sbPub.from("cardapio_visitantes")
-          .insert({
-            visitor_key: visitorKey,
-            browser_info: browserInfo,
-            ultima_url: urlAtual,
-            ultimo_referrer: referrer,
-            total_sessoes: 1,
-            total_eventos: 1,
-          })
-          .select("id, visitor_key")
-          .single();
-        if (error) throw error;
-        visitante = data;
-      }
-
-      const sessionKey = String(sessaoEvento?.id ?? sessao_id ?? visitorKey);
-      const { data: sessaoPublica } = await sbPub.from("cardapio_sessoes")
-        .select("id")
-        .eq("session_key", sessionKey)
-        .maybeSingle();
-
-      let sessaoPublicaId = sessaoPublica?.id;
-      if (sessaoPublicaId) {
-        const { data, error } = await sbPub.from("cardapio_sessoes")
-          .update({
-            ultimo_ping_em: new Date().toISOString(),
-            url_atual: urlAtual,
-            browser_info: browserInfo,
-            user_agent: userAgent,
-          })
-          .eq("id", sessaoPublicaId)
-          .select("id")
-          .single();
-        if (error) throw error;
-        sessaoPublicaId = data.id;
-      } else {
-        const { data, error } = await sbPub.from("cardapio_sessoes")
-          .insert({
-            visitante_id: visitante.id,
-            visitor_key: visitorKey,
-            session_key: sessionKey,
-            browser_info: browserInfo,
-            url_inicial: urlInicial,
-            url_atual: urlAtual,
-            referrer,
-            user_agent: userAgent,
-          })
-          .select("id")
-          .single();
-        if (error) throw error;
-        sessaoPublicaId = data.id;
-      }
-
-      await sbPub.from("cardapio_eventos").insert({
-        visitante_id: visitante.id,
-        sessao_id: sessaoPublicaId,
-        visitor_key: visitorKey,
-        tipo: tipoPublico,
-        metadata: {
-          ...evento,
-          tipo_original: tipoOriginal,
-          garcom_sessao_id: sessaoEvento?.id ?? null,
-        },
-      });
-
-      const mensagemHumana = mensagemEventoHumano(tipoOriginal, evento);
-      if (mensagemHumana) {
-        const { data: conversaId, error: conversaError } = await sbPub.rpc("cardapio_abrir_conversa", {
-          p_visitante_id: visitante.id,
-          p_visitor_key: visitorKey,
-        });
-        if (conversaError) throw conversaError;
-        await sbPub.from("chat_mensagens").insert({
-          conversa_id: conversaId,
-          visitante_id: visitante.id,
-          visitor_key: visitorKey,
-          autor: "visitante",
-          mensagem: mensagemHumana,
-          lida_admin: false,
-          lida_visitante: true,
-        });
-        await sbPub.from("chat_conversas").update({
-          ultimo_autor: "visitante",
-          ultima_mensagem: mensagemHumana,
-          ultima_mensagem_em: new Date().toISOString(),
-          status: "aberta",
-          atualizado_em: new Date().toISOString(),
-        }).eq("id", conversaId);
-      }
-
-      return { visitante_id: visitante.id, sessao_publica_id: sessaoPublicaId, tipo: tipoPublico };
-    }
-
-    if (acao === "registrar_evento") {
-      const sessaoEvento = await carregarOuCriarSessaoLeve();
-      const evento = body?.evento ?? {};
-      await sb.from("interaction_logs").insert({
-        sessao_id: sessaoEvento.id,
-        papel: "evento",
-        fala: String(evento?.tipo ?? "evento_cardapio"),
-        contexto: { evento },
-      });
-      const publico = await sincronizarEventoPublico(sessaoEvento, evento);
-      return new Response(JSON.stringify({ ok: true, sessao_id: sessaoEvento.id, publico }), {
-        headers: { ...cors, "Content-Type": "application/json" },
-      });
-    }
-
-    if (acao === "listar_alertas_humanos") {
-      if (!(await adminAutorizado())) {
-        return new Response(JSON.stringify({ error: "admin nao autorizado" }), {
-          status: 401,
-          headers: { ...cors, "Content-Type": "application/json" },
-        });
-      }
-
-      const sinceId = Number(body?.since_id ?? 0);
-      let query = sb.from("interaction_logs")
-        .select("id,sessao_id,momento,fala,contexto")
-        .eq("papel", "evento")
-        .in("fala", ALERTAS_HUMANOS)
-        .order("id", { ascending: sinceId > 0 })
-        .limit(30);
-
-      if (sinceId > 0) query = query.gt("id", sinceId);
-      const { data, error } = await query;
-      if (error) throw error;
-
-      const alertas = (data ?? []).map((row: any) => ({
-        id: row.id,
-        sessao_id: row.sessao_id,
-        tipo: row.fala,
-        momento: row.momento,
-        contexto: row.contexto?.evento ?? row.contexto ?? {},
-      }));
-
-      return new Response(JSON.stringify({ alertas }), {
-        headers: { ...cors, "Content-Type": "application/json" },
-      });
-    }
-
-    if (acao === "sugestao_contextual") {
-      const sessaoSugestao = await carregarOuCriarSessaoLeve();
-      const tipo = String(body?.tipo ?? "geral");
-      const pratoNome = String(body?.prato_nome ?? "");
-      const carrinhoTotal = Number(body?.carrinho_total ?? 0);
-      const texto = fraseContextual(tipo, pratoNome, carrinhoTotal);
-      await sb.from("interaction_logs").insert({
-        sessao_id: sessaoSugestao.id,
-        papel: "evento",
-        fala: `sugestao_contextual:${tipo}`,
-        contexto: { tipo, prato_nome: pratoNome, carrinho_total: carrinhoTotal, texto },
-      });
-      return new Response(JSON.stringify({
-        sessao_id: sessaoSugestao.id,
-        falas: [{ texto, delay_ms: calcDelay(texto, "anfitriao_classico") }],
-      }), { headers: { ...cors, "Content-Type": "application/json" } });
-    }
-
-    if (acao === "listar_pratos") {
-      const { data: pratosRaw, error } = await sbPub.from("pratos")
-        .select("id, categoria_id, nome, descricao_curta, descricao_completa, preco_base, preco_promocional, foto_url, badge_destaque, ordem, ativo")
-        .eq("ativo", true)
-        .order("ordem", { ascending: true });
-      if (error) throw error;
-
-      const pratoIds = (pratosRaw ?? []).map((p: any) => p.id);
-
-      const { data: categoriasRaw } = await sbPub.from("categorias")
-        .select("id, nome, slug, descricao, icone, ordem, ativo")
-        .eq("ativo", true)
-        .order("ordem", { ascending: true });
-
-      let tamanhosRaw: any[] = [];
-      let gruposRaw: any[] = [];
-      let opcionaisRaw: any[] = [];
-
-      if (pratoIds.length) {
-        const tamanhosResp = await sbPub.from("pratos_tamanhos")
-          .select("id, prato_id, nome, peso_g, preco_delta, ordem, padrao, ativo")
-          .in("prato_id", pratoIds)
-          .eq("ativo", true)
-          .order("ordem", { ascending: true });
-        if (tamanhosResp.error) throw tamanhosResp.error;
-        tamanhosRaw = tamanhosResp.data ?? [];
-
-        const gruposResp = await sbPub.from("grupos_opcionais")
-          .select("id, prato_id, nome, descricao, tipo, min_escolhas, max_escolhas, ordem, ativo")
-          .in("prato_id", pratoIds)
-          .eq("ativo", true)
-          .order("ordem", { ascending: true });
-        if (gruposResp.error) throw gruposResp.error;
-        gruposRaw = gruposResp.data ?? [];
-
-        const grupoIds = gruposRaw.map((g: any) => g.id);
-        if (grupoIds.length) {
-          const opcionaisResp = await sbPub.from("opcionais")
-            .select("id, grupo_id, nome, descricao, preco_delta, foto_url, ordem, ativo")
-            .in("grupo_id", grupoIds)
-            .eq("ativo", true)
-            .order("ordem", { ascending: true });
-          if (opcionaisResp.error) throw opcionaisResp.error;
-          opcionaisRaw = opcionaisResp.data ?? [];
-        }
-      }
-
-      const { data: config } = await sbPub.from("configuracoes")
-        .select("taxa_entrega_padrao, pedido_minimo, tempo_entrega_min, tempo_entrega_max, garcom_entrega_texto, garcom_entrega_botao_texto, garcom_tamanhos_texto, garcom_fome_botao_texto")
-        .eq("id", 1)
-        .maybeSingle();
-
-      const groupByKey = (items: any[], key: string) => items.reduce((acc: Record<string, any[]>, item: any) => {
-        const value = String(item[key]);
-        if (!acc[value]) acc[value] = [];
-        acc[value].push(item);
-        return acc;
-      }, {});
-
-      const tamanhosByPrato = groupByKey(tamanhosRaw, "prato_id");
-      const gruposByPrato = groupByKey(gruposRaw, "prato_id");
-      const opcionaisByGrupo = groupByKey(opcionaisRaw, "grupo_id");
-
-      const pratos = (pratosRaw ?? []).map((p: any) => ({
-        id: p.id,
-        categoria_id: p.categoria_id,
-        nome: p.nome,
-        descricao: p.descricao_curta ?? p.descricao_completa ?? "",
-        descricao_completa: p.descricao_completa ?? p.descricao_curta ?? "",
-        preco: parseFloat(p.preco_promocional ?? p.preco_base ?? 0),
-        preco_base: parseFloat(p.preco_base ?? 0),
-        foto: p.foto_url,
-        badge: p.badge_destaque,
-        ordem: p.ordem ?? 0,
-        tamanhos: (tamanhosByPrato[p.id] ?? []).map((t: any) => ({
-          id: t.id,
-          nome: t.nome,
-          peso_g: t.peso_g,
-          preco_delta: parseFloat(t.preco_delta ?? 0),
-          ordem: t.ordem ?? 0,
-          padrao: !!t.padrao,
-          ativo: t.ativo !== false,
-        })),
-        grupos: (gruposByPrato[p.id] ?? []).map((g: any) => ({
-          id: g.id,
-          nome: g.nome,
-          descricao: g.descricao,
-          tipo: g.tipo,
-          min_escolhas: Number(g.min_escolhas ?? 0),
-          max_escolhas: Number(g.max_escolhas ?? 1),
-          ordem: g.ordem ?? 0,
-          ativo: g.ativo !== false,
-          opcionais: (opcionaisByGrupo[g.id] ?? []).map((o: any) => ({
-            id: o.id,
-            nome: o.nome,
-            descricao: o.descricao,
-            preco_delta: parseFloat(o.preco_delta ?? 0),
-            foto: o.foto_url,
-            ordem: o.ordem ?? 0,
-            ativo: o.ativo !== false,
-          })),
-        })),
-      }));
-
-      return new Response(JSON.stringify({
-        categorias: categoriasRaw ?? [],
-        pratos,
-        config: {
-          taxa_entrega_padrao: parseFloat(config?.taxa_entrega_padrao ?? 0),
-          pedido_minimo: parseFloat(config?.pedido_minimo ?? 0),
-          tempo_entrega_min: Number(config?.tempo_entrega_min ?? 20),
-          tempo_entrega_max: Number(config?.tempo_entrega_max ?? 30),
-        },
-        microcopy: {
-          entrega_texto: config?.garcom_entrega_texto ?? "tempo em media para chegar na sua casa 20 a 30 min",
-          entrega_botao_texto: config?.garcom_entrega_botao_texto ?? "quero saber o tempo exato",
-          tamanhos_texto: config?.garcom_tamanhos_texto ?? "400g individual | 800g serve 2",
-          fome_botao_texto: config?.garcom_fome_botao_texto ?? "quero saber se vai matar minha fome",
-        },
-      }), { headers: { ...cors, "Content-Type": "application/json" } });
-    }
-
-    if (!mensagem || typeof mensagem !== "string" || !mensagem.trim()) {
-      return new Response(JSON.stringify({ error: "mensagem obrigatoria" }), {
+    if (!["listar_pratos", "listar_cardapio", "mensagens_chat"].includes(acao)) {
+      return new Response(JSON.stringify({ error: "acao invalida" }), {
         status: 400,
         headers: { ...cors, "Content-Type": "application/json" },
       });
     }
 
-    // LLM desligada: o Marco agora apenas registra eventos e chama atendimento humano.
+    const { data: config, error: configError } = await supabase
+      .from("configuracoes")
+      .select("*")
+      .eq("id", 1)
+      .maybeSingle();
 
-    // 1) Carrega ou cria sessao
-    let sessao: any = null;
-    if (sessao_id) {
-      const { data } = await sb.from("sessoes").select("*").eq("id", sessao_id).maybeSingle();
-      sessao = data;
-    }
-    if (!sessao) {
-      const { data, error } = await sb.from("sessoes").insert({
-        cliente_nome: cliente_nome_provisorio ?? null,
-        device_id: device_id ?? null,
-        memoria: {},
-        carrinho: [],
-      }).select().single();
-      if (error) throw error;
-      sessao = data;
-    }
+    if (configError) throw configError;
 
-    // 2) Carrega pratos ativos
-    const { data: pratosRaw } = await sbPub
-      .from("pratos")
-      .select("id, nome, descricao_curta, descricao_completa, preco_base, preco_promocional, badge_destaque, tempo_preparo_min")
-      .eq("ativo", true);
-    const pratos = (pratosRaw ?? []).map((p: any) => ({
-      id: p.id,
-      nome: p.nome,
-      descricao: p.descricao_curta ?? p.descricao_completa ?? "",
-      preco: parseFloat(p.preco_promocional ?? p.preco_base ?? 0),
-      badge: p.badge_destaque,
-      tempo: p.tempo_preparo_min,
-    }));
-
-    // 3) Sorteia humor do Marco
-    const { data: humoresRaw } = await sb.from("persona_humores")
-      .select("*").eq("personagem_id", "marco").eq("ativo", true);
-    const humor = sortearPonderado(humoresRaw ?? []) ?? { humor_nome: "anfitriao_classico", prompt_modifier: "" };
-
-    // 4) Curiosidades ainda nao usadas nesta sessao
-    const { data: usadas } = await sb.from("interaction_logs")
-      .select("curiosidade_usada_id")
-      .eq("sessao_id", sessao.id)
-      .not("curiosidade_usada_id", "is", null);
-    const usadasIds = (usadas ?? []).map((u: any) => u.curiosidade_usada_id).filter(Boolean);
-
-    let curQuery = sb.from("curiosidades").select("id, categoria, texto, tom").eq("ativo", true);
-    if (usadasIds.length > 0) {
-      curQuery = curQuery.not("id", "in", `(${usadasIds.join(",")})`);
-    }
-    const { data: curiosidadesDisp } = await curQuery.limit(10);
-
-    // 5) Fato do dia
-    const hoje = new Date().toISOString().split("T")[0];
-    const { data: fato } = await sb.from("fato_do_dia")
-      .select("texto").eq("dia", hoje).maybeSingle();
-
-    // 6) Historico + carrinho atual
-    const memoria = (sessao.memoria as any) ?? {};
-    const historico: Array<{ role: "user" | "assistant"; content: string }> = memoria.mensagens ?? [];
-    let carrinho: CartItem[] = (sessao.carrinho as any) ?? [];
-    const clienteMem = memoria.cliente ?? {};
-    let cliente_nome = sessao.cliente_nome ?? clienteMem.nome ?? null;
-    const enderecoMem = clienteMem.endereco_texto ?? null;
-    const telefoneMem = clienteMem.telefone ?? null;
-
-    async function criarPedidoNoAdmin() {
-      const nomeFinal = String(sessao.cliente_nome ?? memoria?.cliente?.nome ?? "").trim();
-      const enderecoSalvo = String(memoria?.cliente?.endereco_texto ?? "").trim();
-      const enderecoFinal = pareceEndereco(enderecoSalvo) ? enderecoSalvo : "";
-      const telefoneFinal = normalizarTelefone(memoria?.cliente?.telefone ?? "");
-      if (!nomeFinal || !enderecoFinal || !telefoneFinal || !carrinho.length) return null;
-
-      const itens = [];
-      for (const item of carrinho) {
-        const { data: tamanhoPadrao } = await sbPub.from("pratos_tamanhos")
-          .select("id")
-          .eq("prato_id", item.prato_id)
-          .eq("ativo", true)
-          .order("padrao", { ascending: false })
-          .order("ordem", { ascending: true })
-          .limit(1)
-          .maybeSingle();
-        itens.push({
-          prato_id: item.prato_id,
-          tamanho_id: tamanhoPadrao?.id ?? null,
-          opcionais_ids: [],
-          quantidade: item.qtd,
-          observacoes: item.obs ?? null,
-        });
-      }
-
-      const { data: pedido, error } = await sbPub.rpc("criar_pedido", {
-        p_cliente: { nome: nomeFinal, whatsapp: telefoneFinal },
-        p_endereco: parseEndereco(enderecoFinal),
-        p_itens: itens,
-        p_forma_pagamento: "nao_definido",
-        p_troco_para: null,
-        p_cupom_codigo: null,
-        p_observacoes: "Pedido enviado pelo Marco antigo",
-        p_origem: "garcom_marco_antigo",
+    const chatConfig = mapChatConfig(config as Record<string, unknown> | null);
+    if (acao === "mensagens_chat") {
+      return new Response(JSON.stringify({ chat_config: chatConfig }), {
+        headers: { ...cors, "Content-Type": "application/json" },
       });
-      if (error) throw error;
-      memoria.ultimo_pedido_admin = pedido;
-      carrinho = [];
-      return pedido;
     }
 
-    async function responderDireto(texto: string, eventosDiretos: any[] = [], pedidoDireto: any = null) {
-      const novoHistorico = [
-        ...historico,
-        { role: "user" as const, content: mensagemTexto },
-        { role: "assistant" as const, content: texto },
-      ].slice(-20);
-
-      await sb.from("sessoes").update({
-        cliente_nome: cliente_nome || sessao.cliente_nome || null,
-        memoria: { ...memoria, mensagens: novoHistorico },
-        carrinho,
-        ultima_interacao_em: new Date().toISOString(),
-      }).eq("id", sessao.id);
-
-      return new Response(JSON.stringify({
-        sessao_id: sessao.id,
-        cliente_nome: cliente_nome || sessao.cliente_nome || null,
-        humor: "anfitriao_classico",
-        falas: [{ texto, delay_ms: calcDelay(texto, "anfitriao_classico") }],
-        carrinho,
-        total: calcTotal(carrinho),
-        eventos: eventosDiretos,
-        pedido: pedidoDireto,
-      }), { headers: { ...cors, "Content-Type": "application/json" } });
-    }
-
-    const mensagemTexto = String(mensagem || "");
-    let salvouDadoDeFechamento = false;
-    const nomeDetectado = extrairNomeInformado(mensagemTexto);
-    if (nomeDetectado && !cliente_nome) {
-      cliente_nome = nomeDetectado;
-      memoria.cliente = { ...(memoria.cliente ?? {}), nome: nomeDetectado };
-      salvouDadoDeFechamento = true;
-    }
-    if (pareceEndereco(mensagemTexto)) {
-      memoria.cliente = { ...(memoria.cliente ?? {}), endereco_texto: mensagemTexto.trim() };
-      salvouDadoDeFechamento = true;
-    }
-    if (pareceTelefone(mensagemTexto)) {
-      memoria.cliente = { ...(memoria.cliente ?? {}), telefone: normalizarTelefone(mensagemTexto) };
-      salvouDadoDeFechamento = true;
-    }
-
-    if (memoria.acao_pendente === "tempo_entrega" && !cliente_nome && !pareceEndereco(mensagemTexto) && !pareceTelefone(mensagemTexto) && !querTempoExato(mensagemTexto)) {
-      cliente_nome = mensagemTexto.trim().slice(0, 60);
-      memoria.cliente = { ...(memoria.cliente ?? {}), nome: cliente_nome };
-      salvouDadoDeFechamento = true;
-    }
-
-    if (querTempoExato(mensagemTexto) || memoria.acao_pendente === "tempo_entrega") {
-      const nomeAtual = String(cliente_nome ?? memoria?.cliente?.nome ?? sessao.cliente_nome ?? "").trim();
-      const enderecoSalvo = String(memoria?.cliente?.endereco_texto ?? "").trim();
-      if (!nomeAtual) {
-        memoria.acao_pendente = "tempo_entrega";
-        return await responderDireto("Claro. Antes de calcular certinho, como posso te chamar?");
-      }
-      if (!pareceEndereco(enderecoSalvo)) {
-        memoria.acao_pendente = "tempo_entrega";
-        return await responderDireto(`Boa, ${nomeAtual}. Me passa rua, numero e bairro que eu calculo uma estimativa honesta pra voce.`);
-      }
-
-      const { data: configEntrega } = await sbPub.from("configuracoes")
-        .select("tempo_entrega_min, tempo_entrega_max")
-        .eq("id", 1)
-        .maybeSingle();
-      const min = Number(configEntrega?.tempo_entrega_min ?? 20);
-      const max = Number(configEntrega?.tempo_entrega_max ?? 30);
-      memoria.acao_pendente = null;
-      return await responderDireto(`Para esse endereco, eu trabalharia com ${min} a ${max} min. Nao vou te vender milagre: se o movimento ou a rua complicar, eu te aviso antes de prometer bonito.`);
-    }
-
-    if (memoria.acao_pendente === "duvida_fome" && respondeuPizza(mensagemTexto)) {
-      memoria.acao_pendente = null;
-      const t = textoNormalizado(mensagemTexto);
-      const textoFome = (t.includes("grande") || t.includes("familia") || t.includes("gigante"))
-        ? "Entao eu iria no 800g sem medo. Ele engana no pote porque risoto parece comportado, mas e bem mais encorpado que pizza: arroz cremoso, carne, molho, queijo... pesa gostoso."
-        : "Entao o 400g deve te atender bem se for uma fome normal. Se voce estiver naquela fome de jantar serio, ou for dividir beliscando, o 800g fica mais seguro.";
-      return await responderDireto(textoFome);
-    }
-
-    if (querSaberFome(mensagemTexto)) {
-      memoria.acao_pendente = "duvida_fome";
-      return await responderDireto("Boa pergunta. Deixa eu traduzir de um jeito facil: se fossem duas pessoas pedindo pizza, voce pediria pequena, media ou grande?");
-    }
-
-    if (carrinho.length && (querFecharPedido(mensagemTexto) || salvouDadoDeFechamento)) {
-      const nomeFinal = String(sessao.cliente_nome ?? memoria?.cliente?.nome ?? "").trim();
-      const enderecoSalvo = String(memoria?.cliente?.endereco_texto ?? "").trim();
-      const enderecoFinal = pareceEndereco(enderecoSalvo) ? enderecoSalvo : "";
-      const telefoneFinal = normalizarTelefone(memoria?.cliente?.telefone ?? "");
-      let textoFechamento = "";
-      let pedidoFechamento = null;
-
-      if (!nomeFinal) {
-        textoFechamento = "Claro. Antes de levar pro Dom, como posso te chamar?";
-      } else if (!enderecoFinal) {
-        textoFechamento = `Boa, ${nomeFinal}. Me passa rua, numero e bairro que eu anoto certinho.`;
-      } else if (!telefoneFinal) {
-        textoFechamento = "Agora seu telefone, por favor. E so pro motoboy te ligar se nao achar a casa.";
-      } else {
-        pedidoFechamento = await criarPedidoNoAdmin();
-        const numero = pedidoFechamento?.numero_pedido ? ` #${pedidoFechamento.numero_pedido}` : "";
-        textoFechamento = `Perfeito, ${nomeFinal}. Enviei seu pedido${numero} para o painel do Dom. Agora e com ele aceitar e a cozinha comecar.`;
-      }
-
-      const novoHistorico = [
-        ...historico,
-        { role: "user" as const, content: mensagemTexto },
-        { role: "assistant" as const, content: textoFechamento },
-      ].slice(-20);
-
-      await sb.from("sessoes").update({
-        cliente_nome: nomeFinal || cliente_nome || null,
-        memoria: { ...memoria, mensagens: novoHistorico },
-        carrinho,
-        ultima_interacao_em: new Date().toISOString(),
-      }).eq("id", sessao.id);
-
-      return new Response(JSON.stringify({
-        sessao_id: sessao.id,
-        cliente_nome: nomeFinal || null,
-        humor: "anfitriao_classico",
-        falas: [{ texto: textoFechamento, delay_ms: calcDelay(textoFechamento, "anfitriao_classico") }],
-        carrinho,
-        total: calcTotal(carrinho),
-        eventos: pedidoFechamento ? [{ tipo: "pedido_enviado_admin", payload: pedidoFechamento }] : [],
-        pedido: pedidoFechamento,
-      }), { headers: { ...cors, "Content-Type": "application/json" } });
-    }
-
-    await sb.from("interaction_logs").insert({
-      sessao_id: sessao.id,
-      papel: "evento",
-      fala: "mensagem_cliente",
-      contexto: {
-        evento: {
-          tipo: "mensagem_cliente",
-          mensagem: mensagemTexto,
-          descricao: "Cliente mandou mensagem no atendimento humano do Marco",
-          carrinho_total: calcTotal(carrinho),
-        },
-      },
-    });
-
-    const respostaAtendimento = pick([
-      "Perfeito, mandei sua mensagem pro atendimento. Fica de olho aqui.",
-      "Boa, ja avisei o pessoal do Dom. Se quiser complementar, manda mais uma mensagem.",
-      "Anotado. O atendimento ja vai ver isso com carinho.",
-      "Chegou aqui. Vou deixar isso destacado pro pessoal te responder.",
+    const [
+      categoriasRes,
+      pratosRes,
+      tamanhosRes,
+      gruposRes,
+      opcionaisRes,
+      cuponsRes,
+      pratoCuponsRes,
+    ] = await Promise.all([
+      supabase.from("categorias").select("*").eq("ativo", true).order("ordem").order("nome"),
+      supabase.from("pratos").select("*").eq("ativo", true).order("ordem").order("nome"),
+      supabase.from("pratos_tamanhos").select("*").eq("ativo", true).order("ordem").order("nome"),
+      supabase.from("grupos_opcionais").select("*").eq("ativo", true).order("ordem").order("nome"),
+      supabase.from("opcionais").select("*").eq("ativo", true).order("ordem").order("nome"),
+      supabase.from("cupons").select("*").eq("ativo", true).order("criado_em", { ascending: false }),
+      supabase.from("prato_cupons").select("*, cupons(*)").eq("ativo", true).order("ordem"),
     ]);
 
-    return await responderDireto(respostaAtendimento, [{
-      tipo: "mensagem_cliente",
-      payload: { atendimento_humano: true },
-    }]);
+    for (const res of [categoriasRes, pratosRes, tamanhosRes, gruposRes, opcionaisRes, cuponsRes, pratoCuponsRes]) {
+      if (res.error) throw res.error;
+    }
 
-    // LLM removida: atendimento humano usa respostas locais e eventos para o admin.
+    const tamanhosByPrato = groupBy(tamanhosRes.data ?? [], "prato_id");
+    const gruposByPrato = groupBy(gruposRes.data ?? [], "prato_id");
+    const opcionaisByGrupo = groupBy(opcionaisRes.data ?? [], "grupo_id");
+    const cuponsByPrato = groupBy(pratoCuponsRes.data ?? [], "prato_id");
 
+    const pratos = (pratosRes.data ?? []).map((prato) => ({
+      ...prato,
+      preco: toNumber(prato.preco_promocional ?? prato.preco_base, 0),
+      tamanhos: (tamanhosByPrato[String(prato.id)] ?? []).map((tam) => ({
+        ...tam,
+        preco_delta: toNumber(tam.preco_delta, 0),
+      })),
+      grupos: (gruposByPrato[String(prato.id)] ?? []).map((grupo) => ({
+        ...grupo,
+        opcionais: (opcionaisByGrupo[String(grupo.id)] ?? []).map((op) => ({
+          ...op,
+          preco_delta: toNumber(op.preco_delta, 0),
+        })),
+      })),
+      cupons: (cuponsByPrato[String(prato.id)] ?? []).map((rel) => rel.cupons).filter(Boolean),
+    }));
+
+    return new Response(
+      JSON.stringify({
+        categorias: categoriasRes.data ?? [],
+        pratos,
+        cupons: cuponsRes.data ?? [],
+        config: mapConfig(config as Record<string, unknown> | null),
+        microcopy: mapMicrocopy(config as Record<string, unknown> | null),
+        chat_config: chatConfig,
+      }),
+      { headers: { ...cors, "Content-Type": "application/json" } },
+    );
   } catch (err) {
     console.error("garcom-responder error:", err);
-    return new Response(
-      JSON.stringify({ error: String((err as any)?.message ?? err) }),
-      { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: String((err as Error)?.message ?? err) }), {
+      status: 500,
+      headers: { ...cors, "Content-Type": "application/json" },
+    });
   }
 });

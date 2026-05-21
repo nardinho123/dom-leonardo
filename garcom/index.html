@@ -318,24 +318,6 @@
     box-shadow: 0 10px 22px rgba(212,175,55,0.14);
   }
 
-  .bottom-sheet footer {
-    padding: 12px 16px calc(12px + var(--safe-bottom));
-    border-top: 1px solid var(--line);
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-  .input-msg {
-    flex: 1;
-    background: var(--bg-card);
-    border: 1px solid var(--line);
-    border-radius: 22px;
-    padding: 10px 16px;
-    color: var(--text);
-    outline: none;
-    min-height: 44px;
-  }
-  .input-msg:focus { border-color: var(--gold-dim); }
   .btn-icon {
     width: 44px; height: 44px;
     border-radius: 50%;
@@ -345,43 +327,6 @@
     transition: transform 120ms, background 120ms;
   }
   .btn-icon:active { transform: scale(0.92); background: var(--bg-elev); }
-  .btn-send {
-    background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dim) 100%);
-    border-color: var(--gold-dim);
-    color: #1a1305;
-  }
-
-  /* Long-press action menu */
-  .quick-menu {
-    position: fixed;
-    right: 16px;
-    bottom: calc(var(--safe-bottom) + 100px);
-    z-index: 70;
-    display: flex;
-    flex-direction: column-reverse;
-    gap: 8px;
-    transform: scale(0.85) translateY(8px);
-    transform-origin: bottom right;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 220ms, transform 220ms cubic-bezier(.34,1.56,.64,1);
-  }
-  .quick-menu.open { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
-  .quick-menu button {
-    background: var(--bg-elev);
-    border: 1px solid var(--line);
-    padding: 10px 16px;
-    border-radius: 22px;
-    font-size: 14px;
-    min-height: 44px;
-    color: var(--text);
-    box-shadow: 0 4px 14px rgba(0,0,0,0.4);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .quick-menu button:active { background: var(--bg-card); }
-
   /* Cartões de prato */
   .prato-card {
     background: var(--bg-card);
@@ -670,7 +615,7 @@
     font-size: 13px;
     line-height: 1.25;
   }
-  .choice-radio {
+  .choice-dot {
     width: 28px;
     height: 28px;
     border-radius: 999px;
@@ -679,17 +624,29 @@
     display: grid;
     place-items: center;
   }
-  .choice-radio.active {
+  .choice-dot.active {
     border-color: var(--gold);
     background: rgba(212,175,55,0.14);
   }
-  .choice-radio.active::after {
+  .choice-dot.active::after {
     content: '';
     width: 12px;
     height: 12px;
     border-radius: 50%;
     background: var(--gold);
   }
+  .obs-input {
+    width: 100%;
+    min-height: 86px;
+    border-radius: 16px;
+    resize: none;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    padding: 12px 14px;
+    color: var(--text);
+    outline: none;
+  }
+  .obs-input:focus { border-color: var(--gold-dim); }
   .help-size-btn {
     margin: 0 20px 14px;
     min-height: 38px;
@@ -877,104 +834,39 @@
     font-weight: 950;
   }
 
-  /* Léo PIP (futuro) */
-  .leo-pip {
-    position: fixed;
-    top: calc(var(--safe-top) + 12px);
-    right: 12px;
-    width: 80px;
-    height: 80px;
-    background: var(--bg-elev);
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    z-index: 60;
-    display: grid;
-    place-items: center;
-    transform: translateY(-110%);
-    transition: transform 400ms cubic-bezier(.34,1.56,.64,1);
-  }
-  .leo-pip.shown { transform: translateY(0); }
 </style>
 </head>
 <body>
 <div id="root"></div>
 
 <script type="text/babel" data-presets="env,react">
-const { useState, useEffect, useRef, useCallback } = React;
-
-// ============================================================================
-// DADOS MOCKADOS (depois virão do Supabase via Edge Function)
-// ============================================================================
-const PRATOS = [];
-/*
-  {
-    id: '874571e0-2af2-4ab9-9f9d-68366fa80b42',
-    nome: 'Risoto Cremoso de Alcatra na Manteiga',
-    descricao: 'Alcatra selada na manteiga até criar crosta, arroz arbóreo cozido no caldo da casa. Cremoso, suculento.',
-    preco: 49.90,
-    foto: 'https://jewamqbdonudiapxbzay.supabase.co/storage/v1/object/public/cardapio/pratos/874571e0-2af2-4ab9-9f9d-68366fa80b42-1778188022181.webp',
-    badge: 'mais pedido'
-  },
-  {
-    id: '15067563-1c40-4c7c-b3a0-cd1a3c7462be',
-    nome: 'Spaghetti à Carbonara',
-    descricao: 'Emulsão de ovos com água do cozimento, parmesão, pimenta-do-reino e bacon crocante.',
-    preco: 49.90,
-    foto: 'https://jewamqbdonudiapxbzay.supabase.co/storage/v1/object/public/cardapio/pratos/15067563-1c40-4c7c-b3a0-cd1a3c7462be-1778196437748.webp',
-    badge: 'o mais elogiado'
-  },
-  {
-    id: 'b32cb961-e22b-49b6-b788-cbf8f9a248c3',
-    nome: 'Pão Italiano Recheado',
-    descricao: 'Redução de gorgonzola com vinho branco e creme de leite no pão italiano artesanal. Acompanha alcatra, linguiça Blumenau e costela suína. Serve 3 a 4.',
-    preco: 88.90,
-    foto: 'https://jewamqbdonudiapxbzay.supabase.co/storage/v1/object/public/cardapio/pratos/b32cb961-e22b-49b6-b788-cbf8f9a248c3-1778196189581.webp',
-    badge: 'premium'
-  },
-  {
-    id: '1f1924da-89a4-491d-9cec-a5e8965b41d4',
-    nome: 'Nhoque Rosé',
-    descricao: 'Nhoque artesanal ao molho rosé, equilibrado e cremoso.',
-    preco: 45.90,
-    foto: 'https://jewamqbdonudiapxbzay.supabase.co/storage/v1/object/public/cardapio/pratos/1f1924da-89a4-491d-9cec-a5e8965b41d4-1778196851559.webp',
-    badge: null
-  }
-*/
+const { useState, useEffect, useRef } = React;
 
 // Frases de RONDA/IDLE (UI local, antes do chat abrir)
 const FALAS_RONDA = ['Passando...', 'Tô por aqui.', 'Tudo certo?', 'Tô de olho 😉'];
 const FALAS_IDLE_45S = [
   'Tá tudo certo aí?',
-  'Se ficar na dúvida, é só assobiar 😉',
-  'Se quiser uma sugestão, é só pedir.',
-  'Posso te contar o que tá saindo melhor hoje.'
+  'Pode olhar com calma.',
+  'A sacola fica embaixo quando você adiciona algo.',
+  'Se bater fome, eu apareço por aqui.'
 ];
 const SAUDACOES_INICIAIS = [
   'Ciao!', 'Boa, vê o que tem!', 'Bem-vindo(a)!', 'E aí, bora?',
   'Salve!', 'Ó eu aqui!'
-];
-const ATENDIMENTO_MSGS = [
-  'Tô aqui. Me manda sua dúvida que eu já aviso o pessoal do Dom.',
-  'Chamei o atendimento aqui. Pode escrever que chega lá no balcão.',
-  'Opa, tô por aqui. Se quiser pedir ou tirar dúvida, manda aqui que uma pessoa vê.',
-  'Pode falar comigo. Já deixo o pessoal atento por aqui.',
-];
-const ATENDIMENTO_ACKS = [
-  'Perfeito, mandei sua mensagem pro atendimento. Fica de olho aqui.',
-  'Boa, já avisei o pessoal do Dom. Se quiser complementar, manda mais uma mensagem.',
-  'Anotado. O atendimento já vai ver isso com carinho.',
-  'Chegou aqui. Vou deixar isso destacado pro pessoal te responder.',
-];
-const ASSOBIO_MSGS = [
-  'Ouvi o assobio. Chamei o pessoal aqui, pode mandar.',
-  'Eita, assobio forte. O atendimento já foi avisado.',
-  'Cheguei. Escreve aqui que eu mando pro balcão.',
 ];
 const DEFAULT_MICROCOPY = {
   entrega_texto: 'tempo em media para chegar na sua casa 20 a 30 min',
   entrega_botao_texto: 'quero saber o tempo exato',
   tamanhos_texto: '400g individual | 800g serve 2',
   fome_botao_texto: 'quero saber se vai matar minha fome',
+};
+const DEFAULT_CHAT_CONFIG = {
+  saudacoes: SAUDACOES_INICIAIS,
+  mensagens_automaticas: [
+    'Se algum prato chamar sua atenção, abre ele e escolhe tamanho e adicionais por ali.',
+    'Quando adicionar algo, a sacola aparece embaixo para você revisar tudo com calma.',
+    'Dica do Dom: os pratos maiores costumam valer muito a pena para dividir.',
+  ],
 };
 
 // ============================================================================
@@ -984,18 +876,8 @@ const SUPABASE_URL = 'https://jewamqbdonudiapxbzay.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY';
 const GARCOM_RESPONDER_URL = SUPABASE_URL + '/functions/v1/garcom-responder';
 
-function deviceId() {
-  let id = localStorage.getItem('garcom_device_id');
-  if (!id) {
-    id = 'dev_' + crypto.randomUUID();
-    localStorage.setItem('garcom_device_id', id);
-  }
-  return id;
-}
-
-function getSessaoId() { return localStorage.getItem('garcom_sessao_id'); }
-function setSessaoId(id) { if (id) localStorage.setItem('garcom_sessao_id', id); }
-function limparSessao() { localStorage.removeItem('garcom_sessao_id'); }
+localStorage.removeItem('garcom_sessao_id');
+localStorage.removeItem('garcom_device_id');
 
 async function listarPratos() {
   const r = await fetch(`${GARCOM_RESPONDER_URL}?_=${Date.now()}`, {
@@ -1015,56 +897,8 @@ async function listarPratos() {
     pratos: Array.isArray(data?.pratos) ? data.pratos : [],
     config: data?.config ?? {},
     microcopy: { ...DEFAULT_MICROCOPY, ...(data?.microcopy ?? {}) },
+    chatConfig: { ...DEFAULT_CHAT_CONFIG, ...(data?.chat_config ?? {}) },
   };
-}
-
-async function acaoGarcom(payload) {
-  const r = await fetch(GARCOM_RESPONDER_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify({
-      sessao_id: getSessaoId(),
-      device_id: deviceId(),
-      ...payload,
-    }),
-  });
-  if (!r.ok) throw new Error(await r.text());
-  const data = await r.json();
-  if (data?.sessao_id) setSessaoId(data.sessao_id);
-  return data;
-}
-
-async function registrarEventoCardapio(tipo, payload = {}) {
-  return acaoGarcom({
-    acao: 'registrar_evento',
-    evento: {
-      tipo,
-      ...payload,
-      at: new Date().toISOString(),
-      url_atual: location.href,
-      url_inicial: location.origin + location.pathname,
-      referrer: document.referrer || '',
-      user_agent: navigator.userAgent,
-      browser_info: {
-        platform: navigator.platform,
-        language: navigator.language,
-        viewport: `${window.innerWidth}x${window.innerHeight}`,
-        touch: 'ontouchstart' in window,
-      },
-    },
-  });
-}
-
-async function pedirSugestaoContextual(tipo, payload = {}) {
-  return acaoGarcom({
-    acao: 'sugestao_contextual',
-    tipo,
-    ...payload,
-  });
 }
 
 function sortear(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
@@ -1111,38 +945,6 @@ function MarcoSticker() {
   );
 }
 
-function LeoSticker() {
-  return (
-    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="chef" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f3ece0"/>
-          <stop offset="100%" stopColor="#c7bca8"/>
-        </linearGradient>
-      </defs>
-      {/* Cabeça */}
-      <circle cx="32" cy="28" r="11" fill="#f3d8b8"/>
-      {/* Chapéu de chef */}
-      <path d="M20 24 Q20 14 26 14 Q26 10 32 10 Q38 10 38 14 Q44 14 44 24 L42 24 L42 20 L40 22 L38 18 L36 22 L34 18 L32 22 L30 18 L28 22 L26 18 L24 22 L22 20 L22 24 Z" fill="url(#chef)" stroke="#1a1305" strokeWidth="0.5"/>
-      {/* Olhos sorrindo */}
-      <path d="M28 28 Q29 30 30 28" stroke="#1a1305" strokeWidth="1" fill="none"/>
-      <path d="M34 28 Q35 30 36 28" stroke="#1a1305" strokeWidth="1" fill="none"/>
-      {/* Sorrisão */}
-      <path d="M28 32 Q32 35 36 32" stroke="#1a1305" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-      {/* Bochecha rosada */}
-      <circle cx="25" cy="31" r="1.5" fill="#e8a4a0" opacity="0.7"/>
-      <circle cx="39" cy="31" r="1.5" fill="#e8a4a0" opacity="0.7"/>
-      {/* Jaleco branco */}
-      <path d="M20 42 Q32 40 44 42 L44 58 L20 58 Z" fill="#f3ece0" stroke="#c7bca8" strokeWidth="0.5"/>
-      {/* Botões */}
-      <circle cx="28" cy="46" r="0.8" fill="#1a1305"/>
-      <circle cx="28" cy="50" r="0.8" fill="#1a1305"/>
-      {/* Manchinha de molho */}
-      <circle cx="38" cy="48" r="1.2" fill="#8b2e1a" opacity="0.6"/>
-    </svg>
-  );
-}
-
 // ============================================================================
 // APP
 // ============================================================================
@@ -1150,20 +952,15 @@ function App() {
   const [garcomState, setGarcomState] = useState('hidden'); // hidden | peek | attention
   const [balaoTexto, setBalaoTexto] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
-  const [quickMenu, setQuickMenu] = useState(false);
   const [mensagens, setMensagens] = useState([]);
-  const [digitando, setDigitando] = useState(false);
-  const [muted, setMuted] = useState(false);
-  const [leoVisivel, setLeoVisivel] = useState(false);
-  const [input, setInput] = useState('');
   const [carrinho, setCarrinho] = useState([]);
   const [carrinhoTotal, setCarrinhoTotal] = useState(0);
   const [carrinhoPulse, setCarrinhoPulse] = useState(false);
   const [carrinhoOpen, setCarrinhoOpen] = useState(false);
-  const [clienteNome, setClienteNome] = useState(null);
   const [pratos, setPratos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [microcopy, setMicrocopy] = useState(DEFAULT_MICROCOPY);
+  const [chatConfig, setChatConfig] = useState(DEFAULT_CHAT_CONFIG);
   const [deliveryConfig, setDeliveryConfig] = useState({ taxa_entrega_padrao: 0, pedido_minimo: 0, tempo_entrega_min: 20, tempo_entrega_max: 30 });
   const [carregandoPratos, setCarregandoPratos] = useState(true);
   const [menuErro, setMenuErro] = useState(null);
@@ -1179,12 +976,6 @@ function App() {
   const rondaTimer = useRef(null);
   const idleTimer = useRef(null);
   const ultimaInteracao = useRef(Date.now());
-  const pratosVistos = useRef(new Set());
-  const hesitacaoTimers = useRef(new Map());
-  const ultimaSugestaoContextual = useRef(0);
-  const cartIdleTimer = useRef(null);
-  const chatAbertoNotificado = useRef(false);
-  const cardapio2minNotificado = useRef(false);
 
   // Ronda do Marco - aparece a cada 40-90s
   useEffect(() => {
@@ -1207,13 +998,13 @@ function App() {
     // Primeira aparição em 3s
     setTimeout(() => {
       setGarcomState('peek');
-      setBalaoTexto(sortear(SAUDACOES_INICIAIS));
+      setBalaoTexto(sortear(chatConfig.saudacoes ?? SAUDACOES_INICIAIS));
       setTimeout(() => setBalaoTexto(null), 5000);
       setTimeout(() => setGarcomState('attention'), 5500);
       agendarRonda();
     }, 2500);
     return () => clearTimeout(rondaTimer.current);
-  }, [chatOpen]);
+  }, [chatOpen, chatConfig.saudacoes]);
 
   // Idle de 45s
   useEffect(() => {
@@ -1244,9 +1035,6 @@ function App() {
 
   useEffect(() => {
     let vivo = true;
-    registrarEventoCardapio('page_view', {
-      descricao: 'Cliente entrou no cardapio do Marco',
-    }).catch(() => {});
     listarPratos()
       .then((dados) => {
         if (!vivo) return;
@@ -1254,6 +1042,7 @@ function App() {
         setCategorias(dados.categorias ?? []);
         setDeliveryConfig(prev => ({ ...prev, ...(dados.config ?? {}) }));
         setMicrocopy({ ...DEFAULT_MICROCOPY, ...(dados.microcopy ?? {}) });
+        setChatConfig({ ...DEFAULT_CHAT_CONFIG, ...(dados.chatConfig ?? {}) });
         setMenuErro(null);
       })
       .catch((err) => {
@@ -1270,15 +1059,9 @@ function App() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (cardapio2minNotificado.current) return;
-      cardapio2minNotificado.current = true;
-      registrarEventoCardapio('cardapio_2min', {
-        descricao: 'Cliente ficou mais de 2 minutos no cardapio do Marco',
-        carrinho_total: carrinhoTotal,
-      }).catch(() => {});
       if (!chatOpen) {
         setGarcomState('peek');
-        setBalaoTexto('Tô por aqui. Se quiser, chama que o pessoal do Dom te atende.');
+        setBalaoTexto(sortear(chatConfig.mensagens_automaticas ?? DEFAULT_CHAT_CONFIG.mensagens_automaticas));
         clearTimeout(balaoTimer.current);
         balaoTimer.current = setTimeout(() => {
           setBalaoTexto(null);
@@ -1287,23 +1070,7 @@ function App() {
       }
     }, 120000);
     return () => clearTimeout(timer);
-  }, [chatOpen, carrinhoTotal]);
-
-  // Processa a resposta do Marco: atualiza carrinho, nome, pulse, etc
-  const aplicarResposta = (resp) => {
-    if (!resp) return;
-    if (typeof resp.cliente_nome === 'string') setClienteNome(resp.cliente_nome);
-    if (Array.isArray(resp.carrinho)) {
-      const teveAdicao = (resp.eventos ?? []).some(e => e.tipo === 'carrinho_adicionado');
-      setCarrinho(resp.carrinho);
-      setCarrinhoTotal(typeof resp.total === 'number' ? resp.total : resp.carrinho.reduce((s, it) => s + (it.preco * it.qtd), 0));
-      if (teveAdicao) {
-        setCarrinhoPulse(true);
-        vibrate(25);
-        setTimeout(() => setCarrinhoPulse(false), 700);
-      }
-    }
-  };
+  }, [chatOpen, chatConfig.mensagens_automaticas]);
 
   const calcSubtotal = (items) => items.reduce((s, it) => s + Number(it.subtotal ?? (it.preco * it.qtd) ?? 0), 0);
   const totalItens = carrinho.reduce((s, it) => s + Number(it.qtd || 0), 0);
@@ -1337,7 +1104,6 @@ function App() {
     setDetailSizeId(primeiroTamanho(prato));
     setDetailOptions({});
     setDetailObs('');
-    registrarEventoCardapio('dish_clicked', { prato_id: prato.id, prato_nome: prato.nome }).catch(() => {});
   };
 
   const fecharDetalhe = () => {
@@ -1444,12 +1210,6 @@ function App() {
     setCarrinhoTotal(calcSubtotal(novos));
     setCarrinhoPulse(true);
     setTimeout(() => setCarrinhoPulse(false), 700);
-    registrarEventoCardapio('add_to_bag', {
-      prato_id: pratoAberto.id,
-      prato_nome: pratoAberto.nome,
-      quantidade: detailQty,
-      subtotal: item.subtotal,
-    }).catch(() => {});
     fecharDetalhe();
     setBalaoTexto(`Anotado: ${detailQty}x ${pratoAberto.nome}.`);
     setTimeout(() => setBalaoTexto(null), 3600);
@@ -1465,91 +1225,11 @@ function App() {
 
   const abrirSacola = () => {
     setSacolaOpen(true);
-    registrarEventoCardapio('open_cart', { carrinho_total: carrinhoTotal, itens: totalItens }).catch(() => {});
   };
-
-  const mostrarSugestaoContextual = useCallback(async (tipo, prato = null) => {
-    if (chatOpen) return;
-    const agora = Date.now();
-    if (agora - ultimaSugestaoContextual.current < 22000) return;
-    ultimaSugestaoContextual.current = agora;
-
-    try {
-      const payload = {
-        prato_id: prato?.id,
-        prato_nome: prato?.nome,
-        carrinho_total: carrinhoTotal,
-      };
-      const resp = await pedirSugestaoContextual(tipo, payload);
-      const f = resp?.falas?.[0];
-      if (!f?.texto || chatOpen) return;
-
-      setGarcomState('peek');
-      setBalaoTexto(f.texto);
-      clearTimeout(balaoTimer.current);
-      balaoTimer.current = setTimeout(() => {
-        setBalaoTexto(null);
-        if (!chatOpen) setGarcomState('attention');
-      }, Math.max(4200, Math.min(f.delay_ms ?? 4500, 6500)));
-    } catch (err) {
-      console.error(err);
-    }
-  }, [chatOpen, carrinhoTotal]);
-
-  useEffect(() => {
-    if (!pratos.length) return;
-    const pratosById = new Map(pratos.map(p => [String(p.id), p]));
-    const elementos = Array.from(document.querySelectorAll('.prato-card[data-prato-id]'));
-    if (!elementos.length) return;
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        const id = entry.target.getAttribute('data-prato-id');
-        const prato = pratosById.get(String(id));
-        if (!prato) return;
-
-        if (entry.isIntersecting && entry.intersectionRatio >= 0.62) {
-          if (!pratosVistos.current.has(id)) {
-            pratosVistos.current.add(id);
-            registrarEventoCardapio('dish_viewed', { prato_id: id, prato_nome: prato.nome }).catch(() => {});
-          }
-
-          if (!hesitacaoTimers.current.has(id)) {
-            const timer = setTimeout(() => {
-              hesitacaoTimers.current.delete(id);
-              mostrarSugestaoContextual('prato_hesitacao', prato);
-            }, 9000 + Math.random() * 4500);
-            hesitacaoTimers.current.set(id, timer);
-          }
-        } else {
-          const timer = hesitacaoTimers.current.get(id);
-          if (timer) clearTimeout(timer);
-          hesitacaoTimers.current.delete(id);
-        }
-      });
-    }, { threshold: [0, 0.62, 0.9] });
-
-    elementos.forEach(el => observer.observe(el));
-    return () => {
-      observer.disconnect();
-      hesitacaoTimers.current.forEach(timer => clearTimeout(timer));
-      hesitacaoTimers.current.clear();
-    };
-  }, [pratos, mostrarSugestaoContextual]);
-
-  useEffect(() => {
-    clearTimeout(cartIdleTimer.current);
-    if (!carrinho.length || chatOpen) return;
-    cartIdleTimer.current = setTimeout(() => {
-      mostrarSugestaoContextual('carrinho_idle');
-    }, 42000);
-    return () => clearTimeout(cartIdleTimer.current);
-  }, [carrinho.length, carrinhoTotal, chatOpen, mostrarSugestaoContextual]);
 
   // Tap no Marco - abre chat
   const tapMarco = () => {
     vibrate(15);
-    if (quickMenu) { setQuickMenu(false); return; }
     abrirChat();
   };
 
@@ -1557,96 +1237,41 @@ function App() {
     setChatOpen(true);
     setBalaoTexto(null);
     setGarcomState('peek');
-    if (!chatAbertoNotificado.current) {
-      chatAbertoNotificado.current = true;
-      registrarEventoCardapio('chat_aberto', {
-        descricao: 'Cliente abriu o chat do Marco',
-        carrinho_total: carrinhoTotal,
-      }).catch(() => {});
-    }
     if (mensagens.length === 0) {
-      setMensagens([{ id: Date.now(), autor: 'marco', texto: sortear(ATENDIMENTO_MSGS) }]);
+      const saudacao = sortear(chatConfig.saudacoes ?? SAUDACOES_INICIAIS);
+      const mensagem = sortear(chatConfig.mensagens_automaticas ?? DEFAULT_CHAT_CONFIG.mensagens_automaticas);
+      setMensagens([
+        { id: Date.now(), autor: 'marco', texto: saudacao },
+        { id: Date.now() + 1, autor: 'marco', texto: mensagem },
+      ]);
     }
   };
 
   const fecharChat = () => {
     setChatOpen(false);
-    setQuickMenu(false);
   };
 
   // Long-press no Marco
   const onPressStart = () => {
     lpTimer.current = setTimeout(() => {
       vibrate(40);
-      setQuickMenu(true);
+      abrirChat();
     }, 500);
   };
   const onPressEnd = () => {
     clearTimeout(lpTimer.current);
   };
 
-  const assobiar = async () => {
-    vibrate([30, 60, 30]);
-    setQuickMenu(false);
+  const mostrarMensagemAutomatica = (texto) => {
     setChatOpen(true);
     setBalaoTexto(null);
-    registrarEventoCardapio('chat_assobio', {
-      descricao: 'Cliente assobiou/chamou atendimento',
-      carrinho_total: carrinhoTotal,
-    }).catch(() => {});
-    setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: sortear(ASSOBIO_MSGS) }]);
-  };
-
-  const falarComMarco = async (msgUsuario) => {
-    setChatOpen(true);
-    setBalaoTexto(null);
-    setMensagens(m => [...m, { id: Date.now(), autor: 'cliente', texto: msgUsuario }]);
-    registrarEventoCardapio('mensagem_cliente', {
-      descricao: 'Cliente mandou mensagem no chat do Marco',
-      mensagem: msgUsuario,
-      carrinho_total: carrinhoTotal,
-    }).catch(() => {});
-    setDigitando(true);
-    setTimeout(() => {
-      setDigitando(false);
-      setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: sortear(ATENDIMENTO_ACKS) }]);
-    }, 700 + Math.random() * 900);
-  };
-
-  const enviarMsg = async () => {
-    if (!input.trim()) return;
-    const msg = input.trim();
-    setMensagens(m => [...m, { id: Date.now(), autor: 'cliente', texto: msg }]);
-    setInput('');
-    registrarEventoCardapio('mensagem_cliente', {
-      descricao: 'Cliente mandou mensagem no chat do Marco',
-      mensagem: msg,
-      carrinho_total: carrinhoTotal,
-    }).catch(() => {});
-    setDigitando(true);
-    setTimeout(() => {
-      setDigitando(false);
-      setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: sortear(ATENDIMENTO_ACKS) }]);
-    }, 700 + Math.random() * 900);
+    setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto }]);
   };
 
   const fecharPedido = async () => {
-    setChatOpen(true);
-    setCarrinhoOpen(false);
     setSacolaOpen(false);
-    setBalaoTexto(null);
-    const msg = 'quero fechar meu pedido';
-    setMensagens(m => [...m, { id: Date.now(), autor: 'cliente', texto: msg }]);
-    registrarEventoCardapio('cliente_quer_fechar', {
-      descricao: 'Cliente quer fechar pedido pelo atendimento humano',
-      carrinho,
-      carrinho_total: carrinhoTotal,
-    }).catch(() => {});
-    setDigitando(true);
-    setTimeout(() => {
-      setDigitando(false);
-      setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto: 'Boa. Chamei o atendimento pra fechar com você. Se puder, já manda nome, endereço e telefone aqui.' }]);
-    }, 800);
+    abrirChat();
+    mostrarMensagemAutomatica('Sacola pronta por aqui. Nesta fase, revise os itens e combine o fechamento pelo WhatsApp do Dom.');
   };
 
   // Long-press num prato → fala do Marco
@@ -1771,10 +1396,10 @@ function App() {
                         {Number(tam.preco_delta || 0) > 0 ? `+ ${fmtBRL(Number(tam.preco_delta))}` : 'sem adicional'}
                       </div>
                     </div>
-                    <span className={`choice-radio ${String(detailSizeId) === String(tam.id) ? 'active' : ''}`}></span>
+                    <span className={`choice-dot ${String(detailSizeId) === String(tam.id) ? 'active' : ''}`}></span>
                   </button>
                 ))}
-                <button className="help-size-btn" onClick={() => { const nome = pratoAberto.nome; fecharDetalhe(); falarComMarco(`quero saber se ${nome} vai matar minha fome`); }}>
+                <button className="help-size-btn" onClick={() => mostrarMensagemAutomatica(`${pratoAberto.nome}: ${microcopy.tamanhos_texto}.`)}>
                   {microcopy.fome_botao_texto}
                 </button>
               </div>
@@ -1828,7 +1453,7 @@ function App() {
                 </div>
                 <div style={{padding:'14px 20px'}}>
                   <textarea
-                    className="input-msg"
+                    className="obs-input"
                     style={{width:'100%', minHeight: 86, borderRadius: 16, resize:'none'}}
                     value={detailObs}
                     onChange={e => setDetailObs(e.target.value)}
@@ -1907,15 +1532,11 @@ function App() {
         </div>
         <div className="bag-footer">
           <button className="bag-primary-btn" onClick={fecharPedido}>
-            <span>Continuar com atendimento</span>
+            <span>Ver resumo no Marco</span>
             <span>{fmtBRL(totalComEntrega)}</span>
           </button>
         </div>
       </section>
-
-      <div className={`leo-pip ${leoVisivel ? 'shown' : ''}`}>
-        <div style={{width: '56px', height: '56px'}}><LeoSticker /></div>
-      </div>
 
       {/* Marco sticker */}
       <button
@@ -1938,15 +1559,6 @@ function App() {
       {/* Balão de fala */}
       <div className={`balao ${balaoTexto && !chatOpen ? 'shown' : ''}`}>
         {balaoTexto}
-      </div>
-
-      {/* Quick menu (long-press) */}
-      <div className={`quick-menu ${quickMenu ? 'open' : ''}`}>
-        <button onClick={assobiar}>🎵 Assobiar</button>
-        <button onClick={() => { setMuted(m => !m); setQuickMenu(false); }}>
-          {muted ? '🔊 Ativar som' : '🔇 Mutar som'}
-        </button>
-        <button onClick={() => { setQuickMenu(false); abrirChat(); }}>💬 Abrir chat</button>
       </div>
 
       {/* Backdrop + Bottom sheet */}
@@ -1992,7 +1604,7 @@ function App() {
                   <div className="preco">{fmtBRL(it.preco * it.qtd)}</div>
                 </div>
               ))}
-              <button className="checkout-btn" onClick={fecharPedido}>Fechar com o Marco</button>
+              <button className="checkout-btn" onClick={fecharPedido}>Ver resumo no Marco</button>
             </div>
           </>
         )}
@@ -2001,28 +1613,7 @@ function App() {
           {mensagens.map(m => (
             <div key={m.id} className={`msg ${m.autor}`}>{m.texto}</div>
           ))}
-          {digitando && (
-            <div className="msg-typing">
-              <span></span><span></span><span></span>
-            </div>
-          )}
         </div>
-
-        <footer>
-          <button className="btn-icon" onClick={assobiar} aria-label="Assobiar">
-            <span style={{fontSize:'18px'}}>🎵</span>
-          </button>
-          <input
-            className="input-msg"
-            placeholder="Mensagem para o Marco..."
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && enviarMsg()}
-          />
-          <button className="btn-icon btn-send" onClick={enviarMsg} aria-label="Enviar">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
-          </button>
-        </footer>
       </div>
     </div>
   );
