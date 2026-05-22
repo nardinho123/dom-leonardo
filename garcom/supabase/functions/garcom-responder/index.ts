@@ -371,6 +371,7 @@ Deno.serve(async (req) => {
         ...grupo,
         opcionais: (opcionaisByGrupo[String(grupo.id)] ?? []).map((op) => ({
           ...op,
+          foto: op.foto_url ?? "",
           preco_delta: toNumber(op.preco_delta, 0),
         })),
       })),
