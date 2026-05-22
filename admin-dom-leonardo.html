@@ -1127,6 +1127,14 @@
             p_tamanhos: tamanhos,
             p_grupos: grupos,
             p_cupons: cupons,
+            p_frase_fome: form.frase_fome || null,
+            p_como_chega_texto: form.como_chega_texto || null,
+            p_porcao_texto: form.porcao_texto || null,
+            p_duvida_tamanho_texto: form.duvida_tamanho_texto || null,
+            p_melhor_para: form.melhor_para || null,
+            p_evitar_se: form.evitar_se || null,
+            p_selo_experiencia: form.selo_experiencia || null,
+            p_urgencia_texto: form.urgencia_texto || null,
           };
           const { error } = await sb.rpc('salvar_prato_completo', payload);
           if (error) throw error;
@@ -1236,6 +1244,14 @@
             garcom_fome_botao_texto: form.garcom_fome_botao_texto || 'quero saber se vai matar minha fome',
             garcom_chat_saudacoes: textToList(form.garcom_chat_saudacoes_texto).length ? textToList(form.garcom_chat_saudacoes_texto) : ['Ciao! Que bom te ver por aqui.', 'Boa noite! Fica a vontade para olhar com calma.'],
             garcom_chat_mensagens_auto: textToList(form.garcom_chat_mensagens_auto_texto).length ? textToList(form.garcom_chat_mensagens_auto_texto) : ['Se algum prato chamar sua atencao, abre ele e escolhe tamanho e adicionais por ali.'],
+            mercado_pago_public_key: form.mercado_pago_public_key || null,
+            mercado_pago_client_id: form.mercado_pago_client_id || null,
+            checkout_mercado_pago_ativo: form.checkout_mercado_pago_ativo !== false,
+            checkout_titulo: form.checkout_titulo || 'Fechar pedido com segurança',
+            checkout_subtitulo: form.checkout_subtitulo || 'Revise sua janta, informe entrega e pague pelo Mercado Pago.',
+            checkout_botao_texto: form.checkout_botao_texto || 'Pagar com Mercado Pago',
+            checkout_sucesso_texto: form.checkout_sucesso_texto || 'Pedido recebido. Assim que o pagamento confirmar, o Dom já vê na cozinha.',
+            checkout_pendente_texto: form.checkout_pendente_texto || 'Pagamento pendente. Se for Pix, aguarde a confirmação do Mercado Pago.',
             horario_abertura: form.horario_abertura,
             horario_fechamento: form.horario_fechamento,
             aviso_topo: form.aviso_topo || null,
@@ -1395,6 +1411,14 @@
         slug: '',
         descricao_curta: '',
         descricao_completa: '',
+        frase_fome: '',
+        como_chega_texto: '',
+        porcao_texto: '',
+        duvida_tamanho_texto: '',
+        melhor_para: '',
+        evitar_se: '',
+        selo_experiencia: '',
+        urgencia_texto: '',
         preco_base: 0,
         foto_url: '',
         fotoFile: null,
@@ -1535,6 +1559,7 @@
                     <div>
                       <h4>{prato.nome}</h4>
                       <p>{prato.descricao_curta || 'Sem descrição'}</p>
+                      {prato.frase_fome && <p className="muted" style={{marginTop:4}}>Fome: {prato.frase_fome}</p>}
                       <div className="dish-meta">
                         <span className="money">{fmtMoney(prato.preco_base)}</span>
                         <span className={`badge ${prato.ativo ? 'on' : 'off'}`}>{prato.ativo ? 'Ativo' : 'Inativo'}</span>
@@ -1621,9 +1646,17 @@
                 </SelectField>
                 <TextField label="Nome do prato" value={form.nome} onChange={v => set('nome', v)} />
                 <div className="field full"><TextField label="Descrição do prato" value={form.descricao_curta} onChange={v => set('descricao_curta', v)} textarea /></div>
+                <div className="field full"><TextField label="Frase de fome (curta, aparece forte no cardápio)" value={form.frase_fome || ''} onChange={v => set('frase_fome', v)} textarea /></div>
+                <div className="field full"><TextField label="Como chega na casa do cliente" value={form.como_chega_texto || ''} onChange={v => set('como_chega_texto', v)} textarea /></div>
+                <div className="field full"><TextField label="Porção sem mistério" value={form.porcao_texto || ''} onChange={v => set('porcao_texto', v)} /></div>
+                <div className="field full"><TextField label="Resposta para dúvida de tamanho/fome" value={form.duvida_tamanho_texto || ''} onChange={v => set('duvida_tamanho_texto', v)} textarea /></div>
+                <TextField label="Melhor para" value={form.melhor_para || ''} onChange={v => set('melhor_para', v)} />
+                <TextField label="Evitar se" value={form.evitar_se || ''} onChange={v => set('evitar_se', v)} />
                 <div style={{display:'none'}}><TextField label="Slug" value={form.slug} onChange={v => set('slug', v)} /></div>
                 <TextField label="Preço base" type="number" value={form.preco_base} onChange={v => set('preco_base', v)} />
                 <TextField label="Etiqueta no cardápio" value={form.badge_destaque} onChange={v => set('badge_destaque', v)} />
+                <TextField label="Selo sensorial" value={form.selo_experiencia || ''} onChange={v => set('selo_experiencia', v)} />
+                <TextField label="Urgência/escassez" value={form.urgencia_texto || ''} onChange={v => set('urgencia_texto', v)} />
                 <ColorPicker label="Cor da etiqueta" value={form.badge_cor || 'vermelho'} onChange={v => set('badge_cor', v)} />
                 <TextField label="Ordem" type="number" step="1" value={form.ordem} onChange={v => set('ordem', v)} />
               </div>
@@ -1917,6 +1950,14 @@
             'Se algum prato chamar sua atencao, abre ele e escolhe tamanho e adicionais por ali.',
             'Quando adicionar algo, a sacola aparece embaixo para voce revisar tudo com calma.',
           ]),
+          mercado_pago_public_key: config.mercado_pago_public_key || 'APP_USR-9fc7cbdf-41c6-447e-a07e-68c47ceefe96',
+          mercado_pago_client_id: config.mercado_pago_client_id || '492334208698153',
+          checkout_mercado_pago_ativo: config.checkout_mercado_pago_ativo !== false,
+          checkout_titulo: config.checkout_titulo || 'Fechar pedido com segurança',
+          checkout_subtitulo: config.checkout_subtitulo || 'Revise sua janta, informe entrega e pague pelo Mercado Pago.',
+          checkout_botao_texto: config.checkout_botao_texto || 'Pagar com Mercado Pago',
+          checkout_sucesso_texto: config.checkout_sucesso_texto || 'Pedido recebido. Assim que o pagamento confirmar, o Dom já vê na cozinha.',
+          checkout_pendente_texto: config.checkout_pendente_texto || 'Pagamento pendente. Se for Pix, aguarde a confirmação do Mercado Pago.',
           horario_abertura: config.horario_abertura || '18:00:00',
           horario_fechamento: config.horario_fechamento || '23:30:00',
           aviso_topo: config.aviso_topo || '',
@@ -1956,6 +1997,14 @@
             <div className="field full"><TextField label="Botao duvida sobre fome no Garcom" value={form.garcom_fome_botao_texto} onChange={v => set('garcom_fome_botao_texto', v)} /></div>
             <div className="field full"><TextField label="Saudacoes automaticas do Marco (uma por linha)" value={form.garcom_chat_saudacoes_texto} onChange={v => set('garcom_chat_saudacoes_texto', v)} textarea /></div>
             <div className="field full"><TextField label="Mensagens automaticas do Marco (uma por linha)" value={form.garcom_chat_mensagens_auto_texto} onChange={v => set('garcom_chat_mensagens_auto_texto', v)} textarea /></div>
+            <div className="field full"><TextField label="Mercado Pago Public Key" value={form.mercado_pago_public_key} onChange={v => set('mercado_pago_public_key', v)} /></div>
+            <TextField label="Mercado Pago Client ID" value={form.mercado_pago_client_id} onChange={v => set('mercado_pago_client_id', v)} />
+            <label className="field"><span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6}}>CHECKOUT MERCADO PAGO</span><div className="check-row"><input type="checkbox" checked={!!form.checkout_mercado_pago_ativo} onChange={e => set('checkout_mercado_pago_ativo', e.target.checked)} /><span>{form.checkout_mercado_pago_ativo ? 'Ativo' : 'Inativo'}</span></div></label>
+            <TextField label="Titulo do checkout" value={form.checkout_titulo} onChange={v => set('checkout_titulo', v)} />
+            <TextField label="Botao do checkout" value={form.checkout_botao_texto} onChange={v => set('checkout_botao_texto', v)} />
+            <div className="field full"><TextField label="Subtitulo do checkout" value={form.checkout_subtitulo} onChange={v => set('checkout_subtitulo', v)} textarea /></div>
+            <div className="field full"><TextField label="Mensagem pagamento aprovado" value={form.checkout_sucesso_texto} onChange={v => set('checkout_sucesso_texto', v)} textarea /></div>
+            <div className="field full"><TextField label="Mensagem pagamento pendente" value={form.checkout_pendente_texto} onChange={v => set('checkout_pendente_texto', v)} textarea /></div>
             <TextField label="Abre" type="time" value={form.horario_abertura} onChange={v => set('horario_abertura', v)} />
             <TextField label="Fecha" type="time" value={form.horario_fechamento} onChange={v => set('horario_fechamento', v)} />
             <div className="field full"><TextField label="Aviso no topo" value={form.aviso_topo} onChange={v => set('aviso_topo', v)} textarea /></div>

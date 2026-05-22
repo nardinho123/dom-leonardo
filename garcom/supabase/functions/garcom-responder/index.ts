@@ -1,6 +1,7 @@
 // Edge Function: garcom-responder
 // API publica do cardapio do Garcom:
-// apenas entrega cardapio, configuracoes e mensagens automaticas do Marco.
+// entrega cardapio/configuracoes/mensagens automaticas do Marco
+// e cria checkout via Mercado Pago sem expor token secreto no HTML.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -24,6 +25,8 @@ const CHAT_PADRAO_MENSAGENS = [
   "Quando adicionar algo, a sacola aparece embaixo para voce revisar tudo com calma.",
   "Dica do Dom: os pratos maiores costumam valer muito a pena para dividir.",
 ];
+
+const DEFAULT_SITE_URL = "https://domleonardo-erp.be3jfe.easypanel.host/garcom/";
 
 function toNumber(value: unknown, fallback = 0): number {
   const n = Number(value);
@@ -83,6 +86,13 @@ function mapConfig(config: Record<string, unknown> | null) {
     destaques_descricao: cfg.destaques_descricao ?? "Os pratos que mais saem por aqui.",
     cupons_titulo: cfg.cupons_titulo ?? "Cupons do Dom",
     cupons_descricao: cfg.cupons_descricao ?? "Toque para ver onde usar e quando acaba.",
+    mercado_pago_public_key: cfg.mercado_pago_public_key ?? "",
+    checkout_mercado_pago_ativo: cfg.checkout_mercado_pago_ativo !== false,
+    checkout_titulo: cfg.checkout_titulo ?? "Fechar pedido com seguranca",
+    checkout_subtitulo: cfg.checkout_subtitulo ?? "Revise sua janta, informe entrega e pague pelo Mercado Pago.",
+    checkout_botao_texto: cfg.checkout_botao_texto ?? "Pagar com Mercado Pago",
+    checkout_sucesso_texto: cfg.checkout_sucesso_texto ?? "Pedido recebido. Assim que o pagamento confirmar, o Dom ja ve na cozinha.",
+    checkout_pendente_texto: cfg.checkout_pendente_texto ?? "Pagamento pendente. Se for Pix, aguarde a confirmacao do Mercado Pago.",
   };
 }
 
@@ -104,6 +114,44 @@ function mapChatConfig(config: Record<string, unknown> | null) {
   };
 }
 
+function cleanText(value: unknown): string {
+  return String(value ?? "").trim();
+}
+
+function normalizePhone(value: unknown): string {
+  return cleanText(value).replace(/\D/g, "");
+}
+
+function normalizeSiteUrl(value: unknown): string {
+  const raw = cleanText(value) || DEFAULT_SITE_URL;
+  try {
+    const url = new URL(raw);
+    if (!["http:", "https:"].includes(url.protocol)) return DEFAULT_SITE_URL;
+    return url.href;
+  } catch (_) {
+    return DEFAULT_SITE_URL;
+  }
+}
+
+function toPedidoItens(rawItens: unknown): unknown[] {
+  if (!Array.isArray(rawItens)) return [];
+  return rawItens.map((item) => {
+    const row = item as Record<string, unknown>;
+    const opcionaisRaw = Array.isArray(row.opcionais) ? row.opcionais : [];
+    return {
+      prato_id: row.prato_id,
+      tamanho_id: (row.tamanho as Record<string, unknown> | null)?.id ?? row.tamanho_id ?? null,
+      quantidade: Math.max(1, Math.floor(toNumber(row.qtd ?? row.quantidade, 1))),
+      opcionais_ids: opcionaisRaw.flatMap((op) => {
+        const opt = op as Record<string, unknown>;
+        const qtd = Math.max(1, Math.floor(toNumber(opt.qtd, 1)));
+        return Array.from({ length: qtd }, () => opt.id ?? opt.opcional_id).filter(Boolean);
+      }),
+      observacoes: cleanText(row.obs ?? row.observacoes) || null,
+    };
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
@@ -123,7 +171,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    if (!["listar_pratos", "listar_cardapio", "mensagens_chat"].includes(acao)) {
+    if (!["listar_pratos", "listar_cardapio", "mensagens_chat", "criar_checkout"].includes(acao)) {
       return new Response(JSON.stringify({ error: "acao invalida" }), {
         status: 400,
         headers: { ...cors, "Content-Type": "application/json" },
@@ -141,6 +189,143 @@ Deno.serve(async (req) => {
     const chatConfig = mapChatConfig(config as Record<string, unknown> | null);
     if (acao === "mensagens_chat") {
       return new Response(JSON.stringify({ chat_config: chatConfig }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
+    if (acao === "criar_checkout") {
+      const cfg = mapConfig(config as Record<string, unknown> | null);
+      if (!cfg.checkout_mercado_pago_ativo) {
+        return new Response(JSON.stringify({ error: "checkout desativado no painel" }), {
+          status: 400,
+          headers: { ...cors, "Content-Type": "application/json" },
+        });
+      }
+
+      const mercadoPagoToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
+      if (!mercadoPagoToken) {
+        return new Response(JSON.stringify({
+          error: "MERCADO_PAGO_ACCESS_TOKEN nao configurado",
+          detalhe: "Adicione o Access Token como secret da Edge Function no Supabase. A Public Key pode ficar no painel, mas o Access Token nunca deve ir para o HTML.",
+        }), {
+          status: 500,
+          headers: { ...cors, "Content-Type": "application/json" },
+        });
+      }
+
+      const cliente = body?.cliente ?? {};
+      const endereco = body?.endereco ?? {};
+      const itens = toPedidoItens(body?.itens);
+
+      if (!cleanText((cliente as Record<string, unknown>).nome)) {
+        throw new Error("Informe seu nome para fechar o pedido.");
+      }
+      if (!normalizePhone((cliente as Record<string, unknown>).whatsapp)) {
+        throw new Error("Informe um telefone/WhatsApp para o motoboy te encontrar.");
+      }
+      if (itens.length === 0) {
+        throw new Error("Sua sacola esta vazia.");
+      }
+
+      const { data: pedido, error: pedidoError } = await supabase.rpc("criar_pedido", {
+        p_cliente: {
+          nome: cleanText((cliente as Record<string, unknown>).nome),
+          whatsapp: normalizePhone((cliente as Record<string, unknown>).whatsapp),
+          email: cleanText((cliente as Record<string, unknown>).email) || null,
+        },
+        p_endereco: {
+          cep: cleanText((endereco as Record<string, unknown>).cep) || null,
+          logradouro: cleanText((endereco as Record<string, unknown>).logradouro),
+          numero: cleanText((endereco as Record<string, unknown>).numero),
+          complemento: cleanText((endereco as Record<string, unknown>).complemento) || null,
+          bairro: cleanText((endereco as Record<string, unknown>).bairro),
+          cidade: cleanText((endereco as Record<string, unknown>).cidade) || "Curitiba",
+          uf: cleanText((endereco as Record<string, unknown>).uf) || "PR",
+          ponto_referencia: cleanText((endereco as Record<string, unknown>).ponto_referencia) || null,
+        },
+        p_itens: itens,
+        p_forma_pagamento: "mercado_pago",
+        p_troco_para: null,
+        p_cupom_codigo: cleanText(body?.cupom_codigo) || null,
+        p_observacoes: cleanText(body?.observacoes) || null,
+        p_origem: "cardapio_garcom_mp",
+      });
+
+      if (pedidoError) throw pedidoError;
+
+      const pedidoObj = pedido as Record<string, unknown>;
+      const total = toNumber(pedidoObj.total, 0);
+      const siteUrl = normalizeSiteUrl(body?.site_url);
+      const successUrl = new URL(siteUrl);
+      successUrl.searchParams.set("pagamento", "sucesso");
+      successUrl.searchParams.set("pedido", String(pedidoObj.numero_pedido ?? ""));
+      const pendingUrl = new URL(siteUrl);
+      pendingUrl.searchParams.set("pagamento", "pendente");
+      pendingUrl.searchParams.set("pedido", String(pedidoObj.numero_pedido ?? ""));
+      const failureUrl = new URL(siteUrl);
+      failureUrl.searchParams.set("pagamento", "falha");
+      failureUrl.searchParams.set("pedido", String(pedidoObj.numero_pedido ?? ""));
+
+      const preferenceBody = {
+        items: [{
+          title: `Pedido Dom Leonardo #${pedidoObj.numero_pedido}`,
+          description: "Cardapio Dom Leonardo",
+          quantity: 1,
+          currency_id: "BRL",
+          unit_price: Number(total.toFixed(2)),
+        }],
+        payer: {
+          name: cleanText((cliente as Record<string, unknown>).nome),
+          phone: {
+            number: normalizePhone((cliente as Record<string, unknown>).whatsapp),
+          },
+        },
+        external_reference: String(pedidoObj.pedido_id ?? ""),
+        statement_descriptor: "DOM LEONARDO",
+        back_urls: {
+          success: successUrl.href,
+          pending: pendingUrl.href,
+          failure: failureUrl.href,
+        },
+        auto_return: "approved",
+        metadata: {
+          pedido_id: String(pedidoObj.pedido_id ?? ""),
+          numero_pedido: String(pedidoObj.numero_pedido ?? ""),
+          origem: "cardapio_garcom_mp",
+        },
+      };
+
+      const mpResp = await fetch("https://api.mercadopago.com/checkout/preferences", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${mercadoPagoToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(preferenceBody),
+      });
+
+      const mpData = await mpResp.json().catch(() => ({}));
+      if (!mpResp.ok) {
+        console.error("mercado pago preference error", mpData);
+        return new Response(JSON.stringify({
+          error: "Nao consegui criar o checkout do Mercado Pago.",
+          detalhe: mpData,
+          pedido,
+        }), {
+          status: 502,
+          headers: { ...cors, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({
+        sucesso: true,
+        pedido,
+        mercado_pago: {
+          preference_id: mpData.id,
+          init_point: mpData.init_point,
+          sandbox_init_point: mpData.sandbox_init_point,
+        },
+      }), {
         headers: { ...cors, "Content-Type": "application/json" },
       });
     }
@@ -174,6 +359,9 @@ Deno.serve(async (req) => {
 
     const pratos = (pratosRes.data ?? []).map((prato) => ({
       ...prato,
+      foto: prato.foto_url ?? "",
+      descricao: prato.descricao_curta ?? prato.descricao_completa ?? "",
+      badge: prato.badge_destaque ?? prato.selo_experiencia ?? "",
       preco: toNumber(prato.preco_promocional ?? prato.preco_base, 0),
       tamanhos: (tamanhosByPrato[String(prato.id)] ?? []).map((tam) => ({
         ...tam,
