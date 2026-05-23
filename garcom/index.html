@@ -1177,6 +1177,11 @@
     font-size: 11px;
     font-weight: 900;
   }
+  .hero-wpp-btn {
+    border-color: rgba(45, 196, 94, 0.28);
+    background: linear-gradient(180deg, rgba(45,196,94,0.22), rgba(16,120,62,0.20));
+    color: #d8ffe7;
+  }
   .trust-row {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1425,6 +1430,26 @@
     font-size: 11px;
     line-height: 1.35;
   }
+  .wpp-checkout-box {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(212,175,55,0.12);
+  }
+  .wpp-checkout-box p {
+    margin: 0 0 8px;
+    color: rgba(243,236,224,0.68);
+    font-size: 12px;
+  }
+  .wpp-checkout-btn {
+    width: 100%;
+    min-height: 44px;
+    border-radius: 14px;
+    background: rgba(37, 211, 102, 0.14);
+    border: 1px solid rgba(37, 211, 102, 0.32);
+    color: #d9ffe8;
+    font-size: 13px;
+    font-weight: 950;
+  }
   .welcome-gate {
     position: fixed;
     top: 0;
@@ -1540,6 +1565,7 @@ const DEFAULT_CHAT_CONFIG = {
 const SUPABASE_URL = 'https://jewamqbdonudiapxbzay.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY';
 const GARCOM_RESPONDER_URL = SUPABASE_URL + '/functions/v1/garcom-responder';
+const WHATSAPP_DOM = '5541987044064';
 
 localStorage.removeItem('garcom_sessao_id');
 localStorage.removeItem('garcom_device_id');
@@ -1894,6 +1920,56 @@ function App() {
   const descontoCupom = cupomResumo.ok ? Number(cupomResumo.desconto || 0) : 0;
   const taxaEntregaFinal = cupomResumo.ok && cupomResumo.freteGratis ? 0 : taxaEntrega;
   const totalComEntrega = Math.max(0, carrinhoTotal + taxaEntregaFinal - descontoCupom);
+  const montarTextoWhatsApp = (origem = 'topo') => {
+    const linhas = [
+      'Ola, Dom Leonardo!',
+      origem === 'sacola'
+        ? 'Quero finalizar meu pedido pelo WhatsApp.'
+        : 'Vim pelo cardapio e quero falar com voces.',
+    ];
+
+    if (carrinho.length) {
+      linhas.push('', 'Minha sacola:');
+      carrinho.forEach((item, idx) => {
+        linhas.push(`${idx + 1}. ${item.qtd}x ${item.nome}`);
+        if (item.tamanho?.nome) {
+          linhas.push(`   Tamanho: ${item.tamanho.nome}${item.tamanho.peso_g ? ` (${item.tamanho.peso_g}g)` : ''}`);
+        }
+        if (item.opcionais?.length) {
+          linhas.push(`   Adicionais: ${item.opcionais.map(op => `${op.qtd}x ${op.nome}`).join(', ')}`);
+        }
+        if (item.obs) linhas.push(`   Obs: ${item.obs}`);
+        linhas.push(`   Subtotal: ${fmtBRL(item.subtotal)}`);
+      });
+      linhas.push('', `Subtotal: ${fmtBRL(carrinhoTotal)}`);
+      linhas.push(`Entrega estimada: ${cupomResumo.ok && cupomResumo.freteGratis ? 'gratis' : fmtBRL(taxaEntregaFinal)}`);
+      if (descontoCupom > 0) linhas.push(`Desconto: - ${fmtBRL(descontoCupom)}`);
+      if (cupomResumo.ok && cupomAplicado?.codigo) linhas.push(`Cupom: ${String(cupomAplicado.codigo).toUpperCase()}`);
+      linhas.push(`Total estimado: ${fmtBRL(totalComEntrega)}`);
+    }
+
+    const dados = [];
+    if (checkoutForm.nome) dados.push(`Nome: ${checkoutForm.nome}`);
+    if (checkoutForm.whatsapp) dados.push(`Telefone: ${checkoutForm.whatsapp}`);
+    const endereco = [
+      checkoutForm.logradouro,
+      checkoutForm.numero,
+      checkoutForm.bairro,
+      checkoutForm.complemento,
+      checkoutForm.cep ? `CEP ${checkoutForm.cep}` : '',
+      [checkoutForm.cidade, checkoutForm.uf].filter(Boolean).join('/'),
+    ].filter(Boolean).join(', ');
+    if (endereco) dados.push(`Endereco: ${endereco}`);
+    if (checkoutForm.ponto_referencia) dados.push(`Referencia: ${checkoutForm.ponto_referencia}`);
+    if (dados.length) linhas.push('', 'Dados que ja preenchi:', ...dados);
+
+    linhas.push('', `Link do cardapio: ${window.location.origin}${window.location.pathname}`);
+    return linhas.join('\n');
+  };
+  const abrirWhatsApp = (origem = 'topo') => {
+    const texto = montarTextoWhatsApp(origem);
+    window.open(`https://wa.me/${WHATSAPP_DOM}?text=${encodeURIComponent(texto)}`, '_blank', 'noopener,noreferrer');
+  };
   const pratosVisiveis = categoriaAtiva === 'todos'
     ? pratos
     : pratos.filter(p => String(p.categoria_id) === String(categoriaAtiva));
@@ -2390,6 +2466,9 @@ function App() {
           <button className="hero-soft-btn" onClick={() => pedirTempoEntrega()}>
             Quanto tempo para chegar na minha casa?
           </button>
+          <button className="hero-soft-btn hero-wpp-btn" onClick={() => abrirWhatsApp('topo')}>
+            Chamar no WhatsApp
+          </button>
         </div>
         <div className="trust-row">
           <div className="trust-chip"><span>Entrega media</span><strong>{tempoEntregaTexto}</strong></div>
@@ -2749,6 +2828,12 @@ function App() {
             </div>
             {checkoutErro && <div className="checkout-error">{checkoutErro}</div>}
             <div className="mp-note">Pagamento seguro pelo Mercado Pago. O Access Token fica protegido na Edge Function do Supabase.</div>
+            <div className="wpp-checkout-box">
+              <p>Voce tambem pode finalizar no WhatsApp. Se ja preencheu nome, endereco ou telefone, eu mando tudo junto com a sacola.</p>
+              <button className="wpp-checkout-btn" onClick={() => abrirWhatsApp('sacola')}>
+                Finalizar no WhatsApp
+              </button>
+            </div>
           </div>
 
           <div className="bag-values">
