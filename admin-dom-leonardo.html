@@ -541,6 +541,81 @@
       color: var(--muted);
       font-size: 13px;
     }
+    .chat-list { display: grid; gap: 12px; }
+    .chat-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 14px;
+      cursor: pointer;
+      text-align: left;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .chat-card.unread {
+      border-color: rgba(234,29,44,.38);
+      box-shadow: 0 10px 24px rgba(234,29,44,.08);
+    }
+    .chat-card h3 { margin: 0 0 6px; font-size: 17px; }
+    .chat-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .chat-unread {
+      min-width: 26px;
+      height: 26px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: var(--red);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .chat-thread {
+      display: grid;
+      gap: 10px;
+      max-height: 54vh;
+      overflow-y: auto;
+      padding: 4px 2px;
+    }
+    .chat-bubble {
+      max-width: 82%;
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    .chat-bubble strong,
+    .chat-bubble span { display: block; }
+    .chat-bubble.cliente {
+      justify-self: start;
+      background: #f3f4f6;
+      border: 1px solid var(--line);
+    }
+    .chat-bubble.admin {
+      justify-self: end;
+      background: var(--red);
+      color: #fff;
+    }
+    .chat-bubble small {
+      display: block;
+      margin-top: 5px;
+      opacity: .65;
+      font-size: 11px;
+    }
+    .reply-box {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-top: 14px;
+    }
     .status-novo { color: var(--red); background: rgba(234,29,44,.12); }
     .status-em_preparo, .status-pronto { color: #836400; background: rgba(248,200,70,.20); }
     .status-saiu_entrega { color: var(--purple); background: rgba(155,89,229,.14); }
@@ -579,7 +654,7 @@
       .category-head { flex-direction: column; align-items: stretch; }
       .inline-grid { grid-template-columns: 1fr; }
       .span-2, .span-3, .span-4, .span-5, .span-6, .span-8, .span-12 { grid-column: auto; }
-      .order-card { grid-template-columns: 1fr; }
+      .order-card, .chat-card, .reply-box { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -598,6 +673,7 @@
       { id: 'painel', icon: '📊', label: 'Painel' },
       { id: 'cardapio', icon: '🍝', label: 'Cardápio' },
       { id: 'pedidos', icon: '🧾', label: 'Pedidos' },
+      { id: 'atendimento', icon: '💬', label: 'Atendimento' },
       { id: 'clientes', icon: '👤', label: 'Clientes' },
       { id: 'cupons', icon: '🎟️', label: 'Cupons' },
       { id: 'config', icon: '⚙️', label: 'Configurações' },
@@ -852,18 +928,26 @@
       const [toastState, setToastState] = useState(null);
       const [data, setData] = useState({
         categorias: [], pratos: [], tamanhos: [], grupos: [], opcionais: [], pratoCupons: [],
-        cupons: [], pedidos: [], clientes: [], config: null,
+        cupons: [], pedidos: [], atendimentos: [], clientes: [], config: null,
       });
       const [modal, setModal] = useState(null);
       const [statusFilter, setStatusFilter] = useState('');
       const [orderDetail, setOrderDetail] = useState(null);
+      const [chatDetail, setChatDetail] = useState(null);
       const [soundEnabled, setSoundEnabled] = useState(false);
+      const [ringing, setRinging] = useState(false);
       const [customSoundName, setCustomSoundName] = useState(() => localStorage.getItem('admin_custom_sound_name') || '');
       const audioCtxRef = useRef(null);
       const customAudioRef = useRef(null);
       const soundInputRef = useRef(null);
+      const ringIntervalRef = useRef(null);
+      const chatDetailRef = useRef(null);
 
       const toast = (message, type = 'ok') => setToastState({ message, type });
+
+      useEffect(() => {
+        chatDetailRef.current = chatDetail;
+      }, [chatDetail]);
 
       function playOrderSound(force = false) {
         if (!force && !soundEnabled) return;
@@ -900,6 +984,37 @@
         }
       }
 
+      function stopSoundLoop() {
+        if (ringIntervalRef.current) {
+          clearInterval(ringIntervalRef.current);
+          ringIntervalRef.current = null;
+        }
+        const audio = customAudioRef.current;
+        if (audio) {
+          audio.loop = false;
+          audio.pause();
+          audio.currentTime = 0;
+        }
+        setRinging(false);
+      }
+
+      function startSoundLoop() {
+        if (!soundEnabled) return;
+        stopSoundLoop();
+        setRinging(true);
+        const customSound = localStorage.getItem('admin_custom_sound_data');
+        if (customSound) {
+          const audio = customAudioRef.current || new Audio(customSound);
+          customAudioRef.current = audio;
+          audio.loop = true;
+          audio.currentTime = 0;
+          audio.play().catch(error => console.warn('Som importado bloqueado pelo navegador', error));
+          return;
+        }
+        playOrderSound(true);
+        ringIntervalRef.current = setInterval(() => playOrderSound(true), 1700);
+      }
+
       function enableOrderSound() {
         setSoundEnabled(true);
         playOrderSound(true);
@@ -928,6 +1043,7 @@
       }
 
       function limparSomManual() {
+        stopSoundLoop();
         localStorage.removeItem('admin_custom_sound_data');
         localStorage.removeItem('admin_custom_sound_name');
         customAudioRef.current = null;
@@ -954,10 +1070,26 @@
           .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos' }, payload => {
             if (payload?.new?.status === 'novo') {
               toast(`Novo pedido chegou${payload.new.numero_pedido ? `: #${payload.new.numero_pedido}` : ''}.`);
-              playOrderSound();
+              startSoundLoop();
             }
             loadPedidos();
           })
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'atendimento_mensagens' }, payload => {
+            if (payload?.new?.autor === 'cliente') {
+              const aberto = chatDetailRef.current?.atendimento?.id === payload.new.atendimento_id;
+              if (aberto) {
+                refreshChatDetail(payload.new.atendimento_id, true);
+                stopSoundLoop();
+              } else {
+                toast('Nova mensagem de cliente no Marco.');
+                startSoundLoop();
+                loadAtendimentos();
+              }
+            } else if (payload?.new?.autor === 'admin') {
+              loadAtendimentos();
+            }
+          })
+          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'atendimentos' }, () => loadAtendimentos())
           .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pedidos' }, () => loadPedidos())
           .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'pedidos' }, () => loadPedidos())
           .subscribe();
@@ -973,7 +1105,7 @@
       async function loadAll() {
         setLoading(true);
         try {
-          const [categorias, pratos, tamanhos, grupos, opcionais, pratoCupons, cupons, clientes, config] = await Promise.all([
+          const [categorias, pratos, tamanhos, grupos, opcionais, pratoCupons, cupons, clientes, config, atendimentos] = await Promise.all([
             run('categorias', sb.from('categorias').select('*').order('ordem').order('nome')),
             run('pratos', sb.from('pratos').select('*').order('ordem').order('nome')),
             run('tamanhos', sb.from('pratos_tamanhos').select('*').order('ordem').order('nome')),
@@ -983,14 +1115,54 @@
             run('cupons', sb.from('cupons').select('*').order('criado_em', { ascending: false })),
             run('clientes', sb.from('clientes').select('*').order('criado_em', { ascending: false }).limit(200)),
             run('config', sb.from('configuracoes').select('*').eq('id', 1).single()),
+            run('atendimentos', sb.from('atendimentos').select('*').order('ultima_mensagem_em', { ascending: false }).limit(100)),
           ]);
-          setData(prev => ({ ...prev, categorias, pratos, tamanhos, grupos, opcionais, pratoCupons, cupons, clientes, config }));
+          setData(prev => ({ ...prev, categorias, pratos, tamanhos, grupos, opcionais, pratoCupons, cupons, clientes, config, atendimentos }));
           await loadPedidos();
         } catch (error) {
           toast(error.message, 'error');
         } finally {
           setLoading(false);
         }
+      }
+
+      async function loadAtendimentos() {
+        try {
+          const atendimentos = await run('atendimentos', sb
+            .from('atendimentos')
+            .select('*')
+            .order('ultima_mensagem_em', { ascending: false })
+            .limit(100));
+          setData(prev => ({ ...prev, atendimentos }));
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function refreshChatDetail(atendimentoId, markRead = false) {
+        const mensagens = await run('atendimento_mensagens', sb
+          .from('atendimento_mensagens')
+          .select('*')
+          .eq('atendimento_id', atendimentoId)
+          .order('criado_em', { ascending: true }));
+        const atendimento = await run('atendimento', sb
+          .from('atendimentos')
+          .select('*')
+          .eq('id', atendimentoId)
+          .single());
+        if (markRead) {
+          await sb.from('atendimentos').update({
+            nao_lidas: 0,
+            lido_em: new Date().toISOString(),
+            status: atendimento?.status === 'fechado' ? 'fechado' : 'em_atendimento',
+          }).eq('id', atendimentoId);
+          await sb.from('atendimento_mensagens')
+            .update({ lida: true })
+            .eq('atendimento_id', atendimentoId)
+            .eq('autor', 'cliente');
+        }
+        setChatDetail({ atendimento: { ...atendimento, nao_lidas: markRead ? 0 : atendimento?.nao_lidas }, mensagens });
+        await loadAtendimentos();
       }
 
       async function loadPedidos() {
@@ -1284,8 +1456,62 @@
 
       async function openOrder(pedido) {
         try {
+          stopSoundLoop();
           const itens = await run('pedido_itens', sb.from('pedido_itens').select('*').eq('pedido_id', pedido.id).order('ordem'));
           setOrderDetail({ pedido, itens });
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function openAtendimento(atendimento) {
+        try {
+          stopSoundLoop();
+          await refreshChatDetail(atendimento.id, true);
+          setActive('atendimento');
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function sendAtendimentoReply(texto) {
+        const mensagem = String(texto || '').trim();
+        if (!mensagem || !chatDetail?.atendimento?.id) return;
+        try {
+          const atendimentoId = chatDetail.atendimento.id;
+          const { error: insertError } = await sb.from('atendimento_mensagens').insert({
+            atendimento_id: atendimentoId,
+            autor: 'admin',
+            texto: mensagem,
+            contexto: { origem: 'painel_admin' },
+          });
+          if (insertError) throw insertError;
+          const { error: updateError } = await sb.from('atendimentos').update({
+            ultimo_texto: mensagem,
+            ultima_mensagem_em: new Date().toISOString(),
+            status: 'em_atendimento',
+          }).eq('id', atendimentoId);
+          if (updateError) throw updateError;
+          await refreshChatDetail(atendimentoId, false);
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function closeAtendimento() {
+        if (!chatDetail?.atendimento?.id) {
+          setChatDetail(null);
+          return;
+        }
+        try {
+          const atendimentoId = chatDetail.atendimento.id;
+          await sb.from('atendimentos').update({
+            status: 'fechado',
+            nao_lidas: 0,
+            lido_em: new Date().toISOString(),
+          }).eq('id', atendimentoId);
+          await loadAtendimentos();
+          setChatDetail(null);
         } catch (error) {
           toast(error.message, 'error');
         }
@@ -1342,6 +1568,7 @@
                 />
                 <button className="btn" onClick={() => soundInputRef.current?.click()}>{customSoundName ? `Som: ${customSoundName}` : 'Importar som'}</button>
                 {customSoundName && <button className="btn btn-small" onClick={limparSomManual}>Som padrão</button>}
+                {ringing && <button className="btn btn-danger" onClick={stopSoundLoop}>Parar alerta</button>}
                 <button className="btn" onClick={loadAll}>Atualizar dados</button>
                 <button className="btn btn-danger" onClick={logout}>Sair</button>
               </div>
@@ -1363,6 +1590,7 @@
               />
             )}
             {active === 'pedidos' && <Pedidos pedidos={data.pedidos} statusFilter={statusFilter} setStatusFilter={setStatusFilter} reload={loadPedidos} openOrder={openOrder} updateStatus={updateStatus} />}
+            {active === 'atendimento' && <Atendimento atendimentos={data.atendimentos} reload={loadAtendimentos} openAtendimento={openAtendimento} ringing={ringing} stopSoundLoop={stopSoundLoop} />}
             {active === 'clientes' && <Clientes clientes={data.clientes} />}
             {active === 'cupons' && <Cupons cupons={data.cupons} onNew={() => setModal({ type: 'cupom', item: null })} onEdit={item => setModal({ type: 'cupom', item })} onSave={saveCupom} reload={loadAll} toast={toast} />}
             {active === 'config' && <ConfigScreen config={data.config} onSave={saveConfig} />}
@@ -1372,6 +1600,7 @@
           {modal?.type === 'prato' && <DishModal item={modal.item} categorias={data.categorias} cupons={data.cupons} onClose={() => setModal(null)} onSave={saveDish} />}
           {modal?.type === 'cupom' && <CupomModal item={modal.item} onClose={() => setModal(null)} onSave={saveCupom} />}
           {orderDetail && <OrderModal detail={orderDetail} onClose={() => setOrderDetail(null)} />}
+          {chatDetail && <AtendimentoModal detail={chatDetail} onClose={() => setChatDetail(null)} onSend={sendAtendimentoReply} onResolve={closeAtendimento} />}
           <Toast toast={toastState} onClose={() => setToastState(null)} />
         </div>
       );
@@ -1813,6 +2042,113 @@
               </div>
             </div>
             <div className="modal-foot"><button className="btn" onClick={onClose}>Cancelar</button><button className="btn btn-primary" onClick={() => onSave(form)}>Salvar cupom</button></div>
+          </div>
+        </div>
+      );
+    }
+
+    function Atendimento({ atendimentos, reload, openAtendimento, ringing, stopSoundLoop }) {
+      const abertos = atendimentos.filter(a => a.status !== 'fechado');
+      const fechados = atendimentos.filter(a => a.status === 'fechado');
+      return (
+        <section className="card panel">
+          <div className="panel-head">
+            <div>
+              <h3>Atendimento do Marco</h3>
+              <p className="muted" style={{margin:'4px 0 0'}}>Quando o cliente chamar o Marco, a conversa aparece aqui.</p>
+            </div>
+            <div className="actions">
+              {ringing && <button className="btn btn-danger" onClick={stopSoundLoop}>Parar som</button>}
+              <button className="btn" onClick={reload}>Atualizar</button>
+            </div>
+          </div>
+          <div className="chat-list">
+            {[...abertos, ...fechados].map(chat => (
+              <button
+                type="button"
+                className={`chat-card ${Number(chat.nao_lidas || 0) > 0 ? 'unread' : ''}`}
+                key={chat.id}
+                onClick={() => openAtendimento(chat)}
+              >
+                <div>
+                  <h3>{chat.cliente_nome || 'Cliente no cardápio'}</h3>
+                  <p>{chat.ultimo_texto || 'Abriu o atendimento do Marco.'}</p>
+                  <div className="order-meta">
+                    <span className={`badge ${chat.status === 'fechado' ? 'off' : 'on'}`}>{chat.status === 'fechado' ? 'Fechado' : 'Aberto'}</span>
+                    <span>{fmtDate(chat.ultima_mensagem_em || chat.aberto_em)}</span>
+                    <span>device {String(chat.device_id || '').slice(0, 8)}</span>
+                  </div>
+                </div>
+                <div className="actions">
+                  {Number(chat.nao_lidas || 0) > 0 && <span className="chat-unread">{chat.nao_lidas}</span>}
+                  <span className="btn btn-small">Abrir</span>
+                </div>
+              </button>
+            ))}
+            {!atendimentos.length && (
+              <div className="empty">
+                Nenhuma conversa ainda. Quando alguém mandar mensagem pelo Marco, toca aqui e aparece nesta tela.
+              </div>
+            )}
+          </div>
+        </section>
+      );
+    }
+
+    function AtendimentoModal({ detail, onClose, onSend, onResolve }) {
+      const [reply, setReply] = useState('');
+      const scrollRef = useRef(null);
+      const { atendimento, mensagens } = detail;
+
+      useEffect(() => {
+        setTimeout(() => {
+          if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }, 50);
+      }, [mensagens.length]);
+
+      const send = async () => {
+        const texto = reply.trim();
+        if (!texto) return;
+        setReply('');
+        await onSend(texto);
+      };
+
+      return (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <div className="modal-head">
+              <div>
+                <h3>Marco · {atendimento.cliente_nome || 'Cliente no cardápio'}</h3>
+                <p className="muted" style={{margin:'4px 0 0'}}>{fmtDate(atendimento.ultima_mensagem_em || atendimento.aberto_em)}</p>
+              </div>
+              <button className="btn btn-ghost" onClick={onClose}>Fechar</button>
+            </div>
+            <div className="modal-body">
+              <div className="chat-thread" ref={scrollRef}>
+                {mensagens.map(msg => (
+                  <div key={msg.id} className={`chat-bubble ${msg.autor}`}>
+                    <strong>{msg.autor === 'admin' ? 'Você' : msg.autor === 'cliente' ? 'Cliente' : 'Sistema'}</strong>
+                    <span>{msg.texto}</span>
+                    <small>{fmtDate(msg.criado_em)}</small>
+                  </div>
+                ))}
+                {!mensagens.length && <div className="empty">Ainda não tem mensagem nesta conversa.</div>}
+              </div>
+              <div className="reply-box">
+                <textarea
+                  value={reply}
+                  onChange={e => setReply(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) send();
+                  }}
+                  placeholder="Responda como Marco. Ctrl+Enter envia."
+                />
+                <div className="actions">
+                  <button className="btn" onClick={onResolve}>Resolver</button>
+                  <button className="btn btn-primary" onClick={send} disabled={!reply.trim()}>Enviar</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       );

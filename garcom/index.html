@@ -106,7 +106,7 @@
     right: 14px;
     width: 56px;
     height: 56px;
-    z-index: 132;
+    z-index: 225;
     opacity: 1;
     transform: translateY(0) scale(0.92);
   }
@@ -164,7 +164,7 @@
     background: rgba(0,0,0,0.55);
     backdrop-filter: blur(6px) saturate(120%);
     -webkit-backdrop-filter: blur(6px) saturate(120%);
-    z-index: 80;
+    z-index: 230;
     opacity: 0;
     pointer-events: none;
     transition: opacity 280ms;
@@ -179,7 +179,7 @@
     background: var(--bg-elev);
     border-radius: 22px 22px 0 0;
     box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
-    z-index: 90;
+    z-index: 240;
     transform: translateY(100%);
     transition: transform 360ms cubic-bezier(.25,.8,.25,1);
     display: flex;
@@ -207,6 +207,38 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+  }
+  .chat-compose {
+    display: grid;
+    grid-template-columns: 1fr 48px;
+    gap: 9px;
+    padding: 10px 14px calc(10px + var(--safe-bottom));
+    border-top: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(21,18,14,0.72), var(--bg-elev));
+  }
+  .chat-input {
+    min-height: 46px;
+    border-radius: 999px;
+    border: 1px solid rgba(212,175,55,0.24);
+    background: rgba(0,0,0,0.22);
+    color: var(--text);
+    outline: none;
+    padding: 0 15px;
+  }
+  .chat-input:focus { border-color: rgba(212,175,55,0.52); }
+  .chat-send {
+    width: 48px;
+    height: 46px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, var(--gold), var(--gold-dim));
+    color: #1a1305;
+    display: grid;
+    place-items: center;
+    font-weight: 950;
+  }
+  .chat-send:disabled {
+    opacity: .45;
+    filter: grayscale(.5);
   }
   .msg {
     max-width: 80%;
@@ -1545,6 +1577,15 @@ function clampText(value, max = 110) {
 function introPrato(p, max = 96) {
   return clampText(p?.descricao_completa || p?.descricao || p?.frase_fome || '', max);
 }
+function getChatDeviceId() {
+  const key = 'dom_marco_device_id';
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
 function labelCupom(cupom) {
   if (!cupom) return '';
   const valor = Number(cupom.valor || 0);
@@ -1616,6 +1657,8 @@ function App() {
   const [balaoTexto, setBalaoTexto] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [mensagens, setMensagens] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatSending, setChatSending] = useState(false);
   const [carrinho, setCarrinho] = useState([]);
   const [carrinhoTotal, setCarrinhoTotal] = useState(0);
   const [carrinhoPulse, setCarrinhoPulse] = useState(false);
@@ -1670,6 +1713,7 @@ function App() {
   const rondaTimer = useRef(null);
   const idleTimer = useRef(null);
   const ultimaInteracao = useRef(Date.now());
+  const chatDeviceId = useRef(getChatDeviceId());
 
   // Ronda do Marco - aparece a cada 40-90s
   useEffect(() => {
@@ -1755,6 +1799,45 @@ function App() {
   useEffect(() => {
     localStorage.setItem('dom_checkout_form', JSON.stringify(checkoutForm));
   }, [checkoutForm]);
+
+  useEffect(() => {
+    if (!chatOpen) return;
+    let vivo = true;
+    const sync = async () => {
+      try {
+        const r = await fetch(GARCOM_RESPONDER_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({
+            acao: 'listar_atendimento',
+            device_id: chatDeviceId.current,
+          }),
+        });
+        const data = await r.json();
+        if (!vivo || !Array.isArray(data?.mensagens)) return;
+        setMensagens(prev => {
+          const ids = new Set(prev.map(m => String(m.remote_id || m.id)));
+          const novas = data.mensagens
+            .filter(msg => !ids.has(String(msg.id)))
+            .map(msg => ({
+              id: msg.id,
+              remote_id: msg.id,
+              autor: msg.autor === 'admin' ? 'marco' : msg.autor,
+              texto: msg.texto,
+            }));
+          return novas.length ? [...prev, ...novas].slice(-80) : prev;
+        });
+      } catch (err) {
+        console.warn('Nao consegui sincronizar atendimento', err);
+      }
+    };
+    sync();
+    const timer = setInterval(sync, 4500);
+    return () => { vivo = false; clearInterval(timer); };
+  }, [chatOpen]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -2044,6 +2127,10 @@ function App() {
   };
 
   const abrirChat = async () => {
+    setPratoAberto(null);
+    setSacolaOpen(false);
+    setFotoAberta(null);
+    setWelcomeOpen(false);
     setChatOpen(true);
     setBalaoTexto(null);
     setGarcomState('peek');
@@ -2073,6 +2160,10 @@ function App() {
   };
 
   const mostrarMensagemAutomatica = (texto) => {
+    setPratoAberto(null);
+    setSacolaOpen(false);
+    setFotoAberta(null);
+    setWelcomeOpen(false);
     setChatOpen(true);
     setBalaoTexto(null);
     setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto }]);
@@ -2110,8 +2201,8 @@ function App() {
     mostrarMensagemAutomatica(`${intro}Opa, me fala sua rua, numero e bairro ou seu CEP que eu ja vejo uma estimativa mais honesta pra voce.`);
   };
 
-  const salvarEnderecoRapido = () => {
-    const parsed = parseEnderecoRapido(leadAddress);
+  const salvarEnderecoRapido = (texto = leadAddress) => {
+    const parsed = parseEnderecoRapido(texto);
     if (!Object.keys(parsed).length) return;
     setCheckoutForm(prev => ({ ...prev, ...parsed }));
     setChatLeadMode(null);
@@ -2121,6 +2212,59 @@ function App() {
       autor: 'marco',
       texto: `Boa. Com esse endereco, a media fica em torno de ${tempo}. No fechamento eu so confirmo os detalhes pra nao mandar o motoboy passear errado.`,
     }]);
+  };
+
+  const registrarMensagemCliente = async (texto) => {
+    const r = await fetch(GARCOM_RESPONDER_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({
+        acao: 'registrar_atendimento',
+        device_id: chatDeviceId.current,
+        cliente_nome: checkoutForm.nome || welcomeName || null,
+        texto,
+        contexto: {
+          carrinho_total: carrinhoTotal,
+          total_itens: totalItens,
+          pagina: pratoAberto?.nome || (sacolaOpen ? 'sacola' : 'cardapio'),
+        },
+      }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data?.error || 'Nao consegui enviar a mensagem.');
+    return data;
+  };
+
+  const enviarMensagemChat = async () => {
+    const texto = chatInput.trim();
+    if (!texto || chatSending) return;
+    const localId = `local-${Date.now()}`;
+    setChatInput('');
+    setChatSending(true);
+    setMensagens(m => [...m, { id: localId, autor: 'cliente', texto }]);
+    try {
+      const data = await registrarMensagemCliente(texto);
+      if (data?.mensagem?.id) {
+        setMensagens(m => m.map(msg => msg.id === localId ? { ...msg, remote_id: data.mensagem.id } : msg));
+      }
+      if (chatLeadMode === 'delivery') {
+        setLeadAddress(texto);
+        salvarEnderecoRapido(texto);
+      } else {
+        setMensagens(m => [...m, {
+          id: `ack-${Date.now()}`,
+          autor: 'marco',
+          texto: 'Recebi aqui. O pessoal do Dom vai conseguir ver essa mensagem pelo painel.',
+        }]);
+      }
+    } catch (err) {
+      setMensagens(m => [...m, { id: `err-${Date.now()}`, autor: 'marco', texto: err.message || 'Nao consegui enviar agora. Tenta de novo em instantes.' }]);
+    } finally {
+      setChatSending(false);
+    }
   };
 
   const setCheckoutField = (key, value) => {
@@ -2644,7 +2788,7 @@ function App() {
 
       {/* Marco sticker */}
       <button
-        className={`marco-sticker ${garcomState} ${(pratoAberto || sacolaOpen || fotoAberta) ? 'top-mode' : ''}`}
+        className={`marco-sticker ${garcomState} ${(pratoAberto || sacolaOpen || fotoAberta || welcomeOpen) ? 'top-mode' : ''}`}
         onClick={tapMarco}
         onTouchStart={onPressStart}
         onTouchEnd={onPressEnd}
@@ -2732,6 +2876,19 @@ function App() {
               </button>
             </div>
           )}
+        </div>
+        <div className="chat-compose">
+          <input
+            className="chat-input"
+            value={chatInput}
+            onChange={e => setChatInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') enviarMensagemChat(); }}
+            placeholder="Mensagem para o Marco..."
+            autoComplete="off"
+          />
+          <button className="chat-send" onClick={enviarMensagemChat} disabled={!chatInput.trim() || chatSending} aria-label="Enviar mensagem">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
         </div>
       </div>
 

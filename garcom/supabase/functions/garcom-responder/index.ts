@@ -171,9 +171,100 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    if (!["listar_pratos", "listar_cardapio", "mensagens_chat", "criar_checkout"].includes(acao)) {
+    if (!["listar_pratos", "listar_cardapio", "mensagens_chat", "registrar_atendimento", "listar_atendimento", "criar_checkout"].includes(acao)) {
       return new Response(JSON.stringify({ error: "acao invalida" }), {
         status: 400,
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
+    if (acao === "registrar_atendimento") {
+      const deviceId = cleanText(body?.device_id);
+      const texto = cleanText(body?.texto);
+      if (!deviceId) throw new Error("device_id obrigatorio");
+      if (!texto) throw new Error("Mensagem vazia");
+
+      const clienteNome = cleanText(body?.cliente_nome) || null;
+      const contexto = typeof body?.contexto === "object" && body?.contexto !== null ? body.contexto : {};
+
+      const { data: existente, error: buscarError } = await supabase
+        .from("atendimentos")
+        .select("*")
+        .eq("device_id", deviceId)
+        .maybeSingle();
+      if (buscarError) throw buscarError;
+
+      let atendimento = existente as Record<string, unknown> | null;
+      if (!atendimento) {
+        const { data, error } = await supabase
+          .from("atendimentos")
+          .insert({
+            device_id: deviceId,
+            cliente_nome: clienteNome,
+            ultimo_texto: texto,
+            nao_lidas: 1,
+            ultima_mensagem_em: new Date().toISOString(),
+          })
+          .select("*")
+          .single();
+        if (error) throw error;
+        atendimento = data as Record<string, unknown>;
+      } else {
+        const { data, error } = await supabase
+          .from("atendimentos")
+          .update({
+            cliente_nome: clienteNome || atendimento.cliente_nome || null,
+            status: "aberto",
+            ultimo_texto: texto,
+            nao_lidas: toNumber(atendimento.nao_lidas, 0) + 1,
+            ultima_mensagem_em: new Date().toISOString(),
+          })
+          .eq("id", atendimento.id)
+          .select("*")
+          .single();
+        if (error) throw error;
+        atendimento = data as Record<string, unknown>;
+      }
+
+      const { data: mensagem, error: msgError } = await supabase
+        .from("atendimento_mensagens")
+        .insert({
+          atendimento_id: atendimento.id,
+          autor: "cliente",
+          texto,
+          contexto,
+        })
+        .select("*")
+        .single();
+      if (msgError) throw msgError;
+
+      return new Response(JSON.stringify({ sucesso: true, atendimento, mensagem }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
+    if (acao === "listar_atendimento") {
+      const deviceId = cleanText(body?.device_id);
+      if (!deviceId) throw new Error("device_id obrigatorio");
+      const { data: atendimento, error: atendimentoError } = await supabase
+        .from("atendimentos")
+        .select("*")
+        .eq("device_id", deviceId)
+        .maybeSingle();
+      if (atendimentoError) throw atendimentoError;
+      if (!atendimento) {
+        return new Response(JSON.stringify({ atendimento: null, mensagens: [] }), {
+          headers: { ...cors, "Content-Type": "application/json" },
+        });
+      }
+      const { data: mensagens, error: mensagensError } = await supabase
+        .from("atendimento_mensagens")
+        .select("*")
+        .eq("atendimento_id", atendimento.id)
+        .order("criado_em", { ascending: true })
+        .limit(80);
+      if (mensagensError) throw mensagensError;
+      return new Response(JSON.stringify({ atendimento, mensagens: mensagens ?? [] }), {
         headers: { ...cors, "Content-Type": "application/json" },
       });
     }
