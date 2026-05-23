@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    if (!["listar_pratos", "listar_cardapio", "mensagens_chat", "registrar_atendimento", "listar_atendimento", "criar_checkout"].includes(acao)) {
+    if (!["listar_pratos", "listar_cardapio", "mensagens_chat", "registrar_atendimento", "listar_atendimento", "criar_checkout", "processar_pagamento_brick"].includes(acao)) {
       return new Response(JSON.stringify({ error: "acao invalida" }), {
         status: 400,
         headers: { ...cors, "Content-Type": "application/json" },
@@ -280,6 +280,167 @@ Deno.serve(async (req) => {
     const chatConfig = mapChatConfig(config as Record<string, unknown> | null);
     if (acao === "mensagens_chat") {
       return new Response(JSON.stringify({ chat_config: chatConfig }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
+    if (acao === "processar_pagamento_brick") {
+      const cfg = mapConfig(config as Record<string, unknown> | null);
+      if (!cfg.checkout_mercado_pago_ativo) {
+        return new Response(JSON.stringify({ error: "checkout desativado no painel" }), {
+          status: 400,
+          headers: { ...cors, "Content-Type": "application/json" },
+        });
+      }
+
+      const mercadoPagoToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
+      if (!mercadoPagoToken) {
+        return new Response(JSON.stringify({
+          error: "MERCADO_PAGO_ACCESS_TOKEN nao configurado",
+          detalhe: "Adicione o Access Token como secret da Edge Function no Supabase.",
+        }), {
+          status: 500,
+          headers: { ...cors, "Content-Type": "application/json" },
+        });
+      }
+
+      const cliente = body?.cliente ?? {};
+      const endereco = body?.endereco ?? {};
+      const itens = toPedidoItens(body?.itens);
+      const formData = (typeof body?.form_data === "object" && body?.form_data !== null)
+        ? body.form_data as Record<string, unknown>
+        : {};
+      const payer = (typeof formData.payer === "object" && formData.payer !== null)
+        ? formData.payer as Record<string, unknown>
+        : {};
+      const identification = (typeof payer.identification === "object" && payer.identification !== null)
+        ? payer.identification as Record<string, unknown>
+        : null;
+
+      if (!cleanText((cliente as Record<string, unknown>).nome)) {
+        throw new Error("Informe seu nome para fechar o pedido.");
+      }
+      if (!normalizePhone((cliente as Record<string, unknown>).whatsapp)) {
+        throw new Error("Informe um telefone/WhatsApp para o motoboy te encontrar.");
+      }
+      if (itens.length === 0) {
+        throw new Error("Sua sacola esta vazia.");
+      }
+
+      const { data: pedido, error: pedidoError } = await supabase.rpc("criar_pedido", {
+        p_cliente: {
+          nome: cleanText((cliente as Record<string, unknown>).nome),
+          whatsapp: normalizePhone((cliente as Record<string, unknown>).whatsapp),
+          email: cleanText((cliente as Record<string, unknown>).email) || cleanText(payer.email) || null,
+        },
+        p_endereco: {
+          cep: cleanText((endereco as Record<string, unknown>).cep) || null,
+          logradouro: cleanText((endereco as Record<string, unknown>).logradouro),
+          numero: cleanText((endereco as Record<string, unknown>).numero),
+          complemento: cleanText((endereco as Record<string, unknown>).complemento) || null,
+          bairro: cleanText((endereco as Record<string, unknown>).bairro),
+          cidade: cleanText((endereco as Record<string, unknown>).cidade) || "Curitiba",
+          uf: cleanText((endereco as Record<string, unknown>).uf) || "PR",
+          ponto_referencia: cleanText((endereco as Record<string, unknown>).ponto_referencia) || null,
+        },
+        p_itens: itens,
+        p_forma_pagamento: "mercado_pago_brick",
+        p_troco_para: null,
+        p_cupom_codigo: cleanText(body?.cupom_codigo) || null,
+        p_observacoes: cleanText(body?.observacoes) || null,
+        p_origem: "cardapio_garcom_mp_brick",
+      });
+
+      if (pedidoError) throw pedidoError;
+
+      const pedidoObj = pedido as Record<string, unknown>;
+      const total = toNumber(pedidoObj.total, 0);
+      const paymentMethodId = cleanText(formData.payment_method_id);
+      const payerEmail = cleanText(payer.email);
+
+      if (!paymentMethodId) throw new Error("Meio de pagamento nao informado pelo Mercado Pago.");
+      if (!payerEmail) throw new Error("Informe um e-mail no pagamento para o Mercado Pago processar.");
+
+      const paymentBody: Record<string, unknown> = {
+        transaction_amount: Number(total.toFixed(2)),
+        description: `Pedido Dom Leonardo #${pedidoObj.numero_pedido}`,
+        payment_method_id: paymentMethodId,
+        external_reference: String(pedidoObj.pedido_id ?? ""),
+        statement_descriptor: "DOM LEONARDO",
+        notification_url: cleanText(body?.notification_url) || undefined,
+        metadata: {
+          pedido_id: String(pedidoObj.pedido_id ?? ""),
+          numero_pedido: String(pedidoObj.numero_pedido ?? ""),
+          origem: "cardapio_garcom_mp_brick",
+        },
+        payer: {
+          email: payerEmail,
+          first_name: cleanText((cliente as Record<string, unknown>).nome),
+          phone: {
+            number: normalizePhone((cliente as Record<string, unknown>).whatsapp),
+          },
+          ...(identification ? {
+            identification: {
+              type: cleanText(identification.type),
+              number: cleanText(identification.number),
+            },
+          } : {}),
+        },
+      };
+
+      const token = cleanText(formData.token);
+      const issuerId = cleanText(formData.issuer_id ?? formData.issuer);
+      const installments = Math.max(1, Math.floor(toNumber(formData.installments, 1)));
+      if (token) paymentBody.token = token;
+      if (issuerId) paymentBody.issuer_id = issuerId;
+      if (installments) paymentBody.installments = installments;
+
+      const idempotencyKey = cleanText(body?.idempotency_key) || crypto.randomUUID();
+      const mpResp = await fetch("https://api.mercadopago.com/v1/payments", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${mercadoPagoToken}`,
+          "Content-Type": "application/json",
+          "X-Idempotency-Key": idempotencyKey,
+        },
+        body: JSON.stringify(paymentBody),
+      });
+
+      const mpData = await mpResp.json().catch(() => ({}));
+      if (!mpResp.ok) {
+        console.error("mercado pago payment brick error", mpData);
+        return new Response(JSON.stringify({
+          error: "Nao consegui processar o pagamento pelo Mercado Pago.",
+          detalhe: mpData,
+          pedido,
+        }), {
+          status: 502,
+          headers: { ...cors, "Content-Type": "application/json" },
+        });
+      }
+
+      const status = cleanText((mpData as Record<string, unknown>).status);
+      if (["rejected", "cancelled", "refunded", "charged_back"].includes(status)) {
+        await supabase.rpc("atualizar_status_pedido", {
+          p_pedido_id: pedidoObj.pedido_id,
+          p_novo_status: "cancelado",
+          p_motivo: cleanText((mpData as Record<string, unknown>).status_detail) || "Pagamento nao aprovado",
+        });
+      }
+
+      return new Response(JSON.stringify({
+        sucesso: true,
+        pedido,
+        mercado_pago: {
+          id: (mpData as Record<string, unknown>).id,
+          status,
+          status_detail: (mpData as Record<string, unknown>).status_detail,
+          payment_method_id: (mpData as Record<string, unknown>).payment_method_id,
+          payment_type_id: (mpData as Record<string, unknown>).payment_type_id,
+          point_of_interaction: (mpData as Record<string, unknown>).point_of_interaction,
+          transaction_details: (mpData as Record<string, unknown>).transaction_details,
+        },
+      }), {
         headers: { ...cors, "Content-Type": "application/json" },
       });
     }
