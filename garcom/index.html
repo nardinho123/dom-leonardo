@@ -100,6 +100,22 @@
     100% { transform: scale(1); }
   }
   .marco-sticker.attention .halo { opacity: 1; animation: pulse 2s ease-in-out infinite; }
+  .marco-sticker.top-mode {
+    top: calc(var(--safe-top) + 14px);
+    bottom: auto;
+    right: 14px;
+    width: 56px;
+    height: 56px;
+    z-index: 132;
+    opacity: 1;
+    transform: translateY(0) scale(0.92);
+  }
+  .marco-sticker.top-mode.hidden,
+  .marco-sticker.top-mode.peek,
+  .marco-sticker.top-mode.attention {
+    opacity: 1;
+    transform: translateY(0) scale(0.92);
+  }
   @keyframes pulse {
     0%, 100% { opacity: 0.4; transform: scale(1); }
     50% { opacity: 0.8; transform: scale(1.08); }
@@ -342,6 +358,7 @@
     aspect-ratio: 4 / 3;
     object-fit: cover;
     display: block;
+    cursor: zoom-in;
   }
   .prato-badge {
     position: absolute;
@@ -398,16 +415,16 @@
 
   .prato-card.compact {
     display: grid;
-    grid-template-columns: 1fr 112px;
-    gap: 10px;
-    padding: 11px;
+    grid-template-columns: 1fr 138px;
+    gap: 12px;
+    padding: 12px;
     cursor: pointer;
   }
   .prato-card.compact img {
-    width: 112px;
-    height: 112px;
+    width: 138px;
+    height: 138px;
     aspect-ratio: 1 / 1;
-    border-radius: 16px;
+    border-radius: 18px;
   }
   .prato-card.compact .prato-badge { top: 8px; left: 8px; font-size: 10px; }
   .prato-card.compact .prato-copy {
@@ -420,11 +437,11 @@
   .prato-card.compact .prato-title { font-size: 16px; line-height: 1.08; }
   .prato-card.compact .prato-desc {
     color: var(--text-dim);
-    font-size: 11.5px;
-    line-height: 1.28;
-    margin-top: 5px;
+    font-size: 12px;
+    line-height: 1.3;
+    margin-top: 7px;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
@@ -443,6 +460,18 @@
     font-weight: 900;
   }
 
+  @media (max-width: 380px) {
+    .prato-card.compact {
+      grid-template-columns: 1fr 124px;
+      gap: 10px;
+    }
+    .prato-card.compact img {
+      width: 124px;
+      height: 124px;
+    }
+    .prato-card.compact .prato-title { font-size: 15px; }
+  }
+
   .dish-backdrop,
   .bag-backdrop {
     position: fixed;
@@ -455,6 +484,7 @@
     z-index: 95;
     transition: opacity 260ms ease;
   }
+  .dish-backdrop { background: rgba(0,0,0,0.74); }
   .dish-backdrop.open,
   .bag-backdrop.open { opacity: 1; pointer-events: auto; }
 
@@ -480,19 +510,40 @@
   }
   .dish-sheet.open,
   .bag-sheet.open { transform: translateY(0); }
+  .dish-sheet {
+    left: 50%;
+    right: auto;
+    bottom: calc(10px + var(--safe-bottom));
+    width: min(calc(100vw - 24px), 560px);
+    height: min(88dvh, 760px);
+    border: 1px solid rgba(212,175,55,0.32);
+    border-radius: 28px;
+    transform: translate(-50%, 108%) scale(0.98);
+    box-shadow:
+      0 24px 70px rgba(0,0,0,0.82),
+      0 0 0 1px rgba(255,255,255,0.035) inset;
+  }
+  .dish-sheet.open { transform: translate(-50%, 0) scale(1); }
   .dish-scroll,
   .bag-scroll {
     flex: 1;
     overflow-y: auto;
     padding-bottom: 130px;
   }
-  .dish-hero { position: relative; min-height: 210px; background: #070605; }
+  .dish-hero {
+    position: relative;
+    min-height: 230px;
+    background: #070605;
+    border-radius: 27px 27px 0 0;
+    overflow: hidden;
+  }
   .dish-hero img {
     width: 100%;
-    height: 230px;
+    height: 252px;
     object-fit: cover;
     display: block;
     opacity: 0.92;
+    cursor: zoom-in;
   }
   .dish-hero::after {
     content: '';
@@ -666,6 +717,7 @@
     object-fit: cover;
     flex: 0 0 auto;
     background: rgba(255,255,255,0.05);
+    cursor: zoom-in;
   }
   .option-thumb.fallback {
     display: grid;
@@ -730,6 +782,14 @@
     display: flex;
     align-items: center;
     gap: 12px;
+  }
+  .dish-footer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 0 0 27px 27px;
+    padding: 12px 14px calc(12px + var(--safe-bottom));
   }
   .add-dish-btn,
   .bag-primary-btn,
@@ -959,6 +1019,7 @@
     aspect-ratio: 1 / 0.84;
     object-fit: cover;
     display: block;
+    cursor: zoom-in;
   }
   .destaque-body { padding: 10px 11px 12px; }
   .destaque-body strong {
@@ -981,6 +1042,47 @@
     color: var(--gold);
     font-size: 13px;
     font-weight: 900;
+  }
+
+  .photo-viewer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 180;
+    background: rgba(0,0,0,0.88);
+    backdrop-filter: blur(10px) saturate(120%);
+    -webkit-backdrop-filter: blur(10px) saturate(120%);
+    display: grid;
+    place-items: center;
+    padding: calc(20px + var(--safe-top)) 16px calc(20px + var(--safe-bottom));
+  }
+  .photo-viewer {
+    position: relative;
+    width: min(94vw, 520px);
+    border-radius: 28px;
+    border: 1px solid rgba(212,175,55,0.28);
+    background: #070605;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.86);
+    overflow: hidden;
+  }
+  .photo-viewer img {
+    width: 100%;
+    max-height: 78dvh;
+    object-fit: contain;
+    display: block;
+    background: #050403;
+  }
+  .photo-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.66);
+    border: 1px solid rgba(255,255,255,0.16);
+    display: grid;
+    place-items: center;
+    z-index: 2;
   }
   .cat-strip {
     position: sticky;
@@ -1148,8 +1250,9 @@
   .welcome-title {
     margin: 0;
     color: var(--gold);
-    font-size: 31px;
+    font-size: clamp(25px, 7vw, 31px);
     line-height: 0.98;
+    overflow-wrap: anywhere;
   }
   .welcome-copy {
     margin: 10px auto 16px;
@@ -1249,6 +1352,9 @@ function clampText(value, max = 110) {
   const text = String(value || '').trim();
   return text.length > max ? text.slice(0, max - 1).trim() + '...' : text;
 }
+function introPrato(p, max = 96) {
+  return clampText(p?.descricao_completa || p?.descricao || p?.frase_fome || '', max);
+}
 
 // ============================================================================
 // MARCO STICKER (SVG inline, placeholder ate gerar arte definitiva)
@@ -1311,6 +1417,7 @@ function App() {
   const [menuErro, setMenuErro] = useState(null);
   const [categoriaAtiva, setCategoriaAtiva] = useState('todos');
   const [pratoAberto, setPratoAberto] = useState(null);
+  const [fotoAberta, setFotoAberta] = useState(null);
   const [detailQty, setDetailQty] = useState(1);
   const [detailSizeId, setDetailSizeId] = useState(null);
   const [detailOptions, setDetailOptions] = useState({});
@@ -1502,6 +1609,12 @@ function App() {
     setDetailSizeId(primeiroTamanho(prato));
     setDetailOptions({});
     setDetailObs('');
+  };
+
+  const abrirFoto = (src, alt = '') => {
+    if (!src) return;
+    vibrate(10);
+    setFotoAberta({ src, alt });
   };
 
   const fecharDetalhe = () => {
@@ -1808,7 +1921,7 @@ function App() {
         <div className="destaques-strip">
           {(destaques.length ? destaques : pratos.slice(0, 6)).map(p => (
             <button className="destaque-card" key={p.id} onClick={() => abrirDetalhe(p)}>
-              <div className="relative">
+              <div className="relative" onClick={(e) => { e.stopPropagation(); abrirFoto(p.foto, p.nome); }}>
                 <img src={p.foto} alt={p.nome} loading="lazy" />
                 <span className="prato-badge">{p.badge_destaque || p.selo_experiencia || 'Escolha segura'}</span>
               </div>
@@ -1854,17 +1967,12 @@ function App() {
                     </span>
                   )}
                   <h3 className="font-serif prato-title">{p.nome}</h3>
-                  {p.frase_fome && <div className="sensory-line">{p.frase_fome}</div>}
-                  {p.descricao && <p className="prato-desc">{p.descricao}</p>}
-                  <div className="prato-helper-block">
-                    <div className="prato-microcopy">{p.porcao_texto || microcopy.tamanhos_texto}</div>
-                    <div className="prato-microcopy">{microcopy.entrega_texto}</div>
-                  </div>
+                  {introPrato(p) && <p className="prato-desc">{introPrato(p)}</p>}
                   <button
                     className="prato-soft-btn"
                     onClick={(e) => { e.stopPropagation(); pedirTempoEntrega(p); }}
                   >
-                    Quanto tempo pra chegar?
+                    Tempo exato
                   </button>
                 </div>
                 <div className="mt-3 flex items-end justify-between gap-2">
@@ -1873,11 +1981,11 @@ function App() {
                     className="prato-cta"
                     onClick={(e) => { e.stopPropagation(); abrirDetalhe(p); }}
                   >
-                    Pedir
+                    Ver
                   </button>
                 </div>
               </div>
-              <div className="relative">
+              <div className="relative" onClick={(e) => { e.stopPropagation(); abrirFoto(p.foto, p.nome); }}>
                 <img src={p.foto} alt={p.nome} loading="lazy" />
               </div>
             </article>
@@ -1896,7 +2004,11 @@ function App() {
                 <button className="dish-close" onClick={fecharDetalhe} aria-label="Voltar">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M6 9l6 6 6-6"/></svg>
                 </button>
-                <img src={pratoAberto.foto} alt={pratoAberto.nome} />
+                <img
+                  src={pratoAberto.foto}
+                  alt={pratoAberto.nome}
+                  onClick={() => abrirFoto(pratoAberto.foto, pratoAberto.nome)}
+                />
                 <div className="dish-store-pill">
                   <div className="dish-store-logo">DL</div>
                   <div>
@@ -1989,7 +2101,13 @@ function App() {
                           </div>
                         </div>
                         {opcional.foto ? (
-                          <img className="option-thumb" src={opcional.foto} alt="" loading="lazy" />
+                          <img
+                            className="option-thumb"
+                            src={opcional.foto}
+                            alt={opcional.nome}
+                            loading="lazy"
+                            onClick={(e) => { e.stopPropagation(); abrirFoto(opcional.foto, opcional.nome); }}
+                          />
                         ) : (
                           <div className="option-thumb fallback">extra</div>
                         )}
@@ -2121,9 +2239,20 @@ function App() {
         </div>
       </section>
 
+      {fotoAberta && (
+        <div className="photo-viewer-backdrop" onClick={() => setFotoAberta(null)}>
+          <div className="photo-viewer" onClick={e => e.stopPropagation()}>
+            <button className="photo-close" onClick={() => setFotoAberta(null)} aria-label="Fechar foto">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M6 18L18 6"/></svg>
+            </button>
+            <img src={fotoAberta.src} alt={fotoAberta.alt || 'Foto do prato'} />
+          </div>
+        </div>
+      )}
+
       {/* Marco sticker */}
       <button
-        className={`marco-sticker ${garcomState}`}
+        className={`marco-sticker ${garcomState} ${(pratoAberto || sacolaOpen || fotoAberta) ? 'top-mode' : ''}`}
         onClick={tapMarco}
         onTouchStart={onPressStart}
         onTouchEnd={onPressEnd}
