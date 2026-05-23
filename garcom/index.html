@@ -942,6 +942,160 @@
     font-size: 17px;
     font-weight: 950;
   }
+  .value-row.discount strong {
+    color: #73e0a6;
+  }
+  .coupon-section {
+    padding: 2px 0 0;
+  }
+  .coupon-strip {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(174px, 44vw);
+    gap: 10px;
+    overflow-x: auto;
+    padding: 0 5px 8px;
+    scroll-snap-type: x mandatory;
+  }
+  .coupon-chip {
+    scroll-snap-align: start;
+    border: 1px dashed rgba(212,175,55,0.42);
+    border-radius: 18px;
+    padding: 11px 12px;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(212,175,55,0.16), transparent 44%),
+      rgba(0,0,0,0.24);
+    color: var(--text);
+    text-align: left;
+    min-height: 78px;
+  }
+  .coupon-chip.active {
+    border-style: solid;
+    background:
+      radial-gradient(circle at 10% 0%, rgba(115,224,166,0.18), transparent 42%),
+      rgba(212,175,55,0.08);
+  }
+  .coupon-chip small {
+    display: block;
+    color: rgba(243,236,224,0.52);
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .coupon-chip strong {
+    display: block;
+    margin-top: 4px;
+    color: var(--gold);
+    font-size: 15px;
+    line-height: 1.08;
+  }
+  .coupon-chip span {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-top: 5px;
+    color: rgba(243,236,224,0.66);
+    font-size: 11px;
+    line-height: 1.25;
+  }
+  .coupon-box {
+    margin: 14px 20px 0;
+    border: 1px solid rgba(212,175,55,0.16);
+    border-radius: 20px;
+    padding: 13px;
+    background: rgba(0,0,0,0.14);
+  }
+  .coupon-box-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .coupon-box-head strong {
+    color: var(--text);
+    font-size: 15px;
+  }
+  .coupon-status {
+    color: #73e0a6;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .coupon-input-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+  }
+  .coupon-input {
+    min-height: 42px;
+    border-radius: 14px;
+    border: 1px solid rgba(212,175,55,0.18);
+    background: rgba(0,0,0,0.22);
+    color: var(--text);
+    outline: none;
+    padding: 0 12px;
+    text-transform: uppercase;
+  }
+  .coupon-apply-btn,
+  .coupon-remove-btn {
+    min-height: 42px;
+    border-radius: 14px;
+    padding: 0 13px;
+    background: rgba(212,175,55,0.12);
+    border: 1px solid rgba(212,175,55,0.28);
+    color: var(--gold);
+    font-size: 12px;
+    font-weight: 950;
+  }
+  .coupon-remove-btn {
+    width: 100%;
+    margin-top: 8px;
+    background: rgba(255,255,255,0.035);
+    color: rgba(243,236,224,0.72);
+  }
+  .coupon-applied {
+    border: 1px solid rgba(115,224,166,0.18);
+    border-radius: 16px;
+    padding: 10px 12px;
+    background: rgba(115,224,166,0.07);
+  }
+  .coupon-applied strong {
+    display: block;
+    color: #73e0a6;
+    font-size: 14px;
+  }
+  .coupon-applied span {
+    display: block;
+    margin-top: 3px;
+    color: rgba(243,236,224,0.62);
+    font-size: 12px;
+    line-height: 1.3;
+  }
+  .coupon-suggestions {
+    display: flex;
+    gap: 7px;
+    overflow-x: auto;
+    margin-top: 10px;
+  }
+  .coupon-suggestion {
+    flex: 0 0 auto;
+    border: 1px solid rgba(212,175,55,0.16);
+    border-radius: 999px;
+    padding: 8px 10px;
+    color: rgba(243,236,224,0.78);
+    font-size: 11px;
+    font-weight: 850;
+  }
+  .coupon-error {
+    margin-top: 8px;
+    color: #ffb3a8;
+    font-size: 12px;
+    line-height: 1.3;
+  }
 
   .hero-shell {
     margin: 14px 14px 0;
@@ -1374,6 +1528,7 @@ async function listarPratos() {
   return {
     categorias: Array.isArray(data?.categorias) ? data.categorias : [],
     pratos: Array.isArray(data?.pratos) ? data.pratos : [],
+    cupons: Array.isArray(data?.cupons) ? data.cupons : [],
     config: data?.config ?? {},
     microcopy: { ...DEFAULT_MICROCOPY, ...(data?.microcopy ?? {}) },
     chatConfig: { ...DEFAULT_CHAT_CONFIG, ...(data?.chat_config ?? {}) },
@@ -1389,6 +1544,28 @@ function clampText(value, max = 110) {
 }
 function introPrato(p, max = 96) {
   return clampText(p?.descricao_completa || p?.descricao || p?.frase_fome || '', max);
+}
+function labelCupom(cupom) {
+  if (!cupom) return '';
+  const valor = Number(cupom.valor || 0);
+  if (cupom.tipo === 'percentual' && valor > 0) return `${valor}% OFF`;
+  if (cupom.tipo === 'valor_fixo' && valor > 0) return `${fmtBRL(valor)} OFF`;
+  if (cupom.tipo === 'frete_gratis') return 'Frete gratis';
+  return 'Cupom do Dom';
+}
+function textoCupom(cupom) {
+  if (!cupom) return '';
+  const minimo = Number(cupom.valor_minimo_pedido || 0);
+  const partes = [];
+  if (cupom.descricao) partes.push(cupom.descricao);
+  if (minimo > 0) partes.push(`min. ${fmtBRL(minimo)}`);
+  return partes.join(' · ') || 'Toque para aplicar na sacola.';
+}
+function cupomDentroDaData(cupom) {
+  const agora = Date.now();
+  if (cupom.valido_de && new Date(cupom.valido_de).getTime() > agora) return false;
+  if (cupom.valido_ate && new Date(cupom.valido_ate).getTime() < agora) return false;
+  return true;
 }
 
 // ============================================================================
@@ -1445,6 +1622,7 @@ function App() {
   const [carrinhoOpen, setCarrinhoOpen] = useState(false);
   const [pratos, setPratos] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  const [cupons, setCupons] = useState([]);
   const [microcopy, setMicrocopy] = useState(DEFAULT_MICROCOPY);
   const [chatConfig, setChatConfig] = useState(DEFAULT_CHAT_CONFIG);
   const [deliveryConfig, setDeliveryConfig] = useState({ taxa_entrega_padrao: 0, pedido_minimo: 0, tempo_entrega_min: 20, tempo_entrega_max: 30 });
@@ -1464,6 +1642,9 @@ function App() {
   const [leadAddress, setLeadAddress] = useState('');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutErro, setCheckoutErro] = useState('');
+  const [cupomCodigo, setCupomCodigo] = useState('');
+  const [cupomAplicado, setCupomAplicado] = useState(null);
+  const [cupomErro, setCupomErro] = useState('');
   const [checkoutForm, setCheckoutForm] = useState(() => {
     try {
       return {
@@ -1553,6 +1734,7 @@ function App() {
         if (!vivo) return;
         if (dados.pratos?.length) setPratos(dados.pratos);
         setCategorias(dados.categorias ?? []);
+        setCupons(dados.cupons ?? []);
         setDeliveryConfig(prev => ({ ...prev, ...(dados.config ?? {}) }));
         setMicrocopy({ ...DEFAULT_MICROCOPY, ...(dados.microcopy ?? {}) });
         setChatConfig({ ...DEFAULT_CHAT_CONFIG, ...(dados.chatConfig ?? {}) });
@@ -1608,8 +1790,27 @@ function App() {
   const calcSubtotal = (items) => items.reduce((s, it) => s + Number(it.subtotal ?? (it.preco * it.qtd) ?? 0), 0);
   const totalItens = carrinho.reduce((s, it) => s + Number(it.qtd || 0), 0);
   const taxaEntrega = Number(deliveryConfig.taxa_entrega_padrao || 0);
-  const totalComEntrega = carrinhoTotal + taxaEntrega;
   const tempoEntregaTexto = `${deliveryConfig.tempo_entrega_min || 20} a ${deliveryConfig.tempo_entrega_max || 30} min`;
+  const cuponsDisponiveis = cupons.filter(c => {
+    const limiteOk = !c.usos_max || Number(c.usos_atual || 0) < Number(c.usos_max);
+    return c.ativo !== false && limiteOk && cupomDentroDaData(c);
+  });
+  const avaliarCupom = (cupom, subtotal = carrinhoTotal) => {
+    if (!cupom) return { ok: false, motivo: 'Cupom nao encontrado.', desconto: 0, freteGratis: false };
+    if (!cupomDentroDaData(cupom)) return { ok: false, motivo: 'Esse cupom nao esta dentro da validade.', desconto: 0, freteGratis: false };
+    if (cupom.usos_max && Number(cupom.usos_atual || 0) >= Number(cupom.usos_max)) return { ok: false, motivo: 'Esse cupom ja atingiu o limite de usos.', desconto: 0, freteGratis: false };
+    const minimo = Number(cupom.valor_minimo_pedido || 0);
+    if (subtotal < minimo) return { ok: false, motivo: `Faltam ${fmtBRL(minimo - subtotal)} para usar esse cupom.`, desconto: 0, freteGratis: false };
+    const valor = Number(cupom.valor || 0);
+    if (cupom.tipo === 'percentual') return { ok: true, desconto: Math.min(subtotal, subtotal * (valor / 100)), freteGratis: false };
+    if (cupom.tipo === 'valor_fixo') return { ok: true, desconto: Math.min(subtotal, valor), freteGratis: false };
+    if (cupom.tipo === 'frete_gratis') return { ok: true, desconto: 0, freteGratis: true };
+    return { ok: false, motivo: 'Tipo de cupom invalido.', desconto: 0, freteGratis: false };
+  };
+  const cupomResumo = cupomAplicado ? avaliarCupom(cupomAplicado) : { ok: false, desconto: 0, freteGratis: false };
+  const descontoCupom = cupomResumo.ok ? Number(cupomResumo.desconto || 0) : 0;
+  const taxaEntregaFinal = cupomResumo.ok && cupomResumo.freteGratis ? 0 : taxaEntrega;
+  const totalComEntrega = Math.max(0, carrinhoTotal + taxaEntregaFinal - descontoCupom);
   const pratosVisiveis = categoriaAtiva === 'todos'
     ? pratos
     : pratos.filter(p => String(p.categoria_id) === String(categoriaAtiva));
@@ -1797,6 +1998,41 @@ function App() {
     vibrate(18);
   };
 
+  const aplicarCupom = (cupomOuCodigo) => {
+    const codigo = typeof cupomOuCodigo === 'string' ? cupomOuCodigo : cupomOuCodigo?.codigo;
+    const limpo = String(codigo || '').trim().toUpperCase();
+    if (!limpo) {
+      setCupomErro('Digite ou escolha um cupom.');
+      return;
+    }
+    const cupom = cuponsDisponiveis.find(c => String(c.codigo || '').toUpperCase() === limpo);
+    if (!cupom) {
+      setCupomAplicado(null);
+      setCupomErro('Nao encontrei esse cupom ativo agora.');
+      vibrate(30);
+      return;
+    }
+    const avaliacao = avaliarCupom(cupom);
+    if (!avaliacao.ok) {
+      setCupomAplicado(null);
+      setCupomErro(avaliacao.motivo);
+      vibrate(30);
+      return;
+    }
+    setCupomAplicado(cupom);
+    setCupomCodigo(String(cupom.codigo || '').toUpperCase());
+    setCupomErro('');
+    setBalaoTexto(`Cupom ${String(cupom.codigo || '').toUpperCase()} aplicado.`);
+    setTimeout(() => setBalaoTexto(null), 3200);
+    vibrate([15, 20, 15]);
+  };
+
+  const removerCupom = () => {
+    setCupomAplicado(null);
+    setCupomCodigo('');
+    setCupomErro('');
+  };
+
   const abrirSacola = () => {
     setSacolaOpen(true);
   };
@@ -1930,6 +2166,7 @@ function App() {
             uf: checkoutForm.uf || 'PR',
           },
           itens: carrinho,
+          cupom_codigo: cupomResumo.ok ? (cupomAplicado?.codigo || null) : null,
           site_url: window.location.origin + window.location.pathname,
         }),
       });
@@ -2016,6 +2253,30 @@ function App() {
           <div className="trust-chip"><span>Pagamento</span><strong>Mercado Pago</strong></div>
         </div>
       </header>
+
+      {cuponsDisponiveis.length > 0 && (
+        <section className="px-5 pt-5 coupon-section">
+          <div className="section-head">
+            <div>
+              <h2 className="font-serif text-xl" style={{color:'var(--gold)'}}>{deliveryConfig.cupons_titulo || 'Cupons do Dom'}</h2>
+              <p>{deliveryConfig.cupons_descricao || 'Toque em um cupom para deixar salvo na sacola.'}</p>
+            </div>
+          </div>
+          <div className="coupon-strip">
+            {cuponsDisponiveis.slice(0, 6).map(cupom => (
+              <button
+                key={cupom.id}
+                className={`coupon-chip ${String(cupomAplicado?.id) === String(cupom.id) ? 'active' : ''}`}
+                onClick={() => aplicarCupom(cupom)}
+              >
+                <small>{String(cupom.codigo || '').toUpperCase()}</small>
+                <strong>{labelCupom(cupom)}</strong>
+                <span>{textoCupom(cupom)}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="px-5 pt-6">
         <div className="section-head">
@@ -2284,6 +2545,49 @@ function App() {
             </div>
           ))}
 
+          {carrinho.length > 0 && (
+            <div className="coupon-box">
+              <div className="coupon-box-head">
+                <strong>Cupom</strong>
+                {cupomAplicado && cupomResumo.ok && <span className="coupon-status">aplicado</span>}
+              </div>
+              {cupomAplicado && cupomResumo.ok ? (
+                <>
+                  <div className="coupon-applied">
+                    <strong>{String(cupomAplicado.codigo || '').toUpperCase()} · {labelCupom(cupomAplicado)}</strong>
+                    <span>{textoCupom(cupomAplicado)}</span>
+                  </div>
+                  <button className="coupon-remove-btn" onClick={removerCupom}>Remover cupom</button>
+                </>
+              ) : (
+                <>
+                  <div className="coupon-input-row">
+                    <input
+                      className="coupon-input"
+                      value={cupomCodigo}
+                      onChange={e => { setCupomCodigo(e.target.value.toUpperCase()); setCupomErro(''); }}
+                      onKeyDown={e => { if (e.key === 'Enter') aplicarCupom(cupomCodigo); }}
+                      placeholder="CODIGO"
+                    />
+                    <button className="coupon-apply-btn" onClick={() => aplicarCupom(cupomCodigo)}>Aplicar</button>
+                  </div>
+                  {cuponsDisponiveis.length > 0 && (
+                    <div className="coupon-suggestions">
+                      {cuponsDisponiveis.slice(0, 3).map(cupom => (
+                        <button key={cupom.id} className="coupon-suggestion" onClick={() => aplicarCupom(cupom)}>
+                          {String(cupom.codigo || '').toUpperCase()} · {labelCupom(cupom)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+              {(cupomErro || (cupomAplicado && !cupomResumo.ok ? cupomResumo.motivo : '')) && (
+                <div className="coupon-error">{cupomErro || cupomResumo.motivo}</div>
+              )}
+            </div>
+          )}
+
           <div className="checkout-form">
             <h3>{deliveryConfig.checkout_titulo || 'Fechar pedido com seguranca'}</h3>
             <p>{deliveryConfig.checkout_subtitulo || 'Informe os dados de entrega e pague pelo Mercado Pago.'}</p>
@@ -2306,7 +2610,16 @@ function App() {
           <div className="bag-values">
             <h3>Resumo de valores</h3>
             <div className="value-row"><span>Subtotal</span><strong>{fmtBRL(carrinhoTotal)}</strong></div>
-            <div className="value-row"><span>Taxa de entrega</span><strong>{fmtBRL(taxaEntrega)}</strong></div>
+            <div className="value-row">
+              <span>Taxa de entrega</span>
+              <strong>{cupomResumo.ok && cupomResumo.freteGratis ? 'Grátis' : fmtBRL(taxaEntrega)}</strong>
+            </div>
+            {descontoCupom > 0 && (
+              <div className="value-row discount">
+                <span>Desconto {String(cupomAplicado?.codigo || '').toUpperCase()}</span>
+                <strong>- {fmtBRL(descontoCupom)}</strong>
+              </div>
+            )}
             <div className="value-row total"><span>Total estimado</span><strong>{fmtBRL(totalComEntrega)}</strong></div>
           </div>
         </div>
