@@ -460,6 +460,41 @@
     font-weight: 900;
   }
 
+  .menu-sections {
+    display: grid;
+    gap: 28px;
+  }
+  .menu-section {
+    display: grid;
+    gap: 12px;
+  }
+  .menu-section-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 2px;
+  }
+  .menu-section-title {
+    margin: 0;
+    color: var(--gold);
+    font-size: 25px;
+    line-height: 0.96;
+    letter-spacing: -0.02em;
+  }
+  .menu-section-count {
+    color: rgba(243,236,224,0.44);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+  .menu-section-grid {
+    display: grid;
+    gap: 12px;
+  }
+
   @media (max-width: 380px) {
     .prato-card.compact {
       grid-template-columns: 1fr 124px;
@@ -1581,6 +1616,34 @@ function App() {
   const destaques = pratos
     .filter(p => p.badge_destaque || p.selo_experiencia || p.frase_fome)
     .slice(0, 9);
+  const maisPedidos = (pratos.filter(p => {
+    const texto = `${p.badge || ''} ${p.badge_destaque || ''} ${p.selo_experiencia || ''}`.toLowerCase();
+    return texto.includes('mais pedido') || texto.includes('pedido') || texto.includes('favorito');
+  }).length ? pratos.filter(p => {
+    const texto = `${p.badge || ''} ${p.badge_destaque || ''} ${p.selo_experiencia || ''}`.toLowerCase();
+    return texto.includes('mais pedido') || texto.includes('pedido') || texto.includes('favorito');
+  }) : (destaques.length ? destaques : pratos)).slice(0, 3);
+  const categoriaNomePorId = categorias.reduce((acc, cat) => {
+    acc[String(cat.id)] = cat.nome;
+    return acc;
+  }, {});
+  const secoesCardapio = categoriaAtiva === 'todos'
+    ? [
+        ...(maisPedidos.length ? [{ id: 'mais-pedidos', titulo: 'Mais pedidos', pratos: maisPedidos }] : []),
+        ...categorias
+          .map(cat => ({
+            id: String(cat.id),
+            titulo: cat.nome,
+            pratos: pratos.filter(p => String(p.categoria_id) === String(cat.id)),
+          }))
+          .filter(sec => sec.pratos.length && !/mais\s*pedido/i.test(sec.titulo || '')),
+        ...(categorias.length ? [] : [{ id: 'todos', titulo: 'Cardapio', pratos }]),
+      ]
+    : [{
+        id: String(categoriaAtiva),
+        titulo: categoriaNomePorId[String(categoriaAtiva)] || 'Cardapio',
+        pratos: pratosVisiveis,
+      }];
 
   const tamanhosDoPrato = (prato) => {
     const list = (prato?.tamanhos ?? []).filter(t => t.ativo !== false);
@@ -1890,6 +1953,49 @@ function App() {
     setTimeout(() => setBalaoTexto(null), 3500);
   };
 
+  const renderPratoCard = (p, prefix = 'prato') => (
+    <article
+      key={`${prefix}-${p.id}`}
+      className="prato-card compact relative"
+      data-prato-id={p.id}
+      data-prato-nome={p.nome}
+      onClick={() => abrirDetalhe(p)}
+      onContextMenu={(e) => { e.preventDefault(); longPressPrato(p); }}
+      onTouchStart={() => { lpTimer.current = setTimeout(() => longPressPrato(p), 520); }}
+      onTouchEnd={() => clearTimeout(lpTimer.current)}
+    >
+      <div className="prato-copy">
+        <div>
+          {p.badge && (
+            <span className="inline-block mb-2 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-[0.08em]" style={{background:'rgba(212,175,55,0.12)', color:'var(--gold)', border:'1px solid rgba(212,175,55,0.2)'}}>
+              {p.badge}
+            </span>
+          )}
+          <h3 className="font-serif prato-title">{p.nome}</h3>
+          {introPrato(p) && <p className="prato-desc">{introPrato(p)}</p>}
+          <button
+            className="prato-soft-btn"
+            onClick={(e) => { e.stopPropagation(); pedirTempoEntrega(p); }}
+          >
+            Tempo exato
+          </button>
+        </div>
+        <div className="mt-3 flex items-end justify-between gap-2">
+          <span className="prato-price">a partir de {fmtBRL(p.preco)}</span>
+          <button
+            className="prato-cta"
+            onClick={(e) => { e.stopPropagation(); abrirDetalhe(p); }}
+          >
+            Ver
+          </button>
+        </div>
+      </div>
+      <div className="relative" onClick={(e) => { e.stopPropagation(); abrirFoto(p.foto, p.nome); }}>
+        <img src={p.foto} alt={p.nome} loading="lazy" />
+      </div>
+    </article>
+  );
+
   return (
     <div className="min-h-dvh">
       <header className="hero-shell">
@@ -1944,52 +2050,25 @@ function App() {
             </button>
           ))}
         </div>
-        <h2 className="font-serif text-xl mb-3" style={{color:'var(--gold)'}}>Cardapio</h2>
-        <div className="grid gap-4">
+        <div className="menu-sections">
           {carregandoPratos && <div className="cart-empty">Carregando cardapio...</div>}
           {menuErro && <div className="cart-empty">{menuErro}</div>}
-          {pratosVisiveis.map(p => (
-            <article
-              key={p.id}
-              className="prato-card compact relative"
-              data-prato-id={p.id}
-              data-prato-nome={p.nome}
-              onClick={() => abrirDetalhe(p)}
-              onContextMenu={(e) => { e.preventDefault(); longPressPrato(p); }}
-              onTouchStart={() => { lpTimer.current = setTimeout(() => longPressPrato(p), 520); }}
-              onTouchEnd={() => clearTimeout(lpTimer.current)}
-            >
-              <div className="prato-copy">
-                <div>
-                  {p.badge && (
-                    <span className="inline-block mb-2 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-[0.08em]" style={{background:'rgba(212,175,55,0.12)', color:'var(--gold)', border:'1px solid rgba(212,175,55,0.2)'}}>
-                      {p.badge}
-                    </span>
-                  )}
-                  <h3 className="font-serif prato-title">{p.nome}</h3>
-                  {introPrato(p) && <p className="prato-desc">{introPrato(p)}</p>}
-                  <button
-                    className="prato-soft-btn"
-                    onClick={(e) => { e.stopPropagation(); pedirTempoEntrega(p); }}
-                  >
-                    Tempo exato
-                  </button>
-                </div>
-                <div className="mt-3 flex items-end justify-between gap-2">
-                  <span className="prato-price">a partir de {fmtBRL(p.preco)}</span>
-                  <button
-                    className="prato-cta"
-                    onClick={(e) => { e.stopPropagation(); abrirDetalhe(p); }}
-                  >
-                    Ver
-                  </button>
-                </div>
+          {!carregandoPratos && !menuErro && secoesCardapio.map(secao => (
+            <div className="menu-section" key={secao.id}>
+              <div className="menu-section-head">
+                <h2 className="font-serif menu-section-title">{secao.titulo}</h2>
+                <span className="menu-section-count">
+                  {secao.pratos.length} {secao.pratos.length === 1 ? 'prato' : 'pratos'}
+                </span>
               </div>
-              <div className="relative" onClick={(e) => { e.stopPropagation(); abrirFoto(p.foto, p.nome); }}>
-                <img src={p.foto} alt={p.nome} loading="lazy" />
+              <div className="menu-section-grid">
+                {secao.pratos.map(p => renderPratoCard(p, secao.id))}
               </div>
-            </article>
+            </div>
           ))}
+          {!carregandoPratos && !menuErro && secoesCardapio.length === 0 && (
+            <div className="cart-empty">Nenhum prato encontrado nessa categoria.</div>
+          )}
         </div>
       </section>
 
