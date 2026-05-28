@@ -442,6 +442,14 @@ Deno.serve(async (req) => {
           phone: {
             number: normalizePhone((cliente as Record<string, unknown>).whatsapp),
           },
+          address: {
+            zip_code: cleanText((endereco as Record<string, unknown>).cep),
+            street_name: cleanText((endereco as Record<string, unknown>).logradouro),
+            street_number: cleanText((endereco as Record<string, unknown>).numero),
+            neighborhood: cleanText((endereco as Record<string, unknown>).bairro),
+            city: cleanText((endereco as Record<string, unknown>).cidade) || "Curitiba",
+            federal_unit: cleanText((endereco as Record<string, unknown>).uf) || "PR",
+          },
           ...(identification ? {
             identification: {
               type: cleanText(identification.type),
@@ -456,7 +464,7 @@ Deno.serve(async (req) => {
       const installments = Math.max(1, Math.floor(toNumber(formData.installments, 1)));
       if (token) paymentBody.token = token;
       if (issuerId) paymentBody.issuer_id = issuerId;
-      if (installments) paymentBody.installments = installments;
+      if (paymentMethodId !== "pix" && installments) paymentBody.installments = installments;
 
       const idempotencyKey = cleanText(body?.idempotency_key) || crypto.randomUUID();
       const mpResp = await fetch("https://api.mercadopago.com/v1/payments", {
@@ -472,17 +480,33 @@ Deno.serve(async (req) => {
       const mpData = await mpResp.json().catch(() => ({}));
       if (!mpResp.ok) {
         console.error("mercado pago payment brick error", mpData);
-        await supabase.rpc("atualizar_status_pedido", {
-          p_pedido_id: pedidoObj.pedido_id,
-          p_novo_status: "cancelado",
-          p_motivo: cleanText((mpData as Record<string, unknown>).message) || "Pagamento nao processado",
-        }).catch((err) => console.warn("falha ao cancelar pedido apos erro MP", err));
+        const cause = Array.isArray((mpData as Record<string, unknown>).cause)
+          ? ((mpData as Record<string, unknown>).cause as Array<Record<string, unknown>>)
+          : [];
+        const mpMessage = cleanText((mpData as Record<string, unknown>).message);
+        const pixKeyDisabled = paymentMethodId === "pix" && (
+          cause.some((item) => Number(item.code) === 13253)
+          || /without key enabled|QR render/i.test(mpMessage)
+        );
+        try {
+          const { error: cancelarError } = await supabase.rpc("atualizar_status_pedido", {
+            p_pedido_id: pedidoObj.pedido_id,
+            p_novo_status: "cancelado",
+            p_motivo: cleanText((mpData as Record<string, unknown>).message) || "Pagamento nao processado",
+          });
+          if (cancelarError) console.warn("falha ao cancelar pedido apos erro MP", cancelarError);
+        } catch (cancelarErr) {
+          console.warn("falha ao cancelar pedido apos erro MP", cancelarErr);
+        }
         return new Response(JSON.stringify({
-          error: "Nao consegui processar o pagamento pelo Mercado Pago.",
+          error: pixKeyDisabled
+            ? "Pix ainda nao esta habilitado nessa conta do Mercado Pago. Ative/cadastre uma chave Pix no Mercado Pago ou use cartao por enquanto."
+            : "Nao consegui processar o pagamento pelo Mercado Pago.",
+          codigo: pixKeyDisabled ? "mp_pix_key_not_enabled" : "mp_payment_error",
           detalhe: mpData,
           pedido,
         }), {
-          status: 502,
+          status: pixKeyDisabled ? 409 : 502,
           headers: { ...cors, "Content-Type": "application/json" },
         });
       }
@@ -711,8 +735,12 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     console.error("garcom-responder error:", err);
+    const message = String((err as Error)?.message ?? err);
+    const status = /Informe|sacola|Pedido sem|Cliente precisa|Endere[cç]o|Prato inv[aá]lido|Tamanho inv[aá]lido|Cupom|Pedido abaixo|Meio de pagamento/i.test(message)
+      ? 400
+      : 500;
     return new Response(JSON.stringify({ error: String((err as Error)?.message ?? err) }), {
-      status: 500,
+      status,
       headers: { ...cors, "Content-Type": "application/json" },
     });
   }
