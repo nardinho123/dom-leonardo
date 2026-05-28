@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    if (!["listar_pratos", "listar_cardapio", "mensagens_chat", "registrar_atendimento", "listar_atendimento", "criar_checkout", "processar_pagamento_brick"].includes(acao)) {
+    if (!["listar_pratos", "listar_cardapio", "mensagens_chat", "registrar_atendimento", "listar_atendimento", "buscar_cliente", "criar_checkout", "processar_pagamento_brick"].includes(acao)) {
       return new Response(JSON.stringify({ error: "acao invalida" }), {
         status: 400,
         headers: { ...cors, "Content-Type": "application/json" },
@@ -269,6 +269,68 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (acao === "buscar_cliente") {
+      const whatsapp = normalizePhone(body?.whatsapp);
+      if (whatsapp.length < 8) {
+        return new Response(JSON.stringify({ encontrado: false }), {
+          headers: { ...cors, "Content-Type": "application/json" },
+        });
+      }
+
+      const finalTelefone = whatsapp.slice(-8);
+      let cliente: Record<string, unknown> | null = null;
+
+      const { data: clienteExato, error: clienteExatoError } = await supabase
+        .from("clientes")
+        .select("*")
+        .eq("whatsapp", whatsapp)
+        .maybeSingle();
+      if (clienteExatoError) throw clienteExatoError;
+      cliente = clienteExato as Record<string, unknown> | null;
+
+      if (!cliente) {
+        const { data: candidatos, error: candidatosError } = await supabase
+          .from("clientes")
+          .select("*")
+          .ilike("whatsapp", `%${finalTelefone}`)
+          .order("ultimo_pedido_em", { ascending: false, nullsFirst: false })
+          .limit(1);
+        if (candidatosError) throw candidatosError;
+        cliente = (candidatos?.[0] ?? null) as Record<string, unknown> | null;
+      }
+
+      if (!cliente) {
+        return new Response(JSON.stringify({ encontrado: false }), {
+          headers: { ...cors, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: endereco, error: enderecoError } = await supabase
+        .from("enderecos_cliente")
+        .select("*")
+        .eq("cliente_id", cliente.id)
+        .eq("ativo", true)
+        .order("padrao", { ascending: false })
+        .order("criado_em", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (enderecoError) throw enderecoError;
+
+      return new Response(JSON.stringify({
+        encontrado: true,
+        cliente: {
+          nome: cliente.nome ?? "",
+          whatsapp: cliente.whatsapp ?? whatsapp,
+          email: cliente.email ?? "",
+          total_pedidos: cliente.total_pedidos ?? 0,
+          ultimo_pedido_em: cliente.ultimo_pedido_em ?? null,
+        },
+        endereco: endereco ?? null,
+      }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: config, error: configError } = await supabase
       .from("configuracoes")
       .select("*")
@@ -327,6 +389,12 @@ Deno.serve(async (req) => {
         throw new Error("Sua sacola esta vazia.");
       }
 
+      const paymentMethodId = cleanText(formData.payment_method_id);
+      const payerEmail = cleanText(payer.email);
+
+      if (!paymentMethodId) throw new Error("Meio de pagamento nao informado pelo Mercado Pago.");
+      if (!payerEmail) throw new Error("Informe um e-mail no pagamento para o Mercado Pago processar.");
+
       const { data: pedido, error: pedidoError } = await supabase.rpc("criar_pedido", {
         p_cliente: {
           nome: cleanText((cliente as Record<string, unknown>).nome),
@@ -344,7 +412,7 @@ Deno.serve(async (req) => {
           ponto_referencia: cleanText((endereco as Record<string, unknown>).ponto_referencia) || null,
         },
         p_itens: itens,
-        p_forma_pagamento: "mercado_pago_brick",
+        p_forma_pagamento: "mercado_pago",
         p_troco_para: null,
         p_cupom_codigo: cleanText(body?.cupom_codigo) || null,
         p_observacoes: cleanText(body?.observacoes) || null,
@@ -355,11 +423,6 @@ Deno.serve(async (req) => {
 
       const pedidoObj = pedido as Record<string, unknown>;
       const total = toNumber(pedidoObj.total, 0);
-      const paymentMethodId = cleanText(formData.payment_method_id);
-      const payerEmail = cleanText(payer.email);
-
-      if (!paymentMethodId) throw new Error("Meio de pagamento nao informado pelo Mercado Pago.");
-      if (!payerEmail) throw new Error("Informe um e-mail no pagamento para o Mercado Pago processar.");
 
       const paymentBody: Record<string, unknown> = {
         transaction_amount: Number(total.toFixed(2)),
@@ -409,6 +472,11 @@ Deno.serve(async (req) => {
       const mpData = await mpResp.json().catch(() => ({}));
       if (!mpResp.ok) {
         console.error("mercado pago payment brick error", mpData);
+        await supabase.rpc("atualizar_status_pedido", {
+          p_pedido_id: pedidoObj.pedido_id,
+          p_novo_status: "cancelado",
+          p_motivo: cleanText((mpData as Record<string, unknown>).message) || "Pagamento nao processado",
+        }).catch((err) => console.warn("falha ao cancelar pedido apos erro MP", err));
         return new Response(JSON.stringify({
           error: "Nao consegui processar o pagamento pelo Mercado Pago.",
           detalhe: mpData,

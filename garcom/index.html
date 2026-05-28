@@ -1386,21 +1386,88 @@
   }
   .checkout-form {
     margin: 0 20px 20px;
-    padding: 16px;
-    border: 1px solid rgba(212,175,55,0.16);
-    border-radius: 20px;
-    background: rgba(0,0,0,0.16);
+    padding: 0;
+    border: 1px solid rgba(212,175,55,0.18);
+    border-radius: 24px;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(212,175,55,0.10), transparent 28%),
+      rgba(0,0,0,0.18);
+    overflow: hidden;
+  }
+  .checkout-hero {
+    padding: 17px 16px 13px;
+    border-bottom: 1px solid rgba(212,175,55,0.12);
+  }
+  .checkout-kicker {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: rgba(243,236,224,0.68);
+    font-size: 11px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .checkout-kicker span {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: #22c55e;
+    box-shadow: 0 0 12px rgba(34,197,94,0.62);
   }
   .checkout-form h3 {
-    margin: 0 0 4px;
-    font-size: 18px;
+    margin: 0 0 5px;
+    font-size: 19px;
     color: var(--text);
+    letter-spacing: -0.02em;
   }
   .checkout-form p {
-    margin: 0 0 13px;
+    margin: 0;
     color: var(--text-dim);
     font-size: 12px;
-    line-height: 1.35;
+    line-height: 1.38;
+  }
+  .checkout-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+    padding: 11px 12px 0;
+  }
+  .checkout-step {
+    min-height: 44px;
+    border-radius: 15px;
+    border: 1px solid rgba(212,175,55,0.12);
+    background: rgba(255,255,255,0.035);
+    color: rgba(243,236,224,0.62);
+    padding: 8px 9px;
+    font-size: 10px;
+    line-height: 1.2;
+  }
+  .checkout-step strong {
+    display: block;
+    color: var(--text);
+    font-size: 12px;
+    margin-top: 2px;
+  }
+  .checkout-section {
+    padding: 15px 16px 0;
+  }
+  .checkout-section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 9px;
+  }
+  .checkout-section-title strong {
+    color: var(--gold);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+  }
+  .checkout-section-title small {
+    color: rgba(243,236,224,0.46);
+    font-size: 10px;
   }
   .checkout-grid {
     display: grid;
@@ -1420,13 +1487,53 @@
     border-color: rgba(212,175,55,0.48);
   }
   .checkout-error {
-    margin-top: 10px;
+    margin: 12px 16px 0;
     color: #ffb1a8;
     font-size: 12px;
     line-height: 1.35;
   }
+  .checkout-autofill {
+    margin-top: 10px;
+    border: 1px solid rgba(34,197,94,0.18);
+    border-radius: 15px;
+    padding: 10px 11px;
+    background: rgba(34,197,94,0.08);
+    color: #caffdc;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .checkout-pay-strip {
+    margin: 13px 16px 0;
+    border-radius: 17px;
+    border: 1px solid rgba(0,158,227,0.20);
+    background: rgba(0,158,227,0.08);
+    padding: 12px;
+    display: grid;
+    gap: 8px;
+  }
+  .checkout-pay-strip strong {
+    color: var(--text);
+    font-size: 12px;
+  }
+  .checkout-pay-strip span {
+    color: rgba(243,236,224,0.60);
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .pay-method-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .pay-method-pills b {
+    border-radius: 999px;
+    background: rgba(255,255,255,0.08);
+    color: rgba(243,236,224,0.78);
+    padding: 6px 8px;
+    font-size: 10px;
+  }
   .mp-note {
-    margin-top: 11px;
+    margin: 10px 16px 0;
     color: rgba(243,236,224,0.52);
     font-size: 11px;
     line-height: 1.35;
@@ -1484,11 +1591,46 @@
     background: rgba(248,200,70,0.22);
     color: #785c00;
   }
+  .pix-copy-box {
+    margin-top: 10px;
+    border-radius: 16px;
+    border: 1px solid rgba(0,158,227,0.18);
+    background: rgba(0,158,227,0.08);
+    padding: 10px;
+    display: grid;
+    gap: 8px;
+  }
+  .pix-copy-box img {
+    width: 148px;
+    max-width: 100%;
+    border-radius: 14px;
+    background: #fff;
+    padding: 8px;
+    margin: 0 auto;
+  }
+  .pix-copy-box textarea {
+    width: 100%;
+    min-height: 54px;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 8px;
+    font-size: 11px;
+    resize: none;
+    color: #111;
+  }
+  .pix-copy-box button {
+    min-height: 40px;
+    border: 0;
+    border-radius: 12px;
+    background: #009ee3;
+    color: #fff;
+    font-weight: 900;
+  }
   #paymentBrick_container {
     min-height: 120px;
   }
   .wpp-checkout-box {
-    margin-top: 12px;
+    margin: 12px 16px 16px;
     padding-top: 12px;
     border-top: 1px solid rgba(212,175,55,0.12);
   }
@@ -1769,6 +1911,7 @@ function App() {
   const [leadAddress, setLeadAddress] = useState('');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutErro, setCheckoutErro] = useState('');
+  const [checkoutAutoMsg, setCheckoutAutoMsg] = useState('');
   const [paymentBrickOpen, setPaymentBrickOpen] = useState(false);
   const [paymentBrickReady, setPaymentBrickReady] = useState(false);
   const [paymentResult, setPaymentResult] = useState(null);
@@ -1780,6 +1923,7 @@ function App() {
       return {
         nome: '',
         whatsapp: '',
+        email: '',
         cep: '',
         logradouro: '',
         numero: '',
@@ -1791,7 +1935,7 @@ function App() {
         ...JSON.parse(localStorage.getItem('dom_checkout_form') || '{}'),
       };
     } catch (_) {
-      return { nome: '', whatsapp: '', cep: '', logradouro: '', numero: '', bairro: '', complemento: '', ponto_referencia: '', cidade: 'Curitiba', uf: 'PR' };
+      return { nome: '', whatsapp: '', email: '', cep: '', logradouro: '', numero: '', bairro: '', complemento: '', ponto_referencia: '', cidade: 'Curitiba', uf: 'PR' };
     }
   });
 
@@ -1803,6 +1947,7 @@ function App() {
   const chatDeviceId = useRef(getChatDeviceId());
   const paymentBrickRef = useRef(null);
   const paymentAttemptRef = useRef(null);
+  const ultimoTelefoneBuscado = useRef('');
 
   // Ronda do Marco - aparece a cada 40-90s
   useEffect(() => {
@@ -1888,6 +2033,49 @@ function App() {
   useEffect(() => {
     localStorage.setItem('dom_checkout_form', JSON.stringify(checkoutForm));
   }, [checkoutForm]);
+
+  useEffect(() => {
+    const phone = String(checkoutForm.whatsapp || '').replace(/\D/g, '');
+    if (phone.length < 10 || phone === ultimoTelefoneBuscado.current) return;
+    const timer = setTimeout(async () => {
+      try {
+        ultimoTelefoneBuscado.current = phone;
+        const r = await fetch(GARCOM_RESPONDER_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({
+            acao: 'buscar_cliente',
+            whatsapp: phone,
+          }),
+        });
+        const data = await r.json();
+        if (!r.ok || !data?.encontrado) return;
+        setCheckoutForm(prev => ({
+          ...prev,
+          nome: prev.nome || data.cliente?.nome || '',
+          email: prev.email || data.cliente?.email || '',
+          whatsapp: prev.whatsapp || data.cliente?.whatsapp || '',
+          cep: prev.cep || data.endereco?.cep || '',
+          logradouro: prev.logradouro || data.endereco?.logradouro || '',
+          numero: prev.numero || data.endereco?.numero || '',
+          bairro: prev.bairro || data.endereco?.bairro || '',
+          complemento: prev.complemento || data.endereco?.complemento || '',
+          ponto_referencia: prev.ponto_referencia || data.endereco?.ponto_referencia || '',
+          cidade: prev.cidade || data.endereco?.cidade || 'Curitiba',
+          uf: prev.uf || data.endereco?.uf || 'PR',
+        }));
+        setCheckoutAutoMsg(data.endereco
+          ? 'Encontrei seus dados salvos e já deixei a entrega pré-preenchida. Confere rapidinho antes de pagar.'
+          : 'Encontrei seu cadastro. Se tiver endereço salvo, eu puxo aqui também.');
+      } catch (err) {
+        console.warn('Nao consegui buscar cliente salvo', err);
+      }
+    }, 650);
+    return () => clearTimeout(timer);
+  }, [checkoutForm.whatsapp]);
 
   useEffect(() => {
     if (!chatOpen) return;
@@ -2409,6 +2597,7 @@ function App() {
   const setCheckoutField = (key, value) => {
     setCheckoutForm(prev => ({ ...prev, [key]: value }));
     if (checkoutErro) setCheckoutErro('');
+    if (checkoutAutoMsg) setCheckoutAutoMsg('');
   };
 
   const checkoutValido = () => {
@@ -2420,6 +2609,7 @@ function App() {
     cliente: {
       nome: checkoutForm.nome,
       whatsapp: checkoutForm.whatsapp,
+      email: checkoutForm.email,
     },
     endereco: {
       cep: checkoutForm.cep,
@@ -2488,6 +2678,7 @@ function App() {
             paymentMethods: {
               creditCard: 'all',
               debitCard: 'all',
+              prepaidCard: 'all',
               bankTransfer: 'all',
             },
           },
@@ -2521,10 +2712,18 @@ function App() {
                   if (!r.ok) throw new Error(data?.detalhe?.message || data?.error || 'Nao consegui processar o pagamento.');
                   const status = data?.mercado_pago?.status || '';
                   const detail = data?.mercado_pago?.status_detail || '';
+                  const pixData = data?.mercado_pago?.point_of_interaction?.transaction_data || {};
                   if (status === 'approved') {
                     setPaymentResult({ type: 'ok', text: `Pagamento aprovado. Pedido #${data?.pedido?.numero_pedido || ''} ja caiu para o Dom.` });
                   } else if (status === 'pending' || status === 'in_process') {
-                    setPaymentResult({ type: 'warn', text: `Pagamento ${status === 'pending' ? 'pendente' : 'em analise'}. Se for Pix, o Mercado Pago confirma em instantes.` });
+                    setPaymentResult({
+                      type: 'warn',
+                      text: `Pagamento ${status === 'pending' ? 'pendente' : 'em analise'}. Se for Pix, escaneie ou copie o codigo abaixo.`,
+                      pix: {
+                        qr_code_base64: pixData.qr_code_base64 || '',
+                        qr_code: pixData.qr_code || '',
+                      },
+                    });
                   } else {
                     setPaymentResult({ type: 'warn', text: `Pagamento retornou como ${status || 'nao finalizado'}${detail ? ` (${detail})` : ''}.` });
                   }
@@ -2569,6 +2768,16 @@ function App() {
 
   const fecharPedido = async () => {
     iniciarPagamentoDentro();
+  };
+
+  const copiarPix = async (codigo) => {
+    if (!codigo) return;
+    try {
+      await navigator.clipboard.writeText(codigo);
+      setPaymentResult(prev => prev ? { ...prev, copied: true } : prev);
+    } catch (_) {
+      setPaymentResult(prev => prev ? { ...prev, copied: false, text: `${prev.text} Copie o codigo Pix manualmente pelo campo abaixo.` } : prev);
+    }
   };
 
   // Long-press num prato -> fala do Marco
@@ -2980,22 +3189,60 @@ function App() {
           )}
 
           <div className="checkout-form">
-            <h3>{deliveryConfig.checkout_titulo || 'Fechar pedido com seguranca'}</h3>
-            <p>{deliveryConfig.checkout_subtitulo || 'Informe os dados de entrega e pague pelo Mercado Pago.'}</p>
-            <div className="checkout-grid">
-              <input className="checkout-input" value={checkoutForm.nome} onChange={e => setCheckoutField('nome', e.target.value)} placeholder="Seu nome" />
-              <input className="checkout-input" value={checkoutForm.whatsapp} onChange={e => setCheckoutField('whatsapp', e.target.value)} placeholder="Telefone / WhatsApp do motoboy" inputMode="tel" />
-              <input className="checkout-input" value={checkoutForm.cep} onChange={e => setCheckoutField('cep', e.target.value)} placeholder="CEP (opcional, ajuda no tempo de entrega)" inputMode="numeric" />
-              <input className="checkout-input" value={checkoutForm.logradouro} onChange={e => setCheckoutField('logradouro', e.target.value)} placeholder="Rua / Avenida" />
-              <div style={{display:'grid', gridTemplateColumns:'0.8fr 1.2fr', gap:10}}>
-                <input className="checkout-input" value={checkoutForm.numero} onChange={e => setCheckoutField('numero', e.target.value)} placeholder="Numero" />
-                <input className="checkout-input" value={checkoutForm.bairro} onChange={e => setCheckoutField('bairro', e.target.value)} placeholder="Bairro" />
+            <div className="checkout-hero">
+              <div className="checkout-kicker"><span></span> Checkout seguro</div>
+              <h3>{deliveryConfig.checkout_titulo || 'Fechar pedido com seguranca'}</h3>
+              <p>{deliveryConfig.checkout_subtitulo || 'Confere sua janta, confirma a entrega e paga aqui mesmo, sem sair do cardapio.'}</p>
+            </div>
+
+            <div className="checkout-steps" aria-label="Etapas do checkout">
+              <div className="checkout-step">1 minuto<strong>Contato</strong></div>
+              <div className="checkout-step">Sem susto<strong>Entrega</strong></div>
+              <div className="checkout-step">No cardapio<strong>Pagamento</strong></div>
+            </div>
+
+            <div className="checkout-section">
+              <div className="checkout-section-title">
+                <strong>Quem vai receber?</strong>
+                <small>Se ja comprou, eu puxo pelo telefone.</small>
               </div>
-              <input className="checkout-input" value={checkoutForm.complemento} onChange={e => setCheckoutField('complemento', e.target.value)} placeholder="Complemento (opcional)" />
-              <input className="checkout-input" value={checkoutForm.ponto_referencia} onChange={e => setCheckoutField('ponto_referencia', e.target.value)} placeholder="Ponto de referencia (opcional)" />
+              <div className="checkout-grid">
+                <input className="checkout-input" value={checkoutForm.nome} onChange={e => setCheckoutField('nome', e.target.value)} placeholder="Seu nome" autoComplete="name" />
+                <input className="checkout-input" value={checkoutForm.whatsapp} onChange={e => setCheckoutField('whatsapp', e.target.value)} placeholder="WhatsApp do motoboy" inputMode="tel" autoComplete="tel" />
+                <input className="checkout-input" value={checkoutForm.email} onChange={e => setCheckoutField('email', e.target.value)} placeholder="E-mail para o Mercado Pago (opcional aqui)" inputMode="email" autoComplete="email" />
+              </div>
+              {checkoutAutoMsg && <div className="checkout-autofill">{checkoutAutoMsg}</div>}
+            </div>
+
+            <div className="checkout-section">
+              <div className="checkout-section-title">
+                <strong>Onde entregar?</strong>
+                <small>{tempoEntregaTexto} em media</small>
+              </div>
+              <div className="checkout-grid">
+                <input className="checkout-input" value={checkoutForm.cep} onChange={e => setCheckoutField('cep', e.target.value)} placeholder="CEP (opcional, ajuda no tempo)" inputMode="numeric" autoComplete="postal-code" />
+                <input className="checkout-input" value={checkoutForm.logradouro} onChange={e => setCheckoutField('logradouro', e.target.value)} placeholder="Rua / Avenida" autoComplete="address-line1" />
+                <div style={{display:'grid', gridTemplateColumns:'0.72fr 1.28fr', gap:10}}>
+                  <input className="checkout-input" value={checkoutForm.numero} onChange={e => setCheckoutField('numero', e.target.value)} placeholder="Numero" autoComplete="address-line2" />
+                  <input className="checkout-input" value={checkoutForm.bairro} onChange={e => setCheckoutField('bairro', e.target.value)} placeholder="Bairro" />
+                </div>
+                <input className="checkout-input" value={checkoutForm.complemento} onChange={e => setCheckoutField('complemento', e.target.value)} placeholder="Complemento (apto, casa, bloco)" />
+                <input className="checkout-input" value={checkoutForm.ponto_referencia} onChange={e => setCheckoutField('ponto_referencia', e.target.value)} placeholder="Referencia para o motoboy (opcional)" />
+              </div>
+            </div>
+
+            <div className="checkout-pay-strip">
+              <strong>Pagamento dentro do cardapio</strong>
+              <span>O Mercado Pago processa os dados com segurança. Aqui a gente mantém o pedido, o Pix e o cartão no mesmo fluxo.</span>
+              <div className="pay-method-pills">
+                <b>Pix QR Code</b>
+                <b>Cartao de credito</b>
+                <b>Debito</b>
+                <b>Carteira do celular se disponivel</b>
+              </div>
             </div>
             {checkoutErro && <div className="checkout-error">{checkoutErro}</div>}
-            <div className="mp-note">Pagamento seguro pelo Mercado Pago. O Access Token fica protegido na Edge Function do Supabase.</div>
+            <div className="mp-note">O Access Token fica protegido na Edge Function do Supabase. O cliente nao precisa criar conta Mercado Pago para pagar com Pix ou cartao.</div>
             <div className="wpp-checkout-box">
               <p>Voce tambem pode finalizar no WhatsApp. Se ja preencheu nome, endereco ou telefone, eu mando tudo junto com a sacola.</p>
               <button className="wpp-checkout-btn" onClick={() => abrirWhatsApp('sacola')}>
@@ -3018,6 +3265,21 @@ function App() {
               {paymentResult && (
                 <div className={`mp-result ${paymentResult.type === 'ok' ? 'ok' : 'warn'}`}>
                   {paymentResult.text}
+                  {(paymentResult.pix?.qr_code_base64 || paymentResult.pix?.qr_code) && (
+                    <div className="pix-copy-box">
+                      {paymentResult.pix?.qr_code_base64 && (
+                        <img src={`data:image/png;base64,${paymentResult.pix.qr_code_base64}`} alt="QR Code Pix" />
+                      )}
+                      {paymentResult.pix?.qr_code && (
+                        <>
+                          <textarea readOnly value={paymentResult.pix.qr_code} aria-label="Codigo Pix copia e cola"></textarea>
+                          <button onClick={() => copiarPix(paymentResult.pix.qr_code)}>
+                            {paymentResult.copied ? 'Pix copiado' : 'Copiar Pix copia e cola'}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
