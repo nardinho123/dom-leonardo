@@ -1199,18 +1199,21 @@
     font-size: 12px;
   }
   .destaques-strip {
-    overflow: hidden;
+    overflow-x: auto;
     padding: 0 0 10px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
     mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
   }
+  .destaques-strip::-webkit-scrollbar { display: none; }
   .destaques-track {
     display: flex;
     gap: 12px;
     width: max-content;
   }
   .destaques-track.is-looping {
-    animation: destaquesLoop 34s linear infinite;
+    animation: destaquesLoop 140s linear infinite;
     will-change: transform;
   }
   .destaques-strip:hover .destaques-track {
@@ -1222,6 +1225,7 @@
   .destaque-card {
     position: relative;
     flex: 0 0 clamp(156px, 42vw, 230px);
+    scroll-snap-align: start;
     border: 1px solid rgba(212,175,55,0.18);
     border-radius: 20px;
     overflow: hidden;
@@ -1570,8 +1574,33 @@ function App() {
   const balaoTimer = useRef(null);
   const rondaTimer = useRef(null);
   const idleTimer = useRef(null);
+  const scrollGuideTimer = useRef(null);
+  const detailGuideTimer = useRef(null);
   const ultimaInteracao = useRef(Date.now());
   const chatDeviceId = useRef(getChatDeviceId());
+  const abriuPratoRef = useRef(false);
+  const detailInteragiuRef = useRef(false);
+  const scrollGuideShownRef = useRef(false);
+  const sizeGuideShownRef = useRef(new Set());
+
+  const falarMarco = (texto, duracao = 5600) => {
+    if (!texto || chatOpen) return;
+    clearTimeout(balaoTimer.current);
+    setGarcomState('peek');
+    setBalaoTexto(texto);
+    balaoTimer.current = setTimeout(() => {
+      setBalaoTexto(null);
+      if (!chatOpen) setGarcomState('attention');
+    }, duracao);
+  };
+
+  const fraseTamanho = (tamanho) => {
+    const label = labelTamanho(tamanho);
+    const peso = Number(tamanho?.peso_g || String(label).match(/\d+/)?.[0] || 0);
+    if (peso >= 750) return `Esse ${label} sozinho e prato de pedreiro; dividido, mata a fome de duas pessoas haha.`;
+    if (peso >= 350) return `Boa, o ${label} e individual caprichado: pensa em algo perto de dois Big Macs.`;
+    return `Boa, ${label} selecionado. Agora e so escolher os opcionais que combinam.`;
+  };
 
   // Ronda do Marco - aparece a cada 40-90s
   useEffect(() => {
@@ -1628,6 +1657,24 @@ function App() {
       window.removeEventListener('scroll', reset);
     };
   }, []);
+
+  useEffect(() => {
+    const orientarScroll = () => {
+      ultimaInteracao.current = Date.now();
+      if (scrollGuideShownRef.current || abriuPratoRef.current || chatOpen || pratoAberto || sacolaOpen) return;
+      clearTimeout(scrollGuideTimer.current);
+      scrollGuideTimer.current = setTimeout(() => {
+        if (scrollGuideShownRef.current || abriuPratoRef.current || chatOpen || pratoAberto || sacolaOpen) return;
+        scrollGuideShownRef.current = true;
+        falarMarco('Curtiu algum prato? Toca em Ver para abrir tamanhos e opcionais.');
+      }, 2600);
+    };
+    window.addEventListener('scroll', orientarScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', orientarScroll);
+      clearTimeout(scrollGuideTimer.current);
+    };
+  }, [chatOpen, pratoAberto, sacolaOpen]);
 
   useEffect(() => {
     let vivo = true;
@@ -1845,11 +1892,18 @@ function App() {
 
   const abrirDetalhe = (prato) => {
     vibrate(14);
+    abriuPratoRef.current = true;
+    detailInteragiuRef.current = false;
+    clearTimeout(detailGuideTimer.current);
     setPratoAberto(prato);
     setDetailQty(1);
     setDetailSizeId(primeiroTamanho(prato));
     setDetailOptions({});
     setDetailObs('');
+    detailGuideTimer.current = setTimeout(() => {
+      if (detailInteragiuRef.current || chatOpen) return;
+      falarMarco('Toca no tamanho ou no + para selecionar. Duvida grande? Aperta no Marco fixo aqui embaixo e cai na cozinha.', 7200);
+    }, 3800);
   };
 
   const abrirFoto = (src, alt = '') => {
@@ -1859,6 +1913,7 @@ function App() {
   };
 
   const fecharDetalhe = () => {
+    clearTimeout(detailGuideTimer.current);
     setPratoAberto(null);
     setDetailOptions({});
     setDetailObs('');
@@ -1874,6 +1929,7 @@ function App() {
   };
 
   const alterarOpcional = (grupo, opcional, delta) => {
+    detailInteragiuRef.current = true;
     setDetailOptions(prev => {
       const gid = String(grupo.id);
       const oid = String(opcional.id);
@@ -1914,6 +1970,18 @@ function App() {
     return tamanhosDoPrato(prato).find(t => String(t.id) === String(detailSizeId)) ?? null;
   };
 
+  const selecionarTamanho = (tamanho) => {
+    detailInteragiuRef.current = true;
+    clearTimeout(detailGuideTimer.current);
+    setDetailSizeId(tamanho.id);
+    vibrate(10);
+    const key = String(tamanho?.peso_g || tamanho?.nome || tamanho?.id || '');
+    if (!sizeGuideShownRef.current.has(key)) {
+      sizeGuideShownRef.current.add(key);
+      falarMarco(fraseTamanho(tamanho), 6200);
+    }
+  };
+
   const calcularUnitarioDetalhe = (prato = pratoAberto) => {
     if (!prato) return 0;
     const tamanho = tamanhoSelecionado(prato);
@@ -1930,6 +1998,7 @@ function App() {
 
   const adicionarDetalheNaSacola = () => {
     if (!pratoAberto || !detalheValido(pratoAberto)) return;
+    detailInteragiuRef.current = true;
     const tamanho = tamanhoSelecionado(pratoAberto);
     const opcionais = opcionaisSelecionados(pratoAberto).map(op => ({
       id: op.id,
@@ -1963,8 +2032,7 @@ function App() {
     setCarrinhoPulse(true);
     setTimeout(() => setCarrinhoPulse(false), 700);
     fecharDetalhe();
-    setBalaoTexto(`Anotado: ${detailQty}x ${pratoAberto.nome}.`);
-    setTimeout(() => setBalaoTexto(null), 3600);
+    falarMarco('Sacola pronta. Voce pode finalizar o pedido ou adicionar mais. Qualquer duvida, me chama aqui.');
     vibrate([20, 30, 20]);
   };
 
@@ -2056,7 +2124,6 @@ function App() {
     setPratoAberto(null);
     setSacolaOpen(false);
     setFotoAberta(null);
-    setWelcomeOpen(false);
     setChatOpen(true);
     setBalaoTexto(null);
     setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto }]);
@@ -2324,7 +2391,7 @@ function App() {
                   <button
                     key={tam.id}
                     className="choice-row"
-                    onClick={() => { setDetailSizeId(tam.id); vibrate(10); }}
+                    onClick={() => selecionarTamanho(tam)}
                   >
                     <div className="choice-main">
                       <div className="choice-name">{labelTamanho(tam)}</div>
@@ -2402,7 +2469,7 @@ function App() {
                     className="obs-input"
                     style={{width:'100%', minHeight: 86, borderRadius: 16, resize:'none'}}
                     value={detailObs}
-                    onChange={e => setDetailObs(e.target.value)}
+                    onChange={e => { detailInteragiuRef.current = true; setDetailObs(e.target.value); }}
                     placeholder="Ex: sem cebola, ponto da carne, embalagem separada..."
                   ></textarea>
                 </div>
@@ -2411,9 +2478,9 @@ function App() {
 
             <div className="dish-footer">
               <div className="qty-stepper">
-                <button onClick={() => setDetailQty(q => Math.max(1, q - 1))}>-</button>
+                <button onClick={() => { detailInteragiuRef.current = true; setDetailQty(q => Math.max(1, q - 1)); }}>-</button>
                 <span>{detailQty}</span>
-                <button onClick={() => setDetailQty(q => q + 1)}>+</button>
+                <button onClick={() => { detailInteragiuRef.current = true; setDetailQty(q => q + 1); }}>+</button>
               </div>
               <button className={`add-dish-btn ${detalheValido(pratoAberto) ? '' : 'disabled'}`} onClick={adicionarDetalheNaSacola}>
                 <span>Adicionar</span>
