@@ -1,0 +1,1391 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Desafio da Cozinha | Dom Leonardo</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
+  <style>
+    :root {
+      --bg: #0a0908;
+      --panel: #17130f;
+      --panel-2: #211b15;
+      --line: rgba(244, 198, 82, 0.2);
+      --gold: #d4af37;
+      --cream: #f4ead8;
+      --muted: #b9ad9c;
+      --tomato: #e64b3c;
+      --basil: #58b87d;
+      --blue: #6fb8ff;
+      --shadow: 0 18px 60px rgba(0, 0, 0, 0.34);
+      --safe-top: env(safe-area-inset-top);
+      --safe-bottom: env(safe-area-inset-bottom);
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        linear-gradient(135deg, rgba(88, 184, 125, 0.08), transparent 30%),
+        linear-gradient(225deg, rgba(230, 75, 60, 0.1), transparent 34%),
+        #0a0908;
+      color: var(--cream);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .app {
+      min-height: 100vh;
+      padding: calc(14px + var(--safe-top)) 16px calc(18px + var(--safe-bottom));
+    }
+
+    .topbar {
+      width: min(1080px, 100%);
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 46px;
+      height: 46px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: #120f0d;
+      font-weight: 950;
+      background: linear-gradient(180deg, #f6d778, var(--gold));
+      box-shadow: inset 0 -8px 18px rgba(0, 0, 0, 0.18), 0 10px 28px rgba(212, 175, 55, 0.16);
+      flex: 0 0 auto;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(20px, 4vw, 30px);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(23, 19, 15, 0.74);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .shell {
+      width: min(1080px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(310px, 480px) minmax(280px, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .game-frame,
+    .side-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(23, 19, 15, 0.88);
+      box-shadow: var(--shadow);
+    }
+
+    .game-frame {
+      position: relative;
+      overflow: hidden;
+      min-height: 620px;
+      display: grid;
+      place-items: center;
+    }
+
+    #game-wrap {
+      width: 100%;
+      height: min(82vh, 768px);
+      min-height: 620px;
+      background: #0a0908;
+    }
+
+    #game-wrap canvas {
+      display: block;
+      border-radius: 8px;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(10, 9, 8, 0.76);
+      backdrop-filter: blur(10px);
+      z-index: 5;
+    }
+
+    .overlay.is-visible {
+      display: flex;
+    }
+
+    .dialog {
+      width: min(390px, 100%);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(33, 27, 21, 0.98), rgba(15, 13, 11, 0.98));
+      padding: 18px;
+      box-shadow: 0 18px 70px rgba(0, 0, 0, 0.45);
+    }
+
+    .dialog small {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(88, 184, 125, 0.12);
+      color: #9ff0ba;
+      font-weight: 900;
+      text-transform: uppercase;
+      font-size: 10px;
+    }
+
+    .dialog h2 {
+      margin: 12px 0 8px;
+      font-size: 28px;
+      line-height: 1.04;
+      letter-spacing: 0;
+    }
+
+    .dialog p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      margin: 14px 0;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .field input {
+      width: 100%;
+      height: 46px;
+      padding: 0 12px;
+      border: 1px solid rgba(244, 198, 82, 0.24);
+      border-radius: 8px;
+      background: rgba(10, 9, 8, 0.72);
+      color: var(--cream);
+      outline: 0;
+    }
+
+    .field input:focus {
+      border-color: var(--gold);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      min-height: 44px;
+      padding: 0 14px;
+      border-radius: 8px;
+      background: rgba(244, 198, 82, 0.12);
+      color: var(--cream);
+      font-weight: 950;
+      border: 1px solid rgba(244, 198, 82, 0.22);
+      transition: transform .14s ease, border-color .14s ease, background .14s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(244, 198, 82, 0.44);
+    }
+
+    .btn.primary {
+      color: #15110d;
+      background: linear-gradient(180deg, #f6d778, var(--gold));
+      border-color: transparent;
+    }
+
+    .btn.ghost {
+      color: var(--muted);
+      background: transparent;
+    }
+
+    .side-panel {
+      padding: 14px;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 12px;
+      min-height: 620px;
+    }
+
+    .side-section {
+      border: 1px solid rgba(244, 198, 82, 0.14);
+      border-radius: 8px;
+      padding: 12px;
+      background: rgba(10, 9, 8, 0.38);
+    }
+
+    .side-section h2 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+
+    .status-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.12);
+      flex: 0 0 auto;
+    }
+
+    .dot.ok {
+      background: var(--basil);
+      box-shadow: 0 0 0 4px rgba(88, 184, 125, 0.12);
+    }
+
+    .dot.bad {
+      background: var(--tomato);
+      box-shadow: 0 0 0 4px rgba(230, 75, 60, 0.12);
+    }
+
+    .rules {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .rules li {
+      display: grid;
+      grid-template-columns: 26px 1fr;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .rule-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: #120f0d;
+      background: var(--gold);
+      font-weight: 950;
+      font-size: 12px;
+    }
+
+    .leaderboard {
+      display: grid;
+      gap: 8px;
+    }
+
+    .rank-row {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 9px 0;
+      border-bottom: 1px solid rgba(244, 198, 82, 0.1);
+      font-size: 13px;
+    }
+
+    .rank-row:last-child {
+      border-bottom: 0;
+    }
+
+    .rank-pos {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: rgba(111, 184, 255, 0.13);
+      color: #a8d4ff;
+      font-weight: 950;
+    }
+
+    .rank-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--cream);
+      font-weight: 850;
+    }
+
+    .rank-score {
+      color: var(--gold);
+      font-weight: 950;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .result-box {
+      margin: 12px 0;
+      padding: 12px;
+      border-radius: 8px;
+      background: rgba(10, 9, 8, 0.48);
+      border: 1px solid rgba(244, 198, 82, 0.16);
+      color: var(--cream);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 860px) {
+      .app { padding-inline: 10px; }
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .top-actions { justify-content: flex-start; }
+      .shell {
+        grid-template-columns: 1fr;
+      }
+      .game-frame,
+      .side-panel {
+        min-height: auto;
+      }
+      #game-wrap {
+        height: min(78vh, 760px);
+        min-height: 560px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">DL</div>
+        <div>
+          <h1>Desafio da Cozinha</h1>
+          <p>Dom Leonardo em tres provas rapidas e bem puxadas.</p>
+        </div>
+      </div>
+      <div class="top-actions" aria-label="Resumo do jogo">
+        <span class="pill">3 desafios</span>
+        <span class="pill">Placar ao vivo</span>
+        <span class="pill">Motor Supabase</span>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="game-frame" aria-label="Mini game Desafio da Cozinha">
+        <div id="game-wrap"></div>
+
+        <div id="startOverlay" class="overlay is-visible">
+          <div class="dialog">
+            <small>Pronto para a bancada</small>
+            <h2>Acerta o ponto, monta o prato e segura o rush.</h2>
+            <p>O jogo e dificil de fechar: voce tem poucas falhas, tempo curto e ingredientes tentando te enganar.</p>
+            <div class="field">
+              <label for="playerName">Apelido no ranking</label>
+              <input id="playerName" maxlength="24" autocomplete="nickname" placeholder="Ex: Chef Leo" />
+            </div>
+            <div class="btn-row">
+              <button id="startBtn" class="btn primary" type="button">Comecar jogo</button>
+              <button id="reloadRankBtn" class="btn ghost" type="button">Atualizar ranking</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="endOverlay" class="overlay">
+          <div class="dialog">
+            <small id="endBadge">Resultado</small>
+            <h2 id="endTitle">Fim de jogo</h2>
+            <p id="endCopy">Sua rodada terminou.</p>
+            <div id="resultBox" class="result-box"></div>
+            <div class="btn-row">
+              <button id="playAgainBtn" class="btn primary" type="button">Jogar de novo</button>
+              <button id="sendResultBtn" class="btn" type="button">Mandar resultado</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side-panel">
+        <section class="side-section">
+          <h2>Status</h2>
+          <div class="status-line">
+            <span id="engineStatus">Conectando o motor do jogo...</span>
+            <span id="engineDot" class="dot" aria-hidden="true"></span>
+          </div>
+        </section>
+
+        <section class="side-section">
+          <h2>Como vencer</h2>
+          <ul class="rules">
+            <li><span class="rule-num">1</span><span>Toque no ponto dourado da chapa quatro vezes.</span></li>
+            <li><span class="rule-num">2</span><span>Memorize a ordem e toque nos ingredientes certos.</span></li>
+            <li><span class="rule-num">3</span><span>Arraste o chef e pegue os pedidos na ordem.</span></li>
+          </ul>
+        </section>
+
+        <section class="side-section">
+          <h2>Ranking da cozinha</h2>
+          <div id="leaderboard" class="leaderboard">
+            <p class="empty">Carregando placar...</p>
+          </div>
+        </section>
+
+        <p class="footer-note">O placar salva apenas apelido, pontuacao e tempo. Nada de nome completo, telefone ou endereco.</p>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const SUPABASE_URL = 'https://jewamqbdonudiapxbzay.supabase.co';
+      const SUPABASE_KEY = 'sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY';
+      const WHATSAPP_DOM = '5541987044064';
+      const GAME_WIDTH = 432;
+      const GAME_HEIGHT = 768;
+
+      const DEFAULT_ENGINE = {
+        rules: {
+          version: 1,
+          maxMistakes: 5,
+          stage1: { seconds: 18, requiredHits: 4, baseZone: 0.16, minZone: 0.07 },
+          stage2: { seconds: 30, sequenceLength: 7, previewMs: 2600 },
+          stage3: { seconds: 36, orders: 8, spawnMs: 560 }
+        },
+        reward: {
+          title: 'Selo Chef do Dom',
+          couponCode: 'CHEFDOM',
+          message: 'Venceu os 3 desafios? Mande o print para a cozinha e pergunte pela surpresa do Chef.'
+        }
+      };
+
+      const INGREDIENTS = [
+        { key: 'massa', label: 'Massa', short: 'MAS', color: 0xf0c96a },
+        { key: 'molho', label: 'Molho', short: 'MOL', color: 0xe64b3c },
+        { key: 'queijo', label: 'Queijo', short: 'QUE', color: 0xfff0a6 },
+        { key: 'erva', label: 'Erva', short: 'ERV', color: 0x58b87d },
+        { key: 'carne', label: 'Carne', short: 'CAR', color: 0xb65b42 },
+        { key: 'arroz', label: 'Arroz', short: 'ARZ', color: 0xf4ead8 },
+        { key: 'limao', label: 'Limao', short: 'LIM', color: 0xa5dd5d },
+        { key: 'azeite', label: 'Azeite', short: 'AZE', color: 0xd4af37 },
+        { key: 'cafe', label: 'Cafe', short: 'CAF', color: 0x8b5a35 }
+      ];
+
+      const byKey = Object.fromEntries(INGREDIENTS.map(item => [item.key, item]));
+      const $ = id => document.getElementById(id);
+      const ui = {
+        startOverlay: $('startOverlay'),
+        endOverlay: $('endOverlay'),
+        playerName: $('playerName'),
+        startBtn: $('startBtn'),
+        reloadRankBtn: $('reloadRankBtn'),
+        playAgainBtn: $('playAgainBtn'),
+        sendResultBtn: $('sendResultBtn'),
+        endBadge: $('endBadge'),
+        endTitle: $('endTitle'),
+        endCopy: $('endCopy'),
+        resultBox: $('resultBox'),
+        engineStatus: $('engineStatus'),
+        engineDot: $('engineDot'),
+        leaderboard: $('leaderboard')
+      };
+
+      let supabaseClient = null;
+      let engine = { ...DEFAULT_ENGINE, rules: { ...DEFAULT_ENGINE.rules }, reward: { ...DEFAULT_ENGINE.reward } };
+      let latestRun = null;
+      let game = null;
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function safeName(value) {
+        const cleaned = String(value || '')
+          .replace(/[^\w .-]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 24);
+        return cleaned.length >= 2 ? cleaned : 'Chef anonimo';
+      }
+
+      function mergeEngine(current, incoming) {
+        const nextRules = incoming && incoming.rules ? incoming.rules : {};
+        return {
+          rules: {
+            ...current.rules,
+            ...nextRules,
+            stage1: { ...current.rules.stage1, ...(nextRules.stage1 || {}) },
+            stage2: { ...current.rules.stage2, ...(nextRules.stage2 || {}) },
+            stage3: { ...current.rules.stage3, ...(nextRules.stage3 || {}) }
+          },
+          reward: { ...current.reward, ...((incoming && incoming.reward) || {}) }
+        };
+      }
+
+      function setEngineStatus(text, mode) {
+        ui.engineStatus.textContent = text;
+        ui.engineDot.className = `dot ${mode || ''}`.trim();
+      }
+
+      function formatMs(ms) {
+        const total = Math.max(0, Math.round(ms / 1000));
+        const minutes = Math.floor(total / 60);
+        const seconds = total % 60;
+        return `${minutes}:${String(seconds).padStart(2, '0')}`;
+      }
+
+      function getSessionId() {
+        try {
+          const key = 'dom_leonardo_minigame_session';
+          const existing = localStorage.getItem(key);
+          if (existing) return existing;
+          const value = `sess_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+          localStorage.setItem(key, value);
+          return value;
+        } catch (_) {
+          return `sess_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+        }
+      }
+
+      function renderLeaderboard(rows) {
+        if (!rows || !rows.length) {
+          ui.leaderboard.innerHTML = '<p class="empty">Ainda nao tem campeao salvo. A primeira travessa e sua.</p>';
+          return;
+        }
+
+        ui.leaderboard.innerHTML = rows.map((row, index) => {
+          const name = String(row.player_name || 'Chef').replace(/[<>&"]/g, '');
+          const score = Number(row.score || 0).toLocaleString('pt-BR');
+          return `
+            <div class="rank-row">
+              <span class="rank-pos">${index + 1}</span>
+              <span class="rank-name">${name}</span>
+              <span class="rank-score">${score}</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      async function loadEngine() {
+        if (!window.supabase) {
+          setEngineStatus('Supabase indisponivel; jogo em modo local.', 'bad');
+          return;
+        }
+
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        try {
+          const { data, error } = await supabaseClient
+            .from('minigame_cozinha_config')
+            .select('rules,reward')
+            .eq('id', 'dom-leonardo')
+            .eq('active', true)
+            .maybeSingle();
+
+          if (error) throw error;
+          if (data) engine = mergeEngine(engine, data);
+          setEngineStatus('Motor conectado e configuracao carregada.', 'ok');
+        } catch (error) {
+          console.warn('Falha ao carregar config do jogo:', error);
+          setEngineStatus('Modo local ativo; ranking pode falhar.', 'bad');
+        }
+      }
+
+      async function loadLeaderboard() {
+        if (!supabaseClient) {
+          renderLeaderboard([]);
+          return;
+        }
+
+        try {
+          const { data, error } = await supabaseClient
+            .from('minigame_cozinha_scores')
+            .select('player_name,score,stages_completed,won,duration_ms,created_at')
+            .order('score', { ascending: false })
+            .order('duration_ms', { ascending: true })
+            .limit(8);
+
+          if (error) throw error;
+          renderLeaderboard(data || []);
+        } catch (error) {
+          console.warn('Falha ao carregar ranking:', error);
+          ui.leaderboard.innerHTML = '<p class="empty">Nao consegui buscar o ranking agora. O jogo continua funcionando.</p>';
+        }
+      }
+
+      async function saveScore(run) {
+        if (!supabaseClient || !run) return false;
+
+        const payload = {
+          player_name: safeName(run.playerName),
+          score: clamp(Math.round(run.score || 0), 0, 999999),
+          stages_completed: clamp(Math.round(run.stagesCompleted || 0), 0, 3),
+          won: !!run.won,
+          duration_ms: clamp(Math.round(run.durationMs || 0), 0, 600000),
+          mistakes: clamp(Math.round(run.mistakes || 0), 0, 50),
+          coupon_code: run.won ? engine.reward.couponCode : null,
+          session_id: getSessionId()
+        };
+
+        try {
+          const { error } = await supabaseClient
+            .from('minigame_cozinha_scores')
+            .insert(payload);
+          if (error) throw error;
+          await loadLeaderboard();
+          return true;
+        } catch (error) {
+          console.warn('Falha ao salvar placar:', error);
+          return false;
+        }
+      }
+
+      function openResultMessage() {
+        if (!latestRun) return;
+        const status = latestRun.won ? 'venci os 3 desafios' : `cheguei ate ${latestRun.stagesCompleted}/3`;
+        const text = [
+          'Oi, Dom Leonardo!',
+          `Joguei o Desafio da Cozinha e ${status}.`,
+          `Pontuacao: ${Math.round(latestRun.score)} pontos`,
+          `Tempo: ${formatMs(latestRun.durationMs)}`,
+          latestRun.won ? engine.reward.message : 'Vou tentar de novo para buscar o selo do Chef.'
+        ].join('\n');
+        window.open(`https://wa.me/${WHATSAPP_DOM}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+      }
+
+      function hideOverlays() {
+        ui.startOverlay.classList.remove('is-visible');
+        ui.endOverlay.classList.remove('is-visible');
+      }
+
+      async function showEnd(run) {
+        latestRun = run;
+        const saved = await saveScore(run);
+        const title = run.won ? 'Voce fechou a cozinha.' : 'A bancada te pegou.';
+        const badge = run.won ? engine.reward.title : 'Fim da rodada';
+        const copy = run.won
+          ? engine.reward.message
+          : 'Quase. O jogo e puxado de proposito: tenta de novo mirando no tempo e na ordem.';
+
+        ui.endBadge.textContent = badge;
+        ui.endTitle.textContent = title;
+        ui.endCopy.textContent = copy;
+        ui.resultBox.innerHTML = `
+          <strong>${safeName(run.playerName)}</strong><br>
+          Pontuacao: ${Math.round(run.score).toLocaleString('pt-BR')}<br>
+          Desafios: ${run.stagesCompleted}/3<br>
+          Falhas: ${run.mistakes}/${engine.rules.maxMistakes}<br>
+          Tempo: ${formatMs(run.durationMs)}<br>
+          ${saved ? 'Placar salvo no Supabase.' : 'Placar local; nao consegui salvar agora.'}
+        `;
+        ui.endOverlay.classList.add('is-visible');
+      }
+
+      class KitchenScene extends Phaser.Scene {
+        constructor() {
+          super('KitchenScene');
+          this.state = 'idle';
+          this.run = null;
+          this.stageGraphics = null;
+          this.sequenceLayer = null;
+          this.dynamicItems = [];
+          this.fallingItems = [];
+          this.chef = null;
+          this.chefX = GAME_WIDTH / 2;
+        }
+
+        create() {
+          this.cursors = this.input.keyboard.createCursorKeys();
+          this.wasd = this.input.keyboard.addKeys('A,D');
+          this.input.on('pointerdown', pointer => this.handlePointer(pointer));
+          this.input.on('pointermove', pointer => {
+            if (this.state === 'stage3') this.chefX = clamp(pointer.x, 58, GAME_WIDTH - 58);
+          });
+          this.showIdle();
+        }
+
+        showIdle() {
+          this.state = 'idle';
+          this.children.removeAll(true);
+          this.drawBackdrop('Bancada pronta');
+          this.makeChef(GAME_WIDTH / 2, 412, 1.2);
+          this.add.text(GAME_WIDTH / 2, 520, 'Digite seu apelido e comece.', {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '18px',
+            color: '#f4ead8',
+            fontStyle: '700'
+          }).setOrigin(0.5);
+        }
+
+        startRun(playerName, activeEngine) {
+          this.engine = activeEngine;
+          this.run = {
+            playerName,
+            score: 0,
+            mistakes: 0,
+            stage: 0,
+            stagesCompleted: 0,
+            startedAt: performance.now(),
+            durationMs: 0,
+            won: false
+          };
+          this.input.setDefaultCursor('pointer');
+          this.startStage1();
+        }
+
+        update(time, delta) {
+          if (this.state === 'stage1') this.updateStage1(time, delta);
+          if (this.state === 'stage2') this.updateStage2(time, delta);
+          if (this.state === 'stage3') this.updateStage3(time, delta);
+        }
+
+        clearForStage(title, instruction) {
+          this.children.removeAll(true);
+          this.dynamicItems = [];
+          this.fallingItems = [];
+          this.drawBackdrop(title);
+          this.drawHud(title, instruction);
+          this.stageGraphics = this.add.graphics();
+        }
+
+        drawBackdrop(title) {
+          const g = this.add.graphics();
+          g.fillStyle(0x0a0908, 1).fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+          g.fillStyle(0x15110d, 1).fillRoundedRect(14, 14, GAME_WIDTH - 28, GAME_HEIGHT - 28, 18);
+          g.fillStyle(0x211b15, 1).fillRect(0, 548, GAME_WIDTH, 220);
+          g.lineStyle(1, 0x4a3b24, 0.5);
+          for (let y = 570; y < GAME_HEIGHT; y += 24) g.lineBetween(20, y, GAME_WIDTH - 20, y);
+          for (let x = 32; x < GAME_WIDTH; x += 48) g.lineBetween(x, 548, x - 30, GAME_HEIGHT);
+          g.fillStyle(0x2a2118, 1).fillRoundedRect(28, 104, GAME_WIDTH - 56, 420, 12);
+          g.lineStyle(2, 0xd4af37, 0.22).strokeRoundedRect(28, 104, GAME_WIDTH - 56, 420, 12);
+          this.add.text(GAME_WIDTH / 2, 70, title, {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '19px',
+            color: '#d4af37',
+            fontStyle: '900'
+          }).setOrigin(0.5);
+        }
+
+        drawHud(title, instruction) {
+          this.hud = {
+            title: this.add.text(28, 22, title, {
+              fontFamily: 'Arial, sans-serif',
+              fontSize: '15px',
+              color: '#f4ead8',
+              fontStyle: '900'
+            }),
+            instruction: this.add.text(28, 44, instruction, {
+              fontFamily: 'Arial, sans-serif',
+              fontSize: '12px',
+              color: '#b9ad9c',
+              wordWrap: { width: 286 }
+            }),
+            score: this.add.text(GAME_WIDTH - 28, 22, '0', {
+              fontFamily: 'Arial, sans-serif',
+              fontSize: '18px',
+              color: '#d4af37',
+              fontStyle: '900'
+            }).setOrigin(1, 0),
+            timer: this.add.text(GAME_WIDTH - 28, 48, '0s', {
+              fontFamily: 'Arial, sans-serif',
+              fontSize: '13px',
+              color: '#f4ead8',
+              fontStyle: '900'
+            }).setOrigin(1, 0),
+            mistakes: this.add.text(GAME_WIDTH - 28, 68, '0 falhas', {
+              fontFamily: 'Arial, sans-serif',
+              fontSize: '12px',
+              color: '#e64b3c',
+              fontStyle: '800'
+            }).setOrigin(1, 0)
+          };
+          this.updateHud();
+        }
+
+        updateHud() {
+          if (!this.hud || !this.run) return;
+          const left = Math.max(0, Math.ceil((this.deadline - this.time.now) / 1000));
+          this.hud.score.setText(Math.round(this.run.score).toLocaleString('pt-BR'));
+          this.hud.timer.setText(`${left}s`);
+          this.hud.mistakes.setText(`${this.run.mistakes}/${this.engine.rules.maxMistakes} falhas`);
+        }
+
+        makeChef(x, y, scale) {
+          const c = this.add.container(x, y);
+          c.setScale(scale || 1);
+          const g = this.add.graphics();
+          g.fillStyle(0xffffff, 1).fillRoundedRect(-37, -86, 74, 32, 12);
+          g.fillStyle(0xffffff, 1).fillCircle(-23, -86, 17);
+          g.fillCircle(0, -94, 21);
+          g.fillCircle(23, -86, 17);
+          g.fillStyle(0xf2c89b, 1).fillCircle(0, -44, 31);
+          g.fillStyle(0x3a2418, 1).fillEllipse(-10, -39, 7, 5);
+          g.fillEllipse(10, -39, 7, 5);
+          g.fillStyle(0x5a2d20, 1).fillEllipse(0, -25, 32, 10);
+          g.fillStyle(0xf4ead8, 1).fillRoundedRect(-42, -10, 84, 76, 12);
+          g.fillStyle(0xe64b3c, 1).fillRoundedRect(-13, -5, 26, 58, 6);
+          g.lineStyle(4, 0xd4af37, 1).lineBetween(-40, 18, 40, 18);
+          g.fillStyle(0x211b15, 1).fillCircle(-19, 24, 4);
+          g.fillCircle(19, 24, 4);
+          c.add(g);
+          return c;
+        }
+
+        showBubble(text, duration) {
+          if (this.bubble) this.bubble.destroy(true);
+          const wrapWidth = 300;
+          const message = this.add.text(52, 122, text, {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '14px',
+            color: '#15110d',
+            fontStyle: '800',
+            wordWrap: { width: wrapWidth }
+          });
+          const bounds = message.getBounds();
+          const bg = this.add.graphics();
+          bg.fillStyle(0xf4ead8, 1).fillRoundedRect(40, 110, Math.max(260, bounds.width + 24), bounds.height + 24, 10);
+          bg.fillStyle(0xf4ead8, 1).fillTriangle(75, 110 + bounds.height + 24, 92, 110 + bounds.height + 24, 75, 110 + bounds.height + 42);
+          this.bubble = this.add.container(0, 0, [bg, message]).setDepth(30);
+          this.time.delayedCall(duration || 2300, () => {
+            if (this.bubble) {
+              this.tweens.add({
+                targets: this.bubble,
+                alpha: 0,
+                duration: 220,
+                onComplete: () => this.bubble && this.bubble.destroy(true)
+              });
+            }
+          });
+        }
+
+        addScore(points) {
+          this.run.score = clamp(this.run.score + points, 0, 999999);
+          this.updateHud();
+        }
+
+        addMistake(text) {
+          this.run.mistakes += 1;
+          this.cameras.main.shake(120, 0.008);
+          this.showBubble(text || 'Opa, esse ponto escapou.', 1600);
+          this.updateHud();
+          if (this.run.mistakes >= this.engine.rules.maxMistakes) {
+            this.finish(false, 'Falhas demais para a cozinha continuar.');
+          }
+        }
+
+        handlePointer(pointer) {
+          if (this.state === 'stage1') this.tapStage1(pointer);
+        }
+
+        startStage1() {
+          this.state = 'stage1';
+          this.run.stage = 1;
+          const cfg = this.engine.rules.stage1;
+          this.deadline = this.time.now + cfg.seconds * 1000;
+          this.s1 = {
+            hits: 0,
+            phase: 0,
+            needle: 0.5,
+            speed: 0.82,
+            zoneCenter: Phaser.Math.FloatBetween(0.26, 0.74),
+            zoneWidth: cfg.baseZone
+          };
+          this.clearForStage('1/3 Ponto da chapa', 'Toque quando o ponteiro entrar no ouro.');
+          this.add.text(GAME_WIDTH / 2, 188, 'PONTO PERFEITO', {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '22px',
+            color: '#f4ead8',
+            fontStyle: '900'
+          }).setOrigin(0.5);
+          this.showBubble('Respira e toca so quando o calor ficar no ouro.', 2500);
+        }
+
+        tapStage1() {
+          if (this.state !== 'stage1') return;
+          const cfg = this.engine.rules.stage1;
+          const dist = Math.abs(this.s1.needle - this.s1.zoneCenter);
+          const success = dist <= this.s1.zoneWidth / 2;
+          const perfect = dist <= this.s1.zoneWidth / 5;
+
+          if (!success) {
+            this.addMistake('Passou do ponto. Risoto nervoso fica bravo.');
+            return;
+          }
+
+          this.s1.hits += 1;
+          this.addScore(perfect ? 760 : 520);
+          this.showBubble(perfect ? 'Ponto lindo. Chef ate levantou a sobrancelha.' : 'Boa, esta no caminho.', 1400);
+          this.s1.speed += 0.19;
+          this.s1.zoneWidth = Math.max(cfg.minZone, this.s1.zoneWidth * 0.78);
+          this.s1.zoneCenter = Phaser.Math.FloatBetween(0.22, 0.78);
+
+          if (this.s1.hits >= cfg.requiredHits) {
+            this.state = 'between';
+            this.run.stagesCompleted = 1;
+            this.addScore(900 + Math.max(0, this.deadline - this.time.now) / 18);
+            this.time.delayedCall(650, () => this.startStage2());
+          }
+        }
+
+        updateStage1(time, delta) {
+          if (this.time.now >= this.deadline) {
+            this.finish(false, 'A chapa esfriou antes do ponto.');
+            return;
+          }
+
+          this.s1.phase += (delta / 1000) * this.s1.speed;
+          this.s1.needle = (Math.sin(this.s1.phase * Math.PI * 2) + 1) / 2;
+          this.drawStage1();
+          this.updateHud();
+        }
+
+        drawStage1() {
+          const g = this.stageGraphics;
+          g.clear();
+          const x = 54;
+          const y = 342;
+          const w = 324;
+          const h = 32;
+          const zoneX = x + (this.s1.zoneCenter - this.s1.zoneWidth / 2) * w;
+          const zoneW = this.s1.zoneWidth * w;
+          const needleX = x + this.s1.needle * w;
+
+          g.fillStyle(0x15110d, 1).fillRoundedRect(x - 6, y - 12, w + 12, 92, 16);
+          g.fillStyle(0xe64b3c, 1).fillRoundedRect(x, y, w, h, 14);
+          g.fillStyle(0xd4af37, 1).fillRoundedRect(zoneX, y, zoneW, h, 14);
+          g.lineStyle(4, 0xf4ead8, 1).lineBetween(needleX, y - 18, needleX, y + h + 18);
+          g.fillStyle(0xf4ead8, 1).fillTriangle(needleX - 8, y - 20, needleX + 8, y - 20, needleX, y - 5);
+
+          for (let i = 0; i < this.engine.rules.stage1.requiredHits; i += 1) {
+            g.fillStyle(i < this.s1.hits ? 0x58b87d : 0x4a3b24, 1).fillCircle(x + 38 + i * 34, y + 66, 9);
+          }
+        }
+
+        startStage2() {
+          this.state = 'stage2';
+          this.run.stage = 2;
+          const cfg = this.engine.rules.stage2;
+          this.deadline = this.time.now + cfg.seconds * 1000;
+          this.s2 = {
+            previewUntil: this.time.now + cfg.previewMs,
+            index: 0,
+            sequence: this.makeSequence(cfg.sequenceLength),
+            moving: false
+          };
+          this.clearForStage('2/3 Montagem de memoria', 'Memorize a ordem e toque nos ingredientes certos.');
+          this.drawSequenceRow(true);
+          this.showBubble('Olha a ordem agora. Depois ela some.', cfg.previewMs - 200);
+          this.time.delayedCall(cfg.previewMs, () => {
+            if (this.state !== 'stage2') return;
+            this.s2.moving = true;
+            this.drawSequenceRow(false);
+            this.spawnIngredientCloud();
+            this.showBubble('Agora vai de memoria. Toca errado e a cozinha cobra.', 2200);
+          });
+        }
+
+        makeSequence(length) {
+          const sequence = [];
+          let previous = null;
+          for (let i = 0; i < length; i += 1) {
+            let choice = Phaser.Utils.Array.GetRandom(INGREDIENTS).key;
+            while (choice === previous) choice = Phaser.Utils.Array.GetRandom(INGREDIENTS).key;
+            sequence.push(choice);
+            previous = choice;
+          }
+          return sequence;
+        }
+
+        drawSequenceRow(preview) {
+          if (this.sequenceLayer) this.sequenceLayer.destroy(true);
+          const items = [];
+          const startX = 44;
+          const y = 160;
+          this.s2.sequence.forEach((key, index) => {
+            const data = byKey[key];
+            const x = startX + index * 49;
+            const done = index < this.s2.index;
+            const g = this.add.graphics();
+            g.fillStyle(preview || done ? data.color : 0x211b15, 1).fillRoundedRect(x - 18, y - 18, 36, 36, 8);
+            g.lineStyle(2, done ? 0x58b87d : 0xd4af37, preview || done ? 0.85 : 0.25).strokeRoundedRect(x - 18, y - 18, 36, 36, 8);
+            const label = this.add.text(x, y, preview || done ? data.short : String(index + 1), {
+              fontFamily: 'Arial, sans-serif',
+              fontSize: '11px',
+              color: preview || done ? '#15110d' : '#b9ad9c',
+              fontStyle: '900'
+            }).setOrigin(0.5);
+            items.push(g, label);
+          });
+          this.sequenceLayer = this.add.container(0, 0, items).setDepth(10);
+        }
+
+        spawnIngredientCloud() {
+          const keys = INGREDIENTS.map(item => item.key);
+          const wanted = [...new Set(this.s2.sequence)];
+          const cloud = [...wanted];
+          while (cloud.length < 11) cloud.push(Phaser.Utils.Array.GetRandom(keys));
+
+          Phaser.Utils.Array.Shuffle(cloud).forEach((key, index) => {
+            const x = 68 + (index % 3) * 145 + Phaser.Math.Between(-12, 12);
+            const y = 250 + Math.floor(index / 3) * 92 + Phaser.Math.Between(-8, 8);
+            this.dynamicItems.push(this.makeIngredientButton(key, x, y));
+          });
+        }
+
+        makeIngredientButton(key, x, y) {
+          const data = byKey[key];
+          const c = this.add.container(x, y);
+          const g = this.add.graphics();
+          g.fillStyle(data.color, 1).fillRoundedRect(-39, -31, 78, 62, 12);
+          g.lineStyle(3, 0xf4ead8, 0.45).strokeRoundedRect(-39, -31, 78, 62, 12);
+          g.fillStyle(0x15110d, 0.22).fillCircle(25, -16, 12);
+          const short = this.add.text(0, -4, data.short, {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '18px',
+            color: '#15110d',
+            fontStyle: '900'
+          }).setOrigin(0.5);
+          const label = this.add.text(0, 18, data.label, {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '10px',
+            color: '#15110d',
+            fontStyle: '900'
+          }).setOrigin(0.5);
+          c.add([g, short, label]);
+          c.setSize(82, 66).setInteractive({ useHandCursor: true });
+          c.vx = Phaser.Math.FloatBetween(-38, 38);
+          c.vy = Phaser.Math.FloatBetween(-30, 30);
+          c.keyName = key;
+          c.on('pointerdown', () => this.pickStage2(key, c));
+          return c;
+        }
+
+        pickStage2(key, item) {
+          if (this.state !== 'stage2' || !this.s2.moving) return;
+          const expected = this.s2.sequence[this.s2.index];
+          const expectedData = byKey[expected];
+          if (key !== expected) {
+            this.addMistake(`Era ${expectedData.label}. Esse ai fica para outro prato.`);
+            this.tweens.add({ targets: item, angle: item.angle + 8, yoyo: true, duration: 70, repeat: 2 });
+            return;
+          }
+
+          this.s2.index += 1;
+          this.addScore(560 + this.s2.index * 45);
+          this.tweens.add({
+            targets: item,
+            scaleX: 1.15,
+            scaleY: 1.15,
+            alpha: 0,
+            duration: 180,
+            onComplete: () => {
+              Phaser.Utils.Array.Remove(this.dynamicItems, item);
+              item.destroy(true);
+            }
+          });
+          this.drawSequenceRow(false);
+
+          if (this.s2.index >= this.s2.sequence.length) {
+            this.state = 'between';
+            this.run.stagesCompleted = 2;
+            this.addScore(1100 + Math.max(0, this.deadline - this.time.now) / 14);
+            this.showBubble('Montagem fechada. Agora segura o salao.', 1600);
+            this.time.delayedCall(760, () => this.startStage3());
+          }
+        }
+
+        updateStage2() {
+          if (this.time.now >= this.deadline) {
+            this.finish(false, 'A montagem atrasou e o pedido voltou.');
+            return;
+          }
+
+          if (this.s2.moving) {
+            const dt = this.game.loop.delta / 1000;
+            this.dynamicItems.forEach(item => {
+              item.x += item.vx * dt;
+              item.y += item.vy * dt;
+              if (item.x < 54 || item.x > GAME_WIDTH - 54) item.vx *= -1;
+              if (item.y < 232 || item.y > 505) item.vy *= -1;
+            });
+          }
+          this.updateHud();
+        }
+
+        startStage3() {
+          this.state = 'stage3';
+          this.run.stage = 3;
+          const cfg = this.engine.rules.stage3;
+          this.deadline = this.time.now + cfg.seconds * 1000;
+          this.s3 = {
+            targets: this.makeSequence(cfg.orders),
+            index: 0,
+            nextSpawnAt: this.time.now + 300,
+            spawnMs: cfg.spawnMs
+          };
+          this.clearForStage('3/3 Rush da entrega', 'Arraste o chef e pegue somente o proximo pedido.');
+          this.chefX = GAME_WIDTH / 2;
+          this.chef = this.makeChef(this.chefX, 678, 0.66).setDepth(20);
+          this.drawOrderRow();
+          this.showBubble('Agora e reflexo. Pega na ordem, ignora o resto.', 2200);
+        }
+
+        drawOrderRow() {
+          if (this.orderLayer) this.orderLayer.destroy(true);
+          const upcoming = this.s3.targets.slice(this.s3.index, this.s3.index + 5);
+          const items = [];
+          const g = this.add.graphics();
+          g.fillStyle(0x15110d, 0.94).fillRoundedRect(36, 126, GAME_WIDTH - 72, 62, 12);
+          g.lineStyle(2, 0xd4af37, 0.2).strokeRoundedRect(36, 126, GAME_WIDTH - 72, 62, 12);
+          items.push(g);
+
+          upcoming.forEach((key, index) => {
+            const data = byKey[key];
+            const x = 75 + index * 68;
+            const badge = this.add.graphics();
+            badge.fillStyle(index === 0 ? data.color : 0x2a2118, 1).fillRoundedRect(x - 24, 142, 48, 32, 8);
+            badge.lineStyle(2, data.color, index === 0 ? 0.85 : 0.35).strokeRoundedRect(x - 24, 142, 48, 32, 8);
+            const label = this.add.text(x, 158, data.short, {
+              fontFamily: 'Arial, sans-serif',
+              fontSize: '12px',
+              color: index === 0 ? '#15110d' : '#f4ead8',
+              fontStyle: '900'
+            }).setOrigin(0.5);
+            items.push(badge, label);
+          });
+
+          this.orderLayer = this.add.container(0, 0, items).setDepth(12);
+        }
+
+        spawnFallingItem() {
+          const target = this.s3.targets[this.s3.index];
+          const targetChance = Phaser.Math.FloatBetween(0, 1) < 0.46;
+          const key = targetChance ? target : Phaser.Utils.Array.GetRandom(INGREDIENTS).key;
+          const data = byKey[key];
+          const c = this.add.container(Phaser.Math.Between(58, GAME_WIDTH - 58), 206);
+          const g = this.add.graphics();
+          g.fillStyle(data.color, 1).fillCircle(0, 0, 24);
+          g.lineStyle(3, 0xf4ead8, 0.55).strokeCircle(0, 0, 24);
+          const label = this.add.text(0, 0, data.short, {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '11px',
+            color: '#15110d',
+            fontStyle: '900'
+          }).setOrigin(0.5);
+          c.add([g, label]);
+          c.keyName = key;
+          c.speed = Phaser.Math.Between(148, 236) + this.s3.index * 9;
+          this.fallingItems.push(c);
+        }
+
+        updateStage3(time, delta) {
+          if (this.time.now >= this.deadline) {
+            this.finish(false, 'O salao encheu antes do ultimo pedido.');
+            return;
+          }
+
+          if (this.cursors.left.isDown || this.wasd.A.isDown) this.chefX -= 280 * delta / 1000;
+          if (this.cursors.right.isDown || this.wasd.D.isDown) this.chefX += 280 * delta / 1000;
+          this.chefX = clamp(this.chefX, 58, GAME_WIDTH - 58);
+          if (this.chef) this.chef.x = this.chefX;
+
+          if (this.time.now >= this.s3.nextSpawnAt) {
+            this.spawnFallingItem();
+            this.s3.nextSpawnAt = this.time.now + Math.max(330, this.s3.spawnMs - this.s3.index * 16);
+          }
+
+          const dt = delta / 1000;
+          [...this.fallingItems].forEach(item => {
+            item.y += item.speed * dt;
+            const caught = item.y > 607 && item.y < 710 && Math.abs(item.x - this.chefX) < 48;
+            if (caught) {
+              this.catchFallingItem(item);
+              return;
+            }
+            if (item.y > GAME_HEIGHT + 38) {
+              Phaser.Utils.Array.Remove(this.fallingItems, item);
+              item.destroy(true);
+            }
+          });
+
+          this.updateHud();
+        }
+
+        catchFallingItem(item) {
+          const expected = this.s3.targets[this.s3.index];
+          if (item.keyName !== expected) {
+            const expectedData = byKey[expected];
+            this.addMistake(`Proximo era ${expectedData.label}. Esse pedido nao era seu.`);
+          } else {
+            this.s3.index += 1;
+            this.addScore(650 + this.s3.index * 55);
+            this.drawOrderRow();
+            this.cameras.main.flash(80, 88, 184, 125, false);
+            if (this.s3.index >= this.s3.targets.length) {
+              this.run.stagesCompleted = 3;
+              this.finish(true, 'Cozinha fechada no talento.');
+            }
+          }
+          Phaser.Utils.Array.Remove(this.fallingItems, item);
+          item.destroy(true);
+        }
+
+        finish(won, reason) {
+          if (!this.run || this.state === 'done') return;
+          this.state = 'done';
+          this.input.setDefaultCursor('default');
+          this.run.won = !!won;
+          this.run.durationMs = performance.now() - this.run.startedAt;
+          if (won) {
+            this.addScore(1600 + Math.max(0, this.deadline - this.time.now) / 9);
+          }
+          this.children.removeAll(true);
+          this.drawBackdrop(won ? 'Servico impecavel' : 'Fim da rodada');
+          this.makeChef(GAME_WIDTH / 2, 388, won ? 1.12 : 0.95);
+          this.add.text(GAME_WIDTH / 2, 506, reason, {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '18px',
+            color: won ? '#9ff0ba' : '#f4ead8',
+            fontStyle: '900',
+            align: 'center',
+            wordWrap: { width: 330 }
+          }).setOrigin(0.5);
+          this.time.delayedCall(760, () => showEnd({ ...this.run }));
+        }
+      }
+
+      function startGame() {
+        hideOverlays();
+        const playerName = safeName(ui.playerName.value);
+        ui.playerName.value = playerName;
+        const scene = game.scene.getScene('KitchenScene');
+        scene.startRun(playerName, engine);
+      }
+
+      async function boot() {
+        game = new Phaser.Game({
+          type: Phaser.AUTO,
+          parent: 'game-wrap',
+          width: GAME_WIDTH,
+          height: GAME_HEIGHT,
+          backgroundColor: '#0a0908',
+          scale: {
+            mode: Phaser.Scale.FIT,
+            autoCenter: Phaser.Scale.CENTER_BOTH
+          },
+          render: {
+            antialias: true,
+            pixelArt: false,
+            transparent: false
+          },
+          scene: [KitchenScene]
+        });
+
+        ui.startBtn.addEventListener('click', startGame);
+        ui.playerName.addEventListener('keydown', event => {
+          if (event.key === 'Enter') startGame();
+        });
+        ui.reloadRankBtn.addEventListener('click', loadLeaderboard);
+        ui.playAgainBtn.addEventListener('click', () => {
+          ui.endOverlay.classList.remove('is-visible');
+          ui.startOverlay.classList.add('is-visible');
+          const scene = game.scene.getScene('KitchenScene');
+          scene.showIdle();
+        });
+        ui.sendResultBtn.addEventListener('click', openResultMessage);
+
+        await loadEngine();
+        await loadLeaderboard();
+      }
+
+      boot();
+    })();
+  </script>
+</body>
+</html>
