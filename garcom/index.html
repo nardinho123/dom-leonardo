@@ -1158,30 +1158,6 @@
     font-size: 13px;
     line-height: 1.42;
   }
-  .hero-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
-    overflow-x: auto;
-    padding-bottom: 2px;
-  }
-  .hero-soft-btn,
-  .dish-soft-btn {
-    flex: 0 0 auto;
-    min-height: 36px;
-    border-radius: 999px;
-    padding: 0 12px;
-    border: 1px solid rgba(212,175,55,0.18);
-    background: rgba(0,0,0,0.26);
-    color: rgba(243,236,224,0.82);
-    font-size: 11px;
-    font-weight: 900;
-  }
-  .hero-wpp-btn {
-    border-color: rgba(45, 196, 94, 0.28);
-    background: linear-gradient(180deg, rgba(45,196,94,0.22), rgba(16,120,62,0.20));
-    color: #d8ffe7;
-  }
   .trust-row {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1383,216 +1359,6 @@
     font-size: 13px;
     line-height: 1.38;
   }
-  .checkout-form {
-    margin: 0 20px 20px;
-    padding: 0;
-    border: 1px solid rgba(212,175,55,0.18);
-    border-radius: 24px;
-    background:
-      radial-gradient(circle at 12% 0%, rgba(212,175,55,0.10), transparent 28%),
-      rgba(0,0,0,0.18);
-    overflow: hidden;
-  }
-  .checkout-hero {
-    padding: 17px 16px 13px;
-    border-bottom: 1px solid rgba(212,175,55,0.12);
-  }
-  .checkout-kicker {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    color: rgba(243,236,224,0.68);
-    font-size: 11px;
-    font-weight: 850;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
-  .checkout-kicker span {
-    width: 7px;
-    height: 7px;
-    border-radius: 999px;
-    background: #22c55e;
-    box-shadow: 0 0 12px rgba(34,197,94,0.62);
-  }
-  .checkout-form h3 {
-    margin: 0 0 5px;
-    font-size: 19px;
-    color: var(--text);
-    letter-spacing: -0.02em;
-  }
-  .checkout-form p {
-    margin: 0;
-    color: var(--text-dim);
-    font-size: 12px;
-    line-height: 1.38;
-  }
-  .checkout-steps {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 7px;
-    padding: 11px 12px 0;
-  }
-  .checkout-step {
-    min-height: 44px;
-    border-radius: 15px;
-    border: 1px solid rgba(212,175,55,0.12);
-    background: rgba(255,255,255,0.035);
-    color: rgba(243,236,224,0.62);
-    padding: 8px 9px;
-    font-size: 10px;
-    line-height: 1.2;
-  }
-  .checkout-step strong {
-    display: block;
-    color: var(--text);
-    font-size: 12px;
-    margin-top: 2px;
-  }
-  .checkout-section {
-    padding: 15px 16px 0;
-  }
-  .checkout-section-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 9px;
-  }
-  .checkout-section-title strong {
-    color: var(--gold);
-    font-size: 13px;
-    letter-spacing: 0.02em;
-  }
-  .checkout-section-title small {
-    color: rgba(243,236,224,0.46);
-    font-size: 10px;
-  }
-  .checkout-grid {
-    display: grid;
-    gap: 10px;
-  }
-  .checkout-input {
-    width: 100%;
-    min-height: 46px;
-    border-radius: 14px;
-    border: 1px solid rgba(212,175,55,0.16);
-    background: rgba(10,9,8,0.72);
-    color: var(--text);
-    padding: 11px 12px;
-    outline: none;
-  }
-  .checkout-input:focus {
-    border-color: rgba(212,175,55,0.48);
-  }
-  .checkout-error {
-    margin: 12px 16px 0;
-    color: #ffb1a8;
-    font-size: 12px;
-    line-height: 1.35;
-  }
-  .checkout-autofill {
-    margin-top: 10px;
-    border: 1px solid rgba(34,197,94,0.18);
-    border-radius: 15px;
-    padding: 10px 11px;
-    background: rgba(34,197,94,0.08);
-    color: #caffdc;
-    font-size: 11px;
-    line-height: 1.35;
-  }
-  .checkout-pay-strip {
-    margin: 13px 16px 0;
-    border-radius: 17px;
-    border: 1px solid rgba(0,158,227,0.20);
-    background: rgba(0,158,227,0.08);
-    padding: 12px;
-    display: grid;
-    gap: 8px;
-  }
-  .checkout-pay-strip strong {
-    color: var(--text);
-    font-size: 12px;
-  }
-  .checkout-pay-strip span {
-    color: rgba(243,236,224,0.60);
-    font-size: 11px;
-    line-height: 1.35;
-  }
-  .welcome-gate {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100dvh;
-    z-index: 200;
-    display: grid;
-    place-items: center;
-    padding: 22px;
-    background:
-      radial-gradient(circle at 50% 24%, rgba(212,175,55,0.18), transparent 32%),
-      rgba(7,6,5,0.88);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 260ms ease;
-  }
-  .welcome-gate.open {
-    opacity: 1;
-    pointer-events: auto;
-  }
-  .welcome-card {
-    position: absolute;
-    left: 16px !important;
-    right: 16px !important;
-    top: 50%;
-    width: auto !important;
-    max-width: none;
-    margin: 0 auto;
-    border-radius: 30px;
-    border: 1px solid rgba(212,175,55,0.28);
-    background:
-      radial-gradient(circle at 50% 0%, rgba(212,175,55,0.16), transparent 40%),
-      linear-gradient(180deg, rgba(28,24,20,0.98), rgba(13,11,9,0.98));
-    box-shadow: 0 28px 70px rgba(0,0,0,0.62);
-    padding: 28px 22px 22px;
-    text-align: center;
-    transform: translateY(calc(-50% + 12px)) scale(0.98);
-    animation: welcomeRise 520ms cubic-bezier(.2,.8,.2,1) forwards;
-  }
-  @keyframes welcomeRise { to { transform: translateY(-50%) scale(1); } }
-  .welcome-title {
-    margin: 0;
-    color: var(--gold);
-    font-size: clamp(25px, 7vw, 31px);
-    line-height: 0.98;
-    overflow-wrap: anywhere;
-  }
-  .welcome-copy {
-    margin: 10px auto 16px;
-    color: rgba(243,236,224,0.78);
-    font-size: 13px;
-    line-height: 1.42;
-    max-width: 280px;
-  }
-  .welcome-input {
-    width: 100%;
-    min-height: 48px;
-    border-radius: 16px;
-    border: 1px solid rgba(212,175,55,0.22);
-    background: rgba(0,0,0,0.22);
-    color: var(--text);
-    text-align: center;
-    outline: none;
-    padding: 0 14px;
-  }
-  .welcome-hint {
-    margin-top: 11px;
-    color: rgba(243,236,224,0.46);
-    font-size: 11px;
-  }
-
 </style>
 </head>
 <body>
@@ -1665,6 +1431,16 @@ async function listarPratos() {
 function sortear(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function vibrate(ms) { try { navigator.vibrate?.(ms); } catch (_) {} }
 function fmtBRL(v) { return 'R$ ' + Number(v || 0).toFixed(2).replace('.', ','); }
+function labelTamanho(tamanho) {
+  const nome = String(tamanho?.nome || '').trim();
+  const peso = String(tamanho?.peso_g || '').trim().replace(/[,.]0+$/, '');
+  if (!peso) return nome;
+  const pesoLabel = `${peso}g`;
+  const nomeSemEspaco = nome.toLowerCase().replace(/\s+/g, '');
+  const pesoSemEspaco = pesoLabel.toLowerCase().replace(/\s+/g, '');
+  if (!nome) return pesoLabel;
+  return nomeSemEspaco.includes(pesoSemEspaco) ? nome : `${nome} (${pesoLabel})`;
+}
 function clampText(value, max = 110) {
   const text = String(value || '').trim();
   return text.length > max ? text.slice(0, max - 1).trim() + '...' : text;
@@ -1774,35 +1550,9 @@ function App() {
   const [detailOptions, setDetailOptions] = useState({});
   const [detailObs, setDetailObs] = useState('');
   const [sacolaOpen, setSacolaOpen] = useState(false);
-  const [welcomeOpen, setWelcomeOpen] = useState(() => localStorage.getItem('dom_welcome_seen') !== '1');
-  const [welcomeName, setWelcomeName] = useState('');
-  const [chatLeadMode, setChatLeadMode] = useState(null);
-  const [leadAddress, setLeadAddress] = useState('');
-  const [checkoutErro, setCheckoutErro] = useState('');
-  const [checkoutAutoMsg, setCheckoutAutoMsg] = useState('');
   const [cupomCodigo, setCupomCodigo] = useState('');
   const [cupomAplicado, setCupomAplicado] = useState(null);
   const [cupomErro, setCupomErro] = useState('');
-  const [checkoutForm, setCheckoutForm] = useState(() => {
-    try {
-      return {
-        nome: '',
-        whatsapp: '',
-        email: '',
-        cep: '',
-        logradouro: '',
-        numero: '',
-        bairro: '',
-        complemento: '',
-        ponto_referencia: '',
-        cidade: 'Curitiba',
-        uf: 'PR',
-        ...JSON.parse(localStorage.getItem('dom_checkout_form') || '{}'),
-      };
-    } catch (_) {
-      return { nome: '', whatsapp: '', email: '', cep: '', logradouro: '', numero: '', bairro: '', complemento: '', ponto_referencia: '', cidade: 'Curitiba', uf: 'PR' };
-    }
-  });
 
   const lpTimer = useRef(null);
   const balaoTimer = useRef(null);
@@ -1810,7 +1560,6 @@ function App() {
   const idleTimer = useRef(null);
   const ultimaInteracao = useRef(Date.now());
   const chatDeviceId = useRef(getChatDeviceId());
-  const ultimoTelefoneBuscado = useRef('');
 
   // Ronda do Marco - aparece a cada 40-90s
   useEffect(() => {
@@ -1892,53 +1641,6 @@ function App() {
       });
     return () => { vivo = false; };
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem('dom_checkout_form', JSON.stringify(checkoutForm));
-  }, [checkoutForm]);
-
-  useEffect(() => {
-    const phone = String(checkoutForm.whatsapp || '').replace(/\D/g, '');
-    if (phone.length < 10 || phone === ultimoTelefoneBuscado.current) return;
-    const timer = setTimeout(async () => {
-      try {
-        ultimoTelefoneBuscado.current = phone;
-        const r = await fetch(GARCOM_RESPONDER_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_ANON_KEY,
-          },
-          body: JSON.stringify({
-            acao: 'buscar_cliente',
-            whatsapp: phone,
-          }),
-        });
-        const data = await r.json();
-        if (!r.ok || !data?.encontrado) return;
-        setCheckoutForm(prev => ({
-          ...prev,
-          nome: prev.nome || data.cliente?.nome || '',
-          email: prev.email || data.cliente?.email || '',
-          whatsapp: prev.whatsapp || data.cliente?.whatsapp || '',
-          cep: prev.cep || data.endereco?.cep || '',
-          logradouro: prev.logradouro || data.endereco?.logradouro || '',
-          numero: prev.numero || data.endereco?.numero || '',
-          bairro: prev.bairro || data.endereco?.bairro || '',
-          complemento: prev.complemento || data.endereco?.complemento || '',
-          ponto_referencia: prev.ponto_referencia || data.endereco?.ponto_referencia || '',
-          cidade: prev.cidade || data.endereco?.cidade || 'Curitiba',
-          uf: prev.uf || data.endereco?.uf || 'PR',
-        }));
-        setCheckoutAutoMsg(data.endereco
-          ? 'Encontrei seus dados salvos e já deixei a entrega pré-preenchida. Confere rapidinho antes de pagar.'
-          : 'Encontrei seu cadastro. Se tiver endereço salvo, eu puxo aqui também.');
-      } catch (err) {
-        console.warn('Nao consegui buscar cliente salvo', err);
-      }
-    }, 650);
-    return () => clearTimeout(timer);
-  }, [checkoutForm.whatsapp]);
 
   useEffect(() => {
     if (!chatOpen) return;
@@ -2047,7 +1749,7 @@ function App() {
       carrinho.forEach((item, idx) => {
         linhas.push(`${idx + 1}. ${item.qtd}x ${item.nome}`);
         if (item.tamanho?.nome) {
-          linhas.push(`   Tamanho: ${item.tamanho.nome}${item.tamanho.peso_g ? ` (${item.tamanho.peso_g}g)` : ''}`);
+          linhas.push(`   Tamanho: ${labelTamanho(item.tamanho)}`);
         }
         if (item.opcionais?.length) {
           linhas.push(`   Adicionais: ${item.opcionais.map(op => `${op.qtd}x ${op.nome}`).join(', ')}`);
@@ -2061,21 +1763,6 @@ function App() {
       if (cupomResumo.ok && cupomAplicado?.codigo) linhas.push(`Cupom: ${String(cupomAplicado.codigo).toUpperCase()}`);
       linhas.push(`Total estimado: ${fmtBRL(totalComEntrega)}`);
     }
-
-    const dados = [];
-    if (checkoutForm.nome) dados.push(`Nome: ${checkoutForm.nome}`);
-    if (checkoutForm.whatsapp) dados.push(`Telefone: ${checkoutForm.whatsapp}`);
-    const endereco = [
-      checkoutForm.logradouro,
-      checkoutForm.numero,
-      checkoutForm.bairro,
-      checkoutForm.complemento,
-      checkoutForm.cep ? `CEP ${checkoutForm.cep}` : '',
-      [checkoutForm.cidade, checkoutForm.uf].filter(Boolean).join('/'),
-    ].filter(Boolean).join(', ');
-    if (endereco) dados.push(`Endereco: ${endereco}`);
-    if (checkoutForm.ponto_referencia) dados.push(`Referencia: ${checkoutForm.ponto_referencia}`);
-    if (dados.length) linhas.push('', 'Dados que ja preenchi:', ...dados);
 
     linhas.push('', `Link do cardapio: ${window.location.origin}${window.location.pathname}`);
     return linhas.join('\n');
@@ -2320,7 +2007,6 @@ function App() {
     setPratoAberto(null);
     setSacolaOpen(false);
     setFotoAberta(null);
-    setWelcomeOpen(false);
     setChatOpen(true);
     setBalaoTexto(null);
     setGarcomState('peek');
@@ -2359,51 +2045,6 @@ function App() {
     setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto }]);
   };
 
-  const fecharBoasVindas = () => {
-    const nome = welcomeName.trim();
-    if (nome) setCheckoutField('nome', nome);
-    localStorage.setItem('dom_welcome_seen', '1');
-    setWelcomeOpen(false);
-  };
-
-  const parseEnderecoRapido = (texto) => {
-    const raw = String(texto || '').trim();
-    if (!raw) return {};
-    const digits = raw.replace(/\D/g, '');
-    if (digits.length === 8 && raw.length <= 12) return { cep: digits };
-    const match = raw.match(/\b\d+[a-zA-Z]?\b/);
-    if (!match) return { logradouro: raw };
-    const numero = match[0];
-    const antes = raw.slice(0, match.index).replace(/[,;-]+$/g, '').trim();
-    const depois = raw.slice((match.index || 0) + numero.length).replace(/^[,;-]+/g, '').trim();
-    return {
-      logradouro: antes || raw,
-      numero,
-      bairro: depois,
-    };
-  };
-
-  const pedirTempoEntrega = (prato = null) => {
-    const nome = checkoutForm.nome?.trim();
-    const intro = prato ? `Boa escolha olhando ${prato.nome}. ` : '';
-    setChatLeadMode('delivery');
-    setLeadAddress(checkoutForm.cep || [checkoutForm.logradouro, checkoutForm.numero, checkoutForm.bairro].filter(Boolean).join(', '));
-    mostrarMensagemAutomatica(`${intro}Opa, me fala sua rua, numero e bairro ou seu CEP que eu ja vejo uma estimativa mais honesta pra voce.`);
-  };
-
-  const salvarEnderecoRapido = (texto = leadAddress) => {
-    const parsed = parseEnderecoRapido(texto);
-    if (!Object.keys(parsed).length) return;
-    setCheckoutForm(prev => ({ ...prev, ...parsed }));
-    setChatLeadMode(null);
-    const tempo = `${deliveryConfig.tempo_entrega_min || 20} a ${deliveryConfig.tempo_entrega_max || 30} min`;
-    setMensagens(m => [...m, {
-      id: Date.now(),
-      autor: 'marco',
-      texto: `Boa. Com esse endereco, a media fica em torno de ${tempo}. No fechamento eu so confirmo os detalhes pra nao mandar o motoboy passear errado.`,
-    }]);
-  };
-
   const registrarMensagemCliente = async (texto) => {
     const r = await fetch(GARCOM_RESPONDER_URL, {
       method: 'POST',
@@ -2414,7 +2055,7 @@ function App() {
       body: JSON.stringify({
         acao: 'registrar_atendimento',
         device_id: chatDeviceId.current,
-        cliente_nome: checkoutForm.nome || welcomeName || null,
+        cliente_nome: null,
         texto,
         contexto: {
           carrinho_total: carrinhoTotal,
@@ -2440,16 +2081,11 @@ function App() {
       if (data?.mensagem?.id) {
         setMensagens(m => m.map(msg => msg.id === localId ? { ...msg, remote_id: data.mensagem.id } : msg));
       }
-      if (chatLeadMode === 'delivery') {
-        setLeadAddress(texto);
-        salvarEnderecoRapido(texto);
-      } else {
-        setMensagens(m => [...m, {
-          id: `ack-${Date.now()}`,
-          autor: 'marco',
-          texto: 'Recebi aqui. O pessoal do Dom vai conseguir ver essa mensagem pelo painel.',
-        }]);
-      }
+      setMensagens(m => [...m, {
+        id: `ack-${Date.now()}`,
+        autor: 'marco',
+        texto: 'Recebi aqui. O pessoal do Dom vai conseguir ver essa mensagem pelo painel.',
+      }]);
     } catch (err) {
       setMensagens(m => [...m, { id: `err-${Date.now()}`, autor: 'marco', texto: err.message || 'Nao consegui enviar agora. Tenta de novo em instantes.' }]);
     } finally {
@@ -2457,24 +2093,8 @@ function App() {
     }
   };
 
-  const setCheckoutField = (key, value) => {
-    setCheckoutForm(prev => ({ ...prev, [key]: value }));
-    if (checkoutErro) setCheckoutErro('');
-    if (checkoutAutoMsg) setCheckoutAutoMsg('');
-  };
-
-  const checkoutValido = () => {
-    const required = ['nome', 'whatsapp', 'logradouro', 'numero', 'bairro'];
-    return required.every(key => String(checkoutForm[key] || '').trim());
-  };
-
   const finalizarPedidoDireto = () => {
     if (!carrinho.length) return;
-    if (!checkoutValido()) {
-      setCheckoutErro('Preencha nome, telefone, rua, numero e bairro para o Dom conseguir entregar certinho.');
-      return;
-    }
-    setCheckoutErro('');
     abrirWhatsApp('sacola');
   };
 
@@ -2509,12 +2129,6 @@ function App() {
           )}
           <h3 className="font-serif prato-title">{p.nome}</h3>
           {introPrato(p) && <p className="prato-desc">{introPrato(p)}</p>}
-          <button
-            className="prato-soft-btn"
-            onClick={(e) => { e.stopPropagation(); pedirTempoEntrega(p); }}
-          >
-            Tempo exato
-          </button>
         </div>
         <div className="mt-3 flex items-end justify-between gap-2">
           <span className="prato-price">a partir de {fmtBRL(p.preco)}</span>
@@ -2541,14 +2155,6 @@ function App() {
           Massa quente, risoto cremoso e aquele cheiro de manteiga boa chegando na tampa.
           Escolha sem pressa; a sacola fica pronta no fim.
         </p>
-        <div className="hero-actions">
-          <button className="hero-soft-btn" onClick={() => pedirTempoEntrega()}>
-            Quanto tempo para chegar na minha casa?
-          </button>
-          <button className="hero-soft-btn hero-wpp-btn" onClick={() => abrirWhatsApp('topo')}>
-            Chamar o Dom
-          </button>
-        </div>
         <div className="trust-row">
           <div className="trust-chip"><span>Entrega media</span><strong>{tempoEntregaTexto}</strong></div>
           <div className="trust-chip"><span>Avaliacao</span><strong>{Number(deliveryConfig.restaurante_avaliacao || 4.9).toFixed(1)} estrelas</strong></div>
@@ -2667,9 +2273,6 @@ function App() {
                 <h2 className="font-serif">{pratoAberto.nome}</h2>
                 {pratoAberto.frase_fome && <p style={{color:'rgba(243,236,224,0.9)', fontWeight:700}}>{pratoAberto.frase_fome}</p>}
                 {pratoAberto.descricao && <p>{clampText(pratoAberto.descricao, 165)}</p>}
-                <button className="dish-soft-btn" onClick={() => pedirTempoEntrega(pratoAberto)}>
-                  Quanto tempo para chegar na minha casa?
-                </button>
                 <div className="dish-start-price">a partir de {fmtBRL(pratoAberto.preco)}</div>
               </div>
 
@@ -2705,7 +2308,7 @@ function App() {
                     onClick={() => { setDetailSizeId(tam.id); vibrate(10); }}
                   >
                     <div className="choice-main">
-                      <div className="choice-name">{tam.nome}{tam.peso_g ? ` (${tam.peso_g}g)` : ''}</div>
+                      <div className="choice-name">{labelTamanho(tam)}</div>
                       <div className="choice-price">
                         {Number(tam.preco_delta || 0) > 0 ? `+ ${fmtBRL(Number(tam.preco_delta))}` : 'sem adicional'}
                       </div>
@@ -2837,7 +2440,7 @@ function App() {
               <div>
                 <div className="bag-item-title">{item.qtd}x {item.nome}</div>
                 <div className="bag-item-meta">
-                  {item.tamanho?.nome && <div>{item.tamanho.nome}{item.tamanho.peso_g ? ` (${item.tamanho.peso_g}g)` : ''}</div>}
+                  {item.tamanho?.nome && <div>{labelTamanho(item.tamanho)}</div>}
                   {item.opcionais?.length > 0 && <div>{item.opcionais.map(op => `${op.qtd}x ${op.nome}`).join(', ')}</div>}
                   {item.obs && <div>obs: {item.obs}</div>}
                 </div>
@@ -2890,55 +2493,6 @@ function App() {
             </div>
           )}
 
-          <div className="checkout-form">
-            <div className="checkout-hero">
-              <div className="checkout-kicker"><span></span> Finalizacao do pedido</div>
-              <h3>Fechar pedido</h3>
-              <p>Confere sua sacola e preenche os dados para o Dom receber tudo certinho.</p>
-            </div>
-
-            <div className="checkout-steps" aria-label="Etapas do checkout">
-              <div className="checkout-step">1 minuto<strong>Contato</strong></div>
-              <div className="checkout-step">Sem susto<strong>Entrega</strong></div>
-              <div className="checkout-step">Direto<strong>Envio</strong></div>
-            </div>
-
-            <div className="checkout-section">
-              <div className="checkout-section-title">
-                <strong>Quem vai receber?</strong>
-                <small>Se ja comprou, eu puxo pelo telefone.</small>
-              </div>
-              <div className="checkout-grid">
-                <input className="checkout-input" value={checkoutForm.nome} onChange={e => setCheckoutField('nome', e.target.value)} placeholder="Seu nome" autoComplete="name" />
-                <input className="checkout-input" value={checkoutForm.whatsapp} onChange={e => setCheckoutField('whatsapp', e.target.value)} placeholder="Telefone para contato" inputMode="tel" autoComplete="tel" />
-              </div>
-              {checkoutAutoMsg && <div className="checkout-autofill">{checkoutAutoMsg}</div>}
-            </div>
-
-            <div className="checkout-section">
-              <div className="checkout-section-title">
-                <strong>Onde entregar?</strong>
-                <small>{tempoEntregaTexto} em media</small>
-              </div>
-              <div className="checkout-grid">
-                <input className="checkout-input" value={checkoutForm.cep} onChange={e => setCheckoutField('cep', e.target.value)} placeholder="CEP (opcional, ajuda no tempo)" inputMode="numeric" autoComplete="postal-code" />
-                <input className="checkout-input" value={checkoutForm.logradouro} onChange={e => setCheckoutField('logradouro', e.target.value)} placeholder="Rua / Avenida" autoComplete="address-line1" />
-                <div style={{display:'grid', gridTemplateColumns:'0.72fr 1.28fr', gap:10}}>
-                  <input className="checkout-input" value={checkoutForm.numero} onChange={e => setCheckoutField('numero', e.target.value)} placeholder="Numero" autoComplete="address-line2" />
-                  <input className="checkout-input" value={checkoutForm.bairro} onChange={e => setCheckoutField('bairro', e.target.value)} placeholder="Bairro" />
-                </div>
-                <input className="checkout-input" value={checkoutForm.complemento} onChange={e => setCheckoutField('complemento', e.target.value)} placeholder="Complemento (apto, casa, bloco)" />
-                <input className="checkout-input" value={checkoutForm.ponto_referencia} onChange={e => setCheckoutField('ponto_referencia', e.target.value)} placeholder="Referencia para o motoboy (opcional)" />
-              </div>
-            </div>
-
-            <div className="checkout-pay-strip">
-              <strong>Pedido pronto para enviar</strong>
-              <span>Ao finalizar, a sacola e os dados preenchidos vao direto para o atendimento do Dom.</span>
-            </div>
-            {checkoutErro && <div className="checkout-error">{checkoutErro}</div>}
-          </div>
-
           <div className="bag-values">
             <h3>Resumo de valores</h3>
             <div className="value-row"><span>Subtotal</span><strong>{fmtBRL(carrinhoTotal)}</strong></div>
@@ -2976,7 +2530,7 @@ function App() {
 
       {/* Marco sticker */}
       <button
-        className={`marco-sticker ${garcomState} ${(pratoAberto || sacolaOpen || fotoAberta || welcomeOpen) ? 'top-mode' : ''}`}
+        className={`marco-sticker ${garcomState} ${(pratoAberto || sacolaOpen || fotoAberta) ? 'top-mode' : ''}`}
         onClick={tapMarco}
         onTouchStart={onPressStart}
         onTouchEnd={onPressEnd}
@@ -3049,21 +2603,6 @@ function App() {
           {mensagens.map(m => (
             <div key={m.id} className={`msg ${m.autor}`}>{m.texto}</div>
           ))}
-          {chatLeadMode === 'delivery' && (
-            <div className="msg marco" style={{width:'min(100%, 360px)'}}>
-              <div style={{fontWeight:900, color:'var(--gold)', marginBottom:8}}>Me passa o endereco rapidinho</div>
-              <input
-                className="checkout-input"
-                value={leadAddress}
-                onChange={e => setLeadAddress(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') salvarEnderecoRapido(); }}
-                placeholder="Rua, numero e bairro ou CEP"
-              />
-              <button className="checkout-btn" style={{width:'100%', margin:'10px 0 0'}} onClick={salvarEnderecoRapido}>
-                Ver media de entrega
-              </button>
-            </div>
-          )}
         </div>
         <div className="chat-compose">
           <input
@@ -3080,29 +2619,6 @@ function App() {
         </div>
       </div>
 
-      <div
-        className={`welcome-gate ${welcomeOpen ? 'open' : ''}`}
-        onClick={fecharBoasVindas}
-      >
-        <div className="welcome-card" onClick={e => e.stopPropagation()}>
-          <h2 className="font-serif welcome-title">Bem-vindo ao Dom Leonardo</h2>
-          <p className="welcome-copy">
-            Se quiser, me fala seu nome. Se preferir so olhar o cardapio, toca fora e entra direto.
-          </p>
-          <input
-            className="welcome-input"
-            value={welcomeName}
-            onChange={e => setWelcomeName(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') fecharBoasVindas(); }}
-            placeholder="Seu nome (opcional)"
-            autoComplete="name"
-          />
-          <div className="welcome-hint">Toque fora para continuar sem preencher.</div>
-          <button className="checkout-btn" style={{width:'100%', margin:'14px 0 0'}} onClick={fecharBoasVindas}>
-            Entrar no cardapio
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
