@@ -14,7 +14,6 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://sdk.mercadopago.com/js/v2"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
   :root {
@@ -1520,135 +1519,6 @@
     font-size: 11px;
     line-height: 1.35;
   }
-  .pay-method-pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .pay-method-pills b {
-    border-radius: 999px;
-    background: rgba(255,255,255,0.08);
-    color: rgba(243,236,224,0.78);
-    padding: 6px 8px;
-    font-size: 10px;
-  }
-  .mp-note {
-    margin: 10px 16px 0;
-    color: rgba(243,236,224,0.52);
-    font-size: 11px;
-    line-height: 1.35;
-  }
-  .mp-inline-box {
-    margin: 0 20px 18px;
-    padding: 15px;
-    border: 1px solid rgba(212,175,55,0.20);
-    border-radius: 20px;
-    background:
-      radial-gradient(circle at 20% 0%, rgba(0, 158, 227, 0.14), transparent 32%),
-      rgba(255,255,255,0.96);
-    color: #1d1d1d;
-  }
-  .mp-inline-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-  .mp-inline-head strong {
-    display: block;
-    color: #111;
-    font-size: 14px;
-  }
-  .mp-inline-head span {
-    color: #5f6368;
-    font-size: 11px;
-  }
-  .mp-seal {
-    flex: 0 0 auto;
-    border-radius: 999px;
-    background: #009ee3;
-    color: #fff;
-    padding: 7px 9px;
-    font-size: 11px;
-    font-weight: 950;
-  }
-  .mp-brick-loading,
-  .mp-result {
-    margin-top: 10px;
-    padding: 10px 11px;
-    border-radius: 14px;
-    background: rgba(0,0,0,0.055);
-    color: #424242;
-    font-size: 12px;
-    line-height: 1.35;
-  }
-  .mp-result.ok {
-    background: rgba(80,167,115,0.14);
-    color: #17613b;
-  }
-  .mp-result.warn {
-    background: rgba(248,200,70,0.22);
-    color: #785c00;
-  }
-  .pix-copy-box {
-    margin-top: 10px;
-    border-radius: 16px;
-    border: 1px solid rgba(0,158,227,0.18);
-    background: rgba(0,158,227,0.08);
-    padding: 10px;
-    display: grid;
-    gap: 8px;
-  }
-  .pix-copy-box img {
-    width: 148px;
-    max-width: 100%;
-    border-radius: 14px;
-    background: #fff;
-    padding: 8px;
-    margin: 0 auto;
-  }
-  .pix-copy-box textarea {
-    width: 100%;
-    min-height: 54px;
-    border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 12px;
-    padding: 8px;
-    font-size: 11px;
-    resize: none;
-    color: #111;
-  }
-  .pix-copy-box button {
-    min-height: 40px;
-    border: 0;
-    border-radius: 12px;
-    background: #009ee3;
-    color: #fff;
-    font-weight: 900;
-  }
-  #paymentBrick_container {
-    min-height: 120px;
-  }
-  .wpp-checkout-box {
-    margin: 12px 16px 16px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(212,175,55,0.12);
-  }
-  .wpp-checkout-box p {
-    margin: 0 0 8px;
-    color: rgba(243,236,224,0.68);
-    font-size: 12px;
-  }
-  .wpp-checkout-btn {
-    width: 100%;
-    min-height: 44px;
-    border-radius: 14px;
-    background: rgba(37, 211, 102, 0.14);
-    border: 1px solid rgba(37, 211, 102, 0.32);
-    color: #d9ffe8;
-    font-size: 13px;
-    font-weight: 950;
-  }
   .welcome-gate {
     position: fixed;
     top: 0;
@@ -1765,7 +1635,6 @@ const SUPABASE_URL = 'https://jewamqbdonudiapxbzay.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY';
 const GARCOM_RESPONDER_URL = SUPABASE_URL + '/functions/v1/garcom-responder';
 const WHATSAPP_DOM = '5541987044064';
-const MERCADO_PAGO_PUBLIC_KEY = 'APP_USR-70e08816-3648-466c-9422-42ae9a034f4d';
 
 localStorage.removeItem('garcom_sessao_id');
 localStorage.removeItem('garcom_device_id');
@@ -1909,12 +1778,8 @@ function App() {
   const [welcomeName, setWelcomeName] = useState('');
   const [chatLeadMode, setChatLeadMode] = useState(null);
   const [leadAddress, setLeadAddress] = useState('');
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutErro, setCheckoutErro] = useState('');
   const [checkoutAutoMsg, setCheckoutAutoMsg] = useState('');
-  const [paymentBrickOpen, setPaymentBrickOpen] = useState(false);
-  const [paymentBrickReady, setPaymentBrickReady] = useState(false);
-  const [paymentResult, setPaymentResult] = useState(null);
   const [cupomCodigo, setCupomCodigo] = useState('');
   const [cupomAplicado, setCupomAplicado] = useState(null);
   const [cupomErro, setCupomErro] = useState('');
@@ -1945,8 +1810,6 @@ function App() {
   const idleTimer = useRef(null);
   const ultimaInteracao = useRef(Date.now());
   const chatDeviceId = useRef(getChatDeviceId());
-  const paymentBrickRef = useRef(null);
-  const paymentAttemptRef = useRef(null);
   const ultimoTelefoneBuscado = useRef('');
 
   // Ronda do Marco - aparece a cada 40-90s
@@ -2123,7 +1986,7 @@ function App() {
     if (!pagamento) return;
     const textos = {
       sucesso: `Pagamento aprovado${pedido ? ` no pedido #${pedido}` : ''}. O Dom ja recebeu por aqui.`,
-      pendente: `Pagamento pendente${pedido ? ` no pedido #${pedido}` : ''}. Se foi Pix, o Mercado Pago confirma em instantes.`,
+      pendente: `Pagamento pendente${pedido ? ` no pedido #${pedido}` : ''}. A confirmacao chega em instantes.`,
       falha: `Pagamento nao concluiu${pedido ? ` no pedido #${pedido}` : ''}. Voce pode tentar de novo pela sacola.`,
     };
     setTimeout(() => {
@@ -2175,7 +2038,7 @@ function App() {
     const linhas = [
       'Ola, Dom Leonardo!',
       origem === 'sacola'
-        ? 'Quero finalizar meu pedido pelo WhatsApp.'
+        ? 'Quero finalizar meu pedido.'
         : 'Vim pelo cardapio e quero falar com voces.',
     ];
 
@@ -2605,179 +2468,18 @@ function App() {
     return required.every(key => String(checkoutForm[key] || '').trim());
   };
 
-  const montarCheckoutPayload = () => ({
-    cliente: {
-      nome: checkoutForm.nome,
-      whatsapp: checkoutForm.whatsapp,
-      email: checkoutForm.email,
-    },
-    endereco: {
-      cep: checkoutForm.cep,
-      logradouro: checkoutForm.logradouro,
-      numero: checkoutForm.numero,
-      bairro: checkoutForm.bairro,
-      complemento: checkoutForm.complemento,
-      ponto_referencia: checkoutForm.ponto_referencia,
-      cidade: checkoutForm.cidade || 'Curitiba',
-      uf: checkoutForm.uf || 'PR',
-    },
-    itens: carrinho,
-    cupom_codigo: cupomResumo.ok ? (cupomAplicado?.codigo || null) : null,
-    site_url: window.location.origin + window.location.pathname,
-  });
-
-  const iniciarPagamentoDentro = () => {
+  const finalizarPedidoDireto = () => {
     if (!carrinho.length) return;
     if (!checkoutValido()) {
       setCheckoutErro('Preencha nome, telefone, rua, numero e bairro para o Dom conseguir entregar certinho.');
       return;
     }
-    if (!(deliveryConfig.mercado_pago_public_key || MERCADO_PAGO_PUBLIC_KEY)) {
-      setCheckoutErro('Public Key do Mercado Pago nao esta configurada no painel admin.');
-      return;
-    }
-    if (!window.MercadoPago) {
-      setCheckoutErro('Nao consegui carregar o checkout seguro do Mercado Pago. Recarregue a pagina e tente de novo.');
-      return;
-    }
     setCheckoutErro('');
-    setPaymentResult(null);
-    setPaymentBrickReady(false);
-    setPaymentBrickOpen(true);
-    setTimeout(() => document.getElementById('paymentBrick_container')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120);
+    abrirWhatsApp('sacola');
   };
-
-  useEffect(() => {
-    if (!paymentBrickOpen || !sacolaOpen) return;
-    let cancelado = false;
-
-    async function renderPaymentBrick() {
-      try {
-        setCheckoutLoading(true);
-        setPaymentBrickReady(false);
-        setPaymentResult(null);
-        if (paymentBrickRef.current?.unmount) {
-          try { await paymentBrickRef.current.unmount(); } catch (_) {}
-          paymentBrickRef.current = null;
-        }
-
-        const publicKey = deliveryConfig.mercado_pago_public_key || MERCADO_PAGO_PUBLIC_KEY;
-        const mp = new window.MercadoPago(publicKey, { locale: 'pt-BR' });
-        const bricksBuilder = mp.bricks();
-        paymentAttemptRef.current = crypto.randomUUID();
-
-        const settings = {
-          initialization: {
-            amount: Number(totalComEntrega.toFixed(2)),
-            payer: {
-              firstName: checkoutForm.nome || '',
-              email: checkoutForm.email || '',
-            },
-          },
-          customization: {
-            paymentMethods: {
-              creditCard: 'all',
-              debitCard: 'all',
-              prepaidCard: 'all',
-              bankTransfer: 'all',
-            },
-          },
-          callbacks: {
-            onReady: () => {
-              if (!cancelado) {
-                setPaymentBrickReady(true);
-                setCheckoutLoading(false);
-              }
-            },
-            onSubmit: ({ selectedPaymentMethod, formData }) => {
-              return new Promise(async (resolve, reject) => {
-                try {
-                  setCheckoutLoading(true);
-                  setPaymentResult(null);
-                  const r = await fetch(GARCOM_RESPONDER_URL, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'apikey': SUPABASE_ANON_KEY,
-                    },
-                    body: JSON.stringify({
-                      acao: 'processar_pagamento_brick',
-                      ...montarCheckoutPayload(),
-                      selected_payment_method: selectedPaymentMethod,
-                      form_data: formData,
-                      idempotency_key: paymentAttemptRef.current || crypto.randomUUID(),
-                    }),
-                  });
-                  const data = await r.json();
-                  if (!r.ok) throw new Error(data?.detalhe?.message || data?.error || 'Nao consegui processar o pagamento.');
-                  const status = data?.mercado_pago?.status || '';
-                  const detail = data?.mercado_pago?.status_detail || '';
-                  const pixData = data?.mercado_pago?.point_of_interaction?.transaction_data || {};
-                  if (status === 'approved') {
-                    setPaymentResult({ type: 'ok', text: `Pagamento aprovado. Pedido #${data?.pedido?.numero_pedido || ''} ja caiu para o Dom.` });
-                  } else if (status === 'pending' || status === 'in_process') {
-                    setPaymentResult({
-                      type: 'warn',
-                      text: `Pagamento ${status === 'pending' ? 'pendente' : 'em analise'}. Se for Pix, escaneie ou copie o codigo abaixo.`,
-                      pix: {
-                        qr_code_base64: pixData.qr_code_base64 || '',
-                        qr_code: pixData.qr_code || '',
-                      },
-                    });
-                  } else {
-                    setPaymentResult({ type: 'warn', text: `Pagamento retornou como ${status || 'nao finalizado'}${detail ? ` (${detail})` : ''}.` });
-                  }
-                  resolve(data);
-                } catch (err) {
-                  const message = err.message || String(err);
-                  setPaymentResult({ type: 'warn', text: message });
-                  reject(err);
-                } finally {
-                  setCheckoutLoading(false);
-                }
-              });
-            },
-            onError: (error) => {
-              console.warn('Mercado Pago Brick error', error);
-              setCheckoutErro('O checkout seguro do Mercado Pago encontrou um erro. Tente novamente em instantes.');
-              setCheckoutLoading(false);
-            },
-          },
-        };
-
-        const controller = await bricksBuilder.create('payment', 'paymentBrick_container', settings);
-        if (!cancelado) paymentBrickRef.current = controller;
-      } catch (err) {
-        if (!cancelado) {
-          setCheckoutErro(err.message || 'Nao consegui abrir o checkout dentro do cardapio.');
-          setCheckoutLoading(false);
-          setPaymentBrickOpen(false);
-        }
-      }
-    }
-
-    renderPaymentBrick();
-    return () => {
-      cancelado = true;
-      if (paymentBrickRef.current?.unmount) {
-        try { paymentBrickRef.current.unmount(); } catch (_) {}
-      }
-      paymentBrickRef.current = null;
-    };
-  }, [paymentBrickOpen, sacolaOpen, totalComEntrega]);
 
   const fecharPedido = async () => {
-    iniciarPagamentoDentro();
-  };
-
-  const copiarPix = async (codigo) => {
-    if (!codigo) return;
-    try {
-      await navigator.clipboard.writeText(codigo);
-      setPaymentResult(prev => prev ? { ...prev, copied: true } : prev);
-    } catch (_) {
-      setPaymentResult(prev => prev ? { ...prev, copied: false, text: `${prev.text} Copie o codigo Pix manualmente pelo campo abaixo.` } : prev);
-    }
+    finalizarPedidoDireto();
   };
 
   // Long-press num prato -> fala do Marco
@@ -2824,7 +2526,7 @@ function App() {
           </button>
         </div>
       </div>
-      <div className="relative" onClick={(e) => { e.stopPropagation(); abrirFoto(p.foto, p.nome); }}>
+      <div className="relative">
         <img src={p.foto} alt={p.nome} loading="lazy" />
       </div>
     </article>
@@ -2844,13 +2546,13 @@ function App() {
             Quanto tempo para chegar na minha casa?
           </button>
           <button className="hero-soft-btn hero-wpp-btn" onClick={() => abrirWhatsApp('topo')}>
-            Chamar no WhatsApp
+            Chamar o Dom
           </button>
         </div>
         <div className="trust-row">
           <div className="trust-chip"><span>Entrega media</span><strong>{tempoEntregaTexto}</strong></div>
           <div className="trust-chip"><span>Avaliacao</span><strong>{Number(deliveryConfig.restaurante_avaliacao || 4.9).toFixed(1)} estrelas</strong></div>
-          <div className="trust-chip"><span>Pagamento</span><strong>Mercado Pago</strong></div>
+          <div className="trust-chip"><span>Pedido</span><strong>Direto com o Dom</strong></div>
         </div>
       </header>
 
@@ -2888,7 +2590,7 @@ function App() {
         <div className="destaques-strip">
           {(destaques.length ? destaques : pratos.slice(0, 6)).map(p => (
             <button className="destaque-card" key={p.id} onClick={() => abrirDetalhe(p)}>
-              <div className="relative" onClick={(e) => { e.stopPropagation(); abrirFoto(p.foto, p.nome); }}>
+              <div className="relative">
                 <img src={p.foto} alt={p.nome} loading="lazy" />
                 <span className="prato-badge">{p.badge_destaque || p.selo_experiencia || 'Escolha segura'}</span>
               </div>
@@ -3190,15 +2892,15 @@ function App() {
 
           <div className="checkout-form">
             <div className="checkout-hero">
-              <div className="checkout-kicker"><span></span> Checkout seguro</div>
-              <h3>{deliveryConfig.checkout_titulo || 'Fechar pedido com seguranca'}</h3>
-              <p>{deliveryConfig.checkout_subtitulo || 'Confere sua janta, confirma a entrega e paga aqui mesmo, sem sair do cardapio.'}</p>
+              <div className="checkout-kicker"><span></span> Finalizacao do pedido</div>
+              <h3>Fechar pedido</h3>
+              <p>Confere sua sacola e preenche os dados para o Dom receber tudo certinho.</p>
             </div>
 
             <div className="checkout-steps" aria-label="Etapas do checkout">
               <div className="checkout-step">1 minuto<strong>Contato</strong></div>
               <div className="checkout-step">Sem susto<strong>Entrega</strong></div>
-              <div className="checkout-step">No cardapio<strong>Pagamento</strong></div>
+              <div className="checkout-step">Direto<strong>Envio</strong></div>
             </div>
 
             <div className="checkout-section">
@@ -3208,8 +2910,7 @@ function App() {
               </div>
               <div className="checkout-grid">
                 <input className="checkout-input" value={checkoutForm.nome} onChange={e => setCheckoutField('nome', e.target.value)} placeholder="Seu nome" autoComplete="name" />
-                <input className="checkout-input" value={checkoutForm.whatsapp} onChange={e => setCheckoutField('whatsapp', e.target.value)} placeholder="WhatsApp do motoboy" inputMode="tel" autoComplete="tel" />
-                <input className="checkout-input" value={checkoutForm.email} onChange={e => setCheckoutField('email', e.target.value)} placeholder="E-mail para o Mercado Pago (opcional aqui)" inputMode="email" autoComplete="email" />
+                <input className="checkout-input" value={checkoutForm.whatsapp} onChange={e => setCheckoutField('whatsapp', e.target.value)} placeholder="Telefone para contato" inputMode="tel" autoComplete="tel" />
               </div>
               {checkoutAutoMsg && <div className="checkout-autofill">{checkoutAutoMsg}</div>}
             </div>
@@ -3232,58 +2933,11 @@ function App() {
             </div>
 
             <div className="checkout-pay-strip">
-              <strong>Pagamento dentro do cardapio</strong>
-              <span>O Mercado Pago processa os dados com segurança. Aqui a gente mantém o pedido, o Pix e o cartão no mesmo fluxo.</span>
-              <div className="pay-method-pills">
-                <b>Pix QR Code</b>
-                <b>Cartao de credito</b>
-                <b>Debito</b>
-                <b>Carteira do celular se disponivel</b>
-              </div>
+              <strong>Pedido pronto para enviar</strong>
+              <span>Ao finalizar, a sacola e os dados preenchidos vao direto para o atendimento do Dom.</span>
             </div>
             {checkoutErro && <div className="checkout-error">{checkoutErro}</div>}
-            <div className="mp-note">O Access Token fica protegido na Edge Function do Supabase. O cliente nao precisa criar conta Mercado Pago para pagar com Pix ou cartao.</div>
-            <div className="wpp-checkout-box">
-              <p>Voce tambem pode finalizar no WhatsApp. Se ja preencheu nome, endereco ou telefone, eu mando tudo junto com a sacola.</p>
-              <button className="wpp-checkout-btn" onClick={() => abrirWhatsApp('sacola')}>
-                Finalizar no WhatsApp
-              </button>
-            </div>
           </div>
-
-          {paymentBrickOpen && (
-            <div className="mp-inline-box">
-              <div className="mp-inline-head">
-                <div>
-                  <strong>Checkout seguro dentro do cardapio</strong>
-                  <span>Cartao e Pix processados pelo Mercado Pago, sem redirecionar.</span>
-                </div>
-                <div className="mp-seal">Mercado Pago</div>
-              </div>
-              {!paymentBrickReady && !paymentResult && <div className="mp-brick-loading">Carregando opcoes de pagamento...</div>}
-              <div id="paymentBrick_container"></div>
-              {paymentResult && (
-                <div className={`mp-result ${paymentResult.type === 'ok' ? 'ok' : 'warn'}`}>
-                  {paymentResult.text}
-                  {(paymentResult.pix?.qr_code_base64 || paymentResult.pix?.qr_code) && (
-                    <div className="pix-copy-box">
-                      {paymentResult.pix?.qr_code_base64 && (
-                        <img src={`data:image/png;base64,${paymentResult.pix.qr_code_base64}`} alt="QR Code Pix" />
-                      )}
-                      {paymentResult.pix?.qr_code && (
-                        <>
-                          <textarea readOnly value={paymentResult.pix.qr_code} aria-label="Codigo Pix copia e cola"></textarea>
-                          <button onClick={() => copiarPix(paymentResult.pix.qr_code)}>
-                            {paymentResult.copied ? 'Pix copiado' : 'Copiar Pix copia e cola'}
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
 
           <div className="bag-values">
             <h3>Resumo de valores</h3>
@@ -3302,8 +2956,8 @@ function App() {
           </div>
         </div>
         <div className="bag-footer">
-          <button className="bag-primary-btn" onClick={fecharPedido} disabled={checkoutLoading}>
-            <span>{checkoutLoading ? 'Abrindo checkout seguro...' : (paymentBrickOpen ? 'Checkout aberto acima' : 'Pagar dentro do cardapio')}</span>
+          <button className="bag-primary-btn" onClick={fecharPedido}>
+            <span>Finalizar pedido</span>
             <span>{fmtBRL(totalComEntrega)}</span>
           </button>
         </div>
