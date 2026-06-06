@@ -1199,17 +1199,29 @@
     font-size: 12px;
   }
   .destaques-strip {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(156px, 42vw);
+    overflow: hidden;
+    padding: 0 0 10px;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  }
+  .destaques-track {
+    display: flex;
     gap: 12px;
-    overflow-x: auto;
-    padding: 0 5px 10px;
-    scroll-snap-type: x mandatory;
+    width: max-content;
+  }
+  .destaques-track.is-looping {
+    animation: destaquesLoop 34s linear infinite;
+    will-change: transform;
+  }
+  .destaques-strip:hover .destaques-track {
+    animation-play-state: paused;
+  }
+  @keyframes destaquesLoop {
+    to { transform: translateX(-50%); }
   }
   .destaque-card {
     position: relative;
-    scroll-snap-align: start;
+    flex: 0 0 clamp(156px, 42vw, 230px);
     border: 1px solid rgba(212,175,55,0.18);
     border-radius: 20px;
     overflow: hidden;
@@ -1715,7 +1727,6 @@ function App() {
   const calcSubtotal = (items) => items.reduce((s, it) => s + Number(it.subtotal ?? (it.preco * it.qtd) ?? 0), 0);
   const totalItens = carrinho.reduce((s, it) => s + Number(it.qtd || 0), 0);
   const taxaEntrega = Number(deliveryConfig.taxa_entrega_padrao || 0);
-  const tempoEntregaTexto = `${deliveryConfig.tempo_entrega_min || 20} a ${deliveryConfig.tempo_entrega_max || 30} min`;
   const cuponsDisponiveis = cupons.filter(c => {
     const limiteOk = !c.usos_max || Number(c.usos_atual || 0) < Number(c.usos_max);
     return c.ativo !== false && limiteOk && cupomDentroDaData(c);
@@ -1736,6 +1747,8 @@ function App() {
   const descontoCupom = cupomResumo.ok ? Number(cupomResumo.desconto || 0) : 0;
   const taxaEntregaFinal = cupomResumo.ok && cupomResumo.freteGratis ? 0 : taxaEntrega;
   const totalComEntrega = Math.max(0, carrinhoTotal + taxaEntregaFinal - descontoCupom);
+  const preparoTexto = '5 minutos';
+  const entregaTexto = '12 a 30 minutos, dependendo do endereco';
   const montarTextoWhatsApp = (origem = 'topo') => {
     const linhas = [
       'Ola, Dom Leonardo!',
@@ -1758,7 +1771,9 @@ function App() {
         linhas.push(`   Subtotal: ${fmtBRL(item.subtotal)}`);
       });
       linhas.push('', `Subtotal: ${fmtBRL(carrinhoTotal)}`);
-      linhas.push(`Entrega estimada: ${cupomResumo.ok && cupomResumo.freteGratis ? 'gratis' : fmtBRL(taxaEntregaFinal)}`);
+      linhas.push(`Taxa de entrega: ${cupomResumo.ok && cupomResumo.freteGratis ? 'gratis' : fmtBRL(taxaEntregaFinal)}`);
+      linhas.push(`Preparo estimado: ${preparoTexto}`);
+      linhas.push(`Entrega estimada: ${entregaTexto}`);
       if (descontoCupom > 0) linhas.push(`Desconto: - ${fmtBRL(descontoCupom)}`);
       if (cupomResumo.ok && cupomAplicado?.codigo) linhas.push(`Cupom: ${String(cupomAplicado.codigo).toUpperCase()}`);
       linhas.push(`Total estimado: ${fmtBRL(totalComEntrega)}`);
@@ -1777,6 +1792,8 @@ function App() {
   const destaques = pratos
     .filter(p => p.badge_destaque || p.selo_experiencia || p.frase_fome)
     .slice(0, 9);
+  const pratosDestaque = destaques.length ? destaques : pratos.slice(0, 6);
+  const destaquesLoop = pratosDestaque.length > 1 ? [...pratosDestaque, ...pratosDestaque] : pratosDestaque;
   const maisPedidos = (pratos.filter(p => {
     const texto = `${p.badge || ''} ${p.badge_destaque || ''} ${p.selo_experiencia || ''}`.toLowerCase();
     return texto.includes('mais pedido') || texto.includes('pedido') || texto.includes('favorito');
@@ -2156,9 +2173,9 @@ function App() {
           Escolha sem pressa; a sacola fica pronta no fim.
         </p>
         <div className="trust-row">
-          <div className="trust-chip"><span>Entrega media</span><strong>{tempoEntregaTexto}</strong></div>
-          <div className="trust-chip"><span>Avaliacao</span><strong>{Number(deliveryConfig.restaurante_avaliacao || 4.9).toFixed(1)} estrelas</strong></div>
-          <div className="trust-chip"><span>Pedido</span><strong>Direto com o Dom</strong></div>
+          <div className="trust-chip"><span>Preparo</span><strong>5 min</strong></div>
+          <div className="trust-chip"><span>Entrega</span><strong>12 a 30 min</strong></div>
+          <div className="trust-chip"><span>Varia pelo</span><strong>endereco</strong></div>
         </div>
       </header>
 
@@ -2194,19 +2211,21 @@ function App() {
           </div>
         </div>
         <div className="destaques-strip">
-          {(destaques.length ? destaques : pratos.slice(0, 6)).map(p => (
-            <button className="destaque-card" key={p.id} onClick={() => abrirDetalhe(p)}>
-              <div className="relative">
-                <img src={p.foto} alt={p.nome} loading="lazy" />
-                <span className="prato-badge">{p.badge_destaque || p.selo_experiencia || 'Escolha segura'}</span>
-              </div>
-              <div className="destaque-body">
-                <strong>{p.nome}</strong>
-                <small>{clampText(p.frase_fome || p.descricao, 82)}</small>
-                <div className="destaque-price">a partir de {fmtBRL(p.preco)}</div>
-              </div>
-            </button>
-          ))}
+          <div className={`destaques-track ${pratosDestaque.length > 1 ? 'is-looping' : ''}`}>
+            {destaquesLoop.map((p, index) => (
+              <button className="destaque-card" key={`${p.id}-${index}`} onClick={() => abrirDetalhe(p)}>
+                <div className="relative">
+                  <img src={p.foto} alt={p.nome} loading="lazy" />
+                  <span className="prato-badge">{p.badge_destaque || p.selo_experiencia || 'Escolha segura'}</span>
+                </div>
+                <div className="destaque-body">
+                  <strong>{p.nome}</strong>
+                  <small>{clampText(p.frase_fome || p.descricao, 82)}</small>
+                  <div className="destaque-price">a partir de {fmtBRL(p.preco)}</div>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       </section>
       {/* Cardapio */}
