@@ -11,6 +11,160 @@
 <meta name="format-detection" content="telephone=no" />
 <link rel="manifest" href="manifest.json" />
 <title>Dom Leonardo - Cardapio</title>
+<script>
+  (function(w, d) {
+    if (w.domMetaTrack) return;
+
+    var PIXEL_ID = '2687533954980204';
+    var CAPI_URL = 'https://jewamqbdonudiapxbzay.supabase.co/functions/v1/meta-conversions';
+    var standardEvents = {
+      PageView: true,
+      ViewContent: true,
+      AddToCart: true,
+      InitiateCheckout: true,
+      Contact: true,
+      Search: true,
+      Lead: true
+    };
+
+    function uid(prefix) {
+      if (w.crypto && typeof w.crypto.randomUUID === 'function') return prefix + '_' + w.crypto.randomUUID();
+      return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 11);
+    }
+
+    function text(value, max) {
+      return String(value || '').replace(/\s+/g, ' ').trim().slice(0, max || 180);
+    }
+
+    function getCookie(name) {
+      return d.cookie.split('; ').find(function(row) { return row.indexOf(name + '=') === 0; })?.split('=')[1] || '';
+    }
+
+    function setCookie(name, value, days) {
+      var expires = new Date(Date.now() + days * 864e5).toUTCString();
+      d.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/; SameSite=Lax';
+    }
+
+    function ensureClientId() {
+      try {
+        var key = 'dom_leonardo_meta_client_id';
+        var existing = localStorage.getItem(key);
+        if (existing) return existing;
+        var created = uid('visitor');
+        localStorage.setItem(key, created);
+        return created;
+      } catch (_) {
+        return uid('visitor');
+      }
+    }
+
+    function ensureFbc() {
+      var current = getCookie('_fbc');
+      if (current) return decodeURIComponent(current);
+      try {
+        var fbclid = new URLSearchParams(w.location.search).get('fbclid');
+        if (!fbclid) return '';
+        var value = 'fb.1.' + Math.floor(Date.now() / 1000) + '.' + fbclid;
+        setCookie('_fbc', value, 90);
+        return value;
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function initPixel() {
+      if (w.fbq) return;
+      !function(f,b,e,v,n,t,s){
+        if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)
+      }(w,d,'script','https://connect.facebook.net/en_US/fbevents.js');
+      w.fbq('init', PIXEL_ID);
+    }
+
+    function compactData(data) {
+      var out = {};
+      Object.keys(data || {}).slice(0, 28).forEach(function(key) {
+        var cleanKey = String(key).replace(/[^a-zA-Z0-9_]/g, '').slice(0, 40);
+        if (!cleanKey) return;
+        var value = data[key];
+        if (typeof value === 'number' || typeof value === 'boolean') out[cleanKey] = value;
+        else if (Array.isArray(value)) out[cleanKey] = value.slice(0, 12).map(function(item) { return text(item, 80); });
+        else out[cleanKey] = text(value, 180);
+      });
+      return out;
+    }
+
+    function sendServerEvent(eventName, eventId, data) {
+      var payload = {
+        event_name: eventName,
+        event_id: eventId,
+        event_time: Math.floor(Date.now() / 1000),
+        event_source_url: w.location.href,
+        external_id: ensureClientId(),
+        fbp: decodeURIComponent(getCookie('_fbp') || ''),
+        fbc: ensureFbc(),
+        client_user_agent: navigator.userAgent,
+        custom_data: compactData(data)
+      };
+
+      try {
+        fetch(CAPI_URL, {
+          method: 'POST',
+          mode: 'cors',
+          keepalive: true,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).catch(function() {});
+      } catch (_) {}
+    }
+
+    w.domMetaTrack = function(eventName, data, options) {
+      eventName = text(eventName, 64);
+      if (!eventName) return '';
+      var eventId = (options && options.eventId) || uid(eventName);
+      var payload = compactData(data || {});
+
+      initPixel();
+      try {
+        var method = standardEvents[eventName] ? 'track' : 'trackCustom';
+        w.fbq(method, eventName, payload, { eventID: eventId });
+      } catch (_) {}
+
+      sendServerEvent(eventName, eventId, payload);
+      return eventId;
+    };
+
+    function labelFor(el) {
+      return text(el.getAttribute('aria-label') || el.getAttribute('title') || el.innerText || el.value || el.href || el.className, 120);
+    }
+
+    function trackClick(event) {
+      var el = event.target && event.target.closest && event.target.closest('button,a,[role="button"],input[type="button"],input[type="submit"],.prato-card,.destaque-card,.cat-chip,.coupon-suggestion');
+      if (!el || el.closest('[data-meta-ignore]')) return;
+      w.domMetaTrack('DomButtonClick', {
+        click_text: labelFor(el),
+        click_tag: text(el.tagName, 20),
+        click_class: text(el.className, 100),
+        page_title: d.title,
+        page_path: w.location.pathname
+      });
+    }
+
+    d.addEventListener('click', trackClick, true);
+    var boot = function() {
+      w.domMetaTrack('PageView', {
+        page_title: d.title,
+        page_path: w.location.pathname
+      });
+    };
+    if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', boot, { once: true });
+    else boot();
+  })(window, document);
+</script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
@@ -900,6 +1054,10 @@
   }
   .bag-sheet { height: 86vh; z-index: 99; }
   .bag-footer { z-index: 101; }
+  .bag-footer.address-step {
+    display: block;
+    padding: 12px 16px calc(12px + var(--safe-bottom));
+  }
   .bag-head {
     position: sticky;
     top: 0;
@@ -976,6 +1134,89 @@
   }
   .value-row.discount strong {
     color: #73e0a6;
+  }
+  .frete-chef-card {
+    margin: 12px 20px 0;
+    border: 1px solid rgba(212,175,55,0.22);
+    border-radius: 18px;
+    padding: 12px 13px;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(212,175,55,0.18), transparent 42%),
+      rgba(0,0,0,0.18);
+  }
+  .frete-chef-card strong {
+    display: block;
+    color: var(--gold);
+    font-size: 13px;
+    line-height: 1.25;
+  }
+  .frete-chef-card span {
+    display: block;
+    margin-top: 4px;
+    color: rgba(243,236,224,0.68);
+    font-size: 11.5px;
+    line-height: 1.35;
+  }
+  .address-step-card {
+    border: 1px solid rgba(212,175,55,0.24);
+    border-radius: 20px;
+    padding: 13px;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(212,175,55,0.14), transparent 46%),
+      rgba(10,9,8,0.96);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.34);
+  }
+  .address-step-card h3 {
+    margin: 0;
+    color: var(--gold);
+    font-size: 16px;
+    font-weight: 950;
+  }
+  .address-step-card p {
+    margin: 4px 0 11px;
+    color: rgba(243,236,224,0.66);
+    font-size: 12px;
+    line-height: 1.35;
+  }
+  .address-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.85fr);
+    gap: 8px;
+  }
+  .address-fields input {
+    width: 100%;
+    min-height: 43px;
+    border-radius: 14px;
+    border: 1px solid rgba(212,175,55,0.24);
+    background: rgba(0,0,0,0.22);
+    color: var(--text);
+    padding: 0 12px;
+    font-size: 13px;
+    outline: none;
+  }
+  .address-actions {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .address-whatsapp-primary,
+  .address-whatsapp-secondary {
+    min-height: 48px;
+    border-radius: 15px;
+    font-weight: 950;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .address-whatsapp-primary {
+    background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dim) 100%);
+    color: #1a1305;
+  }
+  .address-whatsapp-secondary {
+    border: 1px solid rgba(212,175,55,0.24);
+    background: rgba(0,0,0,0.28);
+    color: rgba(243,236,224,0.88);
   }
   .coupon-section {
     padding: 2px 0 0;
@@ -1163,6 +1404,20 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
     margin-top: 14px;
+  }
+  .frete-chef-hero {
+    margin-top: 12px;
+    border: 1px solid rgba(212,175,55,0.22);
+    border-radius: 18px;
+    padding: 11px 12px;
+    background: rgba(0,0,0,0.24);
+    color: rgba(243,236,224,0.75);
+    font-size: 12px;
+    line-height: 1.35;
+  }
+  .frete-chef-hero strong {
+    color: var(--gold);
+    font-weight: 950;
   }
   .trust-chip {
     border: 1px solid rgba(212,175,55,0.14);
@@ -1495,6 +1750,11 @@ function cupomDentroDaData(cupom) {
   if (cupom.valido_ate && new Date(cupom.valido_ate).getTime() < agora) return false;
   return true;
 }
+function trackMeta(eventName, data = {}) {
+  try {
+    if (window.domMetaTrack) window.domMetaTrack(eventName, data);
+  } catch (_) {}
+}
 
 // ============================================================================
 // MARCO STICKER (SVG inline, placeholder ate gerar arte definitiva)
@@ -1569,6 +1829,8 @@ function App() {
   const [cupomCodigo, setCupomCodigo] = useState('');
   const [cupomAplicado, setCupomAplicado] = useState(null);
   const [cupomErro, setCupomErro] = useState('');
+  const [whatsEnderecoOpen, setWhatsEnderecoOpen] = useState(false);
+  const [whatsEndereco, setWhatsEndereco] = useState({ ruaNumero: '', bairro: '' });
 
   const lpTimer = useRef(null);
   const balaoTimer = useRef(null);
@@ -1582,6 +1844,7 @@ function App() {
   const detailInteragiuRef = useRef(false);
   const scrollGuideShownRef = useRef(false);
   const sizeGuideShownRef = useRef(new Set());
+  const chatLeadTrackedRef = useRef(false);
 
   const falarMarco = (texto, duracao = 5600) => {
     if (!texto || chatOpen) return;
@@ -1774,6 +2037,8 @@ function App() {
   const calcSubtotal = (items) => items.reduce((s, it) => s + Number(it.subtotal ?? (it.preco * it.qtd) ?? 0), 0);
   const totalItens = carrinho.reduce((s, it) => s + Number(it.qtd || 0), 0);
   const taxaEntrega = Number(deliveryConfig.taxa_entrega_padrao || 0);
+  const FRETE_CHEF_MINIMO = 60;
+  const FRETE_CHEF_LIMITE = 10;
   const cuponsDisponiveis = cupons.filter(c => {
     const limiteOk = !c.usos_max || Number(c.usos_atual || 0) < Number(c.usos_max);
     return c.ativo !== false && limiteOk && cupomDentroDaData(c);
@@ -1792,11 +2057,15 @@ function App() {
   };
   const cupomResumo = cupomAplicado ? avaliarCupom(cupomAplicado) : { ok: false, desconto: 0, freteGratis: false };
   const descontoCupom = cupomResumo.ok ? Number(cupomResumo.desconto || 0) : 0;
-  const taxaEntregaFinal = cupomResumo.ok && cupomResumo.freteGratis ? 0 : taxaEntrega;
+  const freteChefAtivo = carrinhoTotal >= FRETE_CHEF_MINIMO;
+  const descontoFreteChef = freteChefAtivo ? Math.min(taxaEntrega, FRETE_CHEF_LIMITE) : 0;
+  const taxaEntregaComChef = Math.max(0, taxaEntrega - descontoFreteChef);
+  const taxaEntregaFinal = cupomResumo.ok && cupomResumo.freteGratis ? 0 : taxaEntregaComChef;
+  const faltaFreteChef = Math.max(0, FRETE_CHEF_MINIMO - carrinhoTotal);
   const totalComEntrega = Math.max(0, carrinhoTotal + taxaEntregaFinal - descontoCupom);
   const preparoTexto = '5 minutos';
   const entregaTexto = '12 a 30 minutos, dependendo do endereco';
-  const montarTextoWhatsApp = (origem = 'topo') => {
+  const montarTextoWhatsApp = (origem = 'topo', opts = {}) => {
     const linhas = [
       'Ola, Dom Leonardo!',
       origem === 'sacola'
@@ -1818,6 +2087,9 @@ function App() {
         linhas.push(`   Subtotal: ${fmtBRL(item.subtotal)}`);
       });
       linhas.push('', `Subtotal: ${fmtBRL(carrinhoTotal)}`);
+      if (freteChefAtivo && descontoFreteChef > 0 && !(cupomResumo.ok && cupomResumo.freteGratis)) {
+        linhas.push(`Frete do chef: - ${fmtBRL(descontoFreteChef)} em pedidos acima de ${fmtBRL(FRETE_CHEF_MINIMO)}`);
+      }
       linhas.push(`Taxa de entrega: ${cupomResumo.ok && cupomResumo.freteGratis ? 'gratis' : fmtBRL(taxaEntregaFinal)}`);
       linhas.push(`Preparo estimado: ${preparoTexto}`);
       linhas.push(`Entrega estimada: ${entregaTexto}`);
@@ -1826,11 +2098,28 @@ function App() {
       linhas.push(`Total estimado: ${fmtBRL(totalComEntrega)}`);
     }
 
+    const ruaNumero = String(whatsEndereco.ruaNumero || '').trim();
+    const bairro = String(whatsEndereco.bairro || '').trim();
+    if (origem === 'sacola' && !opts.ignorarEndereco && (ruaNumero || bairro)) {
+      linhas.push('', 'Endereco informado no cardapio:');
+      if (ruaNumero) linhas.push(`Rua e numero: ${ruaNumero}`);
+      if (bairro) linhas.push(`Bairro: ${bairro}`);
+    }
+
     linhas.push('', `Link do cardapio: ${window.location.origin}${window.location.pathname}`);
     return linhas.join('\n');
   };
-  const abrirWhatsApp = (origem = 'topo') => {
-    const texto = montarTextoWhatsApp(origem);
+  const abrirWhatsApp = (origem = 'topo', opts = {}) => {
+    const texto = montarTextoWhatsApp(origem, opts);
+    trackMeta('Contact', {
+      contact_channel: 'whatsapp',
+      origin: origem,
+      value: totalComEntrega,
+      currency: 'BRL',
+      num_items: totalItens,
+      content_type: 'product',
+      content_ids: carrinho.map(item => String(item.prato_id || item.local_id || item.nome)).slice(0, 20),
+    });
     window.open(`https://wa.me/${WHATSAPP_DOM}?text=${encodeURIComponent(texto)}`, '_blank', 'noopener,noreferrer');
   };
   const pratosVisiveis = categoriaAtiva === 'todos'
@@ -1852,6 +2141,14 @@ function App() {
     acc[String(cat.id)] = cat.nome;
     return acc;
   }, {});
+  const selecionarCategoriaCardapio = (id, nome) => {
+    setCategoriaAtiva(id);
+    trackMeta('MenuCategory', {
+      category_id: String(id),
+      category_name: nome || categoriaNomePorId[String(id)] || 'Todos',
+      page_path: window.location.pathname,
+    });
+  };
   const secoesCardapio = categoriaAtiva === 'todos'
     ? [
         ...(maisPedidos.length ? [{ id: 'mais-pedidos', titulo: 'Mais pedidos', pratos: maisPedidos }] : []),
@@ -1892,6 +2189,14 @@ function App() {
 
   const abrirDetalhe = (prato) => {
     vibrate(14);
+    trackMeta('ViewContent', {
+      content_name: prato?.nome || 'Prato',
+      content_ids: [String(prato?.id || prato?.nome || '')],
+      content_type: 'product',
+      value: Number(prato?.preco || 0),
+      currency: 'BRL',
+      content_category: categoriaNomePorId[String(prato?.categoria_id)] || 'Cardapio',
+    });
     abriuPratoRef.current = true;
     detailInteragiuRef.current = false;
     clearTimeout(detailGuideTimer.current);
@@ -1909,6 +2214,10 @@ function App() {
   const abrirFoto = (src, alt = '') => {
     if (!src) return;
     vibrate(10);
+    trackMeta('PhotoView', {
+      content_name: alt || pratoAberto?.nome || 'Foto do prato',
+      content_type: 'product',
+    });
     setFotoAberta({ src, alt });
   };
 
@@ -2026,6 +2335,16 @@ function App() {
       opcionais,
       obs: detailObs.trim(),
     };
+    trackMeta('AddToCart', {
+      content_name: item.nome,
+      content_ids: [String(item.prato_id)],
+      content_type: 'product',
+      value: item.subtotal,
+      currency: 'BRL',
+      quantity: item.qtd,
+      tamanho: item.tamanho ? labelTamanho(item.tamanho) : '',
+      opcionais: item.opcionais.map(op => `${op.qtd}x ${op.nome}`),
+    });
     const novos = [...carrinho, item];
     setCarrinho(novos);
     setCarrinhoTotal(calcSubtotal(novos));
@@ -2067,18 +2386,38 @@ function App() {
     setCupomAplicado(cupom);
     setCupomCodigo(String(cupom.codigo || '').toUpperCase());
     setCupomErro('');
+    trackMeta('CouponApply', {
+      coupon: String(cupom.codigo || '').toUpperCase(),
+      value: Number(avaliacao.desconto || 0),
+      currency: 'BRL',
+      cart_value: carrinhoTotal,
+      free_shipping: !!avaliacao.freteGratis,
+    });
     setBalaoTexto(`Cupom ${String(cupom.codigo || '').toUpperCase()} aplicado.`);
     setTimeout(() => setBalaoTexto(null), 3200);
     vibrate([15, 20, 15]);
   };
 
   const removerCupom = () => {
+    if (cupomAplicado?.codigo) {
+      trackMeta('CouponRemove', {
+        coupon: String(cupomAplicado.codigo || '').toUpperCase(),
+        cart_value: carrinhoTotal,
+        currency: 'BRL',
+      });
+    }
     setCupomAplicado(null);
     setCupomCodigo('');
     setCupomErro('');
   };
 
   const abrirSacola = () => {
+    trackMeta('CartOpen', {
+      value: totalComEntrega,
+      currency: 'BRL',
+      num_items: totalItens,
+      content_ids: carrinho.map(item => String(item.prato_id || item.local_id || item.nome)).slice(0, 20),
+    });
     setSacolaOpen(true);
   };
 
@@ -2089,6 +2428,11 @@ function App() {
   };
 
   const abrirChat = async () => {
+    trackMeta('ChatOpen', {
+      cart_value: carrinhoTotal,
+      num_items: totalItens,
+      page_context: pratoAberto?.nome || (sacolaOpen ? 'sacola' : 'cardapio'),
+    });
     setPratoAberto(null);
     setSacolaOpen(false);
     setFotoAberta(null);
@@ -2156,6 +2500,15 @@ function App() {
   const enviarMensagemChat = async () => {
     const texto = chatInput.trim();
     if (!texto || chatSending) return;
+    if (!chatLeadTrackedRef.current) {
+      chatLeadTrackedRef.current = true;
+      trackMeta('Lead', {
+        lead_type: 'chat_message',
+        value: carrinhoTotal,
+        currency: 'BRL',
+        num_items: totalItens,
+      });
+    }
     const localId = `local-${Date.now()}`;
     setChatInput('');
     setChatSending(true);
@@ -2177,13 +2530,21 @@ function App() {
     }
   };
 
-  const finalizarPedidoDireto = () => {
+  const finalizarPedidoDireto = (opts = {}) => {
     if (!carrinho.length) return;
-    abrirWhatsApp('sacola');
+    abrirWhatsApp('sacola', opts);
   };
 
   const fecharPedido = async () => {
-    finalizarPedidoDireto();
+    trackMeta('InitiateCheckout', {
+      value: totalComEntrega,
+      currency: 'BRL',
+      num_items: totalItens,
+      content_type: 'product',
+      content_ids: carrinho.map(item => String(item.prato_id || item.local_id || item.nome)).slice(0, 20),
+      coupon: cupomAplicado?.codigo ? String(cupomAplicado.codigo).toUpperCase() : '',
+    });
+    setWhatsEnderecoOpen(true);
   };
 
   // Long-press num prato -> fala do Marco
@@ -2244,6 +2605,9 @@ function App() {
           <div className="trust-chip"><span>Entrega</span><strong>12 a 30 min</strong></div>
           <div className="trust-chip"><span>Varia pelo</span><strong>endereco</strong></div>
         </div>
+        <div className="frete-chef-hero">
+          <strong>Frete do chef:</strong> acima de {fmtBRL(FRETE_CHEF_MINIMO)}, ate {fmtBRL(FRETE_CHEF_LIMITE)} da entrega fica por nossa conta.
+        </div>
       </header>
 
       {cuponsDisponiveis.length > 0 && (
@@ -2298,9 +2662,9 @@ function App() {
       {/* Cardapio */}
       <section className="px-5 pb-36">
         <div className="cat-strip">
-          <button className={`cat-chip ${categoriaAtiva === 'todos' ? 'active' : ''}`} onClick={() => setCategoriaAtiva('todos')}>Todos</button>
+          <button className={`cat-chip ${categoriaAtiva === 'todos' ? 'active' : ''}`} onClick={() => selecionarCategoriaCardapio('todos', 'Todos')}>Todos</button>
           {categorias.map(cat => (
-            <button key={cat.id} className={`cat-chip ${String(categoriaAtiva) === String(cat.id) ? 'active' : ''}`} onClick={() => setCategoriaAtiva(cat.id)}>
+            <button key={cat.id} className={`cat-chip ${String(categoriaAtiva) === String(cat.id) ? 'active' : ''}`} onClick={() => selecionarCategoriaCardapio(cat.id, cat.nome)}>
               {cat.nome}
             </button>
           ))}
@@ -2509,14 +2873,14 @@ function App() {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M15 6l-6 6 6 6"/></svg>
           </button>
           <h2>Sacola</h2>
-          {!!carrinho.length && <button className="bag-clear" onClick={() => { setCarrinho([]); setCarrinhoTotal(0); }}>Limpar</button>}
+          {!!carrinho.length && <button className="bag-clear" onClick={() => { setCarrinho([]); setCarrinhoTotal(0); setWhatsEnderecoOpen(false); }}>Limpar</button>}
         </div>
         <div className="bag-scroll">
           <div className="bag-store">
             <div className="bag-logo">DL</div>
             <div>
               <strong>Dom Leonardo</strong>
-              <button className="bag-link" onClick={() => setSacolaOpen(false)}>Adicionar mais itens</button>
+              <button className="bag-link" onClick={() => { setWhatsEnderecoOpen(false); setSacolaOpen(false); }}>Adicionar mais itens</button>
             </div>
           </div>
 
@@ -2535,6 +2899,17 @@ function App() {
               <div className="bag-item-price">{fmtBRL(item.subtotal)}</div>
             </div>
           ))}
+
+          {carrinho.length > 0 && (
+            <div className="frete-chef-card">
+              <strong>
+                {freteChefAtivo
+                  ? `Frete do chef ativo: ${fmtBRL(descontoFreteChef)} por nossa conta.`
+                  : `Frete do chef: faltam ${fmtBRL(faltaFreteChef)} para liberar.`}
+              </strong>
+              <span>Em pedidos acima de {fmtBRL(FRETE_CHEF_MINIMO)}, o Dom cobre ate {fmtBRL(FRETE_CHEF_LIMITE)} da taxa de entrega.</span>
+            </div>
+          )}
 
           {carrinho.length > 0 && (
             <div className="coupon-box">
@@ -2584,8 +2959,14 @@ function App() {
             <div className="value-row"><span>Subtotal</span><strong>{fmtBRL(carrinhoTotal)}</strong></div>
             <div className="value-row">
               <span>Taxa de entrega</span>
-              <strong>{cupomResumo.ok && cupomResumo.freteGratis ? 'Grátis' : fmtBRL(taxaEntrega)}</strong>
+              <strong>{cupomResumo.ok && cupomResumo.freteGratis ? 'Gratis' : fmtBRL(taxaEntregaFinal)}</strong>
             </div>
+            {descontoFreteChef > 0 && !(cupomResumo.ok && cupomResumo.freteGratis) && (
+              <div className="value-row discount">
+                <span>Frete por conta do chef</span>
+                <strong>- {fmtBRL(descontoFreteChef)}</strong>
+              </div>
+            )}
             {descontoCupom > 0 && (
               <div className="value-row discount">
                 <span>Desconto {String(cupomAplicado?.codigo || '').toUpperCase()}</span>
@@ -2595,11 +2976,40 @@ function App() {
             <div className="value-row total"><span>Total estimado</span><strong>{fmtBRL(totalComEntrega)}</strong></div>
           </div>
         </div>
-        <div className="bag-footer">
-          <button className="bag-primary-btn" onClick={fecharPedido}>
-            <span>Finalizar pedido</span>
-            <span>{fmtBRL(totalComEntrega)}</span>
-          </button>
+        <div className={`bag-footer ${whatsEnderecoOpen ? 'address-step' : ''}`}>
+          {whatsEnderecoOpen ? (
+            <div className="address-step-card">
+              <h3>Quer adiantar o endereco?</h3>
+              <p>Opcional. Se preferir, voce informa direto no WhatsApp e a gente combina por la.</p>
+              <div className="address-fields">
+                <input
+                  value={whatsEndereco.ruaNumero}
+                  onChange={e => setWhatsEndereco(v => ({ ...v, ruaNumero: e.target.value }))}
+                  placeholder="Rua e numero"
+                  autoComplete="street-address"
+                />
+                <input
+                  value={whatsEndereco.bairro}
+                  onChange={e => setWhatsEndereco(v => ({ ...v, bairro: e.target.value }))}
+                  placeholder="Bairro"
+                  autoComplete="address-level3"
+                />
+              </div>
+              <div className="address-actions">
+                <button className="address-whatsapp-primary" onClick={() => finalizarPedidoDireto()}>
+                  Enviar pedido no WhatsApp
+                </button>
+                <button className="address-whatsapp-secondary" onClick={() => finalizarPedidoDireto({ ignorarEndereco: true })}>
+                  Informar endereco direto no WhatsApp
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button className="bag-primary-btn" onClick={fecharPedido}>
+              <span>Finalizar pedido</span>
+              <span>{fmtBRL(totalComEntrega)}</span>
+            </button>
+          )}
         </div>
       </section>
 
