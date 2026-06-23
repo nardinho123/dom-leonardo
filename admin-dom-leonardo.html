@@ -2,8 +2,32 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Dom Leonardo</title>
+  <script>
+    // Faxina de cache legado: evita tela branca presa em Service Worker antigo.
+    (function limparCacheLegadoDomLeonardo() {
+      if (!('serviceWorker' in navigator)) return;
+      window.addEventListener('load', function() {
+        Promise.all([
+          navigator.serviceWorker.getRegistrations()
+            .then(function(regs) { return Promise.all(regs.map(function(reg) { return reg.unregister().catch(function() {}); })); })
+            .catch(function() {}),
+          window.caches
+            ? caches.keys().then(function(keys) { return Promise.all(keys.map(function(key) { return caches.delete(key).catch(function() {}); })); }).catch(function() {})
+            : Promise.resolve()
+        ]).then(function() {
+          if (navigator.serviceWorker.controller && !sessionStorage.getItem('dl_sw_cleanup_reloaded')) {
+            sessionStorage.setItem('dl_sw_cleanup_reloaded', '1');
+            window.location.reload();
+          }
+        });
+      });
+    })();
+  </script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
