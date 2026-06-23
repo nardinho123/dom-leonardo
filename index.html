@@ -299,11 +299,34 @@ const { useState, useEffect, useRef, useCallback, useMemo, createContext, useCon
 const DEFAULT_URL = 'https://ippeiearkgnqdeiquiuy.supabase.co';
 const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlwcGVpZWFya2ducWRlaXF1aXV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNTkyOTMsImV4cCI6MjA5MTgzNTI5M30.wL83lZlG9vet_rXHT91ZYk1ZmDucJHIMjr9mck9cwhI';
 
+function ensureErpSupabaseConfig() {
+  try {
+    const savedUrl = localStorage.getItem('sb_url');
+    const savedKey = localStorage.getItem('sb_key');
+    if (savedUrl !== DEFAULT_URL || savedKey !== DEFAULT_KEY) {
+      localStorage.setItem('sb_url', DEFAULT_URL);
+      localStorage.setItem('sb_key', DEFAULT_KEY);
+      return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+function savedSupabaseUrl() {
+  ensureErpSupabaseConfig();
+  return localStorage.getItem('sb_url') || DEFAULT_URL;
+}
+
+function savedSupabaseKey() {
+  ensureErpSupabaseConfig();
+  return localStorage.getItem('sb_key') || DEFAULT_KEY;
+}
+
 let _client = null;
 function getClient() {
   if (_client) return _client;
-  const url = localStorage.getItem('sb_url') || DEFAULT_URL;
-  const key = localStorage.getItem('sb_key') || DEFAULT_KEY;
+  const url = savedSupabaseUrl();
+  const key = savedSupabaseKey();
   _client = supabase.createClient(url, key);
   return _client;
 }
@@ -1517,8 +1540,8 @@ function useAutoRefresh(fn, intervalMs=60000, enabled=true) {
 
 // ── LOGIN ───────────────────────────────────────────────────────────────────
 function Login({ onLogin }) {
-  const [url, setUrl] = useState(localStorage.getItem('sb_url') || DEFAULT_URL);
-  const [key, setKey] = useState(localStorage.getItem('sb_key') || DEFAULT_KEY);
+  const [url, setUrl] = useState(savedSupabaseUrl());
+  const [key, setKey] = useState(savedSupabaseKey());
   const [loading, setLoading] = useState(false);
   const toast = useToast();
 
@@ -7899,7 +7922,10 @@ function Topbar({ onToggleSidebar, title }) {
 }
 
 function App() {
-  const [loggedIn, setLoggedIn] = useState(!!localStorage.getItem('sb_url'));
+  const [loggedIn, setLoggedIn] = useState(() => {
+    ensureErpSupabaseConfig();
+    return true;
+  });
   const [screen, setScreen] = useState('home');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
