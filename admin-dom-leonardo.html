@@ -661,7 +661,8 @@
 <body>
   <div id="root"></div>
 
-  <script type="text/babel">
+  <script type="text/babel" data-presets="env" data-plugins="transform-react-jsx">
+    /** @jsxRuntime classic */
     const { useEffect, useMemo, useRef, useState } = React;
 
     const SUPABASE_URL = 'https://jewamqbdonudiapxbzay.supabase.co';

@@ -1635,7 +1635,8 @@
 <body>
 <div id="root"></div>
 
-<script type="text/babel" data-presets="env,react">
+<script type="text/babel" data-presets="env" data-plugins="transform-react-jsx">
+/** @jsxRuntime classic */
 const { useState, useEffect, useRef } = React;
 
 // Frases de RONDA/IDLE (UI local, antes do chat abrir)
