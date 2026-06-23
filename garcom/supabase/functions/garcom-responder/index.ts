@@ -60,15 +60,73 @@ function groupBy<T extends Record<string, unknown>>(items: T[], key: string): Re
   }, {});
 }
 
+const TOPO_DEFAULTS = {
+  kicker: "Trattoria delivery",
+  nome: "Dom Leonardo",
+  descricao: "Massa quente, risoto cremoso e aquele cheiro de manteiga boa chegando na tampa. Escolha sem pressa; a sacola fica pronta no fim.",
+  chip_1_label: "Preparo",
+  chip_1_valor: "5 min",
+  chip_2_label: "Entrega",
+  chip_2_valor: "12 a 30 min",
+  chip_3_label: "Varia pelo",
+  chip_3_valor: "endereco",
+  faixa_titulo: "Frete do chef:",
+  faixa_texto: "acima de R$ 60,00, ate R$ 10,00 da entrega fica por nossa conta.",
+  logo_url: null as string | null,
+  capa_url: null as string | null,
+  capa_tipo: "imagem",
+  capa_video_url: null as string | null,
+};
+
+function asObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function textOr(value: unknown, fallback: string): string {
+  const text = String(value ?? "").trim();
+  return text || fallback;
+}
+
+function nullableText(value: unknown): string | null {
+  const text = String(value ?? "").trim();
+  return text || null;
+}
+
+function mapTopoConfig(config: Record<string, unknown>) {
+  const topo = asObject(config.topo_config);
+  const tipo = textOr(topo.capa_tipo, textOr(config.restaurante_capa_tipo, TOPO_DEFAULTS.capa_tipo));
+  return {
+    kicker: textOr(topo.kicker, TOPO_DEFAULTS.kicker),
+    nome: textOr(topo.nome, textOr(config.restaurante_nome, TOPO_DEFAULTS.nome)),
+    descricao: textOr(topo.descricao, textOr(config.restaurante_descricao, TOPO_DEFAULTS.descricao)),
+    chip_1_label: textOr(topo.chip_1_label, TOPO_DEFAULTS.chip_1_label),
+    chip_1_valor: textOr(topo.chip_1_valor, TOPO_DEFAULTS.chip_1_valor),
+    chip_2_label: textOr(topo.chip_2_label, TOPO_DEFAULTS.chip_2_label),
+    chip_2_valor: textOr(topo.chip_2_valor, TOPO_DEFAULTS.chip_2_valor),
+    chip_3_label: textOr(topo.chip_3_label, TOPO_DEFAULTS.chip_3_label),
+    chip_3_valor: textOr(topo.chip_3_valor, TOPO_DEFAULTS.chip_3_valor),
+    faixa_titulo: textOr(topo.faixa_titulo, TOPO_DEFAULTS.faixa_titulo),
+    faixa_texto: textOr(topo.faixa_texto, TOPO_DEFAULTS.faixa_texto),
+    logo_url: nullableText(topo.logo_url) ?? nullableText(config.restaurante_logo_url),
+    capa_url: nullableText(topo.capa_url) ?? nullableText(config.restaurante_capa_url),
+    capa_tipo: ["imagem", "gif", "video"].includes(tipo) ? tipo : TOPO_DEFAULTS.capa_tipo,
+    capa_video_url: nullableText(topo.capa_video_url) ?? nullableText(config.restaurante_capa_video_url),
+  };
+}
+
 function mapConfig(config: Record<string, unknown> | null) {
   const cfg = config ?? {};
+  const topo = mapTopoConfig(cfg);
   return {
-    restaurante_nome: cfg.restaurante_nome ?? "Dom Leonardo",
-    restaurante_descricao: cfg.restaurante_descricao ?? "",
-    restaurante_logo_url: cfg.restaurante_logo_url ?? null,
-    restaurante_capa_url: cfg.restaurante_capa_url ?? null,
-    restaurante_capa_tipo: cfg.restaurante_capa_tipo ?? "imagem",
-    restaurante_capa_video_url: cfg.restaurante_capa_video_url ?? null,
+    topo,
+    restaurante_nome: topo.nome,
+    restaurante_descricao: topo.descricao,
+    restaurante_logo_url: topo.logo_url,
+    restaurante_capa_url: topo.capa_url,
+    restaurante_capa_tipo: topo.capa_tipo,
+    restaurante_capa_video_url: topo.capa_video_url,
     restaurante_avaliacao: toNumber(cfg.restaurante_avaliacao, 4.9),
     restaurante_total_avaliacoes: toNumber(cfg.restaurante_total_avaliacoes, 0),
     whatsapp_pedidos: cfg.whatsapp_pedidos ?? "",

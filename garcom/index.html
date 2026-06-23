@@ -1394,6 +1394,49 @@
     line-height: 1.3;
   }
 
+  .hero-media-shell {
+    position: relative;
+    margin: 14px 14px 0;
+    border-radius: 24px;
+    overflow: visible;
+  }
+  .hero-media-frame {
+    aspect-ratio: 1600 / 368;
+    min-height: 82px;
+    border: 1px solid rgba(212,175,55,0.20);
+    border-radius: 24px;
+    overflow: hidden;
+    background: rgba(0,0,0,0.24);
+    box-shadow: 0 18px 42px rgba(0,0,0,0.30);
+  }
+  .hero-media-frame img,
+  .hero-media-frame video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+  }
+  .hero-logo-float {
+    position: absolute;
+    right: 13px;
+    bottom: -24px;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    padding: 4px;
+    border: 1px solid rgba(212,175,55,0.45);
+    background: rgba(9,8,7,0.92);
+    box-shadow: 0 10px 28px rgba(0,0,0,0.42);
+    z-index: 2;
+  }
+  .hero-logo-float img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: block;
+    object-fit: cover;
+  }
+
   .hero-shell {
     margin: 14px 14px 0;
     padding: 18px;
@@ -1404,6 +1447,8 @@
       linear-gradient(180deg, rgba(28,24,20,0.98), rgba(13,11,9,0.98));
     box-shadow: 0 18px 42px rgba(0,0,0,0.34);
   }
+  .hero-shell.has-media { margin-top: 12px; }
+  .hero-shell.has-logo { margin-top: 30px; }
   .hero-kicker {
     color: rgba(212,175,55,0.82);
     font-size: 11px;
@@ -1688,6 +1733,23 @@ const DEFAULT_CHAT_CONFIG = {
     'Quando adicionar algo, a sacola aparece embaixo para voce revisar tudo com calma.',
     'Dica do Dom: os pratos maiores costumam valer muito a pena para dividir.',
   ],
+};
+const DEFAULT_TOPO_CONFIG = {
+  kicker: 'Trattoria delivery',
+  nome: 'Dom Leonardo',
+  descricao: 'Massa quente, risoto cremoso e aquele cheiro de manteiga boa chegando na tampa. Escolha sem pressa; a sacola fica pronta no fim.',
+  chip_1_label: 'Preparo',
+  chip_1_valor: '5 min',
+  chip_2_label: 'Entrega',
+  chip_2_valor: '12 a 30 min',
+  chip_3_label: 'Varia pelo',
+  chip_3_valor: 'endereco',
+  faixa_titulo: 'Frete do chef:',
+  faixa_texto: 'acima de R$ 60,00, ate R$ 10,00 da entrega fica por nossa conta.',
+  logo_url: '',
+  capa_url: '',
+  capa_tipo: 'imagem',
+  capa_video_url: '',
 };
 
 // ============================================================================
@@ -2616,22 +2678,46 @@ function App() {
     </article>
   );
 
+  const topo = { ...DEFAULT_TOPO_CONFIG, ...(deliveryConfig.topo || {}) };
+  const heroLogoUrl = String(topo.logo_url || '').trim();
+  const heroCapaUrl = String(topo.capa_url || '').trim();
+  const heroVideoUrl = String(topo.capa_video_url || '').trim();
+  const heroTipo = String(topo.capa_tipo || 'imagem').toLowerCase();
+  const heroMediaUrl = heroTipo === 'video' ? (heroVideoUrl || heroCapaUrl) : heroCapaUrl;
+  const heroIsVideo = heroTipo === 'video' && !!heroMediaUrl;
+  const heroHasMedia = !!heroMediaUrl;
+  const heroShellClass = ['hero-shell', heroHasMedia ? 'has-media' : '', heroLogoUrl ? 'has-logo' : ''].filter(Boolean).join(' ');
+
   return (
     <div className="min-h-dvh">
-      <header className="hero-shell">
-        <div className="hero-kicker">Trattoria delivery</div>
-        <h1 className="font-serif hero-title">Dom Leonardo</h1>
-        <p className="hero-copy">
-          Massa quente, risoto cremoso e aquele cheiro de manteiga boa chegando na tampa.
-          Escolha sem pressa; a sacola fica pronta no fim.
-        </p>
+      {heroHasMedia && (
+        <div className="hero-media-shell">
+          <div className="hero-media-frame">
+            {heroIsVideo ? (
+              <video src={heroMediaUrl} muted loop autoPlay playsInline preload="metadata" />
+            ) : (
+              <img src={heroMediaUrl} alt="" loading="eager" />
+            )}
+          </div>
+          {heroLogoUrl && (
+            <div className="hero-logo-float">
+              <img src={heroLogoUrl} alt={topo.nome || 'Dom Leonardo'} />
+            </div>
+          )}
+        </div>
+      )}
+
+      <header className={heroShellClass}>
+        <div className="hero-kicker">{topo.kicker}</div>
+        <h1 className="font-serif hero-title">{topo.nome}</h1>
+        <p className="hero-copy">{topo.descricao}</p>
         <div className="trust-row">
-          <div className="trust-chip"><span>Preparo</span><strong>5 min</strong></div>
-          <div className="trust-chip"><span>Entrega</span><strong>12 a 30 min</strong></div>
-          <div className="trust-chip"><span>Varia pelo</span><strong>endereco</strong></div>
+          <div className="trust-chip"><span>{topo.chip_1_label}</span><strong>{topo.chip_1_valor}</strong></div>
+          <div className="trust-chip"><span>{topo.chip_2_label}</span><strong>{topo.chip_2_valor}</strong></div>
+          <div className="trust-chip"><span>{topo.chip_3_label}</span><strong>{topo.chip_3_valor}</strong></div>
         </div>
         <div className="frete-chef-hero">
-          <strong>Frete do chef:</strong> acima de {fmtBRL(FRETE_CHEF_MINIMO)}, ate {fmtBRL(FRETE_CHEF_LIMITE)} da entrega fica por nossa conta.
+          <strong>{topo.faixa_titulo}</strong> {topo.faixa_texto}
         </div>
       </header>
 

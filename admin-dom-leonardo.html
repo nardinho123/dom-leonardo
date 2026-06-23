@@ -508,9 +508,160 @@
       color: #fff;
       font-weight: 950;
     }
-    .upload-preview.logo { aspect-ratio: 1 / 1; border-radius: 50%; }
+    .upload-preview.logo {
+      width: min(156px, 100%);
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+    }
     .upload-preview.cover { aspect-ratio: 1600 / 368; }
     .upload-preview img, .upload-preview video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .topo-editor {
+      display: grid;
+      grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .topo-preview-phone {
+      width: min(100%, 390px);
+      border-radius: 30px;
+      padding: 12px;
+      background: #090807;
+      box-shadow: 0 18px 46px rgba(0,0,0,.18);
+      position: sticky;
+      top: 16px;
+    }
+    .topo-preview-cover {
+      position: relative;
+      margin-bottom: 30px;
+    }
+    .topo-preview-media {
+      aspect-ratio: 1600 / 368;
+      min-height: 82px;
+      border-radius: 22px;
+      overflow: hidden;
+      border: 1px solid rgba(212,175,55,.20);
+      background: linear-gradient(135deg, #2a211b, #110e0c);
+    }
+    .topo-preview-media img,
+    .topo-preview-media video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .topo-preview-logo {
+      position: absolute;
+      right: 12px;
+      bottom: -23px;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      padding: 4px;
+      background: rgba(9,8,7,.94);
+      border: 1px solid rgba(212,175,55,.45);
+      box-shadow: 0 10px 24px rgba(0,0,0,.35);
+    }
+    .topo-preview-logo img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+    }
+    .topo-preview-card {
+      padding: 18px;
+      border: 1px solid rgba(212,175,55,.22);
+      border-radius: 26px;
+      background:
+        radial-gradient(circle at 18% 0%, rgba(212,175,55,.16), transparent 34%),
+        linear-gradient(180deg, rgba(28,24,20,.98), rgba(13,11,9,.98));
+      color: #f3ece0;
+    }
+    .topo-preview-kicker {
+      color: rgba(212,175,55,.82);
+      font-size: 10px;
+      font-weight: 950;
+      letter-spacing: .20em;
+      text-transform: uppercase;
+    }
+    .topo-preview-title {
+      margin: 4px 0 6px;
+      color: #d4af37;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 34px;
+      line-height: .95;
+    }
+    .topo-preview-copy {
+      margin: 0;
+      color: rgba(243,236,224,.72);
+      font-size: 12px;
+      line-height: 1.42;
+    }
+    .topo-preview-chips {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .topo-preview-chip {
+      border: 1px solid rgba(212,175,55,.14);
+      border-radius: 16px;
+      padding: 9px 8px;
+      background: rgba(0,0,0,.22);
+      min-width: 0;
+    }
+    .topo-preview-chip span {
+      display: block;
+      color: rgba(243,236,224,.52);
+      font-size: 10px;
+      line-height: 1.1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .topo-preview-chip strong {
+      display: block;
+      margin-top: 2px;
+      color: #f3ece0;
+      font-size: 11px;
+      line-height: 1.12;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .topo-preview-frete {
+      margin-top: 12px;
+      border: 1px solid rgba(212,175,55,.22);
+      border-radius: 18px;
+      padding: 11px 12px;
+      background: rgba(0,0,0,.24);
+      color: rgba(243,236,224,.75);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .topo-preview-frete strong {
+      color: #d4af37;
+      font-weight: 950;
+    }
+    .topo-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .topo-fields .field.full,
+    .topo-fields .upload-box,
+    .topo-fields .topo-field-row {
+      grid-column: 1 / -1;
+    }
+    .topo-field-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--soft);
+    }
     .color-grid {
       display: flex;
       flex-wrap: wrap;
@@ -670,6 +821,8 @@
       .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .topbar { flex-direction: column; }
       .actions { justify-content: flex-start; }
+      .topo-editor { grid-template-columns: 1fr; }
+      .topo-preview-phone { position: static; margin: 0 auto; }
     }
     @media (max-width: 680px) {
       .stats-grid, .form-grid { grid-template-columns: 1fr; }
@@ -679,6 +832,8 @@
       .inline-grid { grid-template-columns: 1fr; }
       .span-2, .span-3, .span-4, .span-5, .span-6, .span-8, .span-12 { grid-column: auto; }
       .order-card, .chat-card, .reply-box { grid-template-columns: 1fr; }
+      .topo-fields,
+      .topo-field-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -735,6 +890,23 @@
       { id: 'cinza', label: 'Cinza' },
       { id: 'preto', label: 'Preto' },
     ];
+    const TOPO_DEFAULTS = {
+      kicker: 'Trattoria delivery',
+      nome: 'Dom Leonardo',
+      descricao: 'Massa quente, risoto cremoso e aquele cheiro de manteiga boa chegando na tampa. Escolha sem pressa; a sacola fica pronta no fim.',
+      chip_1_label: 'Preparo',
+      chip_1_valor: '5 min',
+      chip_2_label: 'Entrega',
+      chip_2_valor: '12 a 30 min',
+      chip_3_label: 'Varia pelo',
+      chip_3_valor: 'endereco',
+      faixa_titulo: 'Frete do chef:',
+      faixa_texto: 'acima de R$ 60,00, ate R$ 10,00 da entrega fica por nossa conta.',
+      logo_url: '',
+      capa_url: '',
+      capa_tipo: 'imagem',
+      capa_video_url: '',
+    };
 
     const fmtMoney = (value) =>
       Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -743,6 +915,23 @@
     const toNum = (value) => value === '' || value === null || value === undefined ? null : Number(value);
     const textToList = (value) => String(value || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean);
     const listToText = (value) => Array.isArray(value) ? value.join('\n') : String(value || '');
+    const cleanText = (value) => String(value ?? '').trim();
+    const mergeTopoConfig = (config = {}) => {
+      const topo = config.topo_config && typeof config.topo_config === 'object' && !Array.isArray(config.topo_config)
+        ? config.topo_config
+        : {};
+      const tipo = cleanText(topo.capa_tipo || config.restaurante_capa_tipo || TOPO_DEFAULTS.capa_tipo);
+      return {
+        ...TOPO_DEFAULTS,
+        ...topo,
+        nome: cleanText(topo.nome) || cleanText(config.restaurante_nome) || TOPO_DEFAULTS.nome,
+        descricao: cleanText(topo.descricao) || cleanText(config.restaurante_descricao) || TOPO_DEFAULTS.descricao,
+        logo_url: cleanText(topo.logo_url) || cleanText(config.restaurante_logo_url),
+        capa_url: cleanText(topo.capa_url) || cleanText(config.restaurante_capa_url),
+        capa_tipo: ['imagem', 'gif', 'video'].includes(tipo) ? tipo : TOPO_DEFAULTS.capa_tipo,
+        capa_video_url: cleanText(topo.capa_video_url) || cleanText(config.restaurante_capa_video_url),
+      };
+    };
     const uuid = () => {
       if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
       return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -836,6 +1025,17 @@
 
     async function uploadImage(file, kind, folder, ownerId) {
       if (!file) return null;
+      if (kind === 'capa' && file.type === 'image/gif') {
+        const path = `${folder}/${ownerId}-${Date.now()}.gif`;
+        const { error } = await sb.storage.from(BUCKET).upload(path, file, {
+          contentType: 'image/gif',
+          cacheControl: '31536000',
+          upsert: false,
+        });
+        if (error) throw error;
+        const { data } = sb.storage.from(BUCKET).getPublicUrl(path);
+        return data.publicUrl;
+      }
       const preset = IMAGE_PRESETS[kind];
       const blob = await resizeImage(file, preset);
       const path = `${folder}/${ownerId}-${Date.now()}.webp`;
@@ -881,9 +1081,9 @@
             <div className={`upload-preview ${kind === 'logo' ? 'logo' : kind === 'capa' ? 'cover' : ''}`}>
               {preview ? <img src={preview} alt="" /> : <span>{empty}</span>}
             </div>
-            <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp,image/avif" onChange={change} />
+            <input type="file" accept={kind === 'capa' ? 'image/png,image/jpeg,image/jpg,image/webp,image/avif,image/gif' : 'image/png,image/jpeg,image/jpg,image/webp,image/avif'} onChange={change} />
           </label>
-          <div className="hint">O admin converte para {IMAGE_PRESETS[kind].label}. Evite texto, telefone, link e promoção dentro da foto.</div>
+          <div className="hint">{kind === 'capa' ? 'Imagem estatica vira WebP; GIF fica animado. ' : `O admin converte para ${IMAGE_PRESETS[kind].label}. `}Evite texto, telefone, link e promoção dentro da foto.</div>
         </div>
       );
     }
@@ -1409,54 +1609,40 @@
 
       async function saveConfig(form) {
         try {
-          let logo = form.restaurante_logo_url || null;
-          let capa = form.restaurante_capa_url || null;
-          let capaVideo = form.restaurante_capa_video_url || null;
+          const topoBase = { ...TOPO_DEFAULTS, ...(form.topo || {}) };
+          let logo = topoBase.logo_url || null;
+          let capa = topoBase.capa_url || null;
+          let capaVideo = topoBase.capa_video_url || null;
+          let capaTipo = topoBase.capa_tipo || 'imagem';
           if (form.logoFile) logo = await uploadImage(form.logoFile, 'logo', 'marca/logo', 'dom');
-          if (form.capaFile) capa = await uploadImage(form.capaFile, 'capa', 'marca/capa', 'dom');
-          if (form.capaVideoFile) capaVideo = await uploadVideo(form.capaVideoFile, 'marca/capa-video', 'dom');
+          if (form.capaFile) {
+            capa = await uploadImage(form.capaFile, 'capa', 'marca/capa', 'dom');
+            if (form.capaFile.type === 'image/gif') capaTipo = 'gif';
+          }
+          if (form.capaVideoFile) {
+            capaVideo = await uploadVideo(form.capaVideoFile, 'marca/capa-video', 'dom');
+            capaTipo = 'video';
+          }
+          const topoConfig = {
+            ...topoBase,
+            logo_url: logo,
+            capa_url: capa,
+            capa_tipo: ['imagem', 'gif', 'video'].includes(capaTipo) ? capaTipo : 'imagem',
+            capa_video_url: capaVideo,
+          };
+          const legacyCapaTipo = topoConfig.capa_tipo === 'video' ? 'video' : 'imagem';
           const payload = {
-            restaurante_nome: form.restaurante_nome,
-            restaurante_descricao: form.restaurante_descricao || null,
+            topo_config: topoConfig,
+            restaurante_nome: topoConfig.nome,
+            restaurante_descricao: topoConfig.descricao || null,
             restaurante_logo_url: logo,
             restaurante_capa_url: capa,
-            restaurante_capa_tipo: form.restaurante_capa_tipo || 'imagem',
+            restaurante_capa_tipo: legacyCapaTipo,
             restaurante_capa_video_url: capaVideo,
-            tema_cardapio: form.tema_cardapio || 'branco',
-            destaques_titulo: form.destaques_titulo || 'O Dom recomenda',
-            destaques_descricao: form.destaques_descricao || 'Os pratos que mais saem por aqui.',
-            cupons_titulo: form.cupons_titulo || 'Cupons do Dom',
-            cupons_descricao: form.cupons_descricao || 'Toque para ver onde usar e quando acaba.',
-            restaurante_avaliacao: toNum(form.restaurante_avaliacao) || 4.9,
-            restaurante_total_avaliacoes: toNum(form.restaurante_total_avaliacoes) || 0,
-            whatsapp_pedidos: form.whatsapp_pedidos,
-            taxa_entrega_padrao: toNum(form.taxa_entrega_padrao) || 0,
-            pedido_minimo: toNum(form.pedido_minimo) || 0,
-            raio_entrega_km: toNum(form.raio_entrega_km) || 5,
-            tempo_entrega_min: toNum(form.tempo_entrega_min) || 45,
-            tempo_entrega_max: toNum(form.tempo_entrega_max) || 60,
-            garcom_entrega_texto: form.garcom_entrega_texto || 'tempo em media para chegar na sua casa 20 a 30 min',
-            garcom_entrega_botao_texto: form.garcom_entrega_botao_texto || 'quero saber o tempo exato',
-            garcom_tamanhos_texto: form.garcom_tamanhos_texto || '400g individual | 800g serve 2',
-            garcom_fome_botao_texto: form.garcom_fome_botao_texto || 'quero saber se vai matar minha fome',
-            garcom_chat_saudacoes: textToList(form.garcom_chat_saudacoes_texto).length ? textToList(form.garcom_chat_saudacoes_texto) : ['Ciao! Que bom te ver por aqui.', 'Boa noite! Fica a vontade para olhar com calma.'],
-            garcom_chat_mensagens_auto: textToList(form.garcom_chat_mensagens_auto_texto).length ? textToList(form.garcom_chat_mensagens_auto_texto) : ['Se algum prato chamar sua atencao, abre ele e escolhe tamanho e adicionais por ali.'],
-            mercado_pago_public_key: form.mercado_pago_public_key || null,
-            mercado_pago_client_id: form.mercado_pago_client_id || null,
-            checkout_mercado_pago_ativo: form.checkout_mercado_pago_ativo !== false,
-            checkout_titulo: form.checkout_titulo || 'Fechar pedido com segurança',
-            checkout_subtitulo: form.checkout_subtitulo || 'Revise sua janta, informe entrega e pague pelo Mercado Pago.',
-            checkout_botao_texto: form.checkout_botao_texto || 'Pagar com Mercado Pago',
-            checkout_sucesso_texto: form.checkout_sucesso_texto || 'Pedido recebido. Assim que o pagamento confirmar, o Dom já vê na cozinha.',
-            checkout_pendente_texto: form.checkout_pendente_texto || 'Pagamento pendente. Se for Pix, aguarde a confirmação do Mercado Pago.',
-            horario_abertura: form.horario_abertura,
-            horario_fechamento: form.horario_fechamento,
-            aviso_topo: form.aviso_topo || null,
-            loja_aberta_manual: !!form.loja_aberta_manual,
           };
           const { error } = await sb.from('configuracoes').update(payload).eq('id', 1);
           if (error) throw error;
-          toast('Configurações salvas.');
+          toast('Topo do cardápio salvo.');
           await loadAll();
         } catch (error) {
           toast(error.message, 'error');
@@ -2271,105 +2457,105 @@
       );
     }
 
+    function TopoPreview({ topo }) {
+      const mediaUrl = topo.capa_tipo === 'video' ? (topo.capa_video_url || topo.capa_url) : topo.capa_url;
+      const isVideo = topo.capa_tipo === 'video' && mediaUrl;
+      return (
+        <div className="topo-preview-phone">
+          <div className="topo-preview-cover">
+            <div className="topo-preview-media">
+              {mediaUrl ? (
+                isVideo ? <video src={mediaUrl} muted loop autoPlay playsInline /> : <img src={mediaUrl} alt="" />
+              ) : <span className="muted">Capa opcional</span>}
+            </div>
+            {topo.logo_url && (
+              <div className="topo-preview-logo">
+                <img src={topo.logo_url} alt={topo.nome || 'Dom Leonardo'} />
+              </div>
+            )}
+          </div>
+          <div className="topo-preview-card">
+            <div className="topo-preview-kicker">{topo.kicker}</div>
+            <h3 className="topo-preview-title">{topo.nome}</h3>
+            <p className="topo-preview-copy">{topo.descricao}</p>
+            <div className="topo-preview-chips">
+              <div className="topo-preview-chip"><span>{topo.chip_1_label}</span><strong>{topo.chip_1_valor}</strong></div>
+              <div className="topo-preview-chip"><span>{topo.chip_2_label}</span><strong>{topo.chip_2_valor}</strong></div>
+              <div className="topo-preview-chip"><span>{topo.chip_3_label}</span><strong>{topo.chip_3_valor}</strong></div>
+            </div>
+            <div className="topo-preview-frete"><strong>{topo.faixa_titulo}</strong> {topo.faixa_texto}</div>
+          </div>
+        </div>
+      );
+    }
+
     function ConfigScreen({ config, onSave }) {
       const [form, setForm] = useState(null);
       useEffect(() => {
         if (!config) return;
         setForm({
-          restaurante_nome: config.restaurante_nome || 'Dom Leonardo',
-          restaurante_descricao: config.restaurante_descricao || '',
-          restaurante_logo_url: config.restaurante_logo_url || '',
-          restaurante_capa_url: config.restaurante_capa_url || '',
-          restaurante_capa_tipo: config.restaurante_capa_tipo || 'imagem',
-          restaurante_capa_video_url: config.restaurante_capa_video_url || '',
-          tema_cardapio: config.tema_cardapio || 'branco',
-          destaques_titulo: config.destaques_titulo || 'O Dom recomenda',
-          destaques_descricao: config.destaques_descricao || 'Os pratos que mais saem por aqui.',
-          cupons_titulo: config.cupons_titulo || 'Cupons do Dom',
-          cupons_descricao: config.cupons_descricao || 'Toque para ver onde usar e quando acaba.',
+          topo: mergeTopoConfig(config),
           logoFile: null,
           capaFile: null,
           capaVideoFile: null,
-          restaurante_avaliacao: config.restaurante_avaliacao || 4.9,
-          restaurante_total_avaliacoes: config.restaurante_total_avaliacoes || 0,
-          whatsapp_pedidos: config.whatsapp_pedidos || '',
-          taxa_entrega_padrao: config.taxa_entrega_padrao || 0,
-          pedido_minimo: config.pedido_minimo || 0,
-          raio_entrega_km: config.raio_entrega_km || 5,
-          tempo_entrega_min: config.tempo_entrega_min || 45,
-          tempo_entrega_max: config.tempo_entrega_max || 60,
-          garcom_entrega_texto: config.garcom_entrega_texto || 'tempo em media para chegar na sua casa 20 a 30 min',
-          garcom_entrega_botao_texto: config.garcom_entrega_botao_texto || 'quero saber o tempo exato',
-          garcom_tamanhos_texto: config.garcom_tamanhos_texto || '400g individual | 800g serve 2',
-          garcom_fome_botao_texto: config.garcom_fome_botao_texto || 'quero saber se vai matar minha fome',
-          garcom_chat_saudacoes_texto: listToText(config.garcom_chat_saudacoes || [
-            'Ciao! Que bom te ver por aqui.',
-            'Boa noite! Fica a vontade para olhar com calma.',
-            'Bem-vindo ao Dom Leonardo.',
-          ]),
-          garcom_chat_mensagens_auto_texto: listToText(config.garcom_chat_mensagens_auto || [
-            'Se algum prato chamar sua atencao, abre ele e escolhe tamanho e adicionais por ali.',
-            'Quando adicionar algo, a sacola aparece embaixo para voce revisar tudo com calma.',
-          ]),
-          mercado_pago_public_key: config.mercado_pago_public_key || 'APP_USR-70e08816-3648-466c-9422-42ae9a034f4d',
-          mercado_pago_client_id: config.mercado_pago_client_id || '2692517505976642',
-          checkout_mercado_pago_ativo: config.checkout_mercado_pago_ativo !== false,
-          checkout_titulo: config.checkout_titulo || 'Fechar pedido com segurança',
-          checkout_subtitulo: config.checkout_subtitulo || 'Revise sua janta, informe entrega e pague pelo Mercado Pago.',
-          checkout_botao_texto: config.checkout_botao_texto || 'Pagar com Mercado Pago',
-          checkout_sucesso_texto: config.checkout_sucesso_texto || 'Pedido recebido. Assim que o pagamento confirmar, o Dom já vê na cozinha.',
-          checkout_pendente_texto: config.checkout_pendente_texto || 'Pagamento pendente. Se for Pix, aguarde a confirmação do Mercado Pago.',
-          horario_abertura: config.horario_abertura || '18:00:00',
-          horario_fechamento: config.horario_fechamento || '23:30:00',
-          aviso_topo: config.aviso_topo || '',
-          loja_aberta_manual: config.loja_aberta_manual ?? true,
         });
       }, [config]);
-      if (!form) return <div className="empty">Carregando configurações...</div>;
-      const set = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
+      if (!form) return <div className="empty">Carregando topo do cardápio...</div>;
+      const setTopo = (key, value) => setForm(prev => ({ ...prev, topo: { ...prev.topo, [key]: value } }));
+      const setLogoFile = (file) => {
+        if (!file) return;
+        const preview = URL.createObjectURL(file);
+        setForm(prev => ({ ...prev, logoFile: file, topo: { ...prev.topo, logo_url: preview } }));
+      };
+      const setCapaFile = (file) => {
+        if (!file) return;
+        const preview = URL.createObjectURL(file);
+        const tipo = file.type === 'image/gif' ? 'gif' : 'imagem';
+        setForm(prev => ({ ...prev, capaFile: file, topo: { ...prev.topo, capa_url: preview, capa_tipo: tipo } }));
+      };
+      const setCapaVideoFile = (file) => {
+        if (!file) return;
+        const preview = URL.createObjectURL(file);
+        setForm(prev => ({ ...prev, capaVideoFile: file, topo: { ...prev.topo, capa_video_url: preview, capa_tipo: 'video' } }));
+      };
       return (
         <section className="card panel">
-          <div className="panel-head"><h3>Configurações</h3><button className="btn btn-primary" onClick={() => onSave(form)}>Salvar configurações</button></div>
-          <div className="form-grid">
-            <div className="field full"><ImageInput label="Logo" value={form.restaurante_logo_url} file={form.logoFile} onFile={file => set('logoFile', file)} kind="logo" empty="DL" /></div>
-            <div className="field full"><ImageInput label="Capa" value={form.restaurante_capa_url} file={form.capaFile} onFile={file => set('capaFile', file)} kind="capa" empty="CAPA" /></div>
-            <div className="field full"><VideoInput label="Capa em video opcional" value={form.restaurante_capa_video_url} file={form.capaVideoFile} onFile={file => set('capaVideoFile', file)} /></div>
-            <SelectField label="Tipo de capa" value={form.restaurante_capa_tipo} onChange={v => set('restaurante_capa_tipo', v)}>
-              <option value="imagem">Imagem</option>
-              <option value="video">Video sem audio em loop</option>
-            </SelectField>
-            <ColorPicker label="Tema do cardapio" value={form.tema_cardapio || 'branco'} onChange={v => set('tema_cardapio', v)} options={THEMES} />
-            <TextField label="Nome" value={form.restaurante_nome} onChange={v => set('restaurante_nome', v)} />
-            <TextField label="WhatsApp pedidos" value={form.whatsapp_pedidos} onChange={v => set('whatsapp_pedidos', v)} />
-            <div className="field full"><TextField label="Descrição" value={form.restaurante_descricao} onChange={v => set('restaurante_descricao', v)} textarea /></div>
-            <TextField label="Titulo dos destaques" value={form.destaques_titulo} onChange={v => set('destaques_titulo', v)} />
-            <TextField label="Descricao dos destaques" value={form.destaques_descricao} onChange={v => set('destaques_descricao', v)} />
-            <TextField label="Titulo dos cupons" value={form.cupons_titulo} onChange={v => set('cupons_titulo', v)} />
-            <TextField label="Descricao dos cupons" value={form.cupons_descricao} onChange={v => set('cupons_descricao', v)} />
-            <TextField label="Avaliação" type="number" value={form.restaurante_avaliacao} onChange={v => set('restaurante_avaliacao', v)} />
-            <TextField label="Total avaliações" type="number" step="1" value={form.restaurante_total_avaliacoes} onChange={v => set('restaurante_total_avaliacoes', v)} />
-            <TextField label="Taxa entrega" type="number" value={form.taxa_entrega_padrao} onChange={v => set('taxa_entrega_padrao', v)} />
-            <TextField label="Pedido mínimo" type="number" value={form.pedido_minimo} onChange={v => set('pedido_minimo', v)} />
-            <TextField label="Entrega min" type="number" step="1" value={form.tempo_entrega_min} onChange={v => set('tempo_entrega_min', v)} />
-            <TextField label="Entrega max" type="number" step="1" value={form.tempo_entrega_max} onChange={v => set('tempo_entrega_max', v)} />
-            <div className="field full"><TextField label="Texto pequeno de entrega no Garcom" value={form.garcom_entrega_texto} onChange={v => set('garcom_entrega_texto', v)} /></div>
-            <TextField label="Botao tempo exato no Garcom" value={form.garcom_entrega_botao_texto} onChange={v => set('garcom_entrega_botao_texto', v)} />
-            <TextField label="Texto de tamanhos no Garcom" value={form.garcom_tamanhos_texto} onChange={v => set('garcom_tamanhos_texto', v)} />
-            <div className="field full"><TextField label="Botao duvida sobre fome no Garcom" value={form.garcom_fome_botao_texto} onChange={v => set('garcom_fome_botao_texto', v)} /></div>
-            <div className="field full"><TextField label="Saudacoes automaticas do Marco (uma por linha)" value={form.garcom_chat_saudacoes_texto} onChange={v => set('garcom_chat_saudacoes_texto', v)} textarea /></div>
-            <div className="field full"><TextField label="Mensagens automaticas do Marco (uma por linha)" value={form.garcom_chat_mensagens_auto_texto} onChange={v => set('garcom_chat_mensagens_auto_texto', v)} textarea /></div>
-            <div className="field full"><TextField label="Mercado Pago Public Key" value={form.mercado_pago_public_key} onChange={v => set('mercado_pago_public_key', v)} /></div>
-            <TextField label="Mercado Pago Client ID" value={form.mercado_pago_client_id} onChange={v => set('mercado_pago_client_id', v)} />
-            <label className="field"><span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6}}>CHECKOUT MERCADO PAGO</span><div className="check-row"><input type="checkbox" checked={!!form.checkout_mercado_pago_ativo} onChange={e => set('checkout_mercado_pago_ativo', e.target.checked)} /><span>{form.checkout_mercado_pago_ativo ? 'Ativo' : 'Inativo'}</span></div></label>
-            <TextField label="Titulo do checkout" value={form.checkout_titulo} onChange={v => set('checkout_titulo', v)} />
-            <TextField label="Botao do checkout" value={form.checkout_botao_texto} onChange={v => set('checkout_botao_texto', v)} />
-            <div className="field full"><TextField label="Subtitulo do checkout" value={form.checkout_subtitulo} onChange={v => set('checkout_subtitulo', v)} textarea /></div>
-            <div className="field full"><TextField label="Mensagem pagamento aprovado" value={form.checkout_sucesso_texto} onChange={v => set('checkout_sucesso_texto', v)} textarea /></div>
-            <div className="field full"><TextField label="Mensagem pagamento pendente" value={form.checkout_pendente_texto} onChange={v => set('checkout_pendente_texto', v)} textarea /></div>
-            <TextField label="Abre" type="time" value={form.horario_abertura} onChange={v => set('horario_abertura', v)} />
-            <TextField label="Fecha" type="time" value={form.horario_fechamento} onChange={v => set('horario_fechamento', v)} />
-            <div className="field full"><TextField label="Aviso no topo" value={form.aviso_topo} onChange={v => set('aviso_topo', v)} textarea /></div>
-            <label className="field"><span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6}}>LOJA ABERTA</span><div className="check-row"><input type="checkbox" checked={!!form.loja_aberta_manual} onChange={e => set('loja_aberta_manual', e.target.checked)} /><span>{form.loja_aberta_manual ? 'Sim' : 'Não'}</span></div></label>
+          <div className="panel-head">
+            <div>
+              <h3>Topo do cardápio</h3>
+              <p className="muted" style={{margin:'4px 0 0'}}>Edite a primeira dobra que o cliente vê no celular.</p>
+            </div>
+            <button className="btn btn-primary" onClick={() => onSave(form)}>Salvar topo</button>
+          </div>
+          <div className="topo-editor">
+            <TopoPreview topo={form.topo} />
+            <div className="topo-fields">
+              <ImageInput label="Logo opcional" value={form.topo.logo_url} file={form.logoFile} onFile={setLogoFile} kind="logo" empty="DL" />
+              <ImageInput label="Capa imagem ou GIF" value={form.topo.capa_url} file={form.capaFile} onFile={setCapaFile} kind="capa" empty="CAPA" />
+              <VideoInput label="Capa em vídeo opcional" value={form.topo.capa_video_url} file={form.capaVideoFile} onFile={setCapaVideoFile} />
+              <SelectField label="Tipo de capa exibida" value={form.topo.capa_tipo} onChange={v => setTopo('capa_tipo', v)}>
+                <option value="imagem">Imagem</option>
+                <option value="gif">GIF animado</option>
+                <option value="video">Vídeo sem áudio em loop</option>
+              </SelectField>
+              <TextField label="Texto pequeno" value={form.topo.kicker} onChange={v => setTopo('kicker', v)} />
+              <TextField label="Nome principal" value={form.topo.nome} onChange={v => setTopo('nome', v)} />
+              <div className="field full"><TextField label="Descrição curta" value={form.topo.descricao} onChange={v => setTopo('descricao', v)} textarea /></div>
+              <div className="topo-field-row">
+                <TextField label="Chip 1 - título" value={form.topo.chip_1_label} onChange={v => setTopo('chip_1_label', v)} />
+                <TextField label="Chip 1 - valor" value={form.topo.chip_1_valor} onChange={v => setTopo('chip_1_valor', v)} />
+              </div>
+              <div className="topo-field-row">
+                <TextField label="Chip 2 - título" value={form.topo.chip_2_label} onChange={v => setTopo('chip_2_label', v)} />
+                <TextField label="Chip 2 - valor" value={form.topo.chip_2_valor} onChange={v => setTopo('chip_2_valor', v)} />
+              </div>
+              <div className="topo-field-row">
+                <TextField label="Chip 3 - título" value={form.topo.chip_3_label} onChange={v => setTopo('chip_3_label', v)} />
+                <TextField label="Chip 3 - valor" value={form.topo.chip_3_valor} onChange={v => setTopo('chip_3_valor', v)} />
+              </div>
+              <TextField label="Faixa inferior - destaque" value={form.topo.faixa_titulo} onChange={v => setTopo('faixa_titulo', v)} />
+              <TextField label="Faixa inferior - texto" value={form.topo.faixa_texto} onChange={v => setTopo('faixa_texto', v)} />
+            </div>
           </div>
         </section>
       );
