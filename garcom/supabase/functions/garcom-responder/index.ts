@@ -1,7 +1,7 @@
 // Edge Function: garcom-responder
 // API publica do cardapio do Garcom:
 // entrega cardapio/configuracoes/mensagens automaticas do Marco
-// e cria checkout via Mercado Pago sem expor token secreto no HTML.
+// e cria checkout via Stripe sem expor token secreto no HTML.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -210,6 +210,63 @@ function toPedidoItens(rawItens: unknown): unknown[] {
   });
 }
 
+function toStripeAmount(value: unknown): number {
+  return Math.max(50, Math.round(toNumber(value, 0) * 100));
+}
+
+function stripeSecretKey(): string {
+  const key = Deno.env.get("STRIPE_SECRET_KEY") || "";
+  if (!key) {
+    throw new Error("STRIPE_SECRET_KEY nao configurada no Supabase.");
+  }
+  return key;
+}
+
+function stripePublishableKey(): string {
+  return Deno.env.get("STRIPE_PUBLISHABLE_KEY")
+    || "pk_live_51TlWo3Q8mlsqNv4rKQK8ubQgLWnDzCs6Xl237Xll5FjbaWmBiLCasCQLrC9cONXwU4lP7TaR7UrAUH5j4A0mpp5z00VY2KLhSz";
+}
+
+async function createStripePaymentIntent(params: {
+  amount: number;
+  pedidoId: string;
+  numeroPedido: string;
+  clienteNome: string;
+  clienteWhatsapp: string;
+  origem: string;
+  idempotencyKey: string;
+}) {
+  const form = new URLSearchParams();
+  form.set("amount", String(params.amount));
+  form.set("currency", "brl");
+  form.set("description", `Pedido Dom Leonardo #${params.numeroPedido}`);
+  form.set("statement_descriptor", "DOM LEONARDO");
+  form.set("automatic_payment_methods[enabled]", "true");
+  form.set("metadata[pedido_id]", params.pedidoId);
+  form.set("metadata[numero_pedido]", params.numeroPedido);
+  form.set("metadata[origem]", params.origem);
+  form.set("metadata[cliente_nome]", params.clienteNome.slice(0, 450));
+  form.set("metadata[cliente_whatsapp]", params.clienteWhatsapp.slice(0, 80));
+
+  const resp = await fetch("https://api.stripe.com/v1/payment_intents", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${stripeSecretKey()}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Idempotency-Key": params.idempotencyKey,
+    },
+    body: form,
+  });
+
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    console.error("stripe payment_intent error", data);
+    const stripeError = (data as Record<string, unknown>).error as Record<string, unknown> | undefined;
+    throw new Error(String(stripeError?.message ?? "Nao consegui criar o pagamento na Stripe."));
+  }
+  return data as Record<string, unknown>;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
@@ -229,7 +286,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    if (!["listar_pratos", "listar_cardapio", "mensagens_chat", "registrar_atendimento", "listar_atendimento", "buscar_cliente", "criar_checkout", "processar_pagamento_brick"].includes(acao)) {
+    if (!["listar_pratos", "listar_cardapio", "mensagens_chat", "registrar_atendimento", "listar_atendimento", "buscar_cliente", "criar_checkout", "processar_pagamento_brick", "criar_pagamento_stripe"].includes(acao)) {
       return new Response(JSON.stringify({ error: "acao invalida" }), {
         status: 400,
         headers: { ...cors, "Content-Type": "application/json" },
@@ -400,6 +457,87 @@ Deno.serve(async (req) => {
     const chatConfig = mapChatConfig(config as Record<string, unknown> | null);
     if (acao === "mensagens_chat") {
       return new Response(JSON.stringify({ chat_config: chatConfig }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
+    if (acao === "criar_pagamento_stripe") {
+      const cliente = body?.cliente ?? {};
+      const endereco = body?.endereco ?? {};
+      const itens = toPedidoItens(body?.itens);
+
+      if (!cleanText((cliente as Record<string, unknown>).nome)) {
+        throw new Error("Informe seu nome para fechar o pedido.");
+      }
+      if (!normalizePhone((cliente as Record<string, unknown>).whatsapp)) {
+        throw new Error("Informe um telefone/WhatsApp para o motoboy te encontrar.");
+      }
+      if (itens.length === 0) {
+        throw new Error("Sua sacola esta vazia.");
+      }
+
+      const { data: pedido, error: pedidoError } = await supabase.rpc("criar_pedido", {
+        p_cliente: {
+          nome: cleanText((cliente as Record<string, unknown>).nome),
+          whatsapp: normalizePhone((cliente as Record<string, unknown>).whatsapp),
+          email: cleanText((cliente as Record<string, unknown>).email) || null,
+        },
+        p_endereco: {
+          cep: cleanText((endereco as Record<string, unknown>).cep) || null,
+          logradouro: cleanText((endereco as Record<string, unknown>).logradouro),
+          numero: cleanText((endereco as Record<string, unknown>).numero),
+          complemento: cleanText((endereco as Record<string, unknown>).complemento) || null,
+          bairro: cleanText((endereco as Record<string, unknown>).bairro),
+          cidade: cleanText((endereco as Record<string, unknown>).cidade) || "Curitiba",
+          uf: cleanText((endereco as Record<string, unknown>).uf) || "PR",
+          ponto_referencia: cleanText((endereco as Record<string, unknown>).ponto_referencia) || null,
+        },
+        p_itens: itens,
+        p_forma_pagamento: "stripe",
+        p_troco_para: null,
+        p_cupom_codigo: cleanText(body?.cupom_codigo) || null,
+        p_observacoes: cleanText(body?.observacoes) || null,
+        p_origem: "cardapio_garcom_stripe",
+      });
+
+      if (pedidoError) throw pedidoError;
+
+      const pedidoObj = pedido as Record<string, unknown>;
+      const pedidoId = String(pedidoObj.pedido_id ?? "");
+      const numeroPedido = String(pedidoObj.numero_pedido ?? "");
+      const total = toNumber(pedidoObj.total, 0);
+      const idempotencyKey = cleanText(body?.idempotency_key) || `dom-leonardo-${pedidoId}`;
+      const paymentIntent = await createStripePaymentIntent({
+        amount: toStripeAmount(total),
+        pedidoId,
+        numeroPedido,
+        clienteNome: cleanText((cliente as Record<string, unknown>).nome),
+        clienteWhatsapp: normalizePhone((cliente as Record<string, unknown>).whatsapp),
+        origem: "cardapio_garcom_stripe",
+        idempotencyKey,
+      });
+
+      const { error: stripeUpdateError } = await supabase
+        .from("pedidos")
+        .update({
+          stripe_payment_intent_id: paymentIntent.id,
+          stripe_payment_status: paymentIntent.status,
+        })
+        .eq("id", pedidoId);
+      if (stripeUpdateError) throw stripeUpdateError;
+
+      return new Response(JSON.stringify({
+        sucesso: true,
+        pedido,
+        stripe: {
+          publishable_key: stripePublishableKey(),
+          payment_intent_id: paymentIntent.id,
+          client_secret: paymentIntent.client_secret,
+          status: paymentIntent.status,
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
+        },
+      }), {
         headers: { ...cors, "Content-Type": "application/json" },
       });
     }

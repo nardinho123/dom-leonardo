@@ -14,6 +14,7 @@
 <meta name="format-detection" content="telephone=no" />
 <link rel="manifest" href="manifest.json" />
 <title>Dom Leonardo - Cardapio</title>
+<script src="https://js.stripe.com/v3/"></script>
 <script>
   // Faxina de cache legado: evita tela branca presa em Service Worker antigo.
   (function limparCacheLegadoDomLeonardo() {
@@ -1242,6 +1243,125 @@
     background: rgba(0,0,0,0.28);
     color: rgba(243,236,224,0.88);
   }
+  .checkout-card {
+    border: 1px solid rgba(212,175,55,0.24);
+    border-radius: 22px;
+    padding: 13px;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(212,175,55,0.16), transparent 46%),
+      rgba(10,9,8,0.97);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.34);
+  }
+  .checkout-card h3 {
+    margin: 0;
+    color: var(--gold);
+    font-size: 16px;
+    font-weight: 950;
+  }
+  .checkout-card p {
+    margin: 4px 0 11px;
+    color: rgba(243,236,224,0.66);
+    font-size: 12px;
+    line-height: 1.35;
+  }
+  .checkout-mini-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .checkout-mini-grid .full { grid-column: 1 / -1; }
+  .checkout-input {
+    width: 100%;
+    min-height: 44px;
+    border-radius: 14px;
+    border: 1px solid rgba(212,175,55,0.24);
+    background: rgba(0,0,0,0.24);
+    color: var(--text);
+    padding: 0 12px;
+    font-size: 13px;
+    outline: none;
+  }
+  .checkout-input::placeholder { color: rgba(243,236,224,0.38); }
+  .checkout-helper {
+    margin-top: 8px;
+    color: rgba(243,236,224,0.56);
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .stripe-seal {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin: 2px 0 10px;
+    border: 1px solid rgba(99,91,255,0.35);
+    background: rgba(99,91,255,0.13);
+    color: rgba(243,236,224,0.88);
+    border-radius: 999px;
+    padding: 7px 10px;
+    font-size: 11px;
+    font-weight: 850;
+  }
+  .stripe-seal strong {
+    color: #a9a4ff;
+    letter-spacing: 0.03em;
+  }
+  .stripe-payment-box {
+    margin-top: 10px;
+    border-radius: 16px;
+    background: #fff;
+    padding: 12px;
+  }
+  .checkout-error {
+    margin-top: 10px;
+    border: 1px solid rgba(255,99,99,0.26);
+    background: rgba(255,99,99,0.10);
+    color: #ffb0a8;
+    border-radius: 14px;
+    padding: 10px 11px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+  .checkout-actions {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .checkout-primary,
+  .checkout-secondary {
+    min-height: 50px;
+    border-radius: 16px;
+    font-weight: 950;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .checkout-primary {
+    background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dim) 100%);
+    color: #1a1305;
+  }
+  .checkout-primary:disabled {
+    opacity: 0.58;
+    filter: grayscale(0.2);
+  }
+  .checkout-secondary {
+    border: 1px solid rgba(212,175,55,0.24);
+    background: rgba(0,0,0,0.28);
+    color: rgba(243,236,224,0.88);
+  }
+  .checkout-success {
+    border: 1px solid rgba(107,255,181,0.28);
+    background: rgba(107,255,181,0.10);
+    color: #bfffdc;
+    border-radius: 16px;
+    padding: 12px;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  @media (max-width: 420px) {
+    .checkout-mini-grid { grid-template-columns: 1fr; }
+    .checkout-mini-grid .full { grid-column: auto; }
+  }
   .coupon-section {
     padding: 2px 0 0;
   }
@@ -1918,6 +2038,14 @@ function App() {
   const [cupomErro, setCupomErro] = useState('');
   const [whatsEnderecoOpen, setWhatsEnderecoOpen] = useState(false);
   const [whatsEndereco, setWhatsEndereco] = useState({ ruaNumero: '', bairro: '' });
+  const [checkoutDados, setCheckoutDados] = useState({ nome: '', whatsapp: '', email: '', ruaNumero: '', bairro: '' });
+  const [checkoutStage, setCheckoutStage] = useState('dados'); // dados | pagamento | sucesso
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
+  const [stripeCheckout, setStripeCheckout] = useState(null);
+  const stripeRef = useRef(null);
+  const stripeElementsRef = useRef(null);
+  const stripePaymentElementRef = useRef(null);
 
   const lpTimer = useRef(null);
   const balaoTimer = useRef(null);
@@ -2107,6 +2235,53 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!stripeCheckout?.client_secret || checkoutStage !== 'pagamento' || !sacolaOpen) return;
+    if (!window.Stripe) {
+      setCheckoutError('Nao consegui carregar o Stripe.js. Recarregue a pagina e tente de novo.');
+      return;
+    }
+
+    const mountPaymentElement = () => {
+      const node = document.getElementById('stripe-payment-element');
+      if (!node) return false;
+
+      try {
+        if (stripePaymentElementRef.current) {
+          stripePaymentElementRef.current.unmount();
+          stripePaymentElementRef.current = null;
+        }
+
+        stripeRef.current = window.Stripe(stripeCheckout.publishable_key);
+        stripeElementsRef.current = stripeRef.current.elements({
+          clientSecret: stripeCheckout.client_secret,
+          appearance: {
+            theme: 'stripe',
+            variables: {
+              colorPrimary: '#d4af37',
+              colorText: '#1a1305',
+              borderRadius: '14px',
+              fontFamily: 'Georgia, serif',
+            },
+          },
+        });
+        const paymentElement = stripeElementsRef.current.create('payment', {
+          layout: { type: 'tabs', defaultCollapsed: false },
+        });
+        paymentElement.mount('#stripe-payment-element');
+        stripePaymentElementRef.current = paymentElement;
+        return true;
+      } catch (err) {
+        setCheckoutError(err.message || 'Nao consegui montar o pagamento seguro.');
+        return true;
+      }
+    };
+
+    if (mountPaymentElement()) return;
+    const timer = setTimeout(mountPaymentElement, 120);
+    return () => clearTimeout(timer);
+  }, [stripeCheckout?.client_secret, stripeCheckout?.publishable_key, checkoutStage, sacolaOpen]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       if (!chatOpen) {
         setGarcomState('peek');
@@ -2209,6 +2384,167 @@ function App() {
     });
     window.open(`https://wa.me/${WHATSAPP_DOM}?text=${encodeURIComponent(texto)}`, '_blank', 'noopener,noreferrer');
   };
+
+  const resetStripeCheckout = () => {
+    try {
+      if (stripePaymentElementRef.current) stripePaymentElementRef.current.unmount();
+    } catch (_) {}
+    stripePaymentElementRef.current = null;
+    stripeElementsRef.current = null;
+    setStripeCheckout(null);
+    setCheckoutStage('dados');
+    setCheckoutError('');
+  };
+
+  const splitRuaNumero = (value) => {
+    const text = String(value || '').replace(/\s+/g, ' ').trim();
+    const match = text.match(/^(.*?)[,\s]+(\d+[a-zA-Z0-9\\/-]*)$/);
+    if (!match) return { logradouro: text, numero: '' };
+    return { logradouro: match[1].replace(/,\s*$/, '').trim(), numero: match[2].trim() };
+  };
+
+  const setCheckoutField = (field, value) => {
+    setCheckoutDados(prev => ({ ...prev, [field]: value }));
+    if (stripeCheckout) resetStripeCheckout();
+  };
+
+  const validarCheckoutDados = () => {
+    const nome = checkoutDados.nome.trim();
+    const whatsapp = checkoutDados.whatsapp.replace(/\D/g, '');
+    const bairro = checkoutDados.bairro.trim();
+    const { logradouro, numero } = splitRuaNumero(checkoutDados.ruaNumero);
+    if (!nome) return 'Me fala seu nome para o Dom identificar o pedido.';
+    if (whatsapp.length < 10) return 'Coloca um WhatsApp com DDD para o motoboy te encontrar.';
+    if (!logradouro || !numero) return 'Coloca rua e numero juntos, por exemplo: Rua X, 123.';
+    if (!bairro) return 'Coloca o bairro para calcularmos a entrega certinho.';
+    return '';
+  };
+
+  const criarCheckoutStripe = async () => {
+    if (!carrinho.length) return;
+    const erro = validarCheckoutDados();
+    if (erro) {
+      setCheckoutError(erro);
+      vibrate(35);
+      return;
+    }
+
+    const { logradouro, numero } = splitRuaNumero(checkoutDados.ruaNumero);
+    const endereco = {
+      logradouro,
+      numero,
+      bairro: checkoutDados.bairro.trim(),
+      cidade: 'Curitiba',
+      uf: 'PR',
+    };
+
+    setCheckoutLoading(true);
+    setCheckoutError('');
+    try {
+      const r = await fetch(GARCOM_RESPONDER_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          acao: 'criar_pagamento_stripe',
+          cliente: {
+            nome: checkoutDados.nome.trim(),
+            whatsapp: checkoutDados.whatsapp.replace(/\D/g, ''),
+            email: checkoutDados.email.trim() || null,
+          },
+          endereco,
+          itens: carrinho,
+          cupom_codigo: cupomResumo.ok && cupomAplicado?.codigo ? String(cupomAplicado.codigo).toUpperCase() : null,
+          site_url: window.location.origin + window.location.pathname,
+          idempotency_key: `dl-stripe-${chatDeviceId.current}-${Date.now()}`,
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data?.stripe?.client_secret) {
+        throw new Error(data?.error || 'Nao consegui iniciar o pagamento seguro.');
+      }
+      setStripeCheckout({
+        client_secret: data.stripe.client_secret,
+        publishable_key: data.stripe.publishable_key,
+        payment_intent_id: data.stripe.payment_intent_id,
+        pedido: data.pedido,
+      });
+      setCheckoutStage('pagamento');
+      falarMarco('Prontinho. Agora e so escolher como quer pagar com seguranca.', 4200);
+    } catch (err) {
+      setCheckoutError(err.message || 'Nao consegui preparar o pagamento agora.');
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  const confirmarPagamentoStripe = async () => {
+    if (!stripeRef.current || !stripeElementsRef.current || !stripeCheckout?.client_secret) {
+      setCheckoutError('O pagamento ainda nao carregou. Aguarde um instante.');
+      return;
+    }
+
+    setCheckoutLoading(true);
+    setCheckoutError('');
+    try {
+      const submit = await stripeElementsRef.current.submit();
+      if (submit?.error) throw new Error(submit.error.message);
+
+      const pedidoNumero = stripeCheckout?.pedido?.numero_pedido || '';
+      const returnUrl = new URL(window.location.origin + window.location.pathname);
+      returnUrl.searchParams.set('pagamento', 'sucesso');
+      if (pedidoNumero) returnUrl.searchParams.set('pedido', pedidoNumero);
+
+      const { error, paymentIntent } = await stripeRef.current.confirmPayment({
+        elements: stripeElementsRef.current,
+        clientSecret: stripeCheckout.client_secret,
+        confirmParams: {
+          return_url: returnUrl.href,
+          payment_method_data: {
+            billing_details: {
+              name: checkoutDados.nome.trim(),
+              phone: checkoutDados.whatsapp.replace(/\D/g, ''),
+              email: checkoutDados.email.trim() || undefined,
+            },
+          },
+        },
+        redirect: 'if_required',
+      });
+
+      if (error) throw new Error(error.message || 'Pagamento nao aprovado.');
+
+      if (['succeeded', 'processing', 'requires_capture'].includes(paymentIntent?.status)) {
+        setCheckoutStage('sucesso');
+        setMensagens(m => [...m, {
+          id: `stripe-ok-${Date.now()}`,
+          autor: 'marco',
+          texto: paymentIntent.status === 'succeeded'
+            ? 'Pagamento aprovado. O pedido ja entrou para o Dom preparar.'
+            : 'Pagamento enviado. A confirmacao pode levar alguns instantes, mas ja estou de olho por aqui.',
+        }]);
+        trackMeta('Purchase', {
+          value: totalComEntrega,
+          currency: 'BRL',
+          num_items: totalItens,
+          content_type: 'product',
+          content_ids: carrinho.map(item => String(item.prato_id || item.local_id || item.nome)).slice(0, 20),
+        });
+        setCarrinho([]);
+        setCarrinhoTotal(0);
+        vibrate([20, 40, 20]);
+      } else {
+        throw new Error('Pagamento ficou pendente. Tente outro metodo ou chame a gente no WhatsApp.');
+      }
+    } catch (err) {
+      setCheckoutError(err.message || 'Nao consegui confirmar o pagamento.');
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
   const pratosVisiveis = categoriaAtiva === 'todos'
     ? pratos
     : pratos.filter(p => String(p.categoria_id) === String(categoriaAtiva));
@@ -2395,6 +2731,7 @@ function App() {
   const adicionarDetalheNaSacola = () => {
     if (!pratoAberto || !detalheValido(pratoAberto)) return;
     detailInteragiuRef.current = true;
+    resetStripeCheckout();
     const tamanho = tamanhoSelecionado(pratoAberto);
     const opcionais = opcionaisSelecionados(pratoAberto).map(op => ({
       id: op.id,
@@ -2443,6 +2780,7 @@ function App() {
   };
 
   const removerItemSacola = (localId) => {
+    resetStripeCheckout();
     const novos = carrinho.filter(it => it.local_id !== localId);
     setCarrinho(novos);
     setCarrinhoTotal(calcSubtotal(novos));
@@ -2473,6 +2811,7 @@ function App() {
     setCupomAplicado(cupom);
     setCupomCodigo(String(cupom.codigo || '').toUpperCase());
     setCupomErro('');
+    resetStripeCheckout();
     trackMeta('CouponApply', {
       coupon: String(cupom.codigo || '').toUpperCase(),
       value: Number(avaliacao.desconto || 0),
@@ -2496,6 +2835,7 @@ function App() {
     setCupomAplicado(null);
     setCupomCodigo('');
     setCupomErro('');
+    resetStripeCheckout();
   };
 
   const abrirSacola = () => {
@@ -2631,6 +2971,13 @@ function App() {
       content_ids: carrinho.map(item => String(item.prato_id || item.local_id || item.nome)).slice(0, 20),
       coupon: cupomAplicado?.codigo ? String(cupomAplicado.codigo).toUpperCase() : '',
     });
+    setCheckoutDados(prev => ({
+      ...prev,
+      ruaNumero: prev.ruaNumero || whatsEndereco.ruaNumero || '',
+      bairro: prev.bairro || whatsEndereco.bairro || '',
+    }));
+    setCheckoutStage('dados');
+    setCheckoutError('');
     setWhatsEnderecoOpen(true);
   };
 
@@ -2984,7 +3331,7 @@ function App() {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M15 6l-6 6 6 6"/></svg>
           </button>
           <h2>Sacola</h2>
-          {!!carrinho.length && <button className="bag-clear" onClick={() => { setCarrinho([]); setCarrinhoTotal(0); setWhatsEnderecoOpen(false); }}>Limpar</button>}
+          {!!carrinho.length && <button className="bag-clear" onClick={() => { resetStripeCheckout(); setCarrinho([]); setCarrinhoTotal(0); setWhatsEnderecoOpen(false); }}>Limpar</button>}
         </div>
         <div className="bag-scroll">
           <div className="bag-store">
@@ -3089,31 +3436,105 @@ function App() {
         </div>
         <div className={`bag-footer ${whatsEnderecoOpen ? 'address-step' : ''}`}>
           {whatsEnderecoOpen ? (
-            <div className="address-step-card">
-              <h3>Quer adiantar o endereco?</h3>
-              <p>Opcional. Se preferir, voce informa direto no WhatsApp e a gente combina por la.</p>
-              <div className="address-fields">
-                <input
-                  value={whatsEndereco.ruaNumero}
-                  onChange={e => setWhatsEndereco(v => ({ ...v, ruaNumero: e.target.value }))}
-                  placeholder="Rua e numero"
-                  autoComplete="street-address"
-                />
-                <input
-                  value={whatsEndereco.bairro}
-                  onChange={e => setWhatsEndereco(v => ({ ...v, bairro: e.target.value }))}
-                  placeholder="Bairro"
-                  autoComplete="address-level3"
-                />
-              </div>
-              <div className="address-actions">
-                <button className="address-whatsapp-primary" onClick={() => finalizarPedidoDireto()}>
-                  Enviar pedido no WhatsApp
-                </button>
-                <button className="address-whatsapp-secondary" onClick={() => finalizarPedidoDireto({ ignorarEndereco: true })}>
-                  Informar endereco direto no WhatsApp
-                </button>
-              </div>
+            <div className="checkout-card">
+              {checkoutStage === 'dados' && (
+                <>
+                  <h3>Entrega e pagamento</h3>
+                  <p>Rapidinho: so o essencial para o Dom preparar e o motoboy achar sua casa sem novela.</p>
+                  <div className="checkout-mini-grid">
+                    <input
+                      className="checkout-input"
+                      value={checkoutDados.nome}
+                      onChange={e => setCheckoutField('nome', e.target.value)}
+                      placeholder="Seu nome"
+                      autoComplete="name"
+                    />
+                    <input
+                      className="checkout-input"
+                      value={checkoutDados.whatsapp}
+                      onChange={e => setCheckoutField('whatsapp', e.target.value)}
+                      placeholder="WhatsApp com DDD"
+                      inputMode="tel"
+                      autoComplete="tel"
+                    />
+                    <input
+                      className="checkout-input full"
+                      value={checkoutDados.email}
+                      onChange={e => setCheckoutField('email', e.target.value)}
+                      placeholder="E-mail (opcional, para recibo)"
+                      inputMode="email"
+                      autoComplete="email"
+                    />
+                    <input
+                      className="checkout-input"
+                      value={checkoutDados.ruaNumero}
+                      onChange={e => {
+                        setCheckoutField('ruaNumero', e.target.value);
+                        setWhatsEndereco(v => ({ ...v, ruaNumero: e.target.value }));
+                      }}
+                      placeholder="Rua e numero"
+                      autoComplete="street-address"
+                    />
+                    <input
+                      className="checkout-input"
+                      value={checkoutDados.bairro}
+                      onChange={e => {
+                        setCheckoutField('bairro', e.target.value);
+                        setWhatsEndereco(v => ({ ...v, bairro: e.target.value }));
+                      }}
+                      placeholder="Bairro"
+                      autoComplete="address-level3"
+                    />
+                  </div>
+                  <div className="checkout-helper">
+                    Pagamento seguro dentro do cardapio. Apple Pay, Google Pay e cartao aparecem quando estiverem disponiveis no seu aparelho.
+                  </div>
+                  {checkoutError && <div className="checkout-error">{checkoutError}</div>}
+                  <div className="checkout-actions">
+                    <button className="checkout-primary" disabled={checkoutLoading} onClick={criarCheckoutStripe}>
+                      {checkoutLoading ? 'Preparando pagamento...' : `Continuar para pagamento · ${fmtBRL(totalComEntrega)}`}
+                    </button>
+                    <button className="checkout-secondary" disabled={checkoutLoading} onClick={() => finalizarPedidoDireto()}>
+                      Finalizar pelo WhatsApp
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {checkoutStage === 'pagamento' && (
+                <>
+                  <div className="stripe-seal">
+                    <strong>Stripe</strong>
+                    <span>pagamento seguro</span>
+                  </div>
+                  <h3>Escolha como pagar</h3>
+                  <p>Se seu celular tiver carteira salva, Apple Pay ou Google Pay podem aparecer aqui sem criar conta.</p>
+                  <div id="stripe-payment-element" className="stripe-payment-box"></div>
+                  {checkoutError && <div className="checkout-error">{checkoutError}</div>}
+                  <div className="checkout-actions">
+                    <button className="checkout-primary" disabled={checkoutLoading} onClick={confirmarPagamentoStripe}>
+                      {checkoutLoading ? 'Confirmando...' : `Pagar agora · ${fmtBRL(totalComEntrega)}`}
+                    </button>
+                    <button className="checkout-secondary" disabled={checkoutLoading} onClick={resetStripeCheckout}>
+                      Voltar e editar dados
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {checkoutStage === 'sucesso' && (
+                <>
+                  <h3>Pedido recebido</h3>
+                  <div className="checkout-success">
+                    Pagamento enviado com sucesso. O pedido ja entrou para o Dom preparar.
+                  </div>
+                  <div className="checkout-actions">
+                    <button className="checkout-primary" onClick={() => { resetStripeCheckout(); setWhatsEnderecoOpen(false); setSacolaOpen(false); }}>
+                      Voltar ao cardapio
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <button className="bag-primary-btn" onClick={fecharPedido}>
