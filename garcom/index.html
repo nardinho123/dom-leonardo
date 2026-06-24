@@ -2525,6 +2525,7 @@ function App() {
         },
         body: JSON.stringify({
           acao: 'calcular_entrega_google',
+          device_id: chatDeviceId.current,
           subtotal: carrinhoTotal,
           endereco: {
             logradouro,
@@ -2591,6 +2592,7 @@ function App() {
           itens: carrinho,
           cupom_codigo: cupomResumo.ok && cupomAplicado?.codigo ? String(cupomAplicado.codigo).toUpperCase() : null,
           entrega_google: !!entregaEstimativa,
+          device_id: chatDeviceId.current,
           site_url: window.location.origin + window.location.pathname,
           idempotency_key: `dl-stripe-${chatDeviceId.current}-${Date.now()}`,
         }),

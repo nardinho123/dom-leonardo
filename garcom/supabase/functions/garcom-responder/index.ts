@@ -365,6 +365,164 @@ async function calcularEntregaGoogle(params: {
   };
 }
 
+function normalizarParteEndereco(value: unknown): string {
+  return cleanText(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function sha256Hex(text: string): Promise<string> {
+  const data = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hash))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function entregaCacheKey(params: {
+  endereco: Record<string, unknown>;
+  subtotal: number;
+  config: Record<string, unknown>;
+}): Promise<{ chave: string; enderecoTexto: string; subtotalBucket: string }> {
+  const cidade = normalizarParteEndereco(params.endereco.cidade) || "curitiba";
+  const uf = normalizarParteEndereco(params.endereco.uf) || "pr";
+  const enderecoTexto = [
+    normalizarParteEndereco(params.endereco.logradouro),
+    normalizarParteEndereco(params.endereco.numero),
+    normalizarParteEndereco(params.endereco.bairro),
+    cidade,
+    uf,
+    normalizarParteEndereco(params.endereco.cep),
+  ].filter(Boolean).join(", ");
+  const subtotalBucket = params.subtotal >= 60 ? "frete_chef" : "normal";
+  const configParte = [
+    toNumber(params.config.taxa_entrega_padrao, 0),
+    toNumber(params.config.raio_entrega_km, 8),
+    toNumber(params.config.tempo_entrega_min, 20),
+    toNumber(params.config.tempo_entrega_max, 30),
+  ].join("|");
+  const chave = await sha256Hex(`${enderecoTexto}|${subtotalBucket}|${configParte}`);
+  return { chave, enderecoTexto, subtotalBucket };
+}
+
+function identidadeEntrega(req: Request, body: Record<string, unknown>): string {
+  const forwarded = cleanText(req.headers.get("x-forwarded-for")).split(",")[0]?.trim();
+  return cleanText(body.device_id)
+    || cleanText(req.headers.get("x-client-device"))
+    || cleanText(req.headers.get("cf-connecting-ip"))
+    || forwarded
+    || "anon";
+}
+
+async function permiteChamadaMaps(
+  supabase: any,
+  chaveRaw: string,
+  limite: number,
+  janelaMinutos: number,
+): Promise<{ permitido: boolean; motivo?: string; chamadas?: number; limite: number }> {
+  const chave = `maps:${await sha256Hex(chaveRaw)}`;
+  const agora = new Date();
+  const janelaMs = janelaMinutos * 60 * 1000;
+
+  const { data, error } = await supabase
+    .from("entrega_rate_limits")
+    .select("chave, janela_inicio, chamadas")
+    .eq("chave", chave)
+    .maybeSingle();
+
+  if (error) {
+    return { permitido: false, motivo: "rate_limit_db_error", limite };
+  }
+
+  if (!data) {
+    await supabase.from("entrega_rate_limits").insert({
+      chave,
+      janela_inicio: agora.toISOString(),
+      chamadas: 1,
+      atualizado_em: agora.toISOString(),
+    });
+    return { permitido: true, chamadas: 1, limite };
+  }
+
+  const janelaInicio = new Date(String(data.janela_inicio));
+  const expirou = !Number.isFinite(janelaInicio.getTime()) || agora.getTime() - janelaInicio.getTime() > janelaMs;
+  const chamadasAtuais = toNumber(data.chamadas, 0);
+
+  if (expirou) {
+    await supabase
+      .from("entrega_rate_limits")
+      .update({ janela_inicio: agora.toISOString(), chamadas: 1, atualizado_em: agora.toISOString() })
+      .eq("chave", chave);
+    return { permitido: true, chamadas: 1, limite };
+  }
+
+  if (chamadasAtuais >= limite) {
+    return { permitido: false, motivo: "rate_limit_excedido", chamadas: chamadasAtuais, limite };
+  }
+
+  await supabase
+    .from("entrega_rate_limits")
+    .update({ chamadas: chamadasAtuais + 1, atualizado_em: agora.toISOString() })
+    .eq("chave", chave);
+
+  return { permitido: true, chamadas: chamadasAtuais + 1, limite };
+}
+
+async function calcularEntregaComProtecao(
+  supabase: any,
+  req: Request,
+  body: Record<string, unknown>,
+  params: {
+    endereco: Record<string, unknown>;
+    subtotal: number;
+    config: Record<string, unknown>;
+  },
+) {
+  const cache = await entregaCacheKey(params);
+  const agoraIso = new Date().toISOString();
+
+  const { data: cacheHit, error: cacheError } = await supabase
+    .from("entrega_estimativas_cache")
+    .select("resposta")
+    .eq("chave", cache.chave)
+    .gt("expira_em", agoraIso)
+    .maybeSingle();
+
+  if (!cacheError && cacheHit?.resposta) {
+    return { ...asObject(cacheHit.resposta), cache: true };
+  }
+
+  const identidade = identidadeEntrega(req, body);
+  const hoje = new Date().toISOString().slice(0, 10);
+  const deviceLimit = await permiteChamadaMaps(supabase, `device:${identidade}`, 25, 60);
+  if (!deviceLimit.permitido) {
+    return { ...entregaFallback(params.config, params.subtotal, `rate_limit_device_${deviceLimit.motivo || "excedido"}`), rate_limited: true };
+  }
+
+  const globalLimit = await permiteChamadaMaps(supabase, `global:${hoje}`, 500, 24 * 60);
+  if (!globalLimit.permitido) {
+    return { ...entregaFallback(params.config, params.subtotal, `rate_limit_global_${globalLimit.motivo || "excedido"}`), rate_limited: true };
+  }
+
+  const entrega = await calcularEntregaGoogle(params);
+  const ttlMinutos = entrega.fonte === "google_maps" ? 12 * 60 : 5;
+  const expiraEm = new Date(Date.now() + ttlMinutos * 60 * 1000).toISOString();
+
+  await supabase.from("entrega_estimativas_cache").upsert({
+    chave: cache.chave,
+    endereco_texto: cache.enderecoTexto,
+    subtotal_bucket: cache.subtotalBucket,
+    resposta: entrega,
+    expira_em: expiraEm,
+  }, { onConflict: "chave" });
+
+  return { ...entrega, cache: false };
+}
+
 async function createStripePaymentIntent(params: {
   amount: number;
   pedidoId: string;
@@ -600,7 +758,7 @@ Deno.serve(async (req) => {
     }
 
     if (acao === "calcular_entrega_google") {
-      const estimativa = await calcularEntregaGoogle({
+      const estimativa = await calcularEntregaComProtecao(supabase, req, body as Record<string, unknown>, {
         endereco: asObject(body?.endereco),
         subtotal: toNumber(body?.subtotal, 0),
         config: (config as Record<string, unknown> | null) ?? {},
@@ -658,7 +816,7 @@ Deno.serve(async (req) => {
       let total = toNumber(pedidoObj.total, 0);
 
       if (body?.entrega_google === true) {
-        const entrega = await calcularEntregaGoogle({
+        const entrega = await calcularEntregaComProtecao(supabase, req, body as Record<string, unknown>, {
           endereco: asObject(endereco),
           subtotal: toNumber(pedidoObj.subtotal, 0),
           config: (config as Record<string, unknown> | null) ?? {},
