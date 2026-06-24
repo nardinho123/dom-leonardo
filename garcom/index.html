@@ -1364,6 +1364,87 @@
   .delivery-calc-btn:disabled {
     opacity: 0.58;
   }
+  .checkout-map-panel {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+    border: 1px solid rgba(212,175,55,0.22);
+    background:
+      radial-gradient(circle at top right, rgba(212,175,55,0.12), transparent 46%),
+      rgba(255,255,255,0.035);
+    border-radius: 16px;
+    padding: 10px;
+  }
+  .checkout-map-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 9px;
+  }
+  .checkout-map-head strong {
+    display: block;
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 950;
+  }
+  .checkout-map-head span {
+    display: block;
+    margin-top: 3px;
+    color: rgba(243,236,224,0.54);
+    font-size: 10px;
+    line-height: 1.35;
+  }
+  .checkout-map-chip {
+    flex: 0 0 auto;
+    border: 1px solid rgba(212,175,55,0.28);
+    border-radius: 999px;
+    padding: 6px 8px;
+    color: var(--gold);
+    font-size: 10px;
+    font-weight: 950;
+    background: rgba(0,0,0,0.22);
+  }
+  .checkout-map-search {
+    margin-bottom: 8px;
+  }
+  .checkout-map-canvas {
+    width: 100%;
+    height: 172px;
+    overflow: hidden;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(0,0,0,0.24);
+  }
+  .checkout-map-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .checkout-map-actions button {
+    min-height: 40px;
+    border-radius: 13px;
+    border: 1px solid rgba(212,175,55,0.24);
+    background: rgba(0,0,0,0.24);
+    color: rgba(243,236,224,0.88);
+    font-size: 11px;
+    font-weight: 900;
+  }
+  .checkout-map-actions button:disabled {
+    opacity: 0.55;
+  }
+  .checkout-map-note {
+    margin: 8px 0 0;
+    color: rgba(243,236,224,0.52);
+    font-size: 10.5px;
+    line-height: 1.35;
+  }
+  .checkout-map-error {
+    margin-top: 8px;
+    color: #ffd2a8;
+    font-size: 11px;
+    line-height: 1.35;
+  }
   .stripe-seal {
     display: inline-flex;
     align-items: center;
@@ -2122,9 +2203,20 @@ function App() {
   const [entregaEstimativa, setEntregaEstimativa] = useState(null);
   const [entregaLoading, setEntregaLoading] = useState(false);
   const [entregaError, setEntregaError] = useState('');
+  const [mapsReady, setMapsReady] = useState(false);
+  const [mapsLoading, setMapsLoading] = useState(false);
+  const [mapsError, setMapsError] = useState('');
+  const [mapPin, setMapPin] = useState(null);
+  const [mapAddressLabel, setMapAddressLabel] = useState('');
   const stripeRef = useRef(null);
   const stripeElementsRef = useRef(null);
   const stripePaymentElementRef = useRef(null);
+  const mapsPromiseRef = useRef(null);
+  const mapCanvasRef = useRef(null);
+  const addressSearchRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const markerRef = useRef(null);
+  const autocompleteRef = useRef(null);
 
   const lpTimer = useRef(null);
   const balaoTimer = useRef(null);
@@ -2483,11 +2575,228 @@ function App() {
     return { logradouro: match[1].replace(/,\s*$/, '').trim(), numero: match[2].trim() };
   };
 
+  const getAddressComponent = (components, types, field = 'long_name') => {
+    const wanted = Array.isArray(types) ? types : [types];
+    const found = (components || []).find(c => wanted.some(type => c.types?.includes(type)));
+    return found?.[field] || '';
+  };
+
+  const parsePlaceAddress = (place, fallbackPin = null) => {
+    const components = place?.address_components || [];
+    const route = getAddressComponent(components, 'route');
+    const number = getAddressComponent(components, 'street_number');
+    const bairro = getAddressComponent(components, ['sublocality_level_1', 'sublocality', 'neighborhood', 'political']);
+    const cidade = getAddressComponent(components, ['administrative_area_level_2', 'locality']) || 'Curitiba';
+    const uf = getAddressComponent(components, 'administrative_area_level_1', 'short_name') || 'PR';
+    const cep = getAddressComponent(components, 'postal_code');
+    const location = place?.geometry?.location;
+    const lat = fallbackPin?.lat ?? (typeof location?.lat === 'function' ? location.lat() : location?.lat);
+    const lng = fallbackPin?.lng ?? (typeof location?.lng === 'function' ? location.lng() : location?.lng);
+    return {
+      logradouro: route || place?.name || '',
+      numero: number || '',
+      bairro: bairro || '',
+      cidade,
+      uf,
+      cep,
+      endereco_formatado: place?.formatted_address || '',
+      lat: Number(lat),
+      lng: Number(lng),
+    };
+  };
+
+  const aplicarEnderecoMapa = (endereco) => {
+    const ruaNumero = [endereco.logradouro, endereco.numero].filter(Boolean).join(', ');
+    setCheckoutDados(prev => ({
+      ...prev,
+      ruaNumero: ruaNumero || prev.ruaNumero,
+      bairro: endereco.bairro || prev.bairro,
+    }));
+    setWhatsEndereco(prev => ({
+      ...prev,
+      ruaNumero: ruaNumero || prev.ruaNumero,
+      bairro: endereco.bairro || prev.bairro,
+    }));
+    if (Number.isFinite(endereco.lat) && Number.isFinite(endereco.lng)) {
+      setMapPin({ lat: endereco.lat, lng: endereco.lng });
+    }
+    setMapAddressLabel(endereco.endereco_formatado || ruaNumero || 'Pino ajustado no mapa');
+    setEntregaEstimativa(null);
+    setEntregaError('');
+    if (stripeCheckout) resetStripeCheckout();
+  };
+
+  const carregarGoogleMaps = async () => {
+    if (window.google?.maps?.places) return true;
+    if (mapsPromiseRef.current) return mapsPromiseRef.current;
+
+    mapsPromiseRef.current = (async () => {
+      const cfgResp = await fetch(GARCOM_RESPONDER_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ acao: 'maps_public_config' }),
+      });
+      const cfg = await cfgResp.json().catch(() => ({}));
+      if (!cfgResp.ok || !cfg?.google_maps_browser_key) {
+        throw new Error('Mapa indisponivel agora. Pode preencher rua e bairro manualmente.');
+      }
+
+      await new Promise((resolve, reject) => {
+        const existing = document.getElementById('dom-leonardo-google-maps-js');
+        if (existing) {
+          existing.addEventListener('load', resolve, { once: true });
+          existing.addEventListener('error', reject, { once: true });
+          return;
+        }
+        const callbackName = `__domLeonardoMapsReady_${Date.now()}`;
+        window[callbackName] = () => {
+          delete window[callbackName];
+          resolve();
+        };
+        const script = document.createElement('script');
+        script.id = 'dom-leonardo-google-maps-js';
+        script.async = true;
+        script.defer = true;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(cfg.google_maps_browser_key)}&loading=async&libraries=places&language=pt-BR&region=BR&callback=${callbackName}`;
+        script.onerror = () => {
+          delete window[callbackName];
+          reject(new Error('Nao consegui carregar o mapa agora.'));
+        };
+        document.head.appendChild(script);
+      });
+      return true;
+    })();
+
+    return mapsPromiseRef.current;
+  };
+
+  const iniciarMapaCheckout = () => {
+    if (!window.google?.maps || !mapCanvasRef.current) return;
+    const center = mapPin || { lat: -25.39426, lng: -49.33568 };
+    if (!mapInstanceRef.current) {
+      mapInstanceRef.current = new window.google.maps.Map(mapCanvasRef.current, {
+        center,
+        zoom: mapPin ? 17 : 15,
+        disableDefaultUI: true,
+        zoomControl: true,
+        gestureHandling: 'greedy',
+      });
+      markerRef.current = new window.google.maps.Marker({
+        map: mapInstanceRef.current,
+        position: center,
+        draggable: true,
+        title: 'Entrada da entrega',
+      });
+      markerRef.current.addListener('dragend', () => {
+        const pos = markerRef.current.getPosition();
+        if (!pos) return;
+        const pin = { lat: pos.lat(), lng: pos.lng() };
+        setMapPin(pin);
+        setMapAddressLabel('Pino ajustado manualmente no mapa');
+        setEntregaEstimativa(null);
+        setEntregaError('');
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode({ location: pin }, (results, status) => {
+          if (status === 'OK' && results?.[0]) {
+            aplicarEnderecoMapa(parsePlaceAddress(results[0], pin));
+          }
+        });
+      });
+    } else {
+      mapInstanceRef.current.setCenter(center);
+      markerRef.current?.setPosition(center);
+    }
+
+    if (addressSearchRef.current && !autocompleteRef.current && window.google?.maps?.places) {
+      autocompleteRef.current = new window.google.maps.places.Autocomplete(addressSearchRef.current, {
+        componentRestrictions: { country: 'br' },
+        fields: ['address_components', 'formatted_address', 'geometry', 'name'],
+        types: ['address'],
+      });
+      autocompleteRef.current.addListener('place_changed', () => {
+        const place = autocompleteRef.current.getPlace();
+        const endereco = parsePlaceAddress(place);
+        if (!Number.isFinite(endereco.lat) || !Number.isFinite(endereco.lng)) {
+          setMapsError('Escolhe uma sugestao completa do Google para eu posicionar o pino.');
+          return;
+        }
+        aplicarEnderecoMapa(endereco);
+        const pos = { lat: endereco.lat, lng: endereco.lng };
+        mapInstanceRef.current?.setCenter(pos);
+        mapInstanceRef.current?.setZoom(17);
+        markerRef.current?.setPosition(pos);
+        setMapsError('');
+      });
+    }
+  };
+
+  const abrirMapaCheckout = async () => {
+    setMapsLoading(true);
+    setMapsError('');
+    try {
+      await carregarGoogleMaps();
+      setMapsReady(true);
+      setTimeout(iniciarMapaCheckout, 80);
+    } catch (err) {
+      setMapsError(err.message || 'Nao consegui abrir o mapa agora.');
+    } finally {
+      setMapsLoading(false);
+    }
+  };
+
+  const usarLocalizacaoAtual = async () => {
+    if (!navigator.geolocation) {
+      setMapsError('Seu navegador nao liberou localizacao. Pode buscar pelo endereco mesmo.');
+      return;
+    }
+    await abrirMapaCheckout();
+    if (!window.google?.maps) {
+      setMapsLoading(false);
+      return;
+    }
+    setMapsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const pin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setMapPin(pin);
+        setMapAddressLabel('Localizacao aproximada do seu celular');
+        setEntregaEstimativa(null);
+        mapInstanceRef.current?.setCenter(pin);
+        mapInstanceRef.current?.setZoom(17);
+        markerRef.current?.setPosition(pin);
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode({ location: pin }, (results, status) => {
+          if (status === 'OK' && results?.[0]) {
+            aplicarEnderecoMapa(parsePlaceAddress(results[0], pin));
+          }
+          setMapsLoading(false);
+        });
+      },
+      () => {
+        setMapsError('Nao consegui pegar sua localizacao. Busca pela rua ali em cima que funciona tambem.');
+        setMapsLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 9000, maximumAge: 60000 },
+    );
+  };
+
+  useEffect(() => {
+    if (!mapsReady || !whatsEnderecoOpen) return;
+    const timer = setTimeout(iniciarMapaCheckout, 80);
+    return () => clearTimeout(timer);
+  }, [mapsReady, whatsEnderecoOpen, mapPin?.lat, mapPin?.lng]);
+
   const setCheckoutField = (field, value) => {
     setCheckoutDados(prev => ({ ...prev, [field]: value }));
     if (field === 'ruaNumero' || field === 'bairro') {
       setEntregaEstimativa(null);
       setEntregaError('');
+      setMapPin(null);
+      setMapAddressLabel('');
     }
     if (stripeCheckout) resetStripeCheckout();
   };
@@ -2507,7 +2816,8 @@ function App() {
   const calcularEntregaCheckout = async () => {
     const { logradouro, numero } = splitRuaNumero(checkoutDados.ruaNumero);
     const bairro = checkoutDados.bairro.trim();
-    if (!logradouro || !numero || !bairro) {
+    const temPino = Number.isFinite(mapPin?.lat) && Number.isFinite(mapPin?.lng);
+    if ((!logradouro || !numero || !bairro) && !temPino) {
       setEntregaError('Coloca rua, numero e bairro. Exemplo: Francisco Dallaribera, 1811 + Santa Felicidade.');
       vibrate(35);
       return;
@@ -2528,11 +2838,14 @@ function App() {
           device_id: chatDeviceId.current,
           subtotal: carrinhoTotal,
           endereco: {
-            logradouro,
+            logradouro: logradouro || checkoutDados.ruaNumero || 'Endereco no mapa',
             numero,
             bairro,
             cidade: 'Curitiba',
             uf: 'PR',
+            endereco_formatado: mapAddressLabel || undefined,
+            lat: mapPin?.lat,
+            lng: mapPin?.lng,
           },
         }),
       });
@@ -2569,6 +2882,9 @@ function App() {
       bairro: checkoutDados.bairro.trim(),
       cidade: 'Curitiba',
       uf: 'PR',
+      endereco_formatado: mapAddressLabel || undefined,
+      lat: mapPin?.lat,
+      lng: mapPin?.lng,
     };
 
     setCheckoutLoading(true);
@@ -3620,6 +3936,46 @@ function App() {
                       placeholder="Bairro"
                       autoComplete="address-level3"
                     />
+                    <div className="checkout-map-panel">
+                      <div className="checkout-map-head">
+                        <div>
+                          <strong>Pino da entrega</strong>
+                          <span>Busca pelo endereco, confirma o ponto e arrasta o pino se a entrada for diferente.</span>
+                        </div>
+                        <div className="checkout-map-chip">{mapPin ? 'pino pronto' : 'opcional'}</div>
+                      </div>
+                      {!mapsReady ? (
+                        <>
+                          <button className="delivery-calc-btn" disabled={mapsLoading} onClick={abrirMapaCheckout}>
+                            {mapsLoading ? 'Abrindo mapa...' : 'Buscar endereco no mapa'}
+                          </button>
+                          <p className="checkout-map-note">Se preferir, preenche rua e bairro manualmente. O mapa so ajuda a evitar entrega no ponto errado.</p>
+                        </>
+                      ) : (
+                        <>
+                          <input
+                            ref={addressSearchRef}
+                            className="checkout-input checkout-map-search"
+                            placeholder="Digite rua, numero ou CEP"
+                            defaultValue={mapAddressLabel}
+                            autoComplete="off"
+                          />
+                          <div ref={mapCanvasRef} className="checkout-map-canvas"></div>
+                          <div className="checkout-map-actions">
+                            <button type="button" disabled={mapsLoading} onClick={usarLocalizacaoAtual}>
+                              Usar minha localizacao
+                            </button>
+                            <button type="button" disabled={!mapPin || entregaLoading} onClick={calcularEntregaCheckout}>
+                              Ver tempo com esse pino
+                            </button>
+                          </div>
+                          <p className="checkout-map-note">
+                            {mapAddressLabel || 'Escolhe uma sugestao do Google ou arrasta o pino para a entrada da casa.'}
+                          </p>
+                        </>
+                      )}
+                      {mapsError && <div className="checkout-map-error">{mapsError}</div>}
+                    </div>
                   </div>
                   <div className={`delivery-estimate ${entregaEstimativa ? (entregaEstimativa.dentro_raio === false ? 'warn' : 'ok') : ''}`}>
                     <div className="delivery-estimate-title">

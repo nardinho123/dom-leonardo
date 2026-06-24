@@ -236,6 +236,13 @@ function mapsServerKey(): string {
     || "";
 }
 
+function mapsBrowserKey(): string {
+  return Deno.env.get("GOOGLE_MAPS_BROWSER_KEY")
+    || Deno.env.get("DOM_LEONARDO_MAPS_BROWSER")
+    || Deno.env.get("GOOGLE_MAPS_BROWSER")
+    || "";
+}
+
 function arredondaDinheiro(value: number): number {
   return Math.round(value * 100) / 100;
 }
@@ -291,33 +298,44 @@ async function calcularEntregaGoogle(params: {
   const cep = cleanText(params.endereco.cep);
   const cidade = cleanText(params.endereco.cidade) || "Curitiba";
   const uf = cleanText(params.endereco.uf) || "PR";
-  if (!logradouro || !numero || !bairro) {
+  const latInformado = toNumber(params.endereco.lat, NaN);
+  const lngInformado = toNumber(params.endereco.lng, NaN);
+  const temCoordenada = Number.isFinite(latInformado) && Number.isFinite(lngInformado);
+
+  if ((!logradouro || !numero || !bairro) && !temCoordenada) {
     throw new Error("Informe rua, numero e bairro para calcular a entrega.");
   }
 
   const destinoTexto = `${logradouro}, ${numero}, ${bairro}, ${cidade}, ${uf}, ${cep ? `${cep}, ` : ""}Brasil`;
 
-  const geoUrl = new URL("https://maps.googleapis.com/maps/api/geocode/json");
-  geoUrl.searchParams.set("address", destinoTexto);
-  geoUrl.searchParams.set("region", "br");
-  geoUrl.searchParams.set("language", "pt-BR");
-  geoUrl.searchParams.set("key", key);
+  let enderecoFormatado = cleanText(params.endereco.endereco_formatado);
+  let lat = latInformado;
+  let lng = lngInformado;
 
-  const geoResp = await fetch(geoUrl);
-  const geoData = await geoResp.json().catch(() => ({})) as Record<string, unknown>;
-  const geoResults = Array.isArray(geoData.results) ? geoData.results as Array<Record<string, unknown>> : [];
-  const geoStatus = cleanText(geoData.status);
-  if (!geoResp.ok || geoStatus !== "OK" || geoResults.length === 0) {
-    return entregaFallback(params.config, params.subtotal, `geocode_${geoStatus || geoResp.status}`);
-  }
+  if (!temCoordenada) {
+    const geoUrl = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+    geoUrl.searchParams.set("address", destinoTexto);
+    geoUrl.searchParams.set("region", "br");
+    geoUrl.searchParams.set("language", "pt-BR");
+    geoUrl.searchParams.set("key", key);
 
-  const best = geoResults[0];
-  const geometry = asObject(best.geometry);
-  const location = asObject(geometry.location);
-  const lat = toNumber(location.lat, NaN);
-  const lng = toNumber(location.lng, NaN);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    return entregaFallback(params.config, params.subtotal, "geocode_sem_coordenadas");
+    const geoResp = await fetch(geoUrl);
+    const geoData = await geoResp.json().catch(() => ({})) as Record<string, unknown>;
+    const geoResults = Array.isArray(geoData.results) ? geoData.results as Array<Record<string, unknown>> : [];
+    const geoStatus = cleanText(geoData.status);
+    if (!geoResp.ok || geoStatus !== "OK" || geoResults.length === 0) {
+      return entregaFallback(params.config, params.subtotal, `geocode_${geoStatus || geoResp.status}`);
+    }
+
+    const best = geoResults[0];
+    const geometry = asObject(best.geometry);
+    const location = asObject(geometry.location);
+    lat = toNumber(location.lat, NaN);
+    lng = toNumber(location.lng, NaN);
+    enderecoFormatado = cleanText(best.formatted_address);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return entregaFallback(params.config, params.subtotal, "geocode_sem_coordenadas");
+    }
   }
 
   const matrixUrl = new URL("https://maps.googleapis.com/maps/api/distancematrix/json");
@@ -352,7 +370,7 @@ async function calcularEntregaGoogle(params: {
   return {
     sucesso: true,
     fonte: "google_maps",
-    endereco_formatado: cleanText(best.formatted_address),
+    endereco_formatado: enderecoFormatado || destinoTexto,
     coordenadas: { lat, lng },
     distancia_texto: cleanText(distance.text),
     distancia_km: distanciaKm,
@@ -390,7 +408,13 @@ async function entregaCacheKey(params: {
 }): Promise<{ chave: string; enderecoTexto: string; subtotalBucket: string }> {
   const cidade = normalizarParteEndereco(params.endereco.cidade) || "curitiba";
   const uf = normalizarParteEndereco(params.endereco.uf) || "pr";
+  const lat = toNumber(params.endereco.lat, NaN);
+  const lng = toNumber(params.endereco.lng, NaN);
+  const coordenadaTexto = Number.isFinite(lat) && Number.isFinite(lng)
+    ? `${lat.toFixed(6)},${lng.toFixed(6)}`
+    : "";
   const enderecoTexto = [
+    coordenadaTexto,
     normalizarParteEndereco(params.endereco.logradouro),
     normalizarParteEndereco(params.endereco.numero),
     normalizarParteEndereco(params.endereco.bairro),
@@ -582,9 +606,20 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    if (!["listar_pratos", "listar_cardapio", "mensagens_chat", "registrar_atendimento", "listar_atendimento", "buscar_cliente", "calcular_entrega_google", "criar_checkout", "processar_pagamento_brick", "criar_pagamento_stripe"].includes(acao)) {
+    if (!["listar_pratos", "listar_cardapio", "mensagens_chat", "registrar_atendimento", "listar_atendimento", "buscar_cliente", "maps_public_config", "calcular_entrega_google", "criar_checkout", "processar_pagamento_brick", "criar_pagamento_stripe"].includes(acao)) {
       return new Response(JSON.stringify({ error: "acao invalida" }), {
         status: 400,
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
+    if (acao === "maps_public_config") {
+      const key = mapsBrowserKey();
+      return new Response(JSON.stringify({
+        google_maps_browser_key: key || null,
+        enabled: Boolean(key),
+        libraries: ["places"],
+      }), {
         headers: { ...cors, "Content-Type": "application/json" },
       });
     }
