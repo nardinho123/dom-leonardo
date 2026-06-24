@@ -2081,6 +2081,7 @@ const DEFAULT_TOPO_CONFIG = {
 const SUPABASE_URL = 'https://jewamqbdonudiapxbzay.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY';
 const GARCOM_RESPONDER_URL = SUPABASE_URL + '/functions/v1/garcom-responder';
+const REVERSE_GEOCODE_URL = SUPABASE_URL + '/functions/v1/reverse-geocode';
 const WHATSAPP_DOM = '5541987044064';
 
 localStorage.removeItem('garcom_sessao_id');
@@ -2837,28 +2838,50 @@ function App() {
       setMapsError('Seu navegador nao liberou localizacao. Pode buscar pelo endereco mesmo.');
       return;
     }
-    await abrirMapaCheckout();
-    if (!window.google?.maps) {
-      setMapsLoading(false);
-      return;
-    }
     setMapsLoading(true);
+    setMapsError('');
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const pin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setMapPin(pin);
         setMapAddressLabel('Localizacao aproximada do seu celular');
         setEntregaEstimativa(null);
-        mapInstanceRef.current?.setCenter(pin);
-        mapInstanceRef.current?.setZoom(17);
-        markerRef.current?.setPosition(pin);
-        const geocoder = new window.google.maps.Geocoder();
-        geocoder.geocode({ location: pin }, (results, status) => {
-          if (status === 'OK' && results?.[0]) {
-            aplicarEnderecoMapa(parsePlaceAddress(results[0], pin));
+        // Mapa visual e best-effort: so atualiza se o SDK ja estiver carregado; nunca quebra.
+        try {
+          mapInstanceRef.current?.setCenter(pin);
+          mapInstanceRef.current?.setZoom(17);
+          markerRef.current?.setPosition(pin);
+        } catch (_) {}
+        // Reverse-geocode no servidor: independe da chave do navegador e do Maps JS.
+        try {
+          const r = await fetch(REVERSE_GEOCODE_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({ lat: pin.lat, lng: pin.lng }),
+          });
+          const d = await r.json().catch(() => ({}));
+          if (r.ok && d?.ok && (d.logradouro || d.bairro)) {
+            // Preenche rua e bairro; deixa o numero em branco pro cliente.
+            aplicarEnderecoMapa({
+              logradouro: d.logradouro || '',
+              bairro: d.bairro || '',
+              numero: '',
+              lat: pin.lat,
+              lng: pin.lng,
+              endereco_formatado: d.endereco_formatado || '',
+            });
+          } else {
+            setMapsError('Peguei sua localizacao, mas nao consegui o endereco. Preenche rua e bairro ali em cima, por favor.');
           }
+        } catch (_) {
+          setMapsError('Nao consegui buscar o endereco agora. Pode preencher rua e bairro manualmente.');
+        } finally {
           setMapsLoading(false);
-        });
+        }
       },
       () => {
         setMapsError('Nao consegui pegar sua localizacao. Busca pela rua ali em cima que funciona tambem.');
