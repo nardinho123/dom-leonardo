@@ -1314,6 +1314,23 @@
     box-shadow: 0 0 0 1px rgba(255,90,90,0.10) inset;
   }
   .checkout-input::placeholder { color: rgba(243,236,224,0.38); }
+  .checkout-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .checkout-label {
+    color: var(--gold);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1.15;
+  }
+  .checkout-label .opt {
+    color: rgba(243,236,224,0.45);
+    font-weight: 600;
+    letter-spacing: 0;
+  }
   .checkout-helper {
     margin-top: 8px;
     color: rgba(243,236,224,0.56);
@@ -2082,6 +2099,27 @@ const SUPABASE_URL = 'https://jewamqbdonudiapxbzay.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY';
 const GARCOM_RESPONDER_URL = SUPABASE_URL + '/functions/v1/garcom-responder';
 const REVERSE_GEOCODE_URL = SUPABASE_URL + '/functions/v1/reverse-geocode';
+const ENTREGA_FAIXAS_URL = SUPABASE_URL + '/rest/v1/entrega_faixas?select=raio_km,tempo_min,taxa&order=raio_km.asc';
+const COZINHA_ORIGEM = { lat: -25.39426, lng: -49.33568 };
+let entregaFaixasCache = null;
+function haversineKm(a, b) {
+  if (!a || !b) return null;
+  const R = 6371;
+  const rad = (d) => d * Math.PI / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLng = rad(b.lng - a.lng);
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)));
+}
+async function carregarFaixasEntrega() {
+  if (entregaFaixasCache) return entregaFaixasCache;
+  const r = await fetch(ENTREGA_FAIXAS_URL, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY } });
+  const data = await r.json().catch(() => []);
+  entregaFaixasCache = Array.isArray(data)
+    ? data.map(f => ({ raio_km: Number(f.raio_km), tempo_min: Number(f.tempo_min), taxa: Number(f.taxa) })).sort((x, y) => x.raio_km - y.raio_km)
+    : [];
+  return entregaFaixasCache;
+}
 const WHATSAPP_DOM = '5541987044064';
 
 localStorage.removeItem('garcom_sessao_id');
@@ -2539,7 +2577,7 @@ function App() {
   const cupomResumo = cupomAplicado ? avaliarCupom(cupomAplicado) : { ok: false, desconto: 0, freteGratis: false };
   const descontoCupom = cupomResumo.ok ? Number(cupomResumo.desconto || 0) : 0;
   const freteChefAtivo = carrinhoTotal >= FRETE_CHEF_MINIMO;
-  const descontoFreteChef = freteChefAtivo ? Math.min(taxaEntrega, FRETE_CHEF_LIMITE) : 0;
+  const descontoFreteChef = 0; // "frete do chef" desligado a pedido do dono (sem promocao)
   const taxaEntregaComChef = Math.max(0, taxaEntrega - descontoFreteChef);
   const taxaEntregaFinal = cupomResumo.ok && cupomResumo.freteGratis ? 0 : taxaEntregaComChef;
   const faltaFreteChef = Math.max(0, FRETE_CHEF_MINIMO - carrinhoTotal);
@@ -2947,56 +2985,73 @@ function App() {
   };
 
   const calcularEntregaCheckout = async () => {
+    let coords = (Number.isFinite(mapPin?.lat) && Number.isFinite(mapPin?.lng))
+      ? { lat: mapPin.lat, lng: mapPin.lng }
+      : null;
     const { logradouro, numero, bairro } = enderecoCheckout();
-    const temPino = Number.isFinite(mapPin?.lat) && Number.isFinite(mapPin?.lng);
-    if ((!logradouro || !numero || !bairro) && !temPino) {
-      setEntregaError('Coloca rua, numero e bairro. Exemplo: Francisco Dallaribera, 1811 + Santa Felicidade.');
-      vibrate(35);
+    if (!coords && (!logradouro || !bairro)) {
+      setEntregaError('Use a localizacao ou preencha rua e bairro para calcular a entrega.');
       return;
     }
 
     setEntregaLoading(true);
     setEntregaError('');
     try {
-      const r = await fetch(GARCOM_RESPONDER_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({
-          acao: 'calcular_entrega_google',
-          device_id: chatDeviceId.current,
-          subtotal: carrinhoTotal,
-          endereco: {
-            logradouro: logradouro || checkoutDados.ruaNumero || 'Endereco no mapa',
-            numero,
-            bairro,
-            cidade: 'Curitiba',
-            uf: 'PR',
-            endereco_formatado: mapAddressLabel || undefined,
-            lat: mapPin?.lat,
-            lng: mapPin?.lng,
+      // Sem pino: geocodifica o endereco digitado (server-side, chave de servidor).
+      if (!coords) {
+        const g = await fetch(REVERSE_GEOCODE_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
           },
-        }),
-      });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok || !data?.entrega) {
-        throw new Error(data?.error || 'Nao consegui calcular essa rota agora.');
+          body: JSON.stringify({ endereco: { logradouro, numero, bairro, cidade: 'Curitiba', uf: 'PR' } }),
+        });
+        const gd = await g.json().catch(() => ({}));
+        if (gd?.ok && Number.isFinite(gd.lat) && Number.isFinite(gd.lng)) {
+          coords = { lat: gd.lat, lng: gd.lng };
+          setMapPin(coords);
+        }
+      }
+      if (!coords) {
+        setEntregaError('Nao achei esse endereco no mapa. Confere a rua e o bairro, por favor.');
+        return;
       }
 
-      setEntregaEstimativa(data.entrega);
-      const trecho = data.entrega?.fonte === 'google_maps'
-        ? `Olhei a rota: da uns ${data.entrega.texto_tempo}${data.entrega.distancia_texto ? `, cerca de ${data.entrega.distancia_texto}` : ''}.`
-        : `Usei a media da casa por enquanto: ${data.entrega.texto_tempo}.`;
-      falarMarco(`${trecho} Se quiser, ja sigo pro pagamento daqui.`, 5200);
+      const faixas = await carregarFaixasEntrega();
+      if (!faixas.length) {
+        setEntregaError('Nao consegui carregar as faixas de entrega agora.');
+        return;
+      }
+      const distKm = haversineKm(COZINHA_ORIGEM, coords);
+      const maxRaio = faixas[faixas.length - 1].raio_km;
+      const faixa = faixas.find(f => f.raio_km >= distKm) || faixas[faixas.length - 1];
+      const dentro = distKm <= maxRaio + 0.001;
+      setEntregaEstimativa({
+        frete_bruto: faixa.taxa,
+        texto_tempo: `${faixa.tempo_min} min`,
+        distancia_texto: `${distKm.toFixed(1).replace('.', ',')} km`,
+        dentro_raio: dentro,
+        fonte: 'tabela',
+        endereco_formatado: mapAddressLabel || '',
+      });
     } catch (err) {
-      setEntregaError(err.message || 'Nao consegui calcular essa entrega agora.');
+      setEntregaError('Nao consegui calcular a entrega agora. Tenta de novo em instantes.');
     } finally {
       setEntregaLoading(false);
     }
   };
+
+  // Calculo automatico de entrega: dispara sozinho quando ha pino ou endereco preenchido.
+  useEffect(() => {
+    if (!whatsEnderecoOpen || checkoutStage !== 'dados') return;
+    const temPino = Number.isFinite(mapPin?.lat) && Number.isFinite(mapPin?.lng);
+    const { logradouro, bairro } = enderecoCheckout();
+    if (!temPino && (!logradouro || !bairro)) return;
+    const t = setTimeout(() => { calcularEntregaCheckout(); }, 700);
+    return () => clearTimeout(t);
+  }, [whatsEnderecoOpen, checkoutStage, mapPin?.lat, mapPin?.lng, checkoutDados.rua, checkoutDados.numero, checkoutDados.bairro]);
 
   const criarCheckoutStripe = async () => {
     if (!carrinho.length) return;
@@ -3989,9 +4044,6 @@ function App() {
                             <button type="button" disabled={mapsLoading} onClick={usarLocalizacaoAtual}>
                               Usar minha localização
                             </button>
-                            <button type="button" disabled={!mapPin || entregaLoading} onClick={calcularEntregaCheckout}>
-                              Ver tempo com esse pino
-                            </button>
                           </div>
                           <p className="checkout-map-note">
                             {mapAddressLabel || 'Se a entrada for em outro ponto, arrasta o pino no mapa.'}
@@ -4003,55 +4055,73 @@ function App() {
                     </div>
                   </div>
 
-                  <input
-                    className={`checkout-input full ${checkoutErrors.rua ? 'invalid' : ''}`}
-                    value={checkoutDados.rua}
-                    onChange={e => setCheckoutField('rua', e.target.value)}
-                    placeholder="Rua"
-                    autoComplete="address-line1"
-                  />
-                  <input
-                    className={`checkout-input ${checkoutErrors.numero ? 'invalid' : ''}`}
-                    value={checkoutDados.numero}
-                    onChange={e => setCheckoutField('numero', e.target.value)}
-                    placeholder="Número"
-                    inputMode="numeric"
-                    autoComplete="address-line2"
-                  />
-                  <input
-                    className={`checkout-input ${checkoutErrors.bairro ? 'invalid' : ''}`}
-                    value={checkoutDados.bairro}
-                    onChange={e => setCheckoutField('bairro', e.target.value)}
-                    placeholder="Bairro"
-                    autoComplete="address-level3"
-                  />
-                  <input
-                    className="checkout-input full"
-                    value={checkoutDados.complemento}
-                    onChange={e => setCheckoutField('complemento', e.target.value)}
-                    placeholder="Complemento (opcional)"
-                    autoComplete="address-line3"
-                  />
+                  <div className="checkout-field full">
+                    <label className="checkout-label">Rua</label>
+                    <input
+                      className={`checkout-input ${checkoutErrors.rua ? 'invalid' : ''}`}
+                      value={checkoutDados.rua}
+                      onChange={e => setCheckoutField('rua', e.target.value)}
+                      placeholder="Ex.: Rua das Flores"
+                      autoComplete="address-line1"
+                    />
+                  </div>
+                  <div className="checkout-field">
+                    <label className="checkout-label">Número</label>
+                    <input
+                      className={`checkout-input ${checkoutErrors.numero ? 'invalid' : ''}`}
+                      value={checkoutDados.numero}
+                      onChange={e => setCheckoutField('numero', e.target.value)}
+                      placeholder="Ex.: 123"
+                      inputMode="numeric"
+                      autoComplete="address-line2"
+                    />
+                  </div>
+                  <div className="checkout-field">
+                    <label className="checkout-label">Bairro</label>
+                    <input
+                      className={`checkout-input ${checkoutErrors.bairro ? 'invalid' : ''}`}
+                      value={checkoutDados.bairro}
+                      onChange={e => setCheckoutField('bairro', e.target.value)}
+                      placeholder="Ex.: Centro"
+                      autoComplete="address-level3"
+                    />
+                  </div>
+                  <div className="checkout-field full">
+                    <label className="checkout-label">Complemento <span className="opt">(opcional)</span></label>
+                    <input
+                      className="checkout-input"
+                      value={checkoutDados.complemento}
+                      onChange={e => setCheckoutField('complemento', e.target.value)}
+                      placeholder="Apto, bloco, ponto de referência"
+                      autoComplete="address-line3"
+                    />
+                  </div>
 
                   <div className="checkout-section">
-                    <h3>Tá acabando</h3>
-                    <p>Só me fala seu nome e número caso o entregador não te encontre.</p>
+                    <h3>Seus dados</h3>
+                    <p>Só pra te identificar e o entregador te achar.</p>
                   </div>
-                  <input
-                    className={`checkout-input ${checkoutErrors.nome ? 'invalid' : ''}`}
-                    value={checkoutDados.nome}
-                    onChange={e => setCheckoutField('nome', e.target.value)}
-                    placeholder="Nome"
-                    autoComplete="name"
-                  />
-                  <input
-                    className={`checkout-input ${checkoutErrors.whatsapp ? 'invalid' : ''}`}
-                    value={checkoutDados.whatsapp}
-                    onChange={e => setCheckoutField('whatsapp', e.target.value)}
-                    placeholder="WhatsApp"
-                    inputMode="tel"
-                    autoComplete="tel"
-                  />
+                  <div className="checkout-field">
+                    <label className="checkout-label">Nome</label>
+                    <input
+                      className={`checkout-input ${checkoutErrors.nome ? 'invalid' : ''}`}
+                      value={checkoutDados.nome}
+                      onChange={e => setCheckoutField('nome', e.target.value)}
+                      placeholder="Como te chamar"
+                      autoComplete="name"
+                    />
+                  </div>
+                  <div className="checkout-field">
+                    <label className="checkout-label">WhatsApp</label>
+                    <input
+                      className={`checkout-input ${checkoutErrors.whatsapp ? 'invalid' : ''}`}
+                      value={checkoutDados.whatsapp}
+                      onChange={e => setCheckoutField('whatsapp', e.target.value)}
+                      placeholder="(41) 9 9999-9999"
+                      inputMode="tel"
+                      autoComplete="tel"
+                    />
+                  </div>
                 </div>
 
                 <div className={`delivery-estimate ${entregaEstimativa ? (entregaEstimativa.dentro_raio === false ? 'warn' : 'ok') : ''}`}>
@@ -4082,11 +4152,8 @@ function App() {
                       </p>
                     </>
                   ) : (
-                    <p className="delivery-estimate-note">Depois de preencher o endereço, dá para calcular uma prévia antes do pagamento.</p>
+                    <p className="delivery-estimate-note">{entregaLoading ? 'Calculando a entrega...' : 'Assim que você preencher o endereço, eu calculo o tempo e o frete automaticamente.'}</p>
                   )}
-                  <button className="delivery-calc-btn" disabled={entregaLoading} onClick={calcularEntregaCheckout}>
-                    {entregaLoading ? 'Calculando rota...' : entregaEstimativa ? 'Recalcular entrega' : 'Calcular entrega'}
-                  </button>
                 </div>
 
                 {entregaError && <div className="checkout-error">{entregaError}</div>}
