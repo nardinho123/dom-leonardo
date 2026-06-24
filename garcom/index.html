@@ -733,6 +733,11 @@
   .dish-backdrop { background: rgba(0,0,0,0.74); }
   .dish-backdrop.open,
   .bag-backdrop.open { opacity: 1; pointer-events: auto; }
+  .bag-backdrop.checkout-mode.open {
+    background: rgba(0,0,0,0.94);
+    backdrop-filter: blur(10px) saturate(105%);
+    -webkit-backdrop-filter: blur(10px) saturate(105%);
+  }
 
   .dish-sheet,
   .bag-sheet {
@@ -1270,6 +1275,28 @@
     gap: 8px;
   }
   .checkout-mini-grid .full { grid-column: 1 / -1; }
+  .checkout-section {
+    grid-column: 1 / -1;
+    margin-top: 2px;
+  }
+  .checkout-section + .checkout-section {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(212,175,55,0.12);
+  }
+  .checkout-section-title {
+    margin: 0 0 9px;
+    color: var(--gold);
+    font-size: 13px;
+    font-weight: 950;
+    letter-spacing: 0.02em;
+  }
+  .checkout-section-copy {
+    margin: 0 0 10px;
+    color: rgba(243,236,224,0.58);
+    font-size: 11px;
+    line-height: 1.35;
+  }
   .checkout-input {
     width: 100%;
     min-height: 44px;
@@ -1280,6 +1307,11 @@
     padding: 0 12px;
     font-size: 13px;
     outline: none;
+  }
+  .checkout-input.invalid {
+    border-color: rgba(255,90,90,0.78);
+    background: rgba(255,70,70,0.08);
+    box-shadow: 0 0 0 1px rgba(255,90,90,0.10) inset;
   }
   .checkout-input::placeholder { color: rgba(243,236,224,0.38); }
   .checkout-helper {
@@ -1366,7 +1398,7 @@
   }
   .checkout-map-panel {
     grid-column: 1 / -1;
-    margin-top: 8px;
+    margin: 0 0 9px;
     border: 1px solid rgba(212,175,55,0.22);
     background:
       radial-gradient(circle at top right, rgba(212,175,55,0.12), transparent 46%),
@@ -1444,6 +1476,20 @@
     color: #ffd2a8;
     font-size: 11px;
     line-height: 1.35;
+  }
+  .checkout-location-btn {
+    width: 100%;
+    min-height: 44px;
+    border-radius: 14px;
+    border: 1px solid rgba(212,175,55,0.28);
+    background:
+      linear-gradient(180deg, rgba(212,175,55,0.14), rgba(0,0,0,0.24));
+    color: rgba(243,236,224,0.94);
+    font-size: 12px;
+    font-weight: 950;
+  }
+  .checkout-location-btn strong {
+    color: var(--gold);
   }
   .stripe-seal {
     display: inline-flex;
@@ -2195,7 +2241,8 @@ function App() {
   const [cupomErro, setCupomErro] = useState('');
   const [whatsEnderecoOpen, setWhatsEnderecoOpen] = useState(false);
   const [whatsEndereco, setWhatsEndereco] = useState({ ruaNumero: '', bairro: '' });
-  const [checkoutDados, setCheckoutDados] = useState({ nome: '', whatsapp: '', email: '', ruaNumero: '', bairro: '' });
+  const [checkoutDados, setCheckoutDados] = useState({ nome: '', whatsapp: '', email: '', rua: '', numero: '', bairro: '', complemento: '', ruaNumero: '' });
+  const [checkoutErrors, setCheckoutErrors] = useState({});
   const [checkoutStage, setCheckoutStage] = useState('dados'); // dados | pagamento | sucesso
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
@@ -2532,12 +2579,15 @@ function App() {
       linhas.push(`Total estimado: ${fmtBRL(totalComEntrega)}`);
     }
 
-    const ruaNumero = String(whatsEndereco.ruaNumero || '').trim();
-    const bairro = String(whatsEndereco.bairro || '').trim();
+    const partesEndereco = enderecoCheckout();
+    const ruaNumero = String(whatsEndereco.ruaNumero || partesEndereco.ruaNumero || '').trim();
+    const bairro = String(whatsEndereco.bairro || partesEndereco.bairro || '').trim();
+    const complemento = String(partesEndereco.complemento || '').trim();
     if (origem === 'sacola' && !opts.ignorarEndereco && (ruaNumero || bairro)) {
       linhas.push('', 'Endereco informado no cardapio:');
       if (ruaNumero) linhas.push(`Rua e numero: ${ruaNumero}`);
       if (bairro) linhas.push(`Bairro: ${bairro}`);
+      if (complemento) linhas.push(`Complemento: ${complemento}`);
     }
 
     linhas.push('', `Link do cardapio: ${window.location.origin}${window.location.pathname}`);
@@ -2568,11 +2618,36 @@ function App() {
     setCheckoutError('');
   };
 
+  const resetCheckoutDados = () => {
+    setCheckoutDados({ nome: '', whatsapp: '', email: '', rua: '', numero: '', bairro: '', complemento: '', ruaNumero: '' });
+    setCheckoutErrors({});
+    setWhatsEndereco({ ruaNumero: '', bairro: '' });
+    setEntregaEstimativa(null);
+    setEntregaError('');
+    setMapPin(null);
+    setMapAddressLabel('');
+  };
+
   const splitRuaNumero = (value) => {
     const text = String(value || '').replace(/\s+/g, ' ').trim();
     const match = text.match(/^(.*?)[,\s]+(\d+[a-zA-Z0-9\\/-]*)$/);
     if (!match) return { logradouro: text, numero: '' };
     return { logradouro: match[1].replace(/,\s*$/, '').trim(), numero: match[2].trim() };
+  };
+
+  const enderecoCheckout = () => {
+    const legado = splitRuaNumero(checkoutDados.ruaNumero);
+    const logradouro = String(checkoutDados.rua || legado.logradouro || '').trim();
+    const numero = String(checkoutDados.numero || legado.numero || '').trim();
+    const bairro = String(checkoutDados.bairro || '').trim();
+    const complemento = String(checkoutDados.complemento || '').trim();
+    return {
+      logradouro,
+      numero,
+      bairro,
+      complemento,
+      ruaNumero: [logradouro, numero].filter(Boolean).join(', '),
+    };
   };
 
   const getAddressComponent = (components, types, field = 'long_name') => {
@@ -2609,14 +2684,23 @@ function App() {
     const ruaNumero = [endereco.logradouro, endereco.numero].filter(Boolean).join(', ');
     setCheckoutDados(prev => ({
       ...prev,
-      ruaNumero: ruaNumero || prev.ruaNumero,
+      rua: endereco.logradouro || prev.rua,
+      numero: endereco.numero || prev.numero,
       bairro: endereco.bairro || prev.bairro,
+      ruaNumero: ruaNumero || prev.ruaNumero,
     }));
     setWhatsEndereco(prev => ({
       ...prev,
       ruaNumero: ruaNumero || prev.ruaNumero,
       bairro: endereco.bairro || prev.bairro,
     }));
+    setCheckoutErrors(prev => {
+      const next = { ...prev };
+      if (endereco.logradouro) delete next.rua;
+      if (endereco.numero) delete next.numero;
+      if (endereco.bairro) delete next.bairro;
+      return next;
+    });
     if (Number.isFinite(endereco.lat) && Number.isFinite(endereco.lng)) {
       setMapPin({ lat: endereco.lat, lng: endereco.lng });
     }
@@ -2791,8 +2875,29 @@ function App() {
   }, [mapsReady, whatsEnderecoOpen, mapPin?.lat, mapPin?.lng]);
 
   const setCheckoutField = (field, value) => {
-    setCheckoutDados(prev => ({ ...prev, [field]: value }));
-    if (field === 'ruaNumero' || field === 'bairro') {
+    setCheckoutDados(prev => {
+      const next = { ...prev, [field]: value };
+      if (field === 'rua' || field === 'numero') {
+        next.ruaNumero = [next.rua, next.numero].filter(Boolean).join(', ');
+      }
+      if (field === 'ruaNumero') {
+        const partes = splitRuaNumero(value);
+        next.rua = partes.logradouro;
+        next.numero = partes.numero || next.numero;
+      }
+      if (field === 'rua' || field === 'numero' || field === 'bairro') {
+        const ruaNumero = [next.rua, next.numero].filter(Boolean).join(', ');
+        setWhatsEndereco(v => ({ ...v, ruaNumero, bairro: next.bairro || v.bairro || '' }));
+      }
+      return next;
+    });
+    setCheckoutErrors(prev => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+    if (field === 'rua' || field === 'numero' || field === 'bairro' || field === 'ruaNumero') {
       setEntregaEstimativa(null);
       setEntregaError('');
       setMapPin(null);
@@ -2804,18 +2909,22 @@ function App() {
   const validarCheckoutDados = () => {
     const nome = checkoutDados.nome.trim();
     const whatsapp = checkoutDados.whatsapp.replace(/\D/g, '');
-    const bairro = checkoutDados.bairro.trim();
-    const { logradouro, numero } = splitRuaNumero(checkoutDados.ruaNumero);
-    if (!nome) return 'Me fala seu nome para o Dom identificar o pedido.';
-    if (whatsapp.length < 10) return 'Coloca um WhatsApp com DDD para o motoboy te encontrar.';
-    if (!logradouro || !numero) return 'Coloca rua e numero juntos, por exemplo: Rua X, 123.';
-    if (!bairro) return 'Coloca o bairro para calcularmos a entrega certinho.';
+    const { logradouro, numero, bairro } = enderecoCheckout();
+    const errors = {};
+    if (!logradouro) errors.rua = true;
+    if (!numero) errors.numero = true;
+    if (!bairro) errors.bairro = true;
+    if (!nome) errors.nome = true;
+    if (whatsapp.length < 10) errors.whatsapp = true;
+    setCheckoutErrors(errors);
+    if (errors.rua || errors.numero || errors.bairro) return 'Confere endereco: rua, numero e bairro.';
+    if (errors.nome) return 'Me fala seu nome para o Dom identificar o pedido.';
+    if (errors.whatsapp) return 'Coloca um WhatsApp com DDD para o entregador te encontrar.';
     return '';
   };
 
   const calcularEntregaCheckout = async () => {
-    const { logradouro, numero } = splitRuaNumero(checkoutDados.ruaNumero);
-    const bairro = checkoutDados.bairro.trim();
+    const { logradouro, numero, bairro } = enderecoCheckout();
     const temPino = Number.isFinite(mapPin?.lat) && Number.isFinite(mapPin?.lng);
     if ((!logradouro || !numero || !bairro) && !temPino) {
       setEntregaError('Coloca rua, numero e bairro. Exemplo: Francisco Dallaribera, 1811 + Santa Felicidade.');
@@ -2875,13 +2984,14 @@ function App() {
       return;
     }
 
-    const { logradouro, numero } = splitRuaNumero(checkoutDados.ruaNumero);
+    const { logradouro, numero, bairro, complemento } = enderecoCheckout();
     const endereco = {
       logradouro,
       numero,
-      bairro: checkoutDados.bairro.trim(),
+      bairro,
       cidade: 'Curitiba',
       uf: 'PR',
+      complemento: complemento || null,
       endereco_formatado: mapAddressLabel || undefined,
       lat: mapPin?.lat,
       lng: mapPin?.lng,
@@ -3425,6 +3535,8 @@ function App() {
     setCheckoutDados(prev => ({
       ...prev,
       ruaNumero: prev.ruaNumero || whatsEndereco.ruaNumero || '',
+      rua: prev.rua || splitRuaNumero(whatsEndereco.ruaNumero).logradouro || '',
+      numero: prev.numero || splitRuaNumero(whatsEndereco.ruaNumero).numero || '',
       bairro: prev.bairro || whatsEndereco.bairro || '',
     }));
     setCheckoutStage('dados');
@@ -3775,14 +3887,27 @@ function App() {
         </div>
       )}
 
-      <div className={`bag-backdrop ${sacolaOpen ? 'open' : ''}`} onClick={() => setSacolaOpen(false)}></div>
+      <div
+        className={`bag-backdrop ${sacolaOpen ? 'open' : ''} ${whatsEnderecoOpen ? 'checkout-mode' : ''}`}
+        onClick={() => {
+          if (!whatsEnderecoOpen) setSacolaOpen(false);
+        }}
+      ></div>
       <section className={`bag-sheet ${sacolaOpen ? 'open' : ''}`} aria-hidden={!sacolaOpen}>
         <div className="bag-head">
-          <button className="bag-close" onClick={() => setSacolaOpen(false)} aria-label="Voltar">
+          <button className="bag-close" onClick={() => {
+            if (whatsEnderecoOpen) {
+              resetStripeCheckout();
+              setCheckoutErrors({});
+              setWhatsEnderecoOpen(false);
+            } else {
+              setSacolaOpen(false);
+            }
+          }} aria-label="Voltar">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M15 6l-6 6 6 6"/></svg>
           </button>
           <h2>Sacola</h2>
-          {!!carrinho.length && <button className="bag-clear" onClick={() => { resetStripeCheckout(); setCarrinho([]); setCarrinhoTotal(0); setEntregaEstimativa(null); setEntregaError(''); setWhatsEnderecoOpen(false); }}>Limpar</button>}
+          {!!carrinho.length && <button className="bag-clear" onClick={() => { resetStripeCheckout(); resetCheckoutDados(); setCarrinho([]); setCarrinhoTotal(0); setWhatsEnderecoOpen(false); }}>Limpar</button>}
         </div>
         <div className="bag-scroll">
           <div className="bag-store">
@@ -3809,60 +3934,171 @@ function App() {
             </div>
           ))}
 
-          {carrinho.length > 0 && (
-            <div className="frete-chef-card">
-              <strong>
-                {freteChefAtivo
-                  ? `Frete do chef ativo: ${fmtBRL(descontoFreteChef)} por nossa conta.`
-                  : `Frete do chef: faltam ${fmtBRL(faltaFreteChef)} para liberar.`}
-              </strong>
-              <span>Em pedidos acima de {fmtBRL(FRETE_CHEF_MINIMO)}, o Dom cobre ate {fmtBRL(FRETE_CHEF_LIMITE)} da taxa de entrega.</span>
-            </div>
-          )}
-
-          {carrinho.length > 0 && (
-            <div className="coupon-box">
-              <div className="coupon-box-head">
-                <strong>Cupom</strong>
-                {cupomAplicado && cupomResumo.ok && <span className="coupon-status">aplicado</span>}
-              </div>
-              {cupomAplicado && cupomResumo.ok ? (
-                <>
-                  <div className="coupon-applied">
-                    <strong>{String(cupomAplicado.codigo || '').toUpperCase()} · {labelCupom(cupomAplicado)}</strong>
-                    <span>{textoCupom(cupomAplicado)}</span>
-                  </div>
-                  <button className="coupon-remove-btn" onClick={removerCupom}>Remover cupom</button>
-                </>
-              ) : (
-                <>
-                  <div className="coupon-input-row">
-                    <input
-                      className="coupon-input"
-                      value={cupomCodigo}
-                      onChange={e => { setCupomCodigo(e.target.value.toUpperCase()); setCupomErro(''); }}
-                      onKeyDown={e => { if (e.key === 'Enter') aplicarCupom(cupomCodigo); }}
-                      placeholder="CODIGO"
-                    />
-                    <button className="coupon-apply-btn" onClick={() => aplicarCupom(cupomCodigo)}>Aplicar</button>
-                  </div>
-                  {cuponsDisponiveis.length > 0 && (
-                    <div className="coupon-suggestions">
-                      {cuponsDisponiveis.slice(0, 3).map(cupom => (
-                        <button key={cupom.id} className="coupon-suggestion" onClick={() => aplicarCupom(cupom)}>
-                          {String(cupom.codigo || '').toUpperCase()} · {labelCupom(cupom)}
-                        </button>
-                      ))}
+          {whatsEnderecoOpen && checkoutStage === 'dados' && (
+            <div className="bag-values">
+              <div className="checkout-card">
+                <div className="checkout-mini-grid">
+                  <div className="checkout-section">
+                    <h3>Endereço para entrega</h3>
+                    <p>Quanto mais certinho o ponto, menos chance do entregador ficar rodando.</p>
+                    <div className="checkout-map-panel">
+                      <div className="checkout-map-head">
+                        <div>
+                          <strong>Permitir localização <span>(recomendado)</span></strong>
+                          <span>Ajuda a achar sua rua e posicionar o pino de entrega.</span>
+                        </div>
+                        <div className="checkout-map-chip">{mapPin ? 'pino pronto' : 'opcional'}</div>
+                      </div>
+                      <button className="checkout-location-btn" disabled={mapsLoading} onClick={usarLocalizacaoAtual}>
+                        {mapsLoading ? 'Abrindo localização...' : <>Permitir localização <strong>(recomendado)</strong></>}
+                      </button>
+                      {mapsReady && (
+                        <>
+                          <input
+                            ref={addressSearchRef}
+                            className="checkout-input checkout-map-search"
+                            placeholder="Ou busque rua, numero ou CEP"
+                            defaultValue={mapAddressLabel}
+                            autoComplete="off"
+                          />
+                          <div ref={mapCanvasRef} className="checkout-map-canvas"></div>
+                          <div className="checkout-map-actions">
+                            <button type="button" disabled={mapsLoading} onClick={usarLocalizacaoAtual}>
+                              Usar minha localização
+                            </button>
+                            <button type="button" disabled={!mapPin || entregaLoading} onClick={calcularEntregaCheckout}>
+                              Ver tempo com esse pino
+                            </button>
+                          </div>
+                          <p className="checkout-map-note">
+                            {mapAddressLabel || 'Se a entrada for em outro ponto, arrasta o pino no mapa.'}
+                          </p>
+                        </>
+                      )}
+                      {!mapsReady && <p className="checkout-map-note">Se preferir, preenche manualmente. O mapa é só para facilitar.</p>}
+                      {mapsError && <div className="checkout-map-error">{mapsError}</div>}
                     </div>
+                  </div>
+
+                  <input
+                    className={`checkout-input full ${checkoutErrors.rua ? 'invalid' : ''}`}
+                    value={checkoutDados.rua}
+                    onChange={e => setCheckoutField('rua', e.target.value)}
+                    placeholder="Rua"
+                    autoComplete="address-line1"
+                  />
+                  <input
+                    className={`checkout-input ${checkoutErrors.numero ? 'invalid' : ''}`}
+                    value={checkoutDados.numero}
+                    onChange={e => setCheckoutField('numero', e.target.value)}
+                    placeholder="Número"
+                    inputMode="numeric"
+                    autoComplete="address-line2"
+                  />
+                  <input
+                    className={`checkout-input ${checkoutErrors.bairro ? 'invalid' : ''}`}
+                    value={checkoutDados.bairro}
+                    onChange={e => setCheckoutField('bairro', e.target.value)}
+                    placeholder="Bairro"
+                    autoComplete="address-level3"
+                  />
+                  <input
+                    className="checkout-input full"
+                    value={checkoutDados.complemento}
+                    onChange={e => setCheckoutField('complemento', e.target.value)}
+                    placeholder="Complemento (opcional)"
+                    autoComplete="address-line3"
+                  />
+
+                  <div className="checkout-section">
+                    <h3>Tá acabando</h3>
+                    <p>Só me fala seu nome e número caso o entregador não te encontre.</p>
+                  </div>
+                  <input
+                    className={`checkout-input ${checkoutErrors.nome ? 'invalid' : ''}`}
+                    value={checkoutDados.nome}
+                    onChange={e => setCheckoutField('nome', e.target.value)}
+                    placeholder="Nome"
+                    autoComplete="name"
+                  />
+                  <input
+                    className={`checkout-input ${checkoutErrors.whatsapp ? 'invalid' : ''}`}
+                    value={checkoutDados.whatsapp}
+                    onChange={e => setCheckoutField('whatsapp', e.target.value)}
+                    placeholder="WhatsApp"
+                    inputMode="tel"
+                    autoComplete="tel"
+                  />
+                </div>
+
+                <div className={`delivery-estimate ${entregaEstimativa ? (entregaEstimativa.dentro_raio === false ? 'warn' : 'ok') : ''}`}>
+                  <div className="delivery-estimate-title">
+                    <strong>Entrega na sua casa</strong>
+                    <span>{entregaEstimativa?.fonte === 'google_maps' ? 'Google Maps' : 'estimativa'}</span>
+                  </div>
+                  {entregaEstimativa ? (
+                    <>
+                      <div className="delivery-estimate-grid">
+                        <div className="delivery-estimate-card">
+                          <small>Tempo</small>
+                          <strong>{entregaEstimativa.texto_tempo}</strong>
+                        </div>
+                        <div className="delivery-estimate-card">
+                          <small>Frete</small>
+                          <strong>{fmtBRL(taxaEntregaFinal)}</strong>
+                        </div>
+                        {entregaEstimativa.distancia_texto && (
+                          <div className="delivery-estimate-card">
+                            <small>Distância</small>
+                            <strong>{entregaEstimativa.distancia_texto}</strong>
+                          </div>
+                        )}
+                      </div>
+                      <p className="delivery-estimate-note">
+                        {entregaEstimativa.endereco_formatado || 'Estimativa calculada com os dados informados.'}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="delivery-estimate-note">Depois de preencher o endereço, dá para calcular uma prévia antes do pagamento.</p>
                   )}
-                </>
-              )}
-              {(cupomErro || (cupomAplicado && !cupomResumo.ok ? cupomResumo.motivo : '')) && (
-                <div className="coupon-error">{cupomErro || cupomResumo.motivo}</div>
-              )}
+                  <button className="delivery-calc-btn" disabled={entregaLoading} onClick={calcularEntregaCheckout}>
+                    {entregaLoading ? 'Calculando rota...' : entregaEstimativa ? 'Recalcular entrega' : 'Calcular entrega'}
+                  </button>
+                </div>
+
+                {entregaError && <div className="checkout-error">{entregaError}</div>}
+                {checkoutError && <div className="checkout-error">{checkoutError}</div>}
+              </div>
             </div>
           )}
 
+          {whatsEnderecoOpen && checkoutStage === 'pagamento' && (
+            <div className="bag-values">
+              <div className="checkout-card">
+                <div className="stripe-seal">
+                  <strong>Stripe</strong>
+                  <span>pagamento seguro</span>
+                </div>
+                <h3>Escolha como pagar</h3>
+                <p>Apple Pay, Google Pay e cartão aparecem aqui quando estiverem disponíveis no seu aparelho.</p>
+                <div id="stripe-payment-element" className="stripe-payment-box"></div>
+                {checkoutError && <div className="checkout-error">{checkoutError}</div>}
+              </div>
+            </div>
+          )}
+
+          {whatsEnderecoOpen && checkoutStage === 'sucesso' && (
+            <div className="bag-values">
+              <div className="checkout-card">
+                <h3>Pedido recebido</h3>
+                <div className="checkout-success">
+                  Pagamento enviado com sucesso. O pedido ja entrou para o Dom preparar.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {checkoutStage === 'dados' && (
           <div className="bag-values">
             <h3>Resumo de valores</h3>
             <div className="value-row"><span>Subtotal</span><strong>{fmtBRL(carrinhoTotal)}</strong></div>
@@ -3884,197 +4120,38 @@ function App() {
             )}
             <div className="value-row total"><span>Total estimado</span><strong>{fmtBRL(totalComEntrega)}</strong></div>
           </div>
+          )}
         </div>
         <div className={`bag-footer ${whatsEnderecoOpen ? 'address-step' : ''}`}>
-          {whatsEnderecoOpen ? (
-            <div className="checkout-card">
-              {checkoutStage === 'dados' && (
-                <>
-                  <h3>Entrega e pagamento</h3>
-                  <p>Rapidinho: so o essencial para o Dom preparar e o motoboy achar sua casa sem novela.</p>
-                  <div className="checkout-mini-grid">
-                    <input
-                      className="checkout-input"
-                      value={checkoutDados.nome}
-                      onChange={e => setCheckoutField('nome', e.target.value)}
-                      placeholder="Seu nome"
-                      autoComplete="name"
-                    />
-                    <input
-                      className="checkout-input"
-                      value={checkoutDados.whatsapp}
-                      onChange={e => setCheckoutField('whatsapp', e.target.value)}
-                      placeholder="WhatsApp com DDD"
-                      inputMode="tel"
-                      autoComplete="tel"
-                    />
-                    <input
-                      className="checkout-input full"
-                      value={checkoutDados.email}
-                      onChange={e => setCheckoutField('email', e.target.value)}
-                      placeholder="E-mail (opcional, para recibo)"
-                      inputMode="email"
-                      autoComplete="email"
-                    />
-                    <input
-                      className="checkout-input"
-                      value={checkoutDados.ruaNumero}
-                      onChange={e => {
-                        setCheckoutField('ruaNumero', e.target.value);
-                        setWhatsEndereco(v => ({ ...v, ruaNumero: e.target.value }));
-                      }}
-                      placeholder="Rua e numero"
-                      autoComplete="street-address"
-                    />
-                    <input
-                      className="checkout-input"
-                      value={checkoutDados.bairro}
-                      onChange={e => {
-                        setCheckoutField('bairro', e.target.value);
-                        setWhatsEndereco(v => ({ ...v, bairro: e.target.value }));
-                      }}
-                      placeholder="Bairro"
-                      autoComplete="address-level3"
-                    />
-                    <div className="checkout-map-panel">
-                      <div className="checkout-map-head">
-                        <div>
-                          <strong>Pino da entrega</strong>
-                          <span>Busca pelo endereco, confirma o ponto e arrasta o pino se a entrada for diferente.</span>
-                        </div>
-                        <div className="checkout-map-chip">{mapPin ? 'pino pronto' : 'opcional'}</div>
-                      </div>
-                      {!mapsReady ? (
-                        <>
-                          <button className="delivery-calc-btn" disabled={mapsLoading} onClick={abrirMapaCheckout}>
-                            {mapsLoading ? 'Abrindo mapa...' : 'Buscar endereco no mapa'}
-                          </button>
-                          <p className="checkout-map-note">Se preferir, preenche rua e bairro manualmente. O mapa so ajuda a evitar entrega no ponto errado.</p>
-                        </>
-                      ) : (
-                        <>
-                          <input
-                            ref={addressSearchRef}
-                            className="checkout-input checkout-map-search"
-                            placeholder="Digite rua, numero ou CEP"
-                            defaultValue={mapAddressLabel}
-                            autoComplete="off"
-                          />
-                          <div ref={mapCanvasRef} className="checkout-map-canvas"></div>
-                          <div className="checkout-map-actions">
-                            <button type="button" disabled={mapsLoading} onClick={usarLocalizacaoAtual}>
-                              Usar minha localizacao
-                            </button>
-                            <button type="button" disabled={!mapPin || entregaLoading} onClick={calcularEntregaCheckout}>
-                              Ver tempo com esse pino
-                            </button>
-                          </div>
-                          <p className="checkout-map-note">
-                            {mapAddressLabel || 'Escolhe uma sugestao do Google ou arrasta o pino para a entrada da casa.'}
-                          </p>
-                        </>
-                      )}
-                      {mapsError && <div className="checkout-map-error">{mapsError}</div>}
-                    </div>
-                  </div>
-                  <div className={`delivery-estimate ${entregaEstimativa ? (entregaEstimativa.dentro_raio === false ? 'warn' : 'ok') : ''}`}>
-                    <div className="delivery-estimate-title">
-                      <strong>Entrega na sua casa</strong>
-                      <span>{entregaEstimativa?.fonte === 'google_maps' ? 'Google Maps' : 'estimativa'}</span>
-                    </div>
-                    {entregaEstimativa ? (
-                      <>
-                        <div className="delivery-estimate-grid">
-                          <div className="delivery-estimate-card">
-                            <small>Tempo</small>
-                            <strong>{entregaEstimativa.texto_tempo}</strong>
-                          </div>
-                          <div className="delivery-estimate-card">
-                            <small>Frete</small>
-                            <strong>{fmtBRL(taxaEntregaFinal)}</strong>
-                          </div>
-                          {entregaEstimativa.distancia_texto && (
-                            <div className="delivery-estimate-card">
-                              <small>Distancia</small>
-                              <strong>{entregaEstimativa.distancia_texto}</strong>
-                            </div>
-                          )}
-                          {entregaEstimativa.desconto_frete_chef > 0 && (
-                            <div className="delivery-estimate-card">
-                              <small>Chef bancou</small>
-                              <strong>- {fmtBRL(entregaEstimativa.desconto_frete_chef)}</strong>
-                            </div>
-                          )}
-                        </div>
-                        <p className="delivery-estimate-note">
-                          {entregaEstimativa.dentro_raio === false
-                            ? 'Fica um pouco fora do raio padrao. Da para continuar, mas talvez a gente confirme pelo WhatsApp.'
-                            : entregaEstimativa.endereco_formatado || 'Estimativa calculada com os dados informados.'}
-                        </p>
-                      </>
-                    ) : (
-                      <p className="delivery-estimate-note">Coloca rua, numero e bairro para ver uma previa de tempo e frete antes de pagar.</p>
-                    )}
-                    <button className="delivery-calc-btn" disabled={entregaLoading} onClick={calcularEntregaCheckout}>
-                      {entregaLoading ? 'Calculando rota...' : entregaEstimativa ? 'Recalcular entrega' : 'Calcular entrega'}
-                    </button>
-                  </div>
-                  <div className="checkout-helper">
-                    Pagamento seguro dentro do cardapio. Apple Pay, Google Pay e cartao aparecem quando estiverem disponiveis no seu aparelho.
-                  </div>
-                  {entregaError && <div className="checkout-error">{entregaError}</div>}
-                  {checkoutError && <div className="checkout-error">{checkoutError}</div>}
-                  <div className="checkout-actions">
-                    <button className="checkout-primary" disabled={checkoutLoading} onClick={criarCheckoutStripe}>
-                      {checkoutLoading ? 'Preparando pagamento...' : `Continuar para pagamento · ${fmtBRL(totalComEntrega)}`}
-                    </button>
-                    <button className="checkout-secondary" disabled={checkoutLoading} onClick={() => finalizarPedidoDireto()}>
-                      Finalizar pelo WhatsApp
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {checkoutStage === 'pagamento' && (
-                <>
-                  <div className="stripe-seal">
-                    <strong>Stripe</strong>
-                    <span>pagamento seguro</span>
-                  </div>
-                  <h3>Escolha como pagar</h3>
-                  <p>Se seu celular tiver carteira salva, Apple Pay ou Google Pay podem aparecer aqui sem criar conta.</p>
-                  <div id="stripe-payment-element" className="stripe-payment-box"></div>
-                  {checkoutError && <div className="checkout-error">{checkoutError}</div>}
-                  <div className="checkout-actions">
-                    <button className="checkout-primary" disabled={checkoutLoading} onClick={confirmarPagamentoStripe}>
-                      {checkoutLoading ? 'Confirmando...' : `Pagar agora · ${fmtBRL(totalComEntrega)}`}
-                    </button>
-                    <button className="checkout-secondary" disabled={checkoutLoading} onClick={resetStripeCheckout}>
-                      Voltar e editar dados
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {checkoutStage === 'sucesso' && (
-                <>
-                  <h3>Pedido recebido</h3>
-                  <div className="checkout-success">
-                    Pagamento enviado com sucesso. O pedido ja entrou para o Dom preparar.
-                  </div>
-                  <div className="checkout-actions">
-                    <button className="checkout-primary" onClick={() => { resetStripeCheckout(); setWhatsEnderecoOpen(false); setSacolaOpen(false); }}>
-                      Voltar ao cardapio
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          ) : (
+          {!whatsEnderecoOpen ? (
             <button className="bag-primary-btn" onClick={fecharPedido}>
               <span>Finalizar pedido</span>
               <span>{fmtBRL(totalComEntrega)}</span>
             </button>
+          ) : checkoutStage === 'dados' ? (
+            <div className="checkout-actions">
+              <button className="checkout-primary" disabled={checkoutLoading} onClick={criarCheckoutStripe}>
+                {checkoutLoading ? 'Preparando pagamento...' : `Continuar para pagamento · ${fmtBRL(totalComEntrega)}`}
+              </button>
+              <button className="checkout-secondary" disabled={checkoutLoading} onClick={() => finalizarPedidoDireto()}>
+                Finalizar pelo WhatsApp
+              </button>
+            </div>
+          ) : checkoutStage === 'pagamento' ? (
+            <div className="checkout-actions">
+              <button className="checkout-primary" disabled={checkoutLoading} onClick={confirmarPagamentoStripe}>
+                {checkoutLoading ? 'Confirmando...' : `Pagar agora · ${fmtBRL(totalComEntrega)}`}
+              </button>
+              <button className="checkout-secondary" disabled={checkoutLoading} onClick={resetStripeCheckout}>
+                Voltar e editar dados
+              </button>
+            </div>
+          ) : (
+            <div className="checkout-actions">
+              <button className="checkout-primary" onClick={() => { resetStripeCheckout(); setWhatsEnderecoOpen(false); setSacolaOpen(false); }}>
+                Voltar ao cardápio
+              </button>
+            </div>
           )}
         </div>
       </section>
