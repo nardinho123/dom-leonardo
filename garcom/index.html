@@ -1288,6 +1288,82 @@
     font-size: 11px;
     line-height: 1.35;
   }
+  .delivery-estimate {
+    margin-top: 10px;
+    border: 1px solid rgba(212,175,55,0.24);
+    background:
+      radial-gradient(circle at top left, rgba(212,175,55,0.16), transparent 45%),
+      rgba(0,0,0,0.24);
+    border-radius: 16px;
+    padding: 11px;
+  }
+  .delivery-estimate.ok {
+    border-color: rgba(107,255,181,0.25);
+    background:
+      radial-gradient(circle at top left, rgba(107,255,181,0.12), transparent 45%),
+      rgba(0,0,0,0.24);
+  }
+  .delivery-estimate.warn {
+    border-color: rgba(255,196,87,0.30);
+  }
+  .delivery-estimate-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 950;
+  }
+  .delivery-estimate-title span {
+    color: rgba(243,236,224,0.54);
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+  .delivery-estimate-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 9px;
+  }
+  .delivery-estimate-card {
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.035);
+    border-radius: 13px;
+    padding: 9px;
+  }
+  .delivery-estimate-card small {
+    display: block;
+    color: rgba(243,236,224,0.50);
+    font-size: 10px;
+    margin-bottom: 3px;
+  }
+  .delivery-estimate-card strong {
+    color: var(--gold);
+    font-size: 13px;
+  }
+  .delivery-estimate-note {
+    margin: 8px 0 0;
+    color: rgba(243,236,224,0.56);
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .delivery-calc-btn {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 9px;
+    border-radius: 14px;
+    border: 1px solid rgba(212,175,55,0.28);
+    background: rgba(0,0,0,0.30);
+    color: rgba(243,236,224,0.92);
+    font-size: 12px;
+    font-weight: 950;
+  }
+  .delivery-calc-btn:disabled {
+    opacity: 0.58;
+  }
   .stripe-seal {
     display: inline-flex;
     align-items: center;
@@ -2043,6 +2119,9 @@ function App() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
   const [stripeCheckout, setStripeCheckout] = useState(null);
+  const [entregaEstimativa, setEntregaEstimativa] = useState(null);
+  const [entregaLoading, setEntregaLoading] = useState(false);
+  const [entregaError, setEntregaError] = useState('');
   const stripeRef = useRef(null);
   const stripeElementsRef = useRef(null);
   const stripePaymentElementRef = useRef(null);
@@ -2298,7 +2377,7 @@ function App() {
 
   const calcSubtotal = (items) => items.reduce((s, it) => s + Number(it.subtotal ?? (it.preco * it.qtd) ?? 0), 0);
   const totalItens = carrinho.reduce((s, it) => s + Number(it.qtd || 0), 0);
-  const taxaEntrega = Number(deliveryConfig.taxa_entrega_padrao || 0);
+  const taxaEntrega = Number(entregaEstimativa?.frete_bruto ?? deliveryConfig.taxa_entrega_padrao ?? 0);
   const FRETE_CHEF_MINIMO = 60;
   const FRETE_CHEF_LIMITE = 10;
   const cuponsDisponiveis = cupons.filter(c => {
@@ -2354,7 +2433,8 @@ function App() {
       }
       linhas.push(`Taxa de entrega: ${cupomResumo.ok && cupomResumo.freteGratis ? 'gratis' : fmtBRL(taxaEntregaFinal)}`);
       linhas.push(`Preparo estimado: ${preparoTexto}`);
-      linhas.push(`Entrega estimada: ${entregaTexto}`);
+      linhas.push(`Entrega estimada: ${entregaEstimativa?.texto_tempo || entregaTexto}`);
+      if (entregaEstimativa?.distancia_texto) linhas.push(`Distancia: ${entregaEstimativa.distancia_texto}`);
       if (descontoCupom > 0) linhas.push(`Desconto: - ${fmtBRL(descontoCupom)}`);
       if (cupomResumo.ok && cupomAplicado?.codigo) linhas.push(`Cupom: ${String(cupomAplicado.codigo).toUpperCase()}`);
       linhas.push(`Total estimado: ${fmtBRL(totalComEntrega)}`);
@@ -2405,6 +2485,10 @@ function App() {
 
   const setCheckoutField = (field, value) => {
     setCheckoutDados(prev => ({ ...prev, [field]: value }));
+    if (field === 'ruaNumero' || field === 'bairro') {
+      setEntregaEstimativa(null);
+      setEntregaError('');
+    }
     if (stripeCheckout) resetStripeCheckout();
   };
 
@@ -2418,6 +2502,54 @@ function App() {
     if (!logradouro || !numero) return 'Coloca rua e numero juntos, por exemplo: Rua X, 123.';
     if (!bairro) return 'Coloca o bairro para calcularmos a entrega certinho.';
     return '';
+  };
+
+  const calcularEntregaCheckout = async () => {
+    const { logradouro, numero } = splitRuaNumero(checkoutDados.ruaNumero);
+    const bairro = checkoutDados.bairro.trim();
+    if (!logradouro || !numero || !bairro) {
+      setEntregaError('Coloca rua, numero e bairro. Exemplo: Francisco Dallaribera, 1811 + Santa Felicidade.');
+      vibrate(35);
+      return;
+    }
+
+    setEntregaLoading(true);
+    setEntregaError('');
+    try {
+      const r = await fetch(GARCOM_RESPONDER_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          acao: 'calcular_entrega_google',
+          subtotal: carrinhoTotal,
+          endereco: {
+            logradouro,
+            numero,
+            bairro,
+            cidade: 'Curitiba',
+            uf: 'PR',
+          },
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data?.entrega) {
+        throw new Error(data?.error || 'Nao consegui calcular essa rota agora.');
+      }
+
+      setEntregaEstimativa(data.entrega);
+      const trecho = data.entrega?.fonte === 'google_maps'
+        ? `Olhei a rota: da uns ${data.entrega.texto_tempo}${data.entrega.distancia_texto ? `, cerca de ${data.entrega.distancia_texto}` : ''}.`
+        : `Usei a media da casa por enquanto: ${data.entrega.texto_tempo}.`;
+      falarMarco(`${trecho} Se quiser, ja sigo pro pagamento daqui.`, 5200);
+    } catch (err) {
+      setEntregaError(err.message || 'Nao consegui calcular essa entrega agora.');
+    } finally {
+      setEntregaLoading(false);
+    }
   };
 
   const criarCheckoutStripe = async () => {
@@ -2458,6 +2590,7 @@ function App() {
           endereco,
           itens: carrinho,
           cupom_codigo: cupomResumo.ok && cupomAplicado?.codigo ? String(cupomAplicado.codigo).toUpperCase() : null,
+          entrega_google: !!entregaEstimativa,
           site_url: window.location.origin + window.location.pathname,
           idempotency_key: `dl-stripe-${chatDeviceId.current}-${Date.now()}`,
         }),
@@ -3331,7 +3464,7 @@ function App() {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M15 6l-6 6 6 6"/></svg>
           </button>
           <h2>Sacola</h2>
-          {!!carrinho.length && <button className="bag-clear" onClick={() => { resetStripeCheckout(); setCarrinho([]); setCarrinhoTotal(0); setWhatsEnderecoOpen(false); }}>Limpar</button>}
+          {!!carrinho.length && <button className="bag-clear" onClick={() => { resetStripeCheckout(); setCarrinho([]); setCarrinhoTotal(0); setEntregaEstimativa(null); setEntregaError(''); setWhatsEnderecoOpen(false); }}>Limpar</button>}
         </div>
         <div className="bag-scroll">
           <div className="bag-store">
@@ -3486,9 +3619,52 @@ function App() {
                       autoComplete="address-level3"
                     />
                   </div>
+                  <div className={`delivery-estimate ${entregaEstimativa ? (entregaEstimativa.dentro_raio === false ? 'warn' : 'ok') : ''}`}>
+                    <div className="delivery-estimate-title">
+                      <strong>Entrega na sua casa</strong>
+                      <span>{entregaEstimativa?.fonte === 'google_maps' ? 'Google Maps' : 'estimativa'}</span>
+                    </div>
+                    {entregaEstimativa ? (
+                      <>
+                        <div className="delivery-estimate-grid">
+                          <div className="delivery-estimate-card">
+                            <small>Tempo</small>
+                            <strong>{entregaEstimativa.texto_tempo}</strong>
+                          </div>
+                          <div className="delivery-estimate-card">
+                            <small>Frete</small>
+                            <strong>{fmtBRL(taxaEntregaFinal)}</strong>
+                          </div>
+                          {entregaEstimativa.distancia_texto && (
+                            <div className="delivery-estimate-card">
+                              <small>Distancia</small>
+                              <strong>{entregaEstimativa.distancia_texto}</strong>
+                            </div>
+                          )}
+                          {entregaEstimativa.desconto_frete_chef > 0 && (
+                            <div className="delivery-estimate-card">
+                              <small>Chef bancou</small>
+                              <strong>- {fmtBRL(entregaEstimativa.desconto_frete_chef)}</strong>
+                            </div>
+                          )}
+                        </div>
+                        <p className="delivery-estimate-note">
+                          {entregaEstimativa.dentro_raio === false
+                            ? 'Fica um pouco fora do raio padrao. Da para continuar, mas talvez a gente confirme pelo WhatsApp.'
+                            : entregaEstimativa.endereco_formatado || 'Estimativa calculada com os dados informados.'}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="delivery-estimate-note">Coloca rua, numero e bairro para ver uma previa de tempo e frete antes de pagar.</p>
+                    )}
+                    <button className="delivery-calc-btn" disabled={entregaLoading} onClick={calcularEntregaCheckout}>
+                      {entregaLoading ? 'Calculando rota...' : entregaEstimativa ? 'Recalcular entrega' : 'Calcular entrega'}
+                    </button>
+                  </div>
                   <div className="checkout-helper">
                     Pagamento seguro dentro do cardapio. Apple Pay, Google Pay e cartao aparecem quando estiverem disponiveis no seu aparelho.
                   </div>
+                  {entregaError && <div className="checkout-error">{entregaError}</div>}
                   {checkoutError && <div className="checkout-error">{checkoutError}</div>}
                   <div className="checkout-actions">
                     <button className="checkout-primary" disabled={checkoutLoading} onClick={criarCheckoutStripe}>

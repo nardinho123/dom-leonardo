@@ -227,6 +227,144 @@ function stripePublishableKey(): string {
     || "pk_live_51TlWo3Q8mlsqNv4rKQK8ubQgLWnDzCs6Xl237Xll5FjbaWmBiLCasCQLrC9cONXwU4lP7TaR7UrAUH5j4A0mpp5z00VY2KLhSz";
 }
 
+const RESTAURANTE_ORIGEM = "Rua Francisco Dallaribera, 1811, Santa Felicidade, Curitiba, PR, 82410-030, Brasil";
+
+function mapsServerKey(): string {
+  return Deno.env.get("GOOGLE_MAPS_SERVER_KEY")
+    || Deno.env.get("DOM_LEONARDO_MAPS_SERVER")
+    || Deno.env.get("GOOGLE_MAPS_API_KEY")
+    || "";
+}
+
+function arredondaDinheiro(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function calcularFreteEstimado(distanceKm: number | null, config: Record<string, unknown>, subtotal: number) {
+  const taxaPadrao = toNumber(config.taxa_entrega_padrao, 0);
+  const raioEntregaKm = toNumber(config.raio_entrega_km, 8);
+  const freteCalculado = distanceKm
+    ? Math.max(taxaPadrao, 5 + (distanceKm * 1.35))
+    : taxaPadrao;
+  const freteBruto = arredondaDinheiro(freteCalculado);
+  const descontoChef = subtotal >= 60 ? Math.min(freteBruto, 10) : 0;
+
+  return {
+    frete_bruto: freteBruto,
+    desconto_frete_chef: arredondaDinheiro(descontoChef),
+    frete_final: arredondaDinheiro(Math.max(0, freteBruto - descontoChef)),
+    dentro_raio: !distanceKm || distanceKm <= raioEntregaKm,
+    raio_entrega_km: raioEntregaKm,
+  };
+}
+
+function entregaFallback(config: Record<string, unknown>, subtotal: number, motivo: string) {
+  const tempoMin = toNumber(config.tempo_entrega_min, 20);
+  const tempoMax = toNumber(config.tempo_entrega_max, 30);
+  const frete = calcularFreteEstimado(null, config, subtotal);
+
+  return {
+    sucesso: true,
+    fonte: "configuracao",
+    motivo,
+    endereco_formatado: null,
+    distancia_km: null,
+    rota_minutos: null,
+    tempo_min: tempoMin,
+    tempo_max: Math.max(tempoMax, tempoMin + 8),
+    texto_tempo: `${tempoMin} a ${Math.max(tempoMax, tempoMin + 8)} min`,
+    ...frete,
+  };
+}
+
+async function calcularEntregaGoogle(params: {
+  endereco: Record<string, unknown>;
+  subtotal: number;
+  config: Record<string, unknown>;
+}) {
+  const key = mapsServerKey();
+  if (!key) return entregaFallback(params.config, params.subtotal, "google_maps_key_ausente");
+
+  const logradouro = cleanText(params.endereco.logradouro);
+  const numero = cleanText(params.endereco.numero);
+  const bairro = cleanText(params.endereco.bairro);
+  const cep = cleanText(params.endereco.cep);
+  const cidade = cleanText(params.endereco.cidade) || "Curitiba";
+  const uf = cleanText(params.endereco.uf) || "PR";
+  if (!logradouro || !numero || !bairro) {
+    throw new Error("Informe rua, numero e bairro para calcular a entrega.");
+  }
+
+  const destinoTexto = `${logradouro}, ${numero}, ${bairro}, ${cidade}, ${uf}, ${cep ? `${cep}, ` : ""}Brasil`;
+
+  const geoUrl = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+  geoUrl.searchParams.set("address", destinoTexto);
+  geoUrl.searchParams.set("region", "br");
+  geoUrl.searchParams.set("language", "pt-BR");
+  geoUrl.searchParams.set("key", key);
+
+  const geoResp = await fetch(geoUrl);
+  const geoData = await geoResp.json().catch(() => ({})) as Record<string, unknown>;
+  const geoResults = Array.isArray(geoData.results) ? geoData.results as Array<Record<string, unknown>> : [];
+  const geoStatus = cleanText(geoData.status);
+  if (!geoResp.ok || geoStatus !== "OK" || geoResults.length === 0) {
+    return entregaFallback(params.config, params.subtotal, `geocode_${geoStatus || geoResp.status}`);
+  }
+
+  const best = geoResults[0];
+  const geometry = asObject(best.geometry);
+  const location = asObject(geometry.location);
+  const lat = toNumber(location.lat, NaN);
+  const lng = toNumber(location.lng, NaN);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return entregaFallback(params.config, params.subtotal, "geocode_sem_coordenadas");
+  }
+
+  const matrixUrl = new URL("https://maps.googleapis.com/maps/api/distancematrix/json");
+  matrixUrl.searchParams.set("origins", RESTAURANTE_ORIGEM);
+  matrixUrl.searchParams.set("destinations", `${lat},${lng}`);
+  matrixUrl.searchParams.set("mode", "driving");
+  matrixUrl.searchParams.set("language", "pt-BR");
+  matrixUrl.searchParams.set("region", "br");
+  matrixUrl.searchParams.set("units", "metric");
+  matrixUrl.searchParams.set("key", key);
+
+  const matrixResp = await fetch(matrixUrl);
+  const matrixData = await matrixResp.json().catch(() => ({})) as Record<string, unknown>;
+  const rows = Array.isArray(matrixData.rows) ? matrixData.rows as Array<Record<string, unknown>> : [];
+  const elements = Array.isArray(rows[0]?.elements) ? rows[0].elements as Array<Record<string, unknown>> : [];
+  const element = elements[0] ?? {};
+  const elementStatus = cleanText(element.status);
+  if (!matrixResp.ok || cleanText(matrixData.status) !== "OK" || elementStatus !== "OK") {
+    return entregaFallback(params.config, params.subtotal, `distance_${cleanText(matrixData.status) || elementStatus || matrixResp.status}`);
+  }
+
+  const distance = asObject(element.distance);
+  const duration = asObject(element.duration);
+  const distanciaKm = arredondaDinheiro(toNumber(distance.value, 0) / 1000);
+  const rotaMinutos = Math.ceil(toNumber(duration.value, 0) / 60);
+  const tempoBaseMin = toNumber(params.config.tempo_entrega_min, 20);
+  const tempoBaseMax = toNumber(params.config.tempo_entrega_max, 30);
+  const tempoMin = Math.max(tempoBaseMin, rotaMinutos + 10);
+  const tempoMax = Math.max(tempoBaseMax, tempoMin + 10, rotaMinutos + 20);
+  const frete = calcularFreteEstimado(distanciaKm, params.config, params.subtotal);
+
+  return {
+    sucesso: true,
+    fonte: "google_maps",
+    endereco_formatado: cleanText(best.formatted_address),
+    coordenadas: { lat, lng },
+    distancia_texto: cleanText(distance.text),
+    distancia_km: distanciaKm,
+    rota_texto: cleanText(duration.text),
+    rota_minutos: rotaMinutos,
+    tempo_min: tempoMin,
+    tempo_max: tempoMax,
+    texto_tempo: `${tempoMin} a ${tempoMax} min`,
+    ...frete,
+  };
+}
+
 async function createStripePaymentIntent(params: {
   amount: number;
   pedidoId: string;
@@ -286,7 +424,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    if (!["listar_pratos", "listar_cardapio", "mensagens_chat", "registrar_atendimento", "listar_atendimento", "buscar_cliente", "criar_checkout", "processar_pagamento_brick", "criar_pagamento_stripe"].includes(acao)) {
+    if (!["listar_pratos", "listar_cardapio", "mensagens_chat", "registrar_atendimento", "listar_atendimento", "buscar_cliente", "calcular_entrega_google", "criar_checkout", "processar_pagamento_brick", "criar_pagamento_stripe"].includes(acao)) {
       return new Response(JSON.stringify({ error: "acao invalida" }), {
         status: 400,
         headers: { ...cors, "Content-Type": "application/json" },
@@ -461,6 +599,18 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (acao === "calcular_entrega_google") {
+      const estimativa = await calcularEntregaGoogle({
+        endereco: asObject(body?.endereco),
+        subtotal: toNumber(body?.subtotal, 0),
+        config: (config as Record<string, unknown> | null) ?? {},
+      });
+
+      return new Response(JSON.stringify({ sucesso: true, entrega: estimativa }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
     if (acao === "criar_pagamento_stripe") {
       const cliente = body?.cliente ?? {};
       const endereco = body?.endereco ?? {};
@@ -505,7 +655,45 @@ Deno.serve(async (req) => {
       const pedidoObj = pedido as Record<string, unknown>;
       const pedidoId = String(pedidoObj.pedido_id ?? "");
       const numeroPedido = String(pedidoObj.numero_pedido ?? "");
-      const total = toNumber(pedidoObj.total, 0);
+      let total = toNumber(pedidoObj.total, 0);
+
+      if (body?.entrega_google === true) {
+        const entrega = await calcularEntregaGoogle({
+          endereco: asObject(endereco),
+          subtotal: toNumber(pedidoObj.subtotal, 0),
+          config: (config as Record<string, unknown> | null) ?? {},
+        });
+        const taxaEntregaGoogle = toNumber(entrega.frete_final, NaN);
+
+        if (Number.isFinite(taxaEntregaGoogle) && taxaEntregaGoogle >= 0) {
+          const subtotalPedido = toNumber(pedidoObj.subtotal, 0);
+          const descontoPedido = toNumber(pedidoObj.desconto, 0);
+          total = arredondaDinheiro(Math.max(0, subtotalPedido + taxaEntregaGoogle - descontoPedido));
+          const obsAtual = cleanText(pedidoObj.observacoes);
+          const obsEntrega = [
+            `Entrega Google Maps: ${cleanText(entrega.texto_tempo) || "estimativa indisponivel"}`,
+            entrega.distancia_texto ? `distancia ${cleanText(entrega.distancia_texto)}` : "",
+            entrega.fonte === "google_maps" ? "fonte google_maps" : `fonte configuracao (${cleanText(entrega.motivo) || "fallback"})`,
+          ].filter(Boolean).join(" | ");
+          const observacoes = [obsAtual, obsEntrega].filter(Boolean).join("\n");
+
+          const { error: entregaUpdateError } = await supabase
+            .from("pedidos")
+            .update({
+              taxa_entrega: taxaEntregaGoogle,
+              total,
+              observacoes,
+            })
+            .eq("id", pedidoId);
+          if (entregaUpdateError) throw entregaUpdateError;
+
+          pedidoObj.taxa_entrega = taxaEntregaGoogle;
+          pedidoObj.total = total;
+          pedidoObj.observacoes = observacoes;
+          pedidoObj.entrega_google = entrega;
+        }
+      }
+
       const idempotencyKey = cleanText(body?.idempotency_key) || `dom-leonardo-${pedidoId}`;
       const paymentIntent = await createStripePaymentIntent({
         amount: toStripeAmount(total),
@@ -528,7 +716,7 @@ Deno.serve(async (req) => {
 
       return new Response(JSON.stringify({
         sucesso: true,
-        pedido,
+        pedido: pedidoObj,
         stripe: {
           publishable_key: stripePublishableKey(),
           payment_intent_id: paymentIntent.id,
