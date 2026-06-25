@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Protótipo Codex | Dom Leonardo</title>
+<style>
+  :root {
+    --bg: #050504;
+    --paper: #f4efe3;
+    --ink: #11100d;
+    --panel: #11100c;
+    --panel-2: #1c1710;
+    --gold: #d6b042;
+    --gold-soft: #f2d978;
+    --red: #bf321f;
+    --green: #203a2e;
+    --blue: #254554;
+    --text: #fff7e7;
+    --muted: #b9aa8c;
+    --line: rgba(214, 176, 66, .24);
+    --shadow: 0 24px 70px rgba(0,0,0,.58);
+    --radius-xl: 34px;
+    --radius-lg: 24px;
+    --radius-md: 18px;
+    --max: 460px;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--text);
+    background:
+      radial-gradient(circle at 0% 0%, rgba(214,176,66,.14), transparent 36%),
+      radial-gradient(circle at 100% 12%, rgba(191,50,31,.12), transparent 34%),
+      linear-gradient(180deg, #090805 0%, #050504 55%, #020202 100%);
+    font-family: "Segoe UI", "Avenir Next", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: .13;
+    background-image:
+      linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+    background-size: 46px 46px;
+    mask-image: linear-gradient(180deg, #000 0%, transparent 78%);
+  }
+
+  button {
+    font: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  img { display: block; }
+
+  .app {
+    width: min(100%, var(--max));
+    margin: 0 auto;
+    min-height: 100vh;
+    padding: 12px 12px 110px;
+    position: relative;
+  }
+
+  .prototype-ribbon {
+    position: fixed;
+    left: 50%;
+    top: 10px;
+    transform: translateX(-50%);
+    z-index: 80;
+    width: min(calc(100% - 28px), 432px);
+    border: 1px solid rgba(214,176,66,.24);
+    border-radius: 999px;
+    background: rgba(7,6,4,.72);
+    backdrop-filter: blur(16px);
+    color: var(--gold-soft);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 10px 7px 14px;
+    font-size: 10px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    box-shadow: 0 16px 36px rgba(0,0,0,.28);
+  }
+
+  .prototype-ribbon strong {
+    color: #fff2c6;
+  }
+
+  .hero {
+    min-height: 680px;
+    position: relative;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(214,176,66,.2);
+    isolation: isolate;
+  }
+
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 14px;
+    z-index: 3;
+    border: 1px solid rgba(242,217,120,.58);
+    border-radius: 26px;
+    pointer-events: none;
+  }
+
+  .hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+      linear-gradient(180deg, rgba(5,5,4,.18) 0%, rgba(5,5,4,.18) 30%, rgba(5,5,4,.92) 86%),
+      radial-gradient(circle at 68% 24%, transparent 0 16%, rgba(0,0,0,.25) 46%, rgba(0,0,0,.55) 100%);
+    pointer-events: none;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  .hero-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(1.08) contrast(1.04) brightness(.78);
+    transform: scale(1.08);
+  }
+
+  .hero-top {
+    position: relative;
+    z-index: 4;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 26px 26px 0;
+  }
+
+  .logo-mark {
+    width: 58px;
+    height: 58px;
+    border-radius: 999px;
+    border: 1px solid rgba(242,217,120,.55);
+    overflow: hidden;
+    background: rgba(0,0,0,.28);
+    box-shadow: 0 10px 26px rgba(0,0,0,.32);
+  }
+
+  .logo-mark img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .pill {
+    border: 1px solid rgba(242,217,120,.34);
+    border-radius: 999px;
+    background: rgba(0,0,0,.38);
+    color: #fff4d0;
+    backdrop-filter: blur(16px);
+    padding: 10px 13px;
+    font-size: 11px;
+    font-weight: 850;
+  }
+
+  .hero-copy {
+    position: absolute;
+    z-index: 4;
+    left: 30px;
+    right: 30px;
+    bottom: 34px;
+  }
+
+  .kicker {
+    display: block;
+    color: var(--gold-soft);
+    font-size: 11px;
+    font-weight: 950;
+    letter-spacing: .34em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  h1, h2, h3, p { margin: 0; }
+
+  h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(54px, 17vw, 82px);
+    line-height: .86;
+    letter-spacing: -.065em;
+    text-shadow: 0 20px 52px rgba(0,0,0,.7);
+  }
+
+  h1 em {
+    display: block;
+    color: var(--gold-soft);
+    font-style: italic;
+    font-weight: 400;
+    padding-left: 42px;
+  }
+
+  .hero-lead {
+    margin-top: 18px;
+    max-width: 30ch;
+    color: rgba(255,247,231,.82);
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  .trust-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 20px;
+  }
+
+  .trust {
+    min-height: 58px;
+    border-radius: 17px;
+    border: 1px solid rgba(214,176,66,.24);
+    background: rgba(0,0,0,.42);
+    backdrop-filter: blur(12px);
+    padding: 10px;
+  }
+
+  .trust span {
+    display: block;
+    color: var(--muted);
+    font-size: 10px;
+    margin-bottom: 4px;
+  }
+
+  .trust strong {
+    display: block;
+    color: #fff3ce;
+    font-size: 13px;
+    line-height: 1.1;
+  }
+
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 13px 1px;
+    margin: 12px 0 8px;
+    background: linear-gradient(180deg, rgba(5,5,4,.96), rgba(5,5,4,.82));
+    backdrop-filter: blur(14px);
+  }
+
+  .nav::-webkit-scrollbar { display: none; }
+
+  .nav a {
+    flex: 0 0 auto;
+    color: #ffe7a0;
+    text-decoration: none;
+    border: 1px solid rgba(214,176,66,.2);
+    background: rgba(214,176,66,.08);
+    border-radius: 999px;
+    padding: 11px 14px;
+    font-size: 12px;
+    font-weight: 850;
+    white-space: nowrap;
+  }
+
+  .nav a:first-child {
+    background: var(--gold);
+    color: #1a1204;
+  }
+
+  .poster-row {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 78%;
+    gap: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 4px 0 18px;
+    scroll-snap-type: x mandatory;
+  }
+
+  .poster-row::-webkit-scrollbar { display: none; }
+
+  .poster-card {
+    min-height: 430px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 28px;
+    border: 1px solid rgba(214,176,66,.24);
+    box-shadow: 0 18px 44px rgba(0,0,0,.38);
+    scroll-snap-align: start;
+    background: #111;
+  }
+
+  .poster-card::before {
+    content: "";
+    position: absolute;
+    inset: 12px;
+    z-index: 2;
+    border: 1px solid rgba(242,217,120,.54);
+    border-radius: 21px;
+    pointer-events: none;
+  }
+
+  .poster-card img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(1.05) contrast(1.04) brightness(.78);
+  }
+
+  .poster-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 8%, rgba(0,0,0,.24) 42%, rgba(0,0,0,.92) 100%);
+  }
+
+  .poster-info {
+    position: absolute;
+    z-index: 3;
+    left: 22px;
+    right: 22px;
+    bottom: 22px;
+  }
+
+  .poster-info h3 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 28px;
+    line-height: 1.02;
+    letter-spacing: -.035em;
+    margin-bottom: 10px;
+  }
+
+  .poster-info p {
+    color: rgba(255,247,231,.78);
+    font-size: 13px;
+    line-height: 1.42;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .price {
+    color: var(--gold-soft);
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    font-size: 23px;
+    margin-top: 14px;
+  }
+
+  .section {
+    padding: 24px 0 4px;
+  }
+
+  .section-head {
+    padding: 12px 8px 14px;
+  }
+
+  .section-head .number {
+    color: var(--gold);
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    font-size: 10px;
+    font-weight: 950;
+    margin-bottom: 8px;
+  }
+
+  .section-head h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 35px;
+    line-height: .94;
+    letter-spacing: -.052em;
+  }
+
+  .section-head p {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.45;
+    margin-top: 10px;
+    max-width: 34ch;
+  }
+
+  .dish-card {
+    display: grid;
+    grid-template-columns: 126px 1fr;
+    gap: 13px;
+    border-radius: 25px;
+    border: 1px solid rgba(214,176,66,.18);
+    background: linear-gradient(135deg, rgba(255,255,255,.045), rgba(255,255,255,.018));
+    box-shadow: 0 14px 38px rgba(0,0,0,.28);
+    overflow: hidden;
+    margin-bottom: 12px;
+    min-height: 154px;
+    position: relative;
+  }
+
+  .dish-card::before {
+    content: "";
+    position: absolute;
+    inset: 7px;
+    border: 1px solid rgba(214,176,66,.12);
+    border-radius: 20px;
+    pointer-events: none;
+  }
+
+  .dish-photo {
+    width: 126px;
+    height: 100%;
+    min-height: 154px;
+    object-fit: cover;
+  }
+
+  .dish-body {
+    min-width: 0;
+    padding: 14px 13px 14px 0;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    color: #1b1306;
+    background: var(--gold);
+    border-radius: 999px;
+    padding: 5px 8px;
+    font-size: 9px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .13em;
+    margin-bottom: 8px;
+  }
+
+  .dish-body h3 {
+    font-size: 17px;
+    line-height: 1.12;
+    letter-spacing: -.015em;
+    margin-bottom: 7px;
+  }
+
+  .dish-body p {
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .dish-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .dish-bottom strong {
+    color: var(--gold-soft);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 19px;
+    white-space: nowrap;
+  }
+
+  .see-btn {
+    border: 0;
+    border-radius: 999px;
+    background: rgba(214,176,66,.16);
+    color: var(--gold-soft);
+    padding: 9px 13px;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .floating-bag {
+    position: fixed;
+    z-index: 60;
+    left: 50%;
+    bottom: 12px;
+    transform: translateX(-50%);
+    width: min(calc(100% - 24px), 436px);
+    display: grid;
+    grid-template-columns: 54px 1fr;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 24px;
+    border: 1px solid rgba(214,176,66,.24);
+    background: rgba(8,7,5,.84);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 20px 50px rgba(0,0,0,.48);
+  }
+
+  .waiter {
+    width: 54px;
+    height: 54px;
+    border-radius: 18px;
+    border: 1px solid rgba(242,217,120,.35);
+    background: radial-gradient(circle at 50% 24%, var(--gold), #735812 62%, #1a1206 100%);
+    color: #1b1305;
+    display: grid;
+    place-items: center;
+    font-size: 25px;
+    font-weight: 950;
+  }
+
+  .bag-cta {
+    border: 0;
+    border-radius: 18px;
+    background: linear-gradient(180deg, var(--gold-soft), var(--gold));
+    color: #211601;
+    font-weight: 950;
+    letter-spacing: -.01em;
+  }
+
+  .sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    background: rgba(0,0,0,.72);
+    opacity: 0;
+    pointer-events: none;
+    transition: .22s ease;
+  }
+
+  .sheet-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sheet {
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    z-index: 100;
+    width: min(100%, var(--max));
+    max-height: 92vh;
+    transform: translate(-50%, 105%);
+    transition: transform .32s cubic-bezier(.2,.9,.2,1);
+    border-radius: 34px 34px 0 0;
+    overflow: hidden;
+    background: #0c0b08;
+    border: 1px solid rgba(214,176,66,.22);
+    box-shadow: 0 -30px 80px rgba(0,0,0,.62);
+  }
+
+  .sheet.open { transform: translate(-50%, 0); }
+
+  .sheet-scroll {
+    overflow-y: auto;
+    max-height: 92vh;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+
+  .sheet-photo {
+    position: relative;
+    height: 310px;
+    overflow: hidden;
+  }
+
+  .sheet-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(1.08) contrast(1.04);
+  }
+
+  .sheet-photo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 52%, rgba(12,11,8,.98) 100%);
+  }
+
+  .close {
+    position: absolute;
+    z-index: 2;
+    top: 14px;
+    right: 14px;
+    width: 44px;
+    height: 44px;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 16px;
+    background: rgba(0,0,0,.52);
+    color: #fff;
+    font-size: 22px;
+    backdrop-filter: blur(12px);
+  }
+
+  .sheet-content {
+    padding: 0 18px 20px;
+    margin-top: -54px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .sheet-title {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 35px;
+    line-height: .98;
+    letter-spacing: -.045em;
+  }
+
+  .sheet-desc {
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.5;
+    margin: 12px 0 18px;
+  }
+
+  .info-card {
+    border-radius: 22px;
+    border: 1px solid rgba(214,176,66,.18);
+    background: rgba(255,255,255,.04);
+    padding: 14px;
+    margin: 10px 0;
+  }
+
+  .info-card small {
+    display: block;
+    color: var(--gold-soft);
+    text-transform: uppercase;
+    letter-spacing: .16em;
+    font-size: 9px;
+    font-weight: 950;
+    margin-bottom: 6px;
+  }
+
+  .info-card p {
+    color: rgba(255,247,231,.82);
+    font-size: 13px;
+    line-height: 1.42;
+  }
+
+  .option-group {
+    margin-top: 16px;
+  }
+
+  .option-group h4 {
+    margin: 0;
+    color: #fff2c6;
+    font-size: 15px;
+  }
+
+  .option-group em {
+    display: block;
+    color: var(--muted);
+    font-style: normal;
+    font-size: 12px;
+    margin-top: 3px;
+  }
+
+  .option {
+    display: grid;
+    grid-template-columns: 54px 1fr auto;
+    gap: 11px;
+    align-items: center;
+    min-height: 68px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+
+  .option img {
+    width: 54px;
+    height: 54px;
+    object-fit: cover;
+    border-radius: 16px;
+    background: #19150f;
+  }
+
+  .option strong {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 3px;
+  }
+
+  .option span {
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .plus {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    border: 1px solid rgba(214,176,66,.3);
+    background: rgba(214,176,66,.13);
+    color: var(--gold-soft);
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .sheet-footer {
+    position: sticky;
+    bottom: 0;
+    display: grid;
+    grid-template-columns: 102px 1fr;
+    gap: 10px;
+    padding: 12px 0 0;
+    background: linear-gradient(180deg, transparent, #0c0b08 22%);
+  }
+
+  .qty {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(214,176,66,.2);
+    color: #fff;
+    min-height: 54px;
+  }
+
+  .add {
+    border: 0;
+    border-radius: 18px;
+    min-height: 54px;
+    background: linear-gradient(180deg, var(--gold-soft), var(--gold));
+    color: #1d1402;
+    font-weight: 950;
+  }
+
+  .empty {
+    padding: 50px 18px;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  @media (min-width: 760px) {
+    .app { padding-top: 24px; }
+    .prototype-ribbon { top: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="prototype-ribbon"><span>Protótipo <strong>Codex</strong></span><span>seguro / isolado</span></div>
+<main class="app" id="app">
+  <section class="empty">Preparando o salão...</section>
+</main>
+
+<div class="sheet-backdrop" id="sheetBackdrop"></div>
+<aside class="sheet" id="sheet" aria-hidden="true"></aside>
+
+<script src="./cardapio-data.js"></script>
+<script>
+const DATA = window.__DOM_LEONARDO_CARDAPIO__ || {};
+const app = document.getElementById('app');
+const sheet = document.getElementById('sheet');
+const sheetBackdrop = document.getElementById('sheetBackdrop');
+
+function esc(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[char]));
+}
+
+function money(value) {
+  return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function priceOf(item) {
+  return Number(item?.preco_promocional || item?.preco || item?.preco_base || 0);
+}
+
+function imageOf(item) {
+  return item?.foto_url || item?.foto || DATA.config?.topo?.capa_url || DATA.config?.restaurante_capa_url || '';
+}
+
+function textOf(item) {
+  return item?.descricao_curta || item?.descricao || item?.descricao_completa || item?.frase_fome || '';
+}
+
+function shortText(value, size = 110) {
+  const text = String(value || '').replace(/\s+/g, ' ').trim();
+  return text.length > size ? text.slice(0, size - 1).trim() + '...' : text;
+}
+
+function logoUrl() {
+  return DATA.config?.topo?.logo_url || DATA.config?.restaurante_logo_url || '';
+}
+
+function categorySlug(cat, index) {
+  return `sec-${index}-${String(cat.slug || cat.nome || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+}
+
+function renderPosterCard(prato) {
+  return `
+    <article class="poster-card" onclick="openDish('${esc(prato.id)}')">
+      <img src="${esc(imageOf(prato))}" alt="${esc(prato.nome)}" loading="lazy" />
+      <div class="poster-info">
+        ${prato.badge_destaque || prato.selo_experiencia ? `<span class="tag">${esc(prato.badge_destaque || prato.selo_experiencia)}</span>` : ''}
+        <h3>${esc(prato.nome)}</h3>
+        <p>${esc(shortText(textOf(prato), 145))}</p>
+        <div class="price">${money(priceOf(prato))}</div>
+      </div>
+    </article>
+  `;
+}
+
+function renderDishCard(prato) {
+  return `
+    <article class="dish-card" onclick="openDish('${esc(prato.id)}')">
+      <img class="dish-photo" src="${esc(imageOf(prato))}" alt="${esc(prato.nome)}" loading="lazy" />
+      <div class="dish-body">
+        ${prato.badge_destaque || prato.selo_experiencia ? `<span class="tag">${esc(prato.badge_destaque || prato.selo_experiencia)}</span>` : ''}
+        <h3>${esc(prato.nome)}</h3>
+        <p>${esc(shortText(textOf(prato), 118))}</p>
+        <div class="dish-bottom">
+          <strong>${money(priceOf(prato))}</strong>
+          <button class="see-btn" type="button">Ver</button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function render() {
+  const categorias = [...(DATA.categorias || [])].sort((a,b) => (a.ordem || 0) - (b.ordem || 0));
+  const pratos = DATA.pratos || [];
+  const cfg = DATA.config?.topo || DATA.config || {};
+  const first = pratos.find(p => p.badge_destaque) || pratos[0] || {};
+  const destaque = pratos.filter(p => p.badge_destaque || p.selo_experiencia).slice(0, 7);
+  const logo = logoUrl();
+
+  const categoriesHtml = categorias.map((cat, index) => {
+    const lista = pratos
+      .filter(p => p.categoria_id === cat.id)
+      .sort((a,b) => (a.ordem || 0) - (b.ordem || 0));
+    if (!lista.length) return '';
+    return `
+      <section class="section" id="${categorySlug(cat, index)}">
+        <header class="section-head">
+          <div class="number">Capítulo ${String(index + 1).padStart(2, '0')}</div>
+          <h2>${esc(cat.nome)}</h2>
+          <p>${esc(cat.descricao || 'Escolhas do Dom para matar a fome sem transformar o pedido em formulário.')}</p>
+        </header>
+        ${lista.map(renderDishCard).join('')}
+      </section>
+    `;
+  }).join('');
+
+  app.innerHTML = `
+    <section class="hero">
+      <div class="hero-bg"><img src="${esc(imageOf(first))}" alt="" /></div>
+      <div class="hero-top">
+        ${logo ? `<div class="logo-mark"><img src="${esc(logo)}" alt="Dom Leonardo" /></div>` : `<div></div>`}
+        <div class="pill">Mobile preview</div>
+      </div>
+      <div class="hero-copy">
+        <span class="kicker">${esc(cfg.kicker || 'Trattoria delivery')}</span>
+        <h1>Dom <em>Leonardo</em></h1>
+        <p class="hero-lead">${esc(cfg.descricao || DATA.config?.restaurante_descricao || 'Risotos, massas e pães italianos artesanais feitos com alma pelo Dom.')}</p>
+        <div class="trust-row">
+          <div class="trust"><span>${esc(cfg.chip_1_label || 'Preparo')}</span><strong>${esc(cfg.chip_1_valor || '5 min')}</strong></div>
+          <div class="trust"><span>${esc(cfg.chip_2_label || 'Entrega')}</span><strong>${esc(cfg.chip_2_valor || '12 a 30 min')}</strong></div>
+          <div class="trust"><span>${esc(cfg.chip_3_label || 'Varia pelo')}</span><strong>${esc(cfg.chip_3_valor || 'endereço')}</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <nav class="nav">
+      ${categorias.map((cat, index) => `<a href="#${categorySlug(cat, index)}">${esc(cat.nome)}</a>`).join('')}
+    </nav>
+
+    <section class="section">
+      <header class="section-head">
+        <div class="number">Os queridinhos</div>
+        <h2>Mais pedidos do Dom</h2>
+        <p>Um carrossel mais editorial para sentir o prato antes de tocar.</p>
+      </header>
+      <div class="poster-row">
+        ${(destaque.length ? destaque : pratos.slice(0, 6)).map(renderPosterCard).join('')}
+      </div>
+    </section>
+
+    ${categoriesHtml}
+
+    <div class="floating-bag">
+      <button class="waiter" type="button" onclick="alert('Protótipo visual. Aqui ficaria o Marco.')">M</button>
+      <button class="bag-cta" type="button" onclick="alert('Protótipo seguro: sem checkout real, sem chamada de API.')">Ver sacola do protótipo</button>
+    </div>
+  `;
+}
+
+function optionImage(opt) {
+  return opt.foto_url || opt.foto || '';
+}
+
+function renderOption(opt) {
+  const img = optionImage(opt);
+  return `
+    <div class="option">
+      ${img ? `<img src="${esc(img)}" alt="${esc(opt.nome)}" loading="lazy" />` : `<div class="option-img"></div>`}
+      <div>
+        <strong>${esc(opt.nome)}</strong>
+        <span>${opt.descricao ? esc(shortText(opt.descricao, 64)) + ' · ' : ''}${money(opt.preco_delta || 0)}</span>
+      </div>
+      <button class="plus" type="button">+</button>
+    </div>
+  `;
+}
+
+function openDish(id) {
+  const prato = (DATA.pratos || []).find(p => p.id === id);
+  if (!prato) return;
+  const sizes = prato.tamanhos || [];
+  const groups = prato.grupos || [];
+  sheet.innerHTML = `
+    <div class="sheet-scroll">
+      <div class="sheet-photo">
+        <img src="${esc(imageOf(prato))}" alt="${esc(prato.nome)}" />
+        <button class="close" type="button" onclick="closeDish()">×</button>
+      </div>
+      <div class="sheet-content">
+        ${prato.badge_destaque || prato.selo_experiencia ? `<span class="tag">${esc(prato.badge_destaque || prato.selo_experiencia)}</span>` : ''}
+        <h2 class="sheet-title">${esc(prato.nome)}</h2>
+        <p class="sheet-desc">${esc(prato.descricao_completa || textOf(prato))}</p>
+
+        ${prato.frase_fome ? `<div class="info-card"><small>Fome visual</small><p>${esc(prato.frase_fome)}</p></div>` : ''}
+        ${prato.como_chega_texto ? `<div class="info-card"><small>Como chega</small><p>${esc(prato.como_chega_texto)}</p></div>` : ''}
+        ${prato.porcao_texto ? `<div class="info-card"><small>Tamanho</small><p>${esc(prato.porcao_texto)}</p></div>` : ''}
+
+        ${sizes.length ? `
+          <section class="option-group">
+            <h4>Tamanho</h4>
+            <em>Escolha visual do protótipo</em>
+            ${sizes.map(s => `
+              <div class="option">
+                <div></div>
+                <div>
+                  <strong>${esc(s.nome)}</strong>
+                  <span>${s.peso_g ? `${s.peso_g}g · ` : ''}${money((s.preco_delta || 0) + priceOf(prato))}</span>
+                </div>
+                <button class="plus" type="button">${s.padrao ? '✓' : '+'}</button>
+              </div>
+            `).join('')}
+          </section>` : ''}
+
+        ${groups.map(group => `
+          <section class="option-group">
+            <h4>${esc(group.descricao || group.nome)}</h4>
+            <em>${group.tipo === 'obrigatorio' ? 'Obrigatório' : 'Opcional'} · escolha até ${group.max_escolhas || 1}</em>
+            ${(group.opcionais || []).map(renderOption).join('')}
+          </section>
+        `).join('')}
+
+        <div class="sheet-footer">
+          <div class="qty">− 1 +</div>
+          <button class="add" type="button" onclick="closeDish()">Adicionar · ${money(priceOf(prato))}</button>
+        </div>
+      </div>
+    </div>
+  `;
+  sheet.classList.add('open');
+  sheetBackdrop.classList.add('open');
+  sheet.setAttribute('aria-hidden', 'false');
+}
+
+function closeDish() {
+  sheet.classList.remove('open');
+  sheetBackdrop.classList.remove('open');
+  sheet.setAttribute('aria-hidden', 'true');
+}
+
+sheetBackdrop.addEventListener('click', closeDish);
+window.openDish = openDish;
+window.closeDish = closeDish;
+
+render();
+</script>
+</body>
+</html>
