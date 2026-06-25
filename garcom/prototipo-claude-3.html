@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Dom Leonardo — Cardápio (protótipo 3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;0,900;1,500;1,600;1,700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Bebas+Neue&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{ --gold:#d4af37; --gold-soft:#e8d28f; --gold-dim:#8a6f1f; --cream:#efe7d6; --muted:#b3a587; --col:440px; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:#040302;color:var(--cream);font-family:'Cormorant Garamond',Georgia,serif;font-size:19px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .device{position:relative;width:100%;max-width:var(--col);margin:0 auto;min-height:100vh;overflow:hidden;background:#0a0908;box-shadow:0 0 0 1px rgba(212,175,55,.10),0 24px 90px rgba(0,0,0,.7)}
+  img{display:block}
+  .ic{width:1em;height:1em;display:inline-block;vertical-align:-.12em;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+  /* topo + chips */
+  .topbar{position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:space-between;height:54px;padding:0 18px;background:linear-gradient(180deg,rgba(8,7,6,.97),rgba(8,7,6,.7) 78%,transparent);backdrop-filter:blur(7px)}
+  .topbar .bm{font-family:'Jost',sans-serif;letter-spacing:.34em;font-size:11px;text-transform:uppercase;color:var(--gold-soft)}
+  .topbar .open{font-family:'Jost',sans-serif;letter-spacing:.16em;font-size:9.5px;text-transform:uppercase;color:var(--gold-dim);border:1px solid rgba(212,175,55,.3);padding:5px 9px;border-radius:999px}
+  .chips{position:sticky;top:54px;z-index:58;display:flex;gap:9px;overflow-x:auto;padding:11px 18px;background:rgba(8,7,6,.94);backdrop-filter:blur(7px);border-bottom:1px solid rgba(212,175,55,.10);scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chips a{flex:0 0 auto;font-family:'Jost',sans-serif;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid rgba(212,175,55,.22);padding:8px 13px;border-radius:999px;white-space:nowrap;transition:.25s}
+  .chips a:active,.chips a:hover{color:#1a1206;background:var(--gold);border-color:var(--gold)}
+
+  /* capa */
+  .hero{position:relative;min-height:84vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:54px 22px 48px;background:radial-gradient(120% 60% at 50% 0%,rgba(212,175,55,.13),transparent 55%),#0a0908;overflow:hidden}
+  .grain{position:absolute;inset:0;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none}
+  .hero>*{position:relative}
+  .hero .eyebrow{font-family:'Jost',sans-serif;letter-spacing:.42em;text-transform:uppercase;font-size:10.5px;color:var(--gold);margin-bottom:22px}
+  .hero h1{font-family:'Playfair Display',serif;font-weight:800;font-size:clamp(46px,16vw,76px);line-height:.92}
+  .hero h1 .it{font-style:italic;font-weight:600;color:var(--gold-soft);display:block;font-size:.64em}
+  .orn{display:flex;align-items:center;justify-content:center;gap:14px;margin:26px auto 18px;width:78%}
+  .orn .l{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--gold))}
+  .orn .r{flex:1;height:1px;background:linear-gradient(90deg,var(--gold),transparent)}
+  .orn .d{color:var(--gold);font-size:12px;transform:rotate(45deg)}
+  .hero .sub{font-style:italic;font-size:20px;color:var(--muted);max-width:34ch}
+  .hero .meta{margin-top:24px;font-family:'Jost',sans-serif;font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--gold-dim)}
+  .cue{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font-family:'Jost',sans-serif;font-size:9.5px;letter-spacing:.28em;color:var(--muted);text-transform:uppercase;animation:bob 2.4s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(5px)}}
+
+  /* seção base */
+  .sec{position:relative;padding-bottom:30px}
+  .sec .tex{position:absolute;inset:0;z-index:0;pointer-events:none}
+  .sec>.inner{position:relative;z-index:1}
+  .chapter{padding:54px 22px 14px;text-align:center;position:relative}
+  .chapter .num{font-family:'Jost',sans-serif;letter-spacing:.36em;text-transform:uppercase;font-size:10px}
+  .chapter h2{margin:11px 0 6px;color:var(--cream)}
+  .chapter .flank{display:flex;align-items:center;justify-content:center;gap:13px;margin:6px auto 0;width:62%}
+  .chapter .flank .l,.chapter .flank .r{flex:1;height:1px;background:rgba(212,175,55,.22)}
+  .chapter .flank .d{font-size:10px;transform:rotate(45deg)}
+  .chapter .desc{font-style:italic;color:var(--muted);max-width:36ch;margin:13px auto 0;font-size:18px}
+
+  /* botão pedir (reaproveitado) */
+  .btn-order{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;font-family:'Jost',sans-serif;font-size:12px;letter-spacing:.22em;text-transform:uppercase;padding:15px;cursor:pointer;transition:.3s;border-radius:2px;background:transparent}
+  .price{font-family:'Playfair Display',serif;font-weight:600}
+  .price s{font-size:.6em;opacity:.6;margin-right:7px}
+
+  /* =========================================================
+     SALA 1 — MAIS PEDIDOS · pedra fria · destaque + grade
+  ========================================================= */
+  .s-fav{background:radial-gradient(130% 60% at 50% -5%,#23262c,transparent 60%),radial-gradient(80% 50% at 80% 30%,#1b1d22,transparent 60%),#101216}
+  .s-fav .tex{opacity:.5;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");mix-blend-mode:overlay}
+  .s-fav .num{color:#9fb0c4}
+  .s-fav h2{font-family:'Bebas Neue',sans-serif;letter-spacing:.04em;font-size:clamp(42px,13vw,64px);color:#eef2f7}
+  .s-fav .flank .l,.s-fav .flank .r{background:rgba(150,170,190,.3)}.s-fav .flank .d{color:#9fb0c4}
+  .g-stone img{filter:contrast(1.13) saturate(1.04) brightness(.98)}
+  .fav-feat{position:relative;margin:8px 22px 0;overflow:hidden;border:1px solid rgba(170,190,210,.18)}
+  .fav-feat img{width:100%;aspect-ratio:16/10;object-fit:cover}
+  .fav-feat::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(10,12,16,.92))}
+  .fav-feat .fc{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:18px 18px 20px}
+  .tag-pop{display:inline-flex;align-items:center;gap:6px;font-family:'Jost',sans-serif;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:#1a1206;background:var(--gold);padding:5px 9px;margin-bottom:10px;font-weight:600}
+  .fav-feat h3{font-family:'Bebas Neue',sans-serif;letter-spacing:.02em;font-size:clamp(30px,9vw,42px);line-height:1;color:#fff;margin-bottom:6px}
+  .fav-feat p{color:#c7cdd6;font-size:16px;max-width:40ch;margin-bottom:12px}
+  .fav-feat .price{color:#fff;font-size:24px}
+  .fav-feat .btn-order{border:1px solid #aeb9c6;color:#eef2f7;margin-top:12px}
+  .fav-feat .btn-order:active,.fav-feat .btn-order:hover{background:#eef2f7;color:#12151a}
+  .fav-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;padding:11px 22px 0}
+  .fav-cell{position:relative;overflow:hidden;cursor:pointer;border:1px solid rgba(170,190,210,.14)}
+  .fav-cell img{width:100%;aspect-ratio:1/1;object-fit:cover}
+  .fav-cell::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(10,12,16,.92))}
+  .fav-cell .star{position:absolute;top:9px;left:9px;z-index:3;color:var(--gold)}
+  .fav-cell .cap{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:11px 12px}
+  .fav-cell .cap h4{font-family:'Bebas Neue',sans-serif;letter-spacing:.02em;font-size:18px;line-height:1.02;color:#fff;margin-bottom:3px}
+  .fav-cell .cap .price{font-size:16px;color:var(--gold-soft)}
+
+  /* =========================================================
+     SALA 2 — PÃO · forno quente · full-bleed cinematográfico
+  ========================================================= */
+  .s-pao{background:radial-gradient(120% 70% at 50% 0%,#3a2008,transparent 60%),#170f08}
+  .s-pao .tex{opacity:.5;background-image:repeating-linear-gradient(135deg,rgba(0,0,0,.12) 0 2px,transparent 2px 9px),repeating-linear-gradient(45deg,rgba(255,200,120,.04) 0 1px,transparent 1px 7px)}
+  .s-pao .num{color:#eaa53b}.s-pao h2{font-family:'Bebas Neue',sans-serif;letter-spacing:.05em;font-size:clamp(40px,13vw,66px);color:#f3cd84}
+  .s-pao .flank .l,.s-pao .flank .r{background:rgba(234,165,59,.3)}.s-pao .flank .d{color:#eaa53b}
+  .g-oven img{filter:saturate(1.14) contrast(1.05) sepia(.12) brightness(1.03)}
+  .feature{position:relative;min-height:84vh;display:flex;align-items:flex-end;overflow:hidden}
+  .feature img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+  .feature .glow{position:absolute;inset:0;z-index:1;background:radial-gradient(60% 40% at 50% 42%,rgba(234,165,59,.32),transparent 70%);mix-blend-mode:screen;animation:pulseGlow 4.5s ease-in-out infinite}
+  @keyframes pulseGlow{0%,100%{opacity:.55}50%{opacity:.9}}
+  .feature::after{content:"";position:absolute;inset:0;z-index:2;background:linear-gradient(180deg,rgba(8,6,4,.06) 0%,rgba(8,6,4,.2) 38%,rgba(8,6,4,.95) 100%)}
+  .steam{position:absolute;z-index:3;left:0;right:0;top:18%;height:46%;pointer-events:none}
+  .steam span{position:absolute;bottom:0;width:2px;height:60%;background:linear-gradient(180deg,rgba(255,240,210,.5),transparent);filter:blur(2px);opacity:0;animation:rise 4s ease-in infinite}
+  .steam span:nth-child(1){left:42%}.steam span:nth-child(2){left:50%;height:75%;animation-delay:1.2s}.steam span:nth-child(3){left:58%;animation-delay:2.1s}
+  @keyframes rise{0%{opacity:0;transform:translateY(20px) scaleY(.6)}30%{opacity:.7}100%{opacity:0;transform:translateY(-40px) scaleY(1.1)}}
+  .feature .fc{position:relative;z-index:4;padding:26px 22px 30px;width:100%}
+  .feature .kicker{font-family:'Jost',sans-serif;font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:#f3cd84;margin-bottom:12px}
+  .feature h3{font-family:'Bebas Neue',sans-serif;letter-spacing:.02em;font-size:clamp(38px,12vw,58px);line-height:1;margin-bottom:10px;color:#fff}
+  .feature p{color:#f0e2c8;font-size:18px;max-width:40ch;margin-bottom:16px}
+  .feature .price{color:#f3cd84;font-size:26px}
+  .feature .btn-order{border:1px solid #eaa53b;color:#f3cd84;margin-top:14px}
+  .feature .btn-order:active,.feature .btn-order:hover{background:#eaa53b;color:#1a1206}
+
+  /* =========================================================
+     SALA 3 — RISOTOS · creme · lista clean (thumb redondo)
+  ========================================================= */
+  .s-risoto{background:radial-gradient(120% 60% at 50% 0%,#23200f,transparent 60%),#141209}
+  .s-risoto .tex{opacity:.4;background-image:repeating-linear-gradient(90deg,rgba(212,175,55,.05) 0 1px,transparent 1px 6px)}
+  .s-risoto .num{color:#e8d28f}.s-risoto h2{font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:clamp(30px,9vw,46px);color:#f3e6b8}
+  .s-risoto .flank .d{color:#e8d28f}
+  .g-cream img{filter:brightness(1.06) contrast(.97) saturate(1.05)}
+  .ri-hero{position:relative;margin:6px 22px 4px;overflow:hidden}
+  .ri-hero img{width:100%;aspect-ratio:16/9;object-fit:cover}
+  .ri-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(15,13,9,.92))}
+  .ri-hero .fc{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:16px 18px 18px}
+  .ri-hero h3{font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:clamp(24px,7vw,32px);color:#fff;margin-bottom:6px}
+  .ri-hero .row2{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .ri-hero .price{color:#f3e6b8;font-size:22px}
+  .ri-hero .mini{font-family:'Jost',sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#e8d28f;border:1px solid rgba(232,210,143,.4);padding:8px 12px;border-radius:999px;cursor:pointer}
+  .rlist{padding:6px 22px 0}
+  .rrow{display:flex;align-items:center;gap:14px;padding:15px 0;border-bottom:1px solid rgba(212,175,55,.12);cursor:pointer}
+  .rrow:last-child{border-bottom:none}
+  .rrow .thumb{flex:0 0 auto;width:62px;height:62px;border-radius:50%;object-fit:cover;border:1px solid rgba(232,210,143,.3)}
+  .rrow .tx{flex:1;min-width:0}
+  .rrow .tx h4{font-family:'Playfair Display',serif;font-weight:600;font-size:21px;line-height:1.12;color:var(--cream)}
+  .rrow .tx p{color:var(--muted);font-size:15.5px;line-height:1.35;margin-top:2px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  .rrow .pz{flex:0 0 auto;text-align:right}
+  .rrow .pz .price{display:block;color:#f3e6b8;font-size:20px}
+  .rrow .pz .go{font-family:'Jost',sans-serif;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-dim)}
+
+  /* =========================================================
+     SALA 4 — MASSAS · BRANCO · esteira de pratos + ícones
+  ========================================================= */
+  .s-massa{background:linear-gradient(180deg,#f6f1e7,#efe7d8);color:#2a2018}
+  .s-massa .tex{opacity:.5;background-image:radial-gradient(rgba(150,120,40,.07) 1px,transparent 1.4px);background-size:15px 15px}
+  .s-massa .num{color:#9c7c1e}.s-massa h2{font-family:'Playfair Display',serif;font-weight:900;font-size:clamp(32px,9vw,48px);color:#241c12}
+  .s-massa .flank .l,.s-massa .flank .r{background:rgba(120,95,30,.25)}.s-massa .flank .d{color:#9c7c1e}
+  .s-massa .chapter .desc{color:#6b5a3a}
+  .g-white img{filter:contrast(1.08) saturate(1.12)}
+  .ma-hero{display:flex;align-items:center;gap:16px;padding:8px 22px 4px}
+  .ma-hero .pic{flex:0 0 auto;width:128px;height:128px;border-radius:50%;overflow:hidden;border:2px solid #d8c489;box-shadow:0 10px 26px rgba(60,40,10,.18)}
+  .ma-hero .pic img{width:100%;height:100%;object-fit:cover}
+  .ma-hero .tx{flex:1;min-width:0}
+  .ma-hero .tx .k{display:inline-flex;align-items:center;gap:6px;font-family:'Jost',sans-serif;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#9c7c1e;margin-bottom:6px}
+  .ma-hero .tx h3{font-family:'Playfair Display',serif;font-weight:800;font-size:24px;line-height:1.06;color:#241c12;margin-bottom:5px}
+  .ma-hero .tx .price{color:#7a5f1e;font-size:22px}
+  .ma-belt-wrap{margin-top:14px}
+  .ma-belt-lab{font-family:'Jost',sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#9c7c1e;padding:0 22px 8px;display:flex;align-items:center;gap:7px}
+  .ma-belt{display:flex;gap:14px;overflow-x:auto;padding:4px 22px 14px;scroll-snap-type:x mandatory;scrollbar-width:none}
+  .ma-belt::-webkit-scrollbar{display:none}
+  .ma-plate{flex:0 0 auto;width:150px;scroll-snap-align:start;text-align:center;cursor:pointer}
+  .ma-plate .disc{position:relative;width:150px;height:150px;border-radius:50%;overflow:hidden;border:2px solid #e3d3a0;box-shadow:0 8px 22px rgba(60,40,10,.16)}
+  .ma-plate .disc img{width:100%;height:100%;object-fit:cover}
+  .ma-plate .nm{font-family:'Playfair Display',serif;font-weight:700;font-size:16px;line-height:1.1;color:#241c12;margin-top:10px}
+  .ma-plate .ico{display:inline-flex;color:#9c7c1e;margin-bottom:2px;font-size:15px}
+  .ma-plate .price{display:block;color:#7a5f1e;font-size:16px;margin-top:2px}
+  .ma-belt .edgehint{flex:0 0 8px}
+
+  /* =========================================================
+     SALA 5 — NHOQUE · seletor de molho (mantido) · farinha
+  ========================================================= */
+  .s-nhoque{background:radial-gradient(120% 60% at 50% 0%,#1a1810,transparent 60%),#0b0c0a}
+  .s-nhoque .tex{opacity:.5;background-image:radial-gradient(rgba(230,212,154,.1) 1px,transparent 1.4px);background-size:14px 14px}
+  .s-nhoque .num{color:#cdb36a}.s-nhoque h2{font-family:'Bebas Neue',sans-serif;letter-spacing:.04em;font-size:clamp(38px,12vw,60px);color:#e6d49a}
+  .s-nhoque .flank .d{color:#cdb36a}
+  .g-flour img{filter:contrast(1.04) saturate(1.04)}
+  .nh-intro{padding:2px 22px 6px;text-align:center;color:var(--muted);font-style:italic;font-size:18px}
+  .sauce-tabs{display:flex;gap:8px;padding:12px 22px 4px}
+  .sauce-tabs button{flex:1;font-family:'Jost',sans-serif;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid rgba(212,175,55,.25);border-radius:999px;padding:11px 6px;cursor:pointer;transition:.25s;display:flex;align-items:center;justify-content:center;gap:7px}
+  .sauce-tabs button .dot{width:11px;height:11px;border-radius:50%;box-shadow:0 0 0 2px rgba(0,0,0,.3) inset}
+  .sauce-tabs button.on{color:#1a1206;background:#e6d49a;border-color:#e6d49a}
+  .sauce-card{display:none;padding:8px 22px 0}.sauce-card.on{display:block;animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .nh-card{position:relative;overflow:hidden;border:1px solid rgba(212,175,55,.16)}
+  .nh-card img{width:100%;aspect-ratio:4/3;object-fit:cover}
+  .nh-card::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%,rgba(11,12,10,.92))}
+  .nh-card .fc{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:16px 18px}
+  .nh-card h3{font-family:'Bebas Neue',sans-serif;letter-spacing:.02em;font-size:30px;color:#fff;margin-bottom:5px}
+  .nh-card p{color:#d8cfb8;font-size:16px;margin-bottom:10px}
+  .nh-card .price{color:#e6d49a;font-size:23px}
+  .nh-card .btn-order{border:1px solid #cdb36a;color:#e6d49a;margin-top:12px}
+  .nh-card .btn-order:active,.nh-card .btn-order:hover{background:#cdb36a;color:#1a1206}
+
+  /* =========================================================
+     SALA 6 — SOBREMESAS · espresso · corte diagonal (print 4)
+  ========================================================= */
+  .s-doce{background:radial-gradient(120% 60% at 50% 0%,#1f1109,transparent 60%),#0a0706}
+  .s-doce .tex{opacity:.06;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .s-doce .num{color:#caa86a}.s-doce h2{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:clamp(32px,10vw,48px);color:#e7caa0}
+  .s-doce .flank .d{color:#caa86a}
+  .g-espresso img{filter:brightness(.93) contrast(1.1) saturate(1.06) sepia(.1)}
+  .doce-card{position:relative;margin:12px 22px 0;min-height:300px;display:flex;align-items:flex-end;overflow:hidden;border:1px solid rgba(202,168,106,.18)}
+  .doce-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+  .doce-card .wedge{position:absolute;inset:0;z-index:1;background:linear-gradient(108deg,rgba(8,5,4,.94) 0%,rgba(8,5,4,.78) 36%,rgba(8,5,4,.12) 64%,transparent 80%)}
+  .doce-card .vig{position:absolute;inset:0;z-index:1;box-shadow:inset 0 0 90px 30px rgba(0,0,0,.6)}
+  .doce-card .fc{position:relative;z-index:2;padding:22px 20px 24px;max-width:74%}
+  .doce-card .k{font-family:'Jost',sans-serif;font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:#caa86a;margin-bottom:9px;display:flex;align-items:center;gap:6px}
+  .doce-card h3{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:30px;line-height:1.05;color:#fff;margin-bottom:8px}
+  .doce-card p{color:#d8c6ab;font-size:16.5px;margin-bottom:12px}
+  .doce-card .price{color:#e7caa0;font-size:24px;font-family:'Bebas Neue',sans-serif;letter-spacing:.02em}
+  .doce-card .btn-order{border:1px solid #caa86a;color:#e7caa0;margin-top:12px;width:auto;padding:12px 22px;display:inline-flex}
+  .doce-card .btn-order:active,.doce-card .btn-order:hover{background:#caa86a;color:#1a1206}
+
+  /* divisórias */
+  .wave{display:block;width:100%;height:44px;color:var(--gold-dim);opacity:.5;margin:6px 0}
+  .filig{text-align:center;color:var(--gold-dim);letter-spacing:.5em;font-size:14px;margin:16px 0;opacity:.7}
+
+  /* selos com ícones (rodapé) */
+  .selos{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:30px 18px 6px}
+  .selo{text-align:center;color:var(--muted)}
+  .selo .si{color:var(--gold);font-size:22px;display:block;margin-bottom:6px}
+  .selo span{font-family:'Jost',sans-serif;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;line-height:1.2;display:block}
+
+  .cart{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(var(--col),100%);z-index:70;display:flex;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(180deg,transparent,rgba(8,7,6,.96) 30%)}
+  .cart button{flex:1;font-family:'Jost',sans-serif;font-size:11px;letter-spacing:.2em;text-transform:uppercase;padding:15px;border:none;cursor:pointer;border-radius:2px}
+  .cart .bell{flex:0 0 auto;background:transparent;color:var(--gold-soft);border:1px solid var(--gold-dim)}
+  .cart .bag{background:var(--gold);color:#1a1206;font-weight:500}
+  footer{padding:36px 22px 120px;text-align:center}
+  footer .mk{font-family:'Playfair Display',serif;font-style:italic;font-size:26px;color:var(--gold-soft)}
+  footer .sm{font-family:'Jost',sans-serif;font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--muted);margin-top:12px}
+  .protonote{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:80;font-family:'Jost',sans-serif;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-dim);background:rgba(5,4,3,.85);border:1px solid rgba(212,175,55,.2);padding:4px 10px;border-radius:999px;pointer-events:none}
+  .loading{min-height:70vh;display:flex;align-items:center;justify-content:center;font-style:italic;color:var(--muted);font-size:20px;text-align:center;padding:0 24px}
+  @media(prefers-reduced-motion:reduce){.cue,.feature .glow,.steam span{animation:none!important}.steam span{opacity:.3}}
+</style>
+</head>
+<body>
+<div class="protonote">protótipo claude · 3</div>
+<div class="device" id="device"><div class="loading">Servindo o cardápio…</div></div>
+
+<script>
+const GARCOM_RESPONDER_URL='https://jewamqbdonudiapxbzay.supabase.co/functions/v1/garcom-responder';
+const ANON='sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY';
+const ROMAN=['','I','II','III','IV','V','VI','VII','VIII','IX','X'];
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function brl(v){return 'R$ '+Number(v||0).toFixed(2).replace('.',',');}
+function foto(p){return p.foto_url||p.foto||'';}
+function preco(p){return p.preco_promocional||p.preco_base||p.preco||0;}
+function desc(p){return p.descricao_curta||p.descricao_completa||p.descricao||p.frase_fome||'';}
+function priceTag(p){const promo=(p.preco_promocional&&p.preco_base&&p.preco_promocional<p.preco_base)?`<s>${brl(p.preco_base)}</s>`:'';return `<span class="price">${promo}${brl(preco(p))}</span>`;}
+
+// ícones SVG inline
+const IC={
+  star:'<svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l2.9 6.3 6.8.7-5 4.6 1.4 6.7L12 17.8 5.9 20.3 7.3 13.6 2.3 9l6.8-.7z"/></svg>',
+  pasta:'<svg class="ic" viewBox="0 0 24 24"><path d="M4 19h16M6 19c0-6 2-10 6-10s6 4 6 10"/><path d="M9 9V5M12 9V4M15 9V5"/></svg>',
+  bread:'<svg class="ic" viewBox="0 0 24 24"><path d="M5 11a4 4 0 014-4h6a4 4 0 014 4v1H5z"/><path d="M5 12v5a2 2 0 002 2h10a2 2 0 002-2v-5"/></svg>',
+  bowl:'<svg class="ic" viewBox="0 0 24 24"><path d="M3 11h18a9 9 0 01-18 0z"/><path d="M8 8c0-2 1-3 2-3M12 8c0-2 1-3 2-3"/></svg>',
+  cup:'<svg class="ic" viewBox="0 0 24 24"><path d="M5 8h11v5a5 5 0 01-5 5H10a5 5 0 01-5-5z"/><path d="M16 9h2a2 2 0 010 4h-2"/><path d="M8 3v2M11 3v2"/></svg>',
+  flame:'<svg class="ic" viewBox="0 0 24 24"><path d="M12 3c1 3 4 4 4 8a4 4 0 01-8 0c0-1 .5-2 1-2 0 2 3 2 3-1 0-2-1-3 0-5z"/></svg>',
+  hat:'<svg class="ic" viewBox="0 0 24 24"><path d="M6 14a3 3 0 01-1-6 3 3 0 015-2 3 3 0 015 2 3 3 0 01-1 6z"/><path d="M7 14v5h10v-5"/></svg>',
+  share:'<svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 13v6h14v-6"/></svg>'
+};
+const WAVE='<svg class="wave" viewBox="0 0 440 44" preserveAspectRatio="none" fill="none"><path d="M0 22 C 60 4, 120 40, 180 22 S 300 4, 360 22 440 22 440 22" stroke="currentColor" stroke-width="1.1"/><circle cx="220" cy="22" r="2.5" fill="currentColor"/></svg>';
+const FILIG='<div class="filig">✦ ❖ ✦</div>';
+
+function themeFor(nome){const n=String(nome||'').toLowerCase();
+  if(n.includes('mais pedido'))return 'fav';
+  if(n.includes('pão')||n.includes('pao'))return 'pao';
+  if(n.includes('risoto'))return 'risoto';
+  if(n.includes('massa'))return 'massa';
+  if(n.includes('nhoque'))return 'nhoque';
+  if(n.includes('sobremesa')||n.includes('doce'))return 'doce';
+  return 'fav';}
+const GRADE={fav:'g-stone',pao:'g-oven',risoto:'g-cream',massa:'g-white',nhoque:'g-flour',doce:'g-espresso'};
+
+async function carregar(){const r=await fetch(GARCOM_RESPONDER_URL+'?_='+Date.now(),{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+ANON},body:JSON.stringify({acao:'listar_pratos'})});if(!r.ok)throw new Error(await r.text());return r.json();}
+function pedir(nome){alert('🔔 (protótipo) Aqui abriria o pedido de:\n\n'+nome+'\n\nNo cardápio real, leva pra sacola/checkout.');}
+function sauceColor(nome){const n=nome.toLowerCase();if(n.includes('vermelh'))return '#c0392b';if(n.includes('branco'))return '#efe7d6';if(n.includes('rose')||n.includes('rosé')||n.includes('rosa'))return '#d98c8c';return '#cdb36a';}
+function selSauce(btn,i){const sec=btn.closest('section');sec.querySelectorAll('.sauce-tabs button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');sec.querySelectorAll('.sauce-card').forEach(c=>c.classList.toggle('on',Number(c.dataset.i)===i));}
+
+function chapter(c,idx){return `<div class="chapter"><div class="num">Sala ${ROMAN[idx+1]||(idx+1)}</div><h2>${esc(c.nome)}</h2><div class="flank"><span class="l"></span><span class="d">◆</span><span class="r"></span></div>${c.descricao?`<p class="desc">${esc(c.descricao)}</p>`:''}</div>`;}
+
+function secFav(c,idx,list){
+  const f=list[0];
+  let g='';list.slice(1).forEach(p=>{g+=`<div class="fav-cell" onclick="pedir('${esc(p.nome)}')"><span class="star">${IC.star}</span><img loading="lazy" src="${esc(foto(p))}"><div class="cap"><h4>${esc(p.nome)}</h4>${priceTag(p)}</div></div>`;});
+  return `<section id="cap${idx}" class="sec s-fav ${GRADE.fav}"><div class="tex"></div><div class="inner">${chapter(c,idx)}
+    <div class="fav-feat"><img loading="lazy" src="${esc(foto(f))}"><div class="fc"><span class="tag-pop">${IC.star} Mais pedido</span><h3>${esc(f.nome)}</h3><p>${esc(desc(f))}</p>${priceTag(f)}<button class="btn-order" onclick="pedir('${esc(f.nome)}')">Pedir agora →</button></div></div>
+    <div class="fav-grid">${g}</div>
+  </div></section>`;
+}
+function secPao(c,idx,list){const p=list[0];
+  return `<section id="cap${idx}" class="sec s-pao ${GRADE.pao}"><div class="tex"></div><div class="inner">${chapter(c,idx)}
+    <section class="feature"><img loading="lazy" src="${esc(foto(p))}"><div class="glow"></div><div class="steam"><span></span><span></span><span></span></div>
+      <div class="fc"><div class="kicker">${IC.bread} Para dividir · rasga e puxa o queijo</div><h3>${esc(p.nome)}</h3><p>${esc(desc(p))}</p>${priceTag(p)}<button class="btn-order" onclick="pedir('${esc(p.nome)}')">Pedir agora →</button></div>
+    </section>
+  </div></section>`;}
+function secRisoto(c,idx,list){
+  const h=list[0];let rows='';
+  list.slice(1).forEach(p=>{rows+=`<div class="rrow" onclick="pedir('${esc(p.nome)}')"><img class="thumb" loading="lazy" src="${esc(foto(p))}"><div class="tx"><h4>${esc(p.nome)}</h4><p>${esc(desc(p))}</p></div><div class="pz">${priceTag(p)}<span class="go">pedir →</span></div></div>`;});
+  return `<section id="cap${idx}" class="sec s-risoto ${GRADE.risoto}"><div class="tex"></div><div class="inner">${chapter(c,idx)}
+    <div class="ri-hero"><img loading="lazy" src="${esc(foto(h))}"><div class="fc"><h3>${esc(h.nome)}</h3><div class="row2">${priceTag(h)}<span class="mini" onclick="pedir('${esc(h.nome)}')">Pedir →</span></div></div></div>
+    <div class="rlist">${rows}</div>
+  </div></section>`;
+}
+function secMassa(c,idx,list){
+  const h=list[0];let belt='';
+  list.forEach(p=>{belt+=`<div class="ma-plate" onclick="pedir('${esc(p.nome)}')"><div class="disc"><img loading="lazy" src="${esc(foto(p))}"></div><div class="nm"><span class="ico">${IC.pasta}</span><br>${esc(p.nome)}</div>${priceTag(p)}</div>`;});
+  return `<section id="cap${idx}" class="sec s-massa ${GRADE.massa}"><div class="tex"></div><div class="inner">${chapter(c,idx)}
+    <div class="ma-hero"><div class="pic"><img loading="lazy" src="${esc(foto(h))}"></div><div class="tx"><span class="k">${IC.star} A favorita</span><h3>${esc(h.nome)}</h3>${priceTag(h)}</div></div>
+    <div class="ma-belt-wrap"><div class="ma-belt-lab">${IC.pasta} deslize e escolha sua massa →</div>
+      <div class="ma-belt">${belt}<div class="edgehint"></div></div></div>
+  </div></section>`;
+}
+function secNhoque(c,idx,list){
+  const tabs=list.map((p,i)=>`<button class="${i===0?'on':''}" onclick="selSauce(this,${i})"><span class="dot" style="background:${sauceColor(p.nome)}"></span>${esc((p.nome.match(/molho\s*(.*)$/i)||[])[1]||p.nome)}</button>`).join('');
+  const cards=list.map((p,i)=>`<div class="sauce-card ${i===0?'on':''}" data-i="${i}"><div class="nh-card"><img loading="lazy" src="${esc(foto(p))}"><div class="fc"><h3>${esc(p.nome)}</h3><p>${esc(desc(p))}</p>${priceTag(p)}<button class="btn-order" onclick="pedir('${esc(p.nome)}')">Pedir agora →</button></div></div></div>`).join('');
+  return `<section id="cap${idx}" class="sec s-nhoque ${GRADE.nhoque}"><div class="tex"></div><div class="inner">${chapter(c,idx)}
+    <div class="nh-intro">O nhoque é da casa. Você escolhe o molho:</div>
+    <div class="sauce-tabs">${tabs}</div>${cards}
+  </div></section>`;
+}
+function secDoce(c,idx,list){
+  let cards='';list.forEach(p=>{cards+=`<div class="doce-card"><img loading="lazy" src="${esc(foto(p))}"><div class="wedge"></div><div class="vig"></div><div class="fc"><div class="k">${IC.cup} Doce final</div><h3>${esc(p.nome)}</h3><p>${esc(desc(p))}</p>${priceTag(p)}<br><button class="btn-order" onclick="pedir('${esc(p.nome)}')">Pedir →</button></div></div>`;});
+  return `<section id="cap${idx}" class="sec s-doce ${GRADE.doce}"><div class="tex"></div><div class="inner">${chapter(c,idx)}${cards}</div></section>`;
+}
+
+function render(data){
+  const cats=(data.categorias||[]).slice().sort((a,b)=>(a.ordem||0)-(b.ordem||0));
+  const pratos=data.pratos||[];const cfg=data.config||{};
+  const byCat={};for(const p of pratos){(byCat[p.categoria_id]||=[]).push(p);}
+  for(const k in byCat){byCat[k].sort((a,b)=>(a.ordem||0)-(b.ordem||0));}
+  const nome=cfg.restaurante_nome||'Dom Leonardo';const partes=String(nome).trim().split(' ');
+  const heroNome=partes.length>1?`${esc(partes[0])}<span class="it">${esc(partes.slice(1).join(' '))}</span>`:esc(nome);
+
+  let body=`
+  <div class="topbar"><span class="bm">Dom Leonardo</span><span class="open">● Aberto</span></div>
+  <nav class="chips" id="chips"></nav>
+  <header class="hero"><div class="grain"></div><div class="eyebrow">Cozinha Italiana · Curitiba</div>
+    <h1>${heroNome}</h1><div class="orn"><span class="l"></span><span class="d">◆</span><span class="r"></span></div>
+    <p class="sub">${esc(cfg.restaurante_descricao||'Risotos cremosos, massas da casa e o pão recheado que pede pra ser dividido.')}</p>
+    <div class="meta">${cats.length} salas · ${pratos.length} pratos</div><div class="cue">role o menu ↓</div>
+  </header>`;
+
+  const nav=[];const F={fav:secFav,pao:secPao,risoto:secRisoto,massa:secMassa,nhoque:secNhoque,doce:secDoce};
+  cats.forEach((c,idx)=>{const list=byCat[c.id]||[];if(!list.length)return;const th=themeFor(c.nome);
+    nav.push(`<a href="#cap${idx}">${esc(c.nome)}</a>`);
+    body+=(F[th]||secFav)(c,idx,list);
+    if(idx<cats.length-1) body+=`<div style="padding:0 22px">${idx%2===0?WAVE:FILIG}</div>`;
+  });
+
+  body+=`
+  <div class="selos">
+    <div class="selo"><span class="si">${IC.hat}</span><span>Massa<br>da casa</span></div>
+    <div class="selo"><span class="si">${IC.flame}</span><span>Feito<br>na hora</span></div>
+    <div class="selo"><span class="si">${IC.bowl}</span><span>Porção<br>generosa</span></div>
+    <div class="selo"><span class="si">${IC.star}</span><span>Receita<br>italiana</span></div>
+  </div>
+  <footer><div class="mk">Dom Leonardo</div><div class="sm">feito com fogo · servido com cuidado</div></footer>
+  <div class="cart"><button class="bell" onclick="pedir('chamar o garçom')">🔔 Garçom</button><button class="bag" onclick="pedir('ver sacola')">Ver sacola</button></div>`;
+
+  document.getElementById('device').innerHTML=body;
+  document.getElementById('chips').innerHTML=nav.join('');
+}
+carregar().then(render).catch(err=>{document.getElementById('device').innerHTML='<div class="loading">Não consegui carregar o cardápio ao vivo.<br><br>'+esc(err.message||err)+'</div>';});
+</script>
+</body>
+</html>
