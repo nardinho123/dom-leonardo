@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Protótipo Codex | Dom Leonardo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500;1,600&family=Bebas+Neue&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
 <style>
   :root {
     --bg: #050504;
@@ -11,13 +14,17 @@
     --ink: #11100d;
     --panel: #11100c;
     --panel-2: #1c1710;
-    --gold: #d6b042;
-    --gold-soft: #f2d978;
+    --gold: #d4af37;
+    --gold-soft: #e8d28f;
+    --gold-dim: #8a6f1f;
+    --cream: #efe7d6;
+    --accent: #d4af37;
+    --acc-soft: #e8d28f;
     --red: #bf321f;
     --green: #203a2e;
     --blue: #254554;
     --text: #fff7e7;
-    --muted: #b9aa8c;
+    --muted: #b3a587;
     --line: rgba(214, 176, 66, .24);
     --shadow: 0 24px 70px rgba(0,0,0,.58);
     --radius-xl: 34px;
@@ -36,7 +43,7 @@
       radial-gradient(circle at 0% 0%, rgba(214,176,66,.14), transparent 36%),
       radial-gradient(circle at 100% 12%, rgba(191,50,31,.12), transparent 34%),
       linear-gradient(180deg, #090805 0%, #050504 55%, #020202 100%);
-    font-family: "Segoe UI", "Avenir Next", Arial, sans-serif;
+    font-family: 'Cormorant Garamond', Georgia, serif;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -871,49 +878,69 @@
     .app { padding-top: 24px; }
     .prototype-ribbon { top: 16px; }
   }
-  /* ===================== SEÇÕES COM PEGADA (portadas dos protótipos) ===================== */
-  /* full-bleed helpers: cancelam o padding lateral do .app */
+  /* ============ SEÇÕES PORTADAS (idênticas aos protótipos) + padronização Claude ============ */
   .px-white, .px-wine, .px-espresso { margin: 0 -12px; padding-left: 12px; padding-right: 12px; }
+  .ic { width: 1em; height: 1em; display: inline-block; vertical-align: -.12em; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 
-  /* --- PÃO ITALIANO: destaque cinematográfico full-bleed (protótipo 2) --- */
-  .px-feature {
-    position: relative;
-    min-height: clamp(360px, 52vh, 480px);
-    display: flex; align-items: flex-end; overflow: hidden;
-    margin: 6px -12px 10px;            /* sangra ate as bordas */
-    cursor: pointer;
-  }
-  .px-feature > img {
-    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;
-    filter: saturate(1.12) contrast(1.05) brightness(.92);
-  }
-  .px-feat-grad { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(8,6,4,.05) 0%, rgba(8,6,4,.2) 38%, rgba(8,6,4,.93) 100%); }
-  .px-feat-fc { position: relative; z-index: 2; padding: 22px 22px 26px; width: 100%; }
-  .px-kicker { color: var(--gold-soft); font-size: 10px; font-weight: 900; letter-spacing: .28em; text-transform: uppercase; margin-bottom: 10px; }
-  .px-feat-fc h3 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(28px, 8vw, 40px); line-height: 1.02; letter-spacing: -.03em; margin-bottom: 10px; color: #fff; text-shadow: 0 12px 30px rgba(0,0,0,.6); }
-  .px-feat-fc p { color: #f0e2c8; font-size: 14.5px; line-height: 1.45; max-width: 42ch; }
-  .px-order { margin-top: 16px; border: 1px solid var(--gold); background: transparent; color: var(--gold-soft); border-radius: 999px; padding: 12px 22px; font-size: 12px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
-  .px-order:active { background: var(--gold); color: #1a1206; }
+  /* tipografia + cor padrão Claude sobre a estrutura do Codex */
+  h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; }
+  .capa-title, .section-head h2, .poster-info h3, .dish-body h3, .price, .dish-bottom strong { font-family: 'Playfair Display', Georgia, serif; }
+  .capa-eyebrow, .capa-meta, .capa-cue, .capa-pill, .section-head .number, .nav a { font-family: 'Jost', sans-serif; }
+  .capa-sub, .section-head p, .poster-info p, .dish-body p { font-family: 'Cormorant Garamond', Georgia, serif; }
+  .section-head p { font-size: 16px; }
+  .poster-info p, .dish-body p { font-size: 15px; }
+  .nav a { font-weight: 500; letter-spacing: .08em; text-transform: uppercase; font-size: 11px; }
+  .tag { display: none !important; }                       /* fora as etiquetas amarelas */
+  .see-btn { font-family: 'Jost', sans-serif; background: transparent; border: 1px solid var(--gold); color: var(--gold-soft); text-transform: uppercase; letter-spacing: .16em; font-size: 11px; padding: 10px 16px; border-radius: 2px; }
+  .see-btn:active, .see-btn:hover { background: var(--gold); color: #1a1206; }
+  .section + .section { border-top: 1px solid rgba(212,175,55,.14); }   /* filetes dourados sutis */
 
-  /* --- MONTE SEU NHOQUE: seletor de molho (protótipo 2) --- */
-  .px-nh-intro { padding: 2px 8px 6px; color: var(--muted); font-style: italic; font-size: 15px; }
-  .px-sauce-tabs { display: flex; gap: 8px; padding: 8px 8px 6px; }
-  .px-sauce-tabs button { flex: 1; color: var(--muted); background: rgba(214,176,66,.06); border: 1px solid rgba(214,176,66,.25); border-radius: 999px; padding: 11px 6px; font-size: 11px; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 7px; }
-  .px-sauce-tabs button .px-dot { width: 11px; height: 11px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0,0,0,.3) inset; }
-  .px-sauce-tabs button.on { color: #1a1206; background: var(--gold); border-color: var(--gold); }
-  .px-sauce-card { display: none; }
-  .px-sauce-card.on { display: block; animation: pxfade .32s ease; }
+  /* card de prato (usado no NHOQUE) — proto 2 */
+  .dish { position: relative; padding-top: 12px; }
+  .dish .ph { position: relative; overflow: hidden; border-radius: var(--radius-lg); }
+  .dish .ph img { width: 100%; display: block; object-fit: cover; filter: saturate(1.06) contrast(1.04); }
+  .v-large .ph img { aspect-ratio: 4/3; }
+  .dish .ph::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 58%, rgba(8,7,6,.55)); pointer-events: none; }
+  .dish .body { padding: 16px 4px 8px; }
+  .dish .body h3 { font-family: 'Playfair Display', Georgia, serif; font-weight: 600; font-size: clamp(22px, 6.2vw, 28px); line-height: 1.1; margin-bottom: 9px; color: var(--cream); }
+  .dish .body p { font-family: 'Cormorant Garamond', Georgia, serif; color: var(--muted); font-size: 17.5px; line-height: 1.5; margin-bottom: 15px; }
+  .priceline { display: flex; align-items: baseline; gap: 11px; margin-bottom: 16px; }
+  .priceline .lead { font-family: 'Jost', sans-serif; font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+  .priceline .dots { flex: 1; border-bottom: 1px dotted rgba(212,175,55,.4); transform: translateY(-5px); }
+  .priceline .val { font-family: 'Playfair Display', Georgia, serif; font-size: 25px; color: var(--gold-soft); font-weight: 600; }
+  .btn-order { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; font-family: 'Jost', sans-serif; font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--gold-soft); background: transparent; border: 1px solid var(--gold); padding: 15px; cursor: pointer; transition: .3s; border-radius: 2px; }
+  .btn-order:active, .btn-order:hover { background: var(--gold); color: #1a1206; }
+
+  /* PÃO: destaque full-bleed com brilho de forno + vapor (proto 2) */
+  .feature { position: relative; min-height: 84vh; display: flex; align-items: flex-end; overflow: hidden; margin: 6px -12px 10px; cursor: pointer; }
+  .feature > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+  .feature .glow { position: absolute; inset: 0; z-index: 1; background: radial-gradient(60% 40% at 50% 42%, rgba(234,165,59,.32), transparent 70%); mix-blend-mode: screen; animation: pulseGlow 4.5s ease-in-out infinite; }
+  @keyframes pulseGlow { 0%,100% { opacity: .55; } 50% { opacity: .9; } }
+  .feature::after { content: ""; position: absolute; inset: 0; z-index: 2; background: linear-gradient(180deg, rgba(8,6,4,.08) 0%, rgba(8,6,4,.2) 38%, rgba(8,6,4,.95) 100%); }
+  .steam { position: absolute; z-index: 3; left: 0; right: 0; top: 18%; height: 46%; pointer-events: none; }
+  .steam span { position: absolute; bottom: 0; width: 2px; height: 60%; background: linear-gradient(180deg, rgba(255,240,210,.5), transparent); filter: blur(2px); opacity: 0; animation: rise 4s ease-in infinite; }
+  .steam span:nth-child(1) { left: 42%; }
+  .steam span:nth-child(2) { left: 50%; height: 75%; animation-delay: 1.2s; }
+  .steam span:nth-child(3) { left: 58%; animation-delay: 2.1s; }
+  @keyframes rise { 0% { opacity: 0; transform: translateY(20px) scaleY(.6); } 30% { opacity: .7; } 100% { opacity: 0; transform: translateY(-40px) scaleY(1.1); } }
+  .feature .fc { position: relative; z-index: 4; padding: 26px 22px 30px; width: 100%; }
+  .feature .kicker { font-family: 'Jost', sans-serif; font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold-soft); margin-bottom: 12px; }
+  .feature h3 { font-family: 'Playfair Display', Georgia, serif; font-weight: 800; font-size: clamp(30px, 9vw, 48px); line-height: 1.02; margin-bottom: 12px; color: #fff; }
+  .feature p { font-family: 'Cormorant Garamond', Georgia, serif; color: #f0e2c8; font-size: 18px; max-width: 40ch; margin-bottom: 18px; }
+
+  /* NHOQUE: seletor de molho (proto 2) */
+  .nhoque-intro { padding: 4px 8px 6px; text-align: center; color: var(--muted); font-style: italic; font-size: 18px; }
+  .sauce-tabs { display: flex; gap: 8px; padding: 14px 4px 4px; }
+  .sauce-tabs button { flex: 1; font-family: 'Jost', sans-serif; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); background: transparent; border: 1px solid rgba(212,175,55,.25); border-radius: 999px; padding: 10px 6px; cursor: pointer; transition: .25s; display: flex; align-items: center; justify-content: center; gap: 7px; }
+  .sauce-tabs button .dot { width: 11px; height: 11px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0,0,0,.3) inset; }
+  .sauce-tabs button.on { color: #1a1206; background: var(--gold-soft); border-color: var(--gold-soft); }
+  .sauce-stage { position: relative; margin-top: 8px; }
+  .sauce-card { display: none; }
+  .sauce-card.on { display: block; animation: pxfade .35s ease; }
   @keyframes pxfade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-  .px-nh-card { position: relative; overflow: hidden; border-radius: var(--radius-lg); cursor: pointer; margin: 8px 0 4px; }
-  .px-nh-card img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; filter: saturate(1.06) contrast(1.03); }
-  .px-nh-card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 48%, rgba(7,6,4,.92)); }
-  .px-nh-fc { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 16px 18px 18px; }
-  .px-nh-fc h3 { font-family: Georgia, "Times New Roman", serif; font-size: 26px; letter-spacing: -.02em; color: #fff; margin-bottom: 6px; }
-  .px-nh-fc p { color: #e0d4b6; font-size: 13.5px; line-height: 1.4; margin-bottom: 4px; }
 
-  /* --- MASSAS: seção BRANCA (cards iguais, só cor) + transição suave nas bordas --- */
-  .px-white { color: #241c12; background: linear-gradient(180deg, transparent 0, #f4efe3 86px, #f4efe3 calc(100% - 86px), transparent 100%); }
-  .px-white .section-head { padding: 88px 8px 14px; }
+  /* MASSAS: seção BRANCA (cards iguais, só cor) — corte limpo + filete dourado */
+  .px-white { color: #241c12; background: #f4efe3; }
   .px-white .section-head .number { color: #9c7c1e; }
   .px-white .section-head h2 { color: #241c12; }
   .px-white .section-head p { color: #6b5a3a; }
@@ -922,21 +949,26 @@
   .px-white .dish-body h3 { color: #241c12; }
   .px-white .dish-body p { color: #6b5a3a; }
   .px-white .dish-bottom strong { color: #7a5f1e; }
-  .px-white .see-btn { background: var(--gold); color: #241200; }
+  .px-white .see-btn { background: var(--gold); color: #241200; border-color: transparent; }
 
-  /* --- RISOTOS: bordô vinho quase preto --- */
-  .px-wine { background: radial-gradient(120% 70% at 50% 0%, #3a0f1c, transparent 60%), radial-gradient(90% 50% at 82% 26%, #25060f, transparent 58%), #14060a; }
+  /* RISOTOS: bordô vinho bem escuro */
+  .px-wine { background: radial-gradient(120% 70% at 50% 0%, #2a0810, transparent 62%), #0c0306; }
 
-  /* --- SOBREMESAS: espresso + corte diagonal (protótipo 3) --- */
+  /* SOBREMESAS: espresso + corte diagonal (proto 3) */
   .px-espresso { background: radial-gradient(120% 60% at 50% 0%, #1f1109, transparent 60%), #0a0706; }
-  .px-doce-card { position: relative; min-height: 280px; display: flex; align-items: flex-end; overflow: hidden; border-radius: var(--radius-lg); margin-bottom: 12px; cursor: pointer; }
-  .px-doce-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; filter: brightness(.93) contrast(1.1) saturate(1.06) sepia(.08); }
-  .px-doce-wedge { position: absolute; inset: 0; z-index: 1; background: linear-gradient(108deg, rgba(8,5,4,.94) 0%, rgba(8,5,4,.78) 36%, rgba(8,5,4,.12) 64%, transparent 80%); }
-  .px-doce-vig { position: absolute; inset: 0; z-index: 1; box-shadow: inset 0 0 90px 30px rgba(0,0,0,.6); }
-  .px-doce-fc { position: relative; z-index: 2; padding: 20px 20px 22px; max-width: 78%; }
-  .px-doce-k { color: #caa86a; font-size: 9.5px; font-weight: 900; letter-spacing: .24em; text-transform: uppercase; margin-bottom: 9px; }
-  .px-doce-fc h3 { font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 27px; line-height: 1.05; color: #fff; margin-bottom: 8px; }
-  .px-doce-fc p { color: #d8c6ab; font-size: 13.5px; line-height: 1.4; margin-bottom: 8px; }
+  .doce-card { position: relative; min-height: 300px; display: flex; align-items: flex-end; overflow: hidden; border: 1px solid rgba(202,168,106,.18); border-radius: var(--radius-lg); margin-bottom: 12px; cursor: pointer; }
+  .doce-card > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; filter: brightness(.93) contrast(1.1) saturate(1.06) sepia(.1); }
+  .doce-card .wedge { position: absolute; inset: 0; z-index: 1; background: linear-gradient(108deg, rgba(8,5,4,.94) 0%, rgba(8,5,4,.78) 36%, rgba(8,5,4,.12) 64%, transparent 80%); }
+  .doce-card .vig { position: absolute; inset: 0; z-index: 1; box-shadow: inset 0 0 90px 30px rgba(0,0,0,.6); }
+  .doce-card .fc { position: relative; z-index: 2; padding: 22px 20px 24px; max-width: 78%; }
+  .doce-card .k { font-family: 'Jost', sans-serif; font-size: 9.5px; letter-spacing: .24em; text-transform: uppercase; color: #caa86a; margin-bottom: 9px; display: flex; align-items: center; gap: 6px; }
+  .doce-card h3 { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 600; font-size: 30px; line-height: 1.05; color: #fff; margin-bottom: 8px; }
+  .doce-card p { font-family: 'Cormorant Garamond', Georgia, serif; color: #d8c6ab; font-size: 16.5px; margin-bottom: 12px; }
+  .doce-card .price { color: #e7caa0; font-size: 24px; font-family: 'Bebas Neue', sans-serif; letter-spacing: .02em; }
+  .doce-card .btn-order { border: 1px solid #caa86a; color: #e7caa0; margin-top: 12px; width: auto; padding: 12px 22px; display: inline-flex; }
+  .doce-card .btn-order:active, .doce-card .btn-order:hover { background: #caa86a; color: #1a1206; }
+
+  @media (prefers-reduced-motion: reduce) { .feature .glow, .steam span { animation: none !important; } .steam span { opacity: .3; } }
 </style>
 </head>
 <body>
@@ -1042,51 +1074,68 @@ function sauceColor(nome) {
 
 function selSauce(btn, i) {
   const sec = btn.closest('section');
-  sec.querySelectorAll('.px-sauce-tabs button').forEach(b => b.classList.remove('on'));
+  sec.querySelectorAll('.sauce-tabs button').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
-  sec.querySelectorAll('.px-sauce-card').forEach(c => c.classList.toggle('on', Number(c.dataset.i) === i));
+  sec.querySelectorAll('.sauce-card').forEach(c => c.classList.toggle('on', Number(c.dataset.i) === i));
 }
 window.selSauce = selSauce;
 
+function priceLine(p) {
+  return `<div class="priceline"><span class="lead">Valor</span><span class="dots"></span><span class="val">${money(priceOf(p))}</span></div>`;
+}
+
+function renderDishClaude(p) {
+  return `
+    <article class="dish v-large" onclick="openDish('${esc(p.id)}')">
+      <div class="ph"><img loading="lazy" src="${esc(imageOf(p))}" alt="${esc(p.nome)}" /></div>
+      <div class="body">
+        <h3>${esc(p.nome)}</h3>
+        <p>${esc(shortText(textOf(p), 120))}</p>
+        ${priceLine(p)}
+        <button class="btn-order" type="button" onclick="event.stopPropagation(); openDish('${esc(p.id)}')">Pedir agora →</button>
+      </div>
+    </article>`;
+}
+
 function renderPaoFeature(p) {
   return `
-    <article class="px-feature" onclick="openDish('${esc(p.id)}')">
+    <section class="feature" onclick="openDish('${esc(p.id)}')">
       <img src="${esc(imageOf(p))}" alt="${esc(p.nome)}" loading="lazy" />
-      <div class="px-feat-grad"></div>
-      <div class="px-feat-fc">
-        <div class="px-kicker">Para dividir · rasga e puxa o queijo</div>
+      <div class="glow"></div>
+      <div class="steam"><span></span><span></span><span></span></div>
+      <div class="fc">
+        <div class="kicker">Para dividir · rasga e puxa o queijo</div>
         <h3>${esc(p.nome)}</h3>
         <p>${esc(shortText(textOf(p), 150))}</p>
-        <div class="price">${money(priceOf(p))}</div>
-        <button class="px-order" type="button" onclick="event.stopPropagation(); openDish('${esc(p.id)}')">Ver / pedir</button>
+        ${priceLine(p)}
+        <button class="btn-order" type="button" onclick="event.stopPropagation(); openDish('${esc(p.id)}')">Pedir agora →</button>
       </div>
-    </article>
-  `;
+    </section>`;
 }
 
 function renderNhoque(lista) {
   const tabs = lista.map((p, i) =>
-    `<button class="${i === 0 ? 'on' : ''}" type="button" onclick="selSauce(this, ${i})"><span class="px-dot" style="background:${sauceColor(p.nome)}"></span>${esc((String(p.nome).match(/molho\s*(.*)$/i) || [])[1] || p.nome)}</button>`
+    `<button class="${i === 0 ? 'on' : ''}" type="button" onclick="selSauce(this, ${i})"><span class="dot" style="background:${sauceColor(p.nome)}"></span>${esc((String(p.nome).match(/molho\s*(.*)$/i) || [])[1] || p.nome)}</button>`
   ).join('');
-  const cards = lista.map((p, i) => `
-    <div class="px-sauce-card ${i === 0 ? 'on' : ''}" data-i="${i}">
-      <article class="px-nh-card" onclick="openDish('${esc(p.id)}')">
-        <img src="${esc(imageOf(p))}" alt="${esc(p.nome)}" loading="lazy" />
-        <div class="px-nh-fc"><h3>${esc(p.nome)}</h3><p>${esc(shortText(textOf(p), 96))}</p><div class="price">${money(priceOf(p))}</div></div>
-      </article>
-    </div>`).join('');
-  return `<div class="px-nh-intro">O nhoque é da casa. Você escolhe o molho:</div><div class="px-sauce-tabs">${tabs}</div>${cards}`;
+  const cards = lista.map((p, i) => `<div class="sauce-card ${i === 0 ? 'on' : ''}" data-i="${i}">${renderDishClaude(p)}</div>`).join('');
+  return `<div class="nhoque-intro">O nhoque é da casa. Você escolhe o molho:</div><div class="sauce-tabs">${tabs}</div><div class="sauce-stage">${cards}</div>`;
 }
 
 function renderDoceCard(p) {
+  const cup = '<svg class="ic" viewBox="0 0 24 24"><path d="M5 8h11v5a5 5 0 01-5 5H10a5 5 0 01-5-5z"/><path d="M16 9h2a2 2 0 010 4h-2"/><path d="M8 3v2M11 3v2"/></svg>';
   return `
-    <div class="px-doce-card" onclick="openDish('${esc(p.id)}')">
+    <div class="doce-card" onclick="openDish('${esc(p.id)}')">
       <img src="${esc(imageOf(p))}" alt="${esc(p.nome)}" loading="lazy" />
-      <div class="px-doce-wedge"></div>
-      <div class="px-doce-vig"></div>
-      <div class="px-doce-fc"><div class="px-doce-k">Doce final</div><h3>${esc(p.nome)}</h3><p>${esc(shortText(textOf(p), 110))}</p><div class="price">${money(priceOf(p))}</div></div>
-    </div>
-  `;
+      <div class="wedge"></div>
+      <div class="vig"></div>
+      <div class="fc">
+        <div class="k">${cup} Doce final</div>
+        <h3>${esc(p.nome)}</h3>
+        <p>${esc(shortText(textOf(p), 110))}</p>
+        <span class="price">${money(priceOf(p))}</span><br>
+        <button class="btn-order" type="button" onclick="event.stopPropagation(); openDish('${esc(p.id)}')">Pedir →</button>
+      </div>
+    </div>`;
 }
 
 function renderCategory(cat, index, lista) {
