@@ -98,28 +98,18 @@
   /* ===== CAPA (estilo html 3) — encurtada p/ Mais Pedidos espiar ===== */
   .capa {
     position: relative;
-    min-height: clamp(420px, 62vh, 520px);
+    min-height: clamp(440px, 64vh, 540px);
     display: flex;
     flex-direction: column;
-    padding: 22px 24px 24px;
-    border-radius: var(--radius-xl);
+    margin: -12px -12px 0;          /* sangra ate as bordas (cancela o padding do .app) */
+    padding: 42px 24px 26px;        /* topo extra por causa da faixa flutuante */
     overflow: hidden;
-    border: 1px solid rgba(214,176,66,.2);
-    box-shadow: var(--shadow);
     background:
-      radial-gradient(120% 70% at 50% -8%, rgba(214,176,66,.16), transparent 58%),
-      linear-gradient(180deg, #0c0b07 0%, #060504 100%);
+      radial-gradient(120% 60% at 50% 0%, rgba(214,176,66,.13), transparent 55%),
+      #0a0908;
     isolation: isolate;
   }
-  .capa::before {
-    content: "";
-    position: absolute;
-    inset: 13px;
-    z-index: 2;
-    border: 1px solid rgba(242,217,120,.5);
-    border-radius: 24px;
-    pointer-events: none;
-  }
+  .capa::before { content: none; }
   .capa-grain {
     position: absolute;
     inset: 0;
@@ -381,8 +371,7 @@
     scrollbar-width: none;
     padding: 13px 1px;
     margin: 12px 0 8px;
-    background: linear-gradient(180deg, rgba(5,5,4,.96), rgba(5,5,4,.82));
-    backdrop-filter: blur(14px);
+    background: transparent;
   }
 
   .nav::-webkit-scrollbar { display: none; }
@@ -391,8 +380,9 @@
     flex: 0 0 auto;
     color: #ffe7a0;
     text-decoration: none;
-    border: 1px solid rgba(214,176,66,.2);
-    background: rgba(214,176,66,.08);
+    border: 1px solid rgba(214,176,66,.28);
+    background: rgba(10,9,8,.55);
+    backdrop-filter: blur(6px);
     border-radius: 999px;
     padding: 11px 14px;
     font-size: 12px;
