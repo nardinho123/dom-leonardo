@@ -39,6 +39,10 @@
       "headers": {
         "X-goog-user-project": "cardapio-dom-leonardo"
       }
+    },
+    "mercadopago": {
+      "type": "http",
+      "url": "https://mcp.mercadopago.com/mcp"
     }
   }
 }

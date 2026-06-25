@@ -1534,6 +1534,108 @@
     background: #fff;
     padding: 12px;
   }
+  .pix-seal {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin: 2px 0 10px;
+    border: 1px solid rgba(50,189,123,0.4);
+    background: rgba(50,189,123,0.13);
+    color: rgba(243,236,224,0.9);
+    border-radius: 999px;
+    padding: 7px 11px;
+    font-size: 11px;
+    font-weight: 850;
+  }
+  .pix-seal strong { color: #4fe09a; letter-spacing: 0.03em; }
+  .pix-qr {
+    margin: 14px auto 4px;
+    width: 232px;
+    max-width: 70vw;
+    aspect-ratio: 1 / 1;
+    background: #fff;
+    border-radius: 18px;
+    padding: 12px;
+    box-shadow: 0 14px 36px rgba(0,0,0,0.32);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pix-qr img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+  .pix-qr-empty {
+    color: rgba(243,236,224,0.55);
+    font-size: 13px;
+    background: rgba(255,255,255,0.05);
+    box-shadow: none;
+  }
+  .pix-copia { margin-top: 14px; }
+  .pix-copia-label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(243,236,224,0.5);
+    margin-bottom: 6px;
+  }
+  .pix-copia-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    line-height: 1.45;
+    color: rgba(243,236,224,0.82);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(212,175,55,0.22);
+    border-radius: 12px;
+    padding: 10px 12px;
+    max-height: 92px;
+    overflow-y: auto;
+    word-break: break-all;
+    user-select: all;
+  }
+  .pix-copy-btn {
+    margin-top: 8px;
+    width: 100%;
+    border: none;
+    border-radius: 14px;
+    padding: 13px;
+    font-weight: 800;
+    font-size: 14px;
+    cursor: pointer;
+    color: #14210f;
+    background: linear-gradient(135deg, #4fe09a, #32bd7b);
+  }
+  .pix-copy-btn:active { transform: translateY(1px); }
+  .pix-status {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 14px;
+    font-size: 12.5px;
+    color: rgba(243,236,224,0.72);
+  }
+  .pix-status-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #4fe09a;
+    box-shadow: 0 0 0 0 rgba(79,224,154,0.55);
+    animation: pixPulse 1.6s ease-out infinite;
+    flex: none;
+  }
+  @keyframes pixPulse {
+    0% { box-shadow: 0 0 0 0 rgba(79,224,154,0.5); }
+    70% { box-shadow: 0 0 0 9px rgba(79,224,154,0); }
+    100% { box-shadow: 0 0 0 0 rgba(79,224,154,0); }
+  }
+  .pix-total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(212,175,55,0.18);
+  }
+  .pix-total span { font-size: 13px; color: rgba(243,236,224,0.6); }
+  .pix-total strong { font-size: 20px; color: #e8d28f; font-family: 'Playfair Display', Georgia, serif; }
   .checkout-error {
     margin-top: 10px;
     border: 1px solid rgba(255,99,99,0.26);
@@ -2476,6 +2578,9 @@ function App() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
   const [stripeCheckout, setStripeCheckout] = useState(null);
+  const [pixData, setPixData] = useState(null);
+  const [pixCopiado, setPixCopiado] = useState(false);
+  const [pixVerificando, setPixVerificando] = useState(false);
   const [entregaEstimativa, setEntregaEstimativa] = useState(null);
   const [entregaLoading, setEntregaLoading] = useState(false);
   const [entregaError, setEntregaError] = useState('');
@@ -2729,6 +2834,35 @@ function App() {
     return () => clearTimeout(timer);
   }, [stripeCheckout?.client_secret, stripeCheckout?.publishable_key, checkoutStage, sacolaOpen]);
 
+  // Poll do status do Pix enquanto a tela de pagamento esta aberta (confirma sozinho).
+  useEffect(() => {
+    if (checkoutStage !== 'pagamento' || !pixData?.payment_id || !sacolaOpen) return;
+    let ativo = true;
+    let tentativas = 0;
+    const id = setInterval(async () => {
+      if (!ativo) return;
+      tentativas += 1;
+      if (tentativas > 150) { clearInterval(id); return; } // ~10 min (4s cada)
+      try {
+        const r = await fetch(GARCOM_RESPONDER_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({ acao: 'status_pagamento_mp', payment_id: pixData.payment_id }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (ativo && data?.aprovado) {
+          clearInterval(id);
+          confirmarPixAprovado();
+        }
+      } catch (_) {}
+    }, 4000);
+    return () => { ativo = false; clearInterval(id); };
+  }, [checkoutStage, pixData?.payment_id, sacolaOpen]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!chatOpen) {
@@ -2844,6 +2978,9 @@ function App() {
     stripePaymentElementRef.current = null;
     stripeElementsRef.current = null;
     setStripeCheckout(null);
+    setPixData(null);
+    setPixCopiado(false);
+    setPixVerificando(false);
     setCheckoutStage('dados');
     setCheckoutError('');
   };
@@ -3372,6 +3509,158 @@ function App() {
       setCheckoutError(err.message || 'Nao consegui confirmar o pagamento.');
     } finally {
       setCheckoutLoading(false);
+    }
+  };
+
+  // ===== Pix (Mercado Pago) — gera QR + copia e cola dentro do cardapio =====
+  const gerarPixMercadoPago = async () => {
+    if (!carrinho.length) return;
+    const erro = validarCheckoutDados();
+    if (erro) {
+      setCheckoutError(erro);
+      vibrate(35);
+      return;
+    }
+
+    const { logradouro, numero, bairro, complemento } = enderecoCheckout();
+    const endereco = {
+      logradouro,
+      numero,
+      bairro,
+      cidade: 'Curitiba',
+      uf: 'PR',
+      complemento: complemento || null,
+      endereco_formatado: mapAddressLabel || undefined,
+      lat: mapPin?.lat,
+      lng: mapPin?.lng,
+    };
+    const whatsapp = checkoutDados.whatsapp.replace(/\D/g, '');
+
+    setCheckoutLoading(true);
+    setCheckoutError('');
+    try {
+      const r = await fetch(GARCOM_RESPONDER_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          acao: 'processar_pagamento_brick',
+          cliente: {
+            nome: checkoutDados.nome.trim(),
+            whatsapp,
+            email: null,
+          },
+          endereco,
+          itens: carrinho,
+          cupom_codigo: cupomResumo.ok && cupomAplicado?.codigo ? String(cupomAplicado.codigo).toUpperCase() : null,
+          form_data: {
+            payment_method_id: 'pix',
+            payer: { email: `pix-${whatsapp || Date.now()}@cliente.domleonardo.com.br` },
+          },
+          device_id: chatDeviceId.current,
+          idempotency_key: `dl-pix-${chatDeviceId.current}-${Date.now()}`,
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      const poi = data?.mercado_pago?.point_of_interaction?.transaction_data || {};
+      if (!r.ok || !poi.qr_code) {
+        if (data?.codigo === 'mp_pix_key_not_enabled') {
+          throw new Error('O Pix ainda nao esta ativado na conta do Mercado Pago. Cadastre uma chave Pix no app do Mercado Pago e tente de novo.');
+        }
+        throw new Error(data?.error || 'Nao consegui gerar o Pix agora. Tenta de novo em instantes.');
+      }
+      setPixData({
+        qr_code: poi.qr_code,
+        qr_code_base64: poi.qr_code_base64 || '',
+        ticket_url: poi.ticket_url || '',
+        payment_id: data?.mercado_pago?.id ? String(data.mercado_pago.id) : '',
+        pedido: data?.pedido || null,
+        total: totalComEntrega,
+      });
+      setPixCopiado(false);
+      setCheckoutStage('pagamento');
+      trackMeta('AddPaymentInfo', { value: totalComEntrega, currency: 'BRL' });
+      falarMarco('Pix gerado! Escaneia o QR ou copia o codigo. Assim que cair, eu confirmo aqui na hora.', 4200);
+      vibrate([15, 30, 15]);
+    } catch (err) {
+      setCheckoutError(err.message || 'Nao consegui gerar o Pix agora.');
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  const copiarCodigoPix = async () => {
+    const code = pixData?.qr_code || '';
+    if (!code) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(code);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = code;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setPixCopiado(true);
+      vibrate(20);
+      setTimeout(() => setPixCopiado(false), 2500);
+    } catch (_) {
+      setCheckoutError('Nao consegui copiar. Segura no codigo e copia manualmente.');
+    }
+  };
+
+  const confirmarPixAprovado = () => {
+    setCheckoutStage('sucesso');
+    setMensagens(m => [...m, {
+      id: `pix-ok-${Date.now()}`,
+      autor: 'marco',
+      texto: 'Pix confirmado! O pedido ja entrou para o Dom preparar. Obrigado!',
+    }]);
+    trackMeta('Purchase', {
+      value: pixData?.total || totalComEntrega,
+      currency: 'BRL',
+      num_items: totalItens,
+      content_type: 'product',
+      content_ids: carrinho.map(item => String(item.prato_id || item.local_id || item.nome)).slice(0, 20),
+    });
+    setCarrinho([]);
+    setCarrinhoTotal(0);
+    vibrate([20, 40, 20]);
+  };
+
+  const verificarPagamentoPix = async () => {
+    const paymentId = pixData?.payment_id;
+    if (!paymentId) return;
+    setPixVerificando(true);
+    setCheckoutError('');
+    try {
+      const r = await fetch(GARCOM_RESPONDER_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ acao: 'status_pagamento_mp', payment_id: paymentId }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (data?.aprovado) {
+        confirmarPixAprovado();
+      } else {
+        setCheckoutError('Ainda nao identifiquei o Pix. Se voce acabou de pagar, espera uns segundos e toca em "Ja paguei" de novo.');
+      }
+    } catch (_) {
+      setCheckoutError('Nao consegui verificar agora. Tenta de novo em instantes.');
+    } finally {
+      setPixVerificando(false);
     }
   };
 
@@ -4452,14 +4741,35 @@ function App() {
 
           {whatsEnderecoOpen && checkoutStage === 'pagamento' && (
             <div className="bag-values">
-              <div className="checkout-card">
-                <div className="stripe-seal">
-                  <strong>Stripe</strong>
-                  <span>pagamento seguro</span>
+              <div className="checkout-card pix-card">
+                <div className="pix-seal">
+                  <strong>Pix</strong>
+                  <span>Mercado Pago · na hora</span>
                 </div>
-                <h3>Escolha como pagar</h3>
-                <p>Apple Pay, Google Pay e cartão aparecem aqui quando estiverem disponíveis no seu aparelho.</p>
-                <div id="stripe-payment-element" className="stripe-payment-box"></div>
+                <h3>Pague com Pix para confirmar</h3>
+                <p>Abra o app do seu banco, escolha <strong>Pix</strong> e escaneie o QR Code — ou use o Pix copia e cola abaixo.</p>
+                {pixData?.qr_code_base64 ? (
+                  <div className="pix-qr">
+                    <img src={`data:image/png;base64,${pixData.qr_code_base64}`} alt="QR Code do Pix" />
+                  </div>
+                ) : (
+                  <div className="pix-qr pix-qr-empty">Gerando QR Code…</div>
+                )}
+                <div className="pix-copia">
+                  <span className="pix-copia-label">Pix copia e cola</span>
+                  <div className="pix-copia-code">{pixData?.qr_code || ''}</div>
+                  <button className="pix-copy-btn" onClick={copiarCodigoPix}>
+                    {pixCopiado ? 'Código copiado ✓' : 'Copiar código Pix'}
+                  </button>
+                </div>
+                <div className="pix-status">
+                  <span className="pix-status-dot"></span>
+                  Aguardando o pagamento… confirmo aqui sozinho assim que o Pix cair.
+                </div>
+                <div className="pix-total">
+                  <span>Total</span>
+                  <strong>{fmtBRL(pixData?.total || totalComEntrega)}</strong>
+                </div>
                 {checkoutError && <div className="checkout-error">{checkoutError}</div>}
               </div>
             </div>
@@ -4508,8 +4818,8 @@ function App() {
             </button>
           ) : checkoutStage === 'dados' ? (
             <div className="checkout-actions">
-              <button className="checkout-primary" disabled={checkoutLoading} onClick={criarCheckoutStripe}>
-                {checkoutLoading ? 'Preparando pagamento...' : `Continuar para pagamento · ${fmtBRL(totalComEntrega)}`}
+              <button className="checkout-primary" disabled={checkoutLoading} onClick={gerarPixMercadoPago}>
+                {checkoutLoading ? 'Gerando Pix...' : `Gerar Pix · ${fmtBRL(totalComEntrega)}`}
               </button>
               <button className="checkout-secondary" disabled={checkoutLoading} onClick={() => finalizarPedidoDireto()}>
                 Finalizar pelo WhatsApp
@@ -4517,10 +4827,10 @@ function App() {
             </div>
           ) : checkoutStage === 'pagamento' ? (
             <div className="checkout-actions">
-              <button className="checkout-primary" disabled={checkoutLoading} onClick={confirmarPagamentoStripe}>
-                {checkoutLoading ? 'Confirmando...' : `Pagar agora · ${fmtBRL(totalComEntrega)}`}
+              <button className="checkout-primary" disabled={pixVerificando} onClick={verificarPagamentoPix}>
+                {pixVerificando ? 'Verificando...' : 'Já paguei'}
               </button>
-              <button className="checkout-secondary" disabled={checkoutLoading} onClick={resetStripeCheckout}>
+              <button className="checkout-secondary" disabled={pixVerificando} onClick={resetStripeCheckout}>
                 Voltar e editar dados
               </button>
             </div>

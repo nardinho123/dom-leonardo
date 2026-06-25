@@ -606,7 +606,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    if (!["listar_pratos", "listar_cardapio", "mensagens_chat", "registrar_atendimento", "listar_atendimento", "buscar_cliente", "maps_public_config", "calcular_entrega_google", "criar_checkout", "processar_pagamento_brick", "criar_pagamento_stripe"].includes(acao)) {
+    if (!["listar_pratos", "listar_cardapio", "mensagens_chat", "registrar_atendimento", "listar_atendimento", "buscar_cliente", "maps_public_config", "calcular_entrega_google", "criar_checkout", "processar_pagamento_brick", "criar_pagamento_stripe", "status_pagamento_mp"].includes(acao)) {
       return new Response(JSON.stringify({ error: "acao invalida" }), {
         status: 400,
         headers: { ...cors, "Content-Type": "application/json" },
@@ -967,7 +967,12 @@ Deno.serve(async (req) => {
       }
 
       const paymentMethodId = cleanText(formData.payment_method_id);
-      const payerEmail = cleanText(payer.email);
+      const clientePhone = normalizePhone((cliente as Record<string, unknown>).whatsapp);
+      // Pix nao pede e-mail do cliente no formulario do cardapio: se nao vier, sintetizamos
+      // um e-mail valido (o MP so precisa do formato para emitir o QR). Cartao continua
+      // dependendo do e-mail real informado no Brick.
+      const payerEmail = cleanText(payer.email)
+        || (paymentMethodId === "pix" ? `pix-${clientePhone || Date.now()}@cliente.domleonardo.com.br` : "");
 
       if (!paymentMethodId) throw new Error("Meio de pagamento nao informado pelo Mercado Pago.");
       if (!payerEmail) throw new Error("Informe um e-mail no pagamento para o Mercado Pago processar.");
@@ -1109,6 +1114,58 @@ Deno.serve(async (req) => {
           point_of_interaction: (mpData as Record<string, unknown>).point_of_interaction,
           transaction_details: (mpData as Record<string, unknown>).transaction_details,
         },
+      }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
+    if (acao === "status_pagamento_mp") {
+      const mercadoPagoToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
+      if (!mercadoPagoToken) {
+        return new Response(JSON.stringify({ error: "MERCADO_PAGO_ACCESS_TOKEN nao configurado" }), {
+          status: 500,
+          headers: { ...cors, "Content-Type": "application/json" },
+        });
+      }
+
+      const paymentId = cleanText(body?.payment_id);
+      if (!paymentId) throw new Error("payment_id nao informado.");
+
+      const mpResp = await fetch(
+        `https://api.mercadopago.com/v1/payments/${encodeURIComponent(paymentId)}`,
+        { headers: { "Authorization": `Bearer ${mercadoPagoToken}` } },
+      );
+      const mpData = await mpResp.json().catch(() => ({}));
+      if (!mpResp.ok) {
+        console.error("mercado pago status error", mpData);
+        return new Response(JSON.stringify({ error: "Nao consegui consultar o pagamento.", detalhe: mpData }), {
+          status: 502,
+          headers: { ...cors, "Content-Type": "application/json" },
+        });
+      }
+
+      const status = cleanText((mpData as Record<string, unknown>).status);
+      const statusDetail = cleanText((mpData as Record<string, unknown>).status_detail);
+      const externalReference = cleanText((mpData as Record<string, unknown>).external_reference);
+
+      // Aprovado: marca o pedido como pago (best-effort; nao quebra a resposta se falhar).
+      if (status === "approved" && externalReference) {
+        try {
+          await supabase
+            .from("pedidos")
+            .update({ pago_em: new Date().toISOString() })
+            .eq("id", externalReference)
+            .is("pago_em", null);
+        } catch (err) {
+          console.warn("falha ao marcar pedido pago (pix)", err);
+        }
+      }
+
+      return new Response(JSON.stringify({
+        status,
+        status_detail: statusDetail,
+        aprovado: status === "approved",
+        pendente: ["pending", "in_process", "authorized"].includes(status),
       }), {
         headers: { ...cors, "Content-Type": "application/json" },
       });
