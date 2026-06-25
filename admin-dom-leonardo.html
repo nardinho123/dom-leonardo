@@ -1049,7 +1049,111 @@
       .topo-fields,
       .topo-field-row { grid-template-columns: 1fr; }
     }
-  </style>
+  
+  /* ====== ESPELHO DO CARDAPIO (admin = visual identico ao cliente) ====== */
+  .cardapio-espelho { position: relative; }
+  .cardapio-espelho h2, .cardapio-espelho h3 { margin: 0; }
+  .cardapio-espelho .ic { width: 1em; height: 1em; display: inline-block; vertical-align: -.12em; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .cardapio-espelho .section-head { padding: 4px 6px 12px; }
+  .cardapio-espelho .section-head .number { font-family:'Jost',sans-serif; color:#d4af37; letter-spacing:.28em; text-transform:uppercase; font-size:10px; font-weight:600; margin-bottom:8px; }
+  .cardapio-espelho .section-head h2 { font-family:'Playfair Display',Georgia,serif; font-size:30px; line-height:.94; letter-spacing:-.05em; color:#fff7e7; }
+  .cardapio-espelho .section-head p { font-family:'Cormorant Garamond',Georgia,serif; color:#b3a587; font-size:15px; line-height:1.45; margin-top:8px; max-width:40ch; }
+
+  .cardapio-espelho .poster-row { display:grid; grid-auto-flow:column; grid-auto-columns:78%; gap:12px; overflow-x:auto; scrollbar-width:none; padding:4px 0 14px; scroll-snap-type:x mandatory; }
+  .cardapio-espelho .poster-row::-webkit-scrollbar { display:none; }
+  .cardapio-espelho .poster-card { min-height:380px; position:relative; overflow:hidden; border-radius:24px; border:1px solid rgba(214,176,66,.24); box-shadow:0 18px 44px rgba(0,0,0,.38); scroll-snap-align:start; background:#111; cursor:pointer; }
+  .cardapio-espelho .poster-card::before { content:""; position:absolute; inset:12px; z-index:2; border:1px solid rgba(242,217,120,.54); border-radius:18px; pointer-events:none; }
+  .cardapio-espelho .poster-card img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:saturate(1.05) contrast(1.04) brightness(.78); }
+  .cardapio-espelho .poster-card::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg, transparent 8%, rgba(0,0,0,.24) 42%, rgba(0,0,0,.92) 100%); }
+  .cardapio-espelho .poster-info { position:absolute; z-index:3; left:20px; right:20px; bottom:20px; }
+  .cardapio-espelho .poster-info h3 { font-family:'Playfair Display',Georgia,serif; font-size:26px; line-height:1.02; letter-spacing:-.035em; margin-bottom:9px; color:#fff7e7; }
+  .cardapio-espelho .poster-info p { font-family:'Cormorant Garamond',Georgia,serif; color:rgba(255,247,231,.78); font-size:15px; line-height:1.4; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  .cardapio-espelho .price { color:#e8d28f; font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:22px; margin-top:12px; }
+
+  .cardapio-espelho .dish-list { display:grid; gap:12px; }
+  .cardapio-espelho .dish-card { display:grid; grid-template-columns:126px 1fr; gap:13px; border-radius:22px; border:1px solid rgba(214,176,66,.18); background:linear-gradient(135deg, rgba(255,255,255,.045), rgba(255,255,255,.018)); box-shadow:0 14px 38px rgba(0,0,0,.28); overflow:hidden; min-height:150px; position:relative; cursor:pointer; }
+  .cardapio-espelho .dish-card::before { content:""; position:absolute; inset:7px; border:1px solid rgba(214,176,66,.12); border-radius:18px; pointer-events:none; }
+  .cardapio-espelho .dish-photo { width:126px; height:100%; min-height:150px; object-fit:cover; }
+  .cardapio-espelho .dish-body { min-width:0; padding:14px 13px 14px 0; }
+  .cardapio-espelho .dish-body h3 { font-family:'Playfair Display',Georgia,serif; font-size:19px; line-height:1.12; letter-spacing:-.015em; margin-bottom:7px; color:#fff7e7; }
+  .cardapio-espelho .dish-body p { font-family:'Cormorant Garamond',Georgia,serif; color:#b3a587; font-size:15px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  .cardapio-espelho .dish-bottom { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px; }
+  .cardapio-espelho .dish-bottom strong { color:#e8d28f; font-family:'Playfair Display',Georgia,serif; font-size:19px; white-space:nowrap; }
+  .cardapio-espelho .see-btn { font-family:'Jost',sans-serif; background:transparent; border:1px solid #d4af37; color:#e8d28f; text-transform:uppercase; letter-spacing:.16em; font-size:11px; padding:9px 14px; border-radius:2px; cursor:pointer; }
+  .cardapio-espelho .tag { display:none !important; }
+
+  .cardapio-espelho .dish { position:relative; }
+  .cardapio-espelho .dish .ph { position:relative; overflow:hidden; border-radius:18px; }
+  .cardapio-espelho .dish .ph img { width:100%; display:block; object-fit:cover; aspect-ratio:4/3; filter:saturate(1.06) contrast(1.04); }
+  .cardapio-espelho .dish .body { padding:14px 4px 6px; }
+  .cardapio-espelho .dish .body h3 { font-family:'Playfair Display',Georgia,serif; font-weight:600; font-size:24px; line-height:1.1; margin-bottom:8px; color:#efe7d6; }
+  .cardapio-espelho .dish .body p { font-family:'Cormorant Garamond',Georgia,serif; color:#b3a587; font-size:16px; line-height:1.45; margin-bottom:12px; }
+  .cardapio-espelho .priceline { display:flex; align-items:baseline; gap:11px; margin-bottom:14px; }
+  .cardapio-espelho .priceline .lead { font-family:'Jost',sans-serif; font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:#b3a587; }
+  .cardapio-espelho .priceline .dots { flex:1; border-bottom:1px dotted rgba(212,175,55,.4); transform:translateY(-5px); }
+  .cardapio-espelho .priceline .val { font-family:'Playfair Display',Georgia,serif; font-size:23px; color:#e8d28f; font-weight:600; }
+  .cardapio-espelho .btn-order { display:inline-flex; align-items:center; justify-content:center; gap:10px; font-family:'Jost',sans-serif; font-size:12px; letter-spacing:.22em; text-transform:uppercase; color:#e8d28f; background:transparent; border:1px solid #d4af37; padding:13px 18px; cursor:pointer; border-radius:2px; }
+
+  .cardapio-espelho .feature { position:relative; min-height:300px; display:flex; align-items:flex-end; overflow:hidden; border-radius:16px; cursor:pointer; }
+  .cardapio-espelho .feature > img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+  .cardapio-espelho .feature .glow { position:absolute; inset:0; z-index:1; background:radial-gradient(60% 40% at 50% 42%, rgba(234,165,59,.32), transparent 70%); mix-blend-mode:screen; animation:pulseGlow 4.5s ease-in-out infinite; }
+  .cardapio-espelho .feature::after { content:""; position:absolute; inset:0; z-index:2; background:linear-gradient(180deg, rgba(8,6,4,.08) 0%, rgba(8,6,4,.2) 38%, rgba(8,6,4,.95) 100%); }
+  .cardapio-espelho .feature .steam { position:absolute; z-index:3; left:0; right:0; top:18%; height:46%; pointer-events:none; }
+  .cardapio-espelho .feature .steam span { position:absolute; bottom:0; width:2px; height:60%; background:linear-gradient(180deg, rgba(255,240,210,.5), transparent); filter:blur(2px); opacity:0; animation:rise 4s ease-in infinite; }
+  .cardapio-espelho .feature .steam span:nth-child(2) { left:50%; height:75%; animation-delay:1.2s; }
+  .cardapio-espelho .feature .steam span:nth-child(3) { left:58%; animation-delay:2.1s; }
+  .cardapio-espelho .feature .steam span:nth-child(1) { left:42%; }
+  .cardapio-espelho .feature .fc { position:relative; z-index:4; padding:22px 20px 24px; width:100%; }
+  .cardapio-espelho .feature .kicker { font-family:'Jost',sans-serif; font-size:10px; letter-spacing:.3em; text-transform:uppercase; color:#e8d28f; margin-bottom:10px; }
+  .cardapio-espelho .feature .fc h3 { font-family:'Playfair Display',Georgia,serif; font-weight:800; font-size:34px; line-height:1.02; margin-bottom:10px; color:#fff; }
+  .cardapio-espelho .feature .fc p { font-family:'Cormorant Garamond',Georgia,serif; color:#f0e2c8; font-size:17px; max-width:40ch; margin-bottom:14px; }
+
+  .cardapio-espelho .nhoque-intro { padding:4px 8px 6px; text-align:center; color:#b3a587; font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-size:17px; }
+  .cardapio-espelho .sauce-tabs { display:flex; gap:8px; padding:12px 4px 4px; flex-wrap:wrap; }
+  .cardapio-espelho .sauce-tabs button { flex:1; min-width:90px; font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:#b3a587; background:transparent; border:1px solid rgba(212,175,55,.25); border-radius:999px; padding:10px 6px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; }
+  .cardapio-espelho .sauce-tabs button .dot { width:11px; height:11px; border-radius:50%; box-shadow:0 0 0 2px rgba(0,0,0,.3) inset; }
+  .cardapio-espelho .sauce-tabs button.on { color:#1a1206; background:#e8d28f; border-color:#e8d28f; }
+  .cardapio-espelho .sauce-stage { display:grid; gap:12px; margin-top:8px; }
+
+  .cardapio-espelho .doce-grid { display:grid; gap:12px; }
+  .cardapio-espelho .doce-card { position:relative; min-height:280px; display:flex; align-items:flex-end; overflow:hidden; border:1px solid rgba(202,168,106,.18); border-radius:16px; cursor:pointer; }
+  .cardapio-espelho .doce-card > img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; filter:brightness(.93) contrast(1.1) saturate(1.06) sepia(.1); }
+  .cardapio-espelho .doce-card .wedge { position:absolute; inset:0; z-index:1; background:linear-gradient(108deg, rgba(8,5,4,.94) 0%, rgba(8,5,4,.78) 36%, rgba(8,5,4,.12) 64%, transparent 80%); }
+  .cardapio-espelho .doce-card .vig { position:absolute; inset:0; z-index:1; box-shadow:inset 0 0 90px 30px rgba(0,0,0,.6); }
+  .cardapio-espelho .doce-card .fc { position:relative; z-index:2; padding:20px 18px 22px; max-width:80%; }
+  .cardapio-espelho .doce-card .k { font-family:'Jost',sans-serif; font-size:9.5px; letter-spacing:.24em; text-transform:uppercase; color:#caa86a; margin-bottom:9px; display:flex; align-items:center; gap:6px; }
+  .cardapio-espelho .doce-card h3 { font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-weight:600; font-size:28px; line-height:1.05; color:#fff; margin-bottom:8px; }
+  .cardapio-espelho .doce-card p { font-family:'Cormorant Garamond',Georgia,serif; color:#d8c6ab; font-size:16px; margin-bottom:10px; }
+  .cardapio-espelho .doce-card .price { color:#e7caa0; font-size:24px; font-family:'Bebas Neue',sans-serif; letter-spacing:.02em; margin-top:0; }
+  .cardapio-espelho .doce-card .btn-order { border:1px solid #caa86a; color:#e7caa0; margin-top:10px; padding:11px 20px; }
+
+  .cardapio-espelho.px-white { color:#241c12; background:#f4efe3; border-radius:16px; padding:10px 12px; }
+  .cardapio-espelho.px-white .section-head .number { color:#9c7c1e; }
+  .cardapio-espelho.px-white .section-head h2 { color:#241c12; }
+  .cardapio-espelho.px-white .section-head p { color:#6b5a3a; }
+  .cardapio-espelho.px-white .dish-card { background:#fffdf7; border-color:rgba(120,95,30,.18); box-shadow:0 12px 30px rgba(60,40,10,.12); }
+  .cardapio-espelho.px-white .dish-card::before { border-color:rgba(120,95,30,.12); }
+  .cardapio-espelho.px-white .dish-body h3 { color:#241c12; }
+  .cardapio-espelho.px-white .dish-body p { color:#6b5a3a; }
+  .cardapio-espelho.px-white .dish-bottom strong { color:#7a5f1e; }
+  .cardapio-espelho.px-white .see-btn { background:#d4af37; color:#241200; border-color:transparent; }
+  .cardapio-espelho.px-wine { background:radial-gradient(120% 70% at 50% 0%, #2a0810, transparent 62%), #0c0306; border-radius:16px; padding:10px 12px; }
+  .cardapio-espelho.px-espresso { background:radial-gradient(120% 60% at 50% 0%, #1f1109, transparent 60%), #0a0706; border-radius:16px; padding:10px 12px; }
+
+  /* barra de acoes por card (editar/duplicar/mover/excluir) */
+  .cardapio-espelho .card-fab { position:absolute; top:8px; right:8px; z-index:7; display:flex; flex-wrap:wrap; gap:4px; justify-content:flex-end; max-width:78%; }
+  .cardapio-espelho .card-fab button { font-family:'Jost',sans-serif; font-size:11px; font-weight:500; line-height:1; padding:7px 9px; border-radius:9px; border:1px solid rgba(0,0,0,.28); background:rgba(8,7,5,.84); color:#ffe7a0; backdrop-filter:blur(6px); cursor:pointer; }
+  .cardapio-espelho .card-fab button:disabled { opacity:.4; }
+  .cardapio-espelho .card-fab button.danger { color:#ff9a8a; }
+  .cardapio-espelho.px-white .card-fab button, .cardapio-espelho .doce-card .card-fab button { background:rgba(255,255,255,.92); color:#3a2c12; border-color:rgba(0,0,0,.15); }
+  .cardapio-espelho.px-white .card-fab button.danger, .cardapio-espelho .doce-card .card-fab button.danger { color:#b3402b; }
+  .cardapio-espelho .paused { opacity:.5; filter:grayscale(.4); }
+  .cardapio-espelho .espelho-add { width:100%; border:1px dashed rgba(212,175,55,.5); background:transparent; color:#e8d28f; font-family:'Jost',sans-serif; letter-spacing:.1em; text-transform:uppercase; font-size:12px; padding:14px; border-radius:12px; cursor:pointer; margin-top:8px; }
+
+</style>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500;1,600&family=Bebas+Neue&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
 </head>
 <body>
   <div id="root"></div>
@@ -1889,7 +1993,11 @@
             p_selo_experiencia: form.selo_experiencia || null,
             p_urgencia_texto: form.urgencia_texto || null,
           };
-          const { error } = await sb.rpc('salvar_prato_completo', payload);
+          let { error } = await sb.rpc('salvar_prato_completo', payload);
+          if (error && /slug/i.test(error.message || '')) {
+            payload.p_slug = `${form.slug || slugify(form.nome) || 'prato'}-${Date.now().toString(36).slice(-4)}`;
+            ({ error } = await sb.rpc('salvar_prato_completo', payload));
+          }
           if (error) throw error;
           setModal(null);
           toast('Item salvo no cardápio.');
@@ -2375,9 +2483,8 @@
                 <div className="section-identity">
                   <span className="badge purple">{cat.icone || '🍝'}</span>
                   <div>
-                    <span className="eyebrow">{SECTION_TYPES.find(t => t.id === cat.tipo_visual)?.label || 'Seção'}</span>
-                    <h3>{cat.titulo || cat.nome}</h3>
-                    {cat.descricao && <p>{cat.descricao}</p>}
+                    <span className="eyebrow">{SECTION_TYPES.find(t => t.id === cat.tipo_visual)?.label || 'Seção'} · edição</span>
+                    <h3 style={{fontSize:14, opacity:.65}}>{cat.titulo || cat.nome}</h3>
                   </div>
                 </div>
                 <div className="actions">
@@ -2388,29 +2495,64 @@
                   <button className="btn btn-small btn-danger" onClick={() => onDeleteSection(cat)}>Excluir</button>
                 </div>
               </div>
-              <div className="editor-preview">
+              <div className={`editor-preview cardapio-espelho ${cat.tipo_visual === 'lista_editorial' ? 'px-white' : cat.tipo_visual === 'risotos' ? 'px-wine' : cat.tipo_visual === 'sobremesas' ? 'px-espresso' : ''}`.trim()}>
+                <header className="section-head">
+                  <div className="number">Capítulo {String(index + 1).padStart(2, '0')}</div>
+                  <h2>{cat.titulo || cat.nome}</h2>
+                  {cat.descricao && <p>{cat.descricao}</p>}
+                </header>
                 {cat.tipo_visual === 'carrossel_horizontal' && (
-                  <div className="editor-poster-row">
+                  <div className="poster-row">
                     {cat.pratos.map((prato, dishIndex) => (
                       <DishPosterAdmin key={prato.id} prato={prato} dishIndex={dishIndex} total={cat.pratos.length} onEditDish={onEditDish} onDuplicateDish={onDuplicateDish} onDeleteDish={onDeleteDish} onToggleDish={onToggleDish} onMoveDish={onMoveDish} />
                     ))}
                   </div>
                 )}
                 {cat.tipo_visual === 'feature_foto_grande' && (
-                  <div className="editor-feature-stack">
+                  <div className="feature-stack">
+                    {cat.pratos[0] && <DishFeatureAdmin key={cat.pratos[0].id} prato={cat.pratos[0]} dishIndex={0} total={cat.pratos.length} onEditDish={onEditDish} onDuplicateDish={onDuplicateDish} onDeleteDish={onDeleteDish} onToggleDish={onToggleDish} onMoveDish={onMoveDish} />}
+                    {cat.pratos.length > 1 && (
+                      <div className="dish-list">
+                        {cat.pratos.slice(1).map((prato, i) => (
+                          <DishListAdmin key={prato.id} prato={prato} dishIndex={i + 1} total={cat.pratos.length} onEditDish={onEditDish} onDuplicateDish={onDuplicateDish} onDeleteDish={onDeleteDish} onToggleDish={onToggleDish} onMoveDish={onMoveDish} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {cat.tipo_visual === 'nhoque_molhos' && (
+                  <>
+                    <div className="nhoque-intro">O nhoque é da casa. Você escolhe o molho:</div>
+                    <div className="sauce-tabs">
+                      {cat.pratos.map((p, i) => (
+                        <button key={`tab-${p.id}`} className={i === 0 ? 'on' : ''} type="button">
+                          <span className="dot" style={{ background: sauceColorAdmin(p.nome) }}></span>
+                          {String(p.nome).replace(/nhoque|molho/gi, '').trim() || p.nome}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="sauce-stage">
+                      {cat.pratos.map((prato, dishIndex) => (
+                        <DishClaudeAdmin key={prato.id} prato={prato} dishIndex={dishIndex} total={cat.pratos.length} onEditDish={onEditDish} onDuplicateDish={onDuplicateDish} onDeleteDish={onDeleteDish} onToggleDish={onToggleDish} onMoveDish={onMoveDish} />
+                      ))}
+                    </div>
+                  </>
+                )}
+                {cat.tipo_visual === 'sobremesas' && (
+                  <div className="doce-grid">
                     {cat.pratos.map((prato, dishIndex) => (
-                      <DishFeatureAdmin key={prato.id} prato={prato} dishIndex={dishIndex} total={cat.pratos.length} onEditDish={onEditDish} onDuplicateDish={onDuplicateDish} onDeleteDish={onDeleteDish} onToggleDish={onToggleDish} onMoveDish={onMoveDish} />
+                      <DishDoceAdmin key={prato.id} prato={prato} dishIndex={dishIndex} total={cat.pratos.length} onEditDish={onEditDish} onDuplicateDish={onDuplicateDish} onDeleteDish={onDeleteDish} onToggleDish={onToggleDish} onMoveDish={onMoveDish} />
                     ))}
                   </div>
                 )}
-                {['nhoque_molhos', 'sobremesas', 'risotos', 'lista_editorial'].includes(cat.tipo_visual || 'lista_editorial') && (
-                  <div className={`editor-dish-grid ${cat.tipo_visual || 'lista_editorial'}`}>
+                {!['carrossel_horizontal','feature_foto_grande','nhoque_molhos','sobremesas'].includes(cat.tipo_visual || 'lista_editorial') && (
+                  <div className="dish-list">
                     {cat.pratos.map((prato, dishIndex) => (
                       <DishListAdmin key={prato.id} prato={prato} dishIndex={dishIndex} total={cat.pratos.length} onEditDish={onEditDish} onDuplicateDish={onDuplicateDish} onDeleteDish={onDeleteDish} onToggleDish={onToggleDish} onMoveDish={onMoveDish} />
                     ))}
                   </div>
                 )}
-                {!cat.pratos.length && <button className="category-add editor-add-empty" onClick={() => onAddDish(cat)}>+ Adicionar primeiro item em {cat.titulo || cat.nome}</button>}
+                {!cat.pratos.length && <button className="espelho-add" onClick={() => onAddDish(cat)}>+ Adicionar primeiro item em {cat.titulo || cat.nome}</button>}
               </div>
               <div className="editor-section-foot">
                 <button className="btn btn-primary" onClick={() => onAddDish(cat)}>+ Adicionar prato nessa seção</button>
@@ -2423,15 +2565,28 @@
       );
     }
 
-    function DishAdminActions({ prato, dishIndex, total, onEditDish, onDuplicateDish, onDeleteDish, onToggleDish, onMoveDish }) {
+    function precoEspelho(p) { return Number(p.preco_promocional || p.preco_base || 0); }
+    function textoEspelho(p, n) { return compactText(p.descricao_curta || p.frase_fome || '', n); }
+    function sauceColorAdmin(nome = '') {
+      const t = String(nome).toLowerCase();
+      if (t.includes('bolonh') || t.includes('tomate') || t.includes('vermelh')) return '#b63a2b';
+      if (t.includes('pesto')) return '#6d9a4a';
+      if (t.includes('rose') || t.includes('rosé') || t.includes('rosa')) return '#d98b73';
+      if (t.includes('alfredo') || t.includes('branco')) return '#ecd9a7';
+      return '#c9a23a';
+    }
+
+    function CardFab(props) {
+      const { prato, dishIndex, total, onEditDish, onDuplicateDish, onDeleteDish, onToggleDish, onMoveDish } = props;
+      const stop = (fn) => (e) => { e.stopPropagation(); fn(); };
       return (
-        <div className="dish-admin-actions">
-          <button className="btn btn-small" disabled={dishIndex === 0} onClick={() => onMoveDish(prato, -1)}>↑</button>
-          <button className="btn btn-small" disabled={dishIndex === total - 1} onClick={() => onMoveDish(prato, 1)}>↓</button>
-          <button className="btn btn-small" onClick={() => onEditDish(prato)}>Editar</button>
-          <button className="btn btn-small" onClick={() => onDuplicateDish(prato)}>Duplicar</button>
-          <button className="btn btn-small" onClick={() => onToggleDish(prato)}>{prato.ativo ? 'Pausar' : 'Ativar'}</button>
-          <button className="btn btn-small btn-danger" onClick={() => onDeleteDish(prato)}>Excluir</button>
+        <div className="card-fab" onClick={e => e.stopPropagation()}>
+          <button disabled={dishIndex === 0} onClick={stop(() => onMoveDish(prato, -1))}>↑</button>
+          <button disabled={dishIndex === total - 1} onClick={stop(() => onMoveDish(prato, 1))}>↓</button>
+          <button onClick={stop(() => onEditDish(prato))}>Editar</button>
+          <button onClick={stop(() => onDuplicateDish(prato))}>Dup</button>
+          <button onClick={stop(() => onToggleDish(prato))}>{prato.ativo ? 'Pausar' : 'Ativar'}</button>
+          <button className="danger" onClick={stop(() => onDeleteDish(prato))}>Excluir</button>
         </div>
       );
     }
@@ -2439,15 +2594,14 @@
     function DishPosterAdmin(props) {
       const { prato } = props;
       return (
-        <article className={`editor-poster-card ${prato.ativo ? '' : 'paused'}`}>
-          <div className="poster-thumb">{prato.foto_url ? <img src={prato.foto_url} alt="" /> : 'DL'}</div>
-          <div className="poster-copy">
-            <span className="badge">{prato.badge_destaque || 'Prato'}</span>
-            <h4>{prato.nome}</h4>
-            <p>{compactText(prato.descricao_curta || prato.frase_fome || '', 98)}</p>
-            <strong>{fmtMoney(prato.preco_base)}</strong>
+        <article className={`poster-card ${prato.ativo ? '' : 'paused'}`} onClick={() => props.onEditDish(prato)}>
+          {prato.foto_url && <img src={prato.foto_url} alt={prato.nome} loading="lazy" />}
+          <CardFab {...props} />
+          <div className="poster-info">
+            <h3>{prato.nome}</h3>
+            <p>{textoEspelho(prato, 130)}</p>
+            <div className="price">{fmtMoney(precoEspelho(prato))}</div>
           </div>
-          <DishAdminActions {...props} />
         </article>
       );
     }
@@ -2455,37 +2609,73 @@
     function DishFeatureAdmin(props) {
       const { prato } = props;
       return (
-        <article className={`editor-feature-card ${prato.ativo ? '' : 'paused'}`}>
-          <div className="feature-img">{prato.foto_url ? <img src={prato.foto_url} alt="" /> : 'DL'}</div>
-          <div>
-            <span className="eyebrow">{prato.badge_destaque || 'Capítulo do Dom'}</span>
-            <h4>{prato.nome}</h4>
-            <p>{compactText(prato.descricao_curta || '', 150)}</p>
-            <strong>{fmtMoney(prato.preco_base)}</strong>
-            <DishAdminActions {...props} />
+        <section className={`feature ${prato.ativo ? '' : 'paused'}`} onClick={() => props.onEditDish(prato)}>
+          {prato.foto_url && <img src={prato.foto_url} alt={prato.nome} loading="lazy" />}
+          <div className="glow"></div>
+          <div className="steam"><span></span><span></span><span></span></div>
+          <CardFab {...props} />
+          <div className="fc">
+            <div className="kicker">Para dividir · rasga e puxa o queijo</div>
+            <h3>{prato.nome}</h3>
+            {textoEspelho(prato, 150) && <p>{textoEspelho(prato, 150)}</p>}
+            <div className="priceline"><span className="lead">Valor</span><span className="dots"></span><span className="val">{fmtMoney(precoEspelho(prato))}</span></div>
+            <span className="btn-order">Pedir agora →</span>
           </div>
-        </article>
+        </section>
       );
     }
 
     function DishListAdmin(props) {
       const { prato } = props;
       return (
-        <article className={`editor-list-card ${prato.ativo ? '' : 'paused'}`}>
-          <div className="thumb">{prato.foto_url ? <img src={prato.foto_url} alt="" /> : 'DL'}</div>
-          <div className="editor-list-copy">
-            <h4>{prato.nome}</h4>
-            <p>{compactText(prato.descricao_curta || 'Sem descrição', 120)}</p>
-            <div className="dish-meta">
-              <span className="money">{fmtMoney(prato.preco_base)}</span>
-              <span className={`badge ${prato.ativo ? 'on' : 'off'}`}>{prato.ativo ? 'Ativo' : 'Inativo'}</span>
-              <span className="badge">{prato.tamanhos.length} tamanhos</span>
-              <span className="badge">{prato.grupos.length} grupos</span>
-              {!!prato.cupons.length && <span className="badge purple">{prato.cupons.length} cupons</span>}
+        <article className={`dish-card ${prato.ativo ? '' : 'paused'}`} onClick={() => props.onEditDish(prato)}>
+          {prato.foto_url && <img className="dish-photo" src={prato.foto_url} alt={prato.nome} loading="lazy" />}
+          <CardFab {...props} />
+          <div className="dish-body">
+            <h3>{prato.nome}</h3>
+            {textoEspelho(prato, 118) && <p>{textoEspelho(prato, 118)}</p>}
+            <div className="dish-bottom">
+              <strong>{fmtMoney(precoEspelho(prato))}</strong>
+              <span className="see-btn">Ver</span>
             </div>
-            <DishAdminActions {...props} />
           </div>
         </article>
+      );
+    }
+
+    function DishClaudeAdmin(props) {
+      const { prato } = props;
+      return (
+        <article className={`dish v-large ${prato.ativo ? '' : 'paused'}`} onClick={() => props.onEditDish(prato)}>
+          <div className="ph">{prato.foto_url && <img src={prato.foto_url} alt={prato.nome} loading="lazy" />}</div>
+          <CardFab {...props} />
+          <div className="body">
+            <h3>{prato.nome}</h3>
+            {textoEspelho(prato, 120) && <p>{textoEspelho(prato, 120)}</p>}
+            <div className="priceline"><span className="lead">Valor</span><span className="dots"></span><span className="val">{fmtMoney(precoEspelho(prato))}</span></div>
+            <span className="btn-order">Pedir agora →</span>
+          </div>
+        </article>
+      );
+    }
+
+    function DishDoceAdmin(props) {
+      const { prato } = props;
+      return (
+        <div className={`doce-card ${prato.ativo ? '' : 'paused'}`} onClick={() => props.onEditDish(prato)}>
+          {prato.foto_url && <img src={prato.foto_url} alt={prato.nome} loading="lazy" />}
+          <div className="wedge"></div>
+          <div className="vig"></div>
+          <CardFab {...props} />
+          <div className="fc">
+            <div className="k">Doce final</div>
+            <h3>{prato.nome}</h3>
+            {textoEspelho(prato, 110) && <p>{textoEspelho(prato, 110)}</p>}
+            <span className="price">{fmtMoney(precoEspelho(prato))}</span>
+            <br />
+            <span className="btn-order">Pedir →</span>
+          </div>
+        </div>
       );
     }
 
@@ -2656,17 +2846,9 @@
                 </SelectField>
                 <TextField label="Nome do prato" value={form.nome} onChange={v => set('nome', v)} />
                 <div className="field full"><TextField label="Descrição do prato" value={form.descricao_curta} onChange={v => set('descricao_curta', v)} textarea /></div>
-                <div className="field full"><TextField label="Frase de fome (curta, aparece forte no cardápio)" value={form.frase_fome || ''} onChange={v => set('frase_fome', v)} textarea /></div>
-                <div className="field full"><TextField label="Como chega na casa do cliente" value={form.como_chega_texto || ''} onChange={v => set('como_chega_texto', v)} textarea /></div>
-                <div className="field full"><TextField label="Porção sem mistério" value={form.porcao_texto || ''} onChange={v => set('porcao_texto', v)} /></div>
-                <div className="field full"><TextField label="Resposta para dúvida de tamanho/fome" value={form.duvida_tamanho_texto || ''} onChange={v => set('duvida_tamanho_texto', v)} textarea /></div>
-                <TextField label="Melhor para" value={form.melhor_para || ''} onChange={v => set('melhor_para', v)} />
-                <TextField label="Evitar se" value={form.evitar_se || ''} onChange={v => set('evitar_se', v)} />
                 <div style={{display:'none'}}><TextField label="Slug" value={form.slug} onChange={v => set('slug', v)} /></div>
                 <TextField label="Preço base" type="number" value={form.preco_base} onChange={v => set('preco_base', v)} />
                 <TextField label="Etiqueta no cardápio" value={form.badge_destaque} onChange={v => set('badge_destaque', v)} />
-                <TextField label="Selo sensorial" value={form.selo_experiencia || ''} onChange={v => set('selo_experiencia', v)} />
-                <TextField label="Urgência/escassez" value={form.urgencia_texto || ''} onChange={v => set('urgencia_texto', v)} />
                 <ColorPicker label="Cor da etiqueta" value={form.badge_cor || 'vermelho'} onChange={v => set('badge_cor', v)} />
                 <TextField label="Ordem" type="number" step="1" value={form.ordem} onChange={v => set('ordem', v)} />
               </div>
