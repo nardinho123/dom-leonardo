@@ -2128,8 +2128,8 @@
   /* ===== Seções e cabeçalho ===== */
   .section { padding: 24px 0 4px; }
   .section + .section { border-top: 1px solid rgba(212,175,55,.14); }
-  .section-head { padding: 12px 8px 14px; }
-  .section-head .number { font-family: 'Jost', sans-serif; color: #d4af37; letter-spacing: .28em; text-transform: uppercase; font-size: 10px; font-weight: 600; margin-bottom: 8px; }
+  .section-head { display: block; padding: 12px 8px 14px; margin: 0; }
+  .section-head .number { display: block; font-family: 'Jost', sans-serif; color: #d4af37; letter-spacing: .28em; text-transform: uppercase; font-size: 10px; font-weight: 600; margin-bottom: 8px; }
   .section-head h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 35px; line-height: .94; letter-spacing: -.052em; color: #fff7e7; }
   .section-head p { font-family: 'Cormorant Garamond', Georgia, serif; color: #b3a587; font-size: 16px; line-height: 1.45; margin-top: 10px; max-width: 34ch; }
 
@@ -4073,29 +4073,7 @@ function App() {
         <div className="capa-cue">role o menu ↓</div>
       </header>
 
-      {cuponsDisponiveis.length > 0 && (
-        <section className="px-5 pt-5 coupon-section">
-          <div className="section-head">
-            <div>
-              <h2 className="font-serif text-xl" style={{color:'var(--gold)'}}>{deliveryConfig.cupons_titulo || 'Cupons do Dom'}</h2>
-              <p>{deliveryConfig.cupons_descricao || 'Toque em um cupom para deixar salvo na sacola.'}</p>
-            </div>
-          </div>
-          <div className="coupon-strip">
-            {cuponsDisponiveis.slice(0, 6).map(cupom => (
-              <button
-                key={cupom.id}
-                className={`coupon-chip ${String(cupomAplicado?.id) === String(cupom.id) ? 'active' : ''}`}
-                onClick={() => aplicarCupom(cupom)}
-              >
-                <small>{String(cupom.codigo || '').toUpperCase()}</small>
-                <strong>{labelCupom(cupom)}</strong>
-                <span>{textoCupom(cupom)}</span>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
+      {/* tira o strip de cupons do inicio (cupom continua valendo no checkout) */}
 
       {/* Cardapio editorial conectado ao ecossistema real (Mais Pedidos vira o carrossel da 1a secao) */}
       <section className="prototype-menu pb-36">
