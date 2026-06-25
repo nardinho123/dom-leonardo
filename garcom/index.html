@@ -2043,14 +2043,14 @@
     line-height: 1.38;
   }
 
-  /* Prototipo Codex aplicado ao cardapio real: secoes editoriais, sem tocar no checkout. */
+  /* ====== CARDAPIO: design portado FIEL do prototipo-codex (identico) ====== */
   .prototype-menu {
     position: relative;
-    padding: 0 0 calc(118px + env(safe-area-inset-bottom));
+    padding: 0 0 calc(110px + env(safe-area-inset-bottom));
     background:
-      radial-gradient(circle at 18% 0%, rgba(212,175,55,.13), transparent 34%),
-      linear-gradient(180deg, rgba(71,38,13,.18), transparent 18%),
-      #050504;
+      radial-gradient(circle at 0% 0%, rgba(214,176,66,.14), transparent 36%),
+      radial-gradient(circle at 100% 12%, rgba(191,50,31,.12), transparent 34%),
+      linear-gradient(180deg, #090805 0%, #050504 55%, #020202 100%);
     overflow: hidden;
   }
   .prototype-menu::before {
@@ -2058,437 +2058,174 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    opacity: .18;
+    opacity: .13;
     background-image:
-      linear-gradient(rgba(212,175,55,.16) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(212,175,55,.14) 1px, transparent 1px);
-    background-size: 58px 58px;
-    mask-image: linear-gradient(180deg, transparent 0, #000 8%, #000 75%, transparent 100%);
+      linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+    background-size: 46px 46px;
+    mask-image: linear-gradient(180deg, #000 0%, transparent 78%);
   }
   .prototype-sections {
     position: relative;
     z-index: 1;
-    display: grid;
-    gap: 34px;
-    padding: 8px 14px 0;
+    padding: 0 12px;
   }
-  .nav {
-    position: sticky;
-    top: 0;
-    z-index: 22;
+  .ic { width: 1em; height: 1em; display: inline-block; vertical-align: -.12em; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ===== CAPA editorial (preta, sangra nas bordas) ===== */
+  .capa {
+    position: relative;
+    min-height: clamp(440px, 64vh, 540px);
     display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding: 12px 14px 10px;
-    background: linear-gradient(180deg, rgba(5,5,4,.96), rgba(5,5,4,.75));
-    backdrop-filter: blur(18px);
-    border-bottom: 1px solid rgba(212,175,55,.16);
-    scrollbar-width: none;
+    flex-direction: column;
+    padding: 42px 24px 26px;
+    overflow: hidden;
+    background:
+      radial-gradient(120% 60% at 50% 0%, rgba(214,176,66,.13), transparent 55%),
+      #0a0908;
+    isolation: isolate;
   }
+  .capa-grain {
+    position: absolute; inset: 0; z-index: 0; opacity: .06; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .capa-top { position: relative; z-index: 3; display: flex; justify-content: space-between; align-items: center; }
+  .capa-pill { border: 1px solid rgba(242,217,120,.34); border-radius: 999px; background: rgba(0,0,0,.38); color: #fff4d0; backdrop-filter: blur(16px); padding: 8px 13px; font-family: 'Jost', sans-serif; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; font-weight: 600; }
+  .capa-logo { width: 58px; height: 58px; border-radius: 999px; border: 1px solid rgba(242,217,120,.55); overflow: hidden; background: rgba(0,0,0,.28); box-shadow: 0 10px 26px rgba(0,0,0,.32); }
+  .capa-logo img { width: 100%; height: 100%; object-fit: cover; }
+  .capa-center { position: relative; z-index: 3; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .capa-eyebrow { font-family: 'Jost', sans-serif; color: #e8d28f; font-size: 10.5px; font-weight: 600; letter-spacing: .34em; text-transform: uppercase; margin-bottom: 16px; }
+  .capa-title { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(50px, 16vw, 78px); line-height: .9; letter-spacing: -.05em; text-shadow: 0 18px 46px rgba(0,0,0,.7); color: #fff7e7; }
+  .capa-title em { display: block; font-style: italic; font-weight: 400; color: #e8d28f; }
+  .capa-orn { display: flex; align-items: center; gap: 14px; width: 72%; max-width: 300px; margin: 22px 0 16px; }
+  .capa-orn .l, .capa-orn .r { flex: 1; height: 1px; }
+  .capa-orn .l { background: linear-gradient(90deg, transparent, #d4af37); }
+  .capa-orn .r { background: linear-gradient(90deg, #d4af37, transparent); }
+  .capa-orn i { color: #d4af37; font-size: 12px; font-style: normal; transform: rotate(45deg); }
+  .capa-sub { font-family: 'Cormorant Garamond', Georgia, serif; color: rgba(255,247,231,.82); font-style: italic; font-size: 18px; line-height: 1.45; max-width: 30ch; }
+  .capa-meta { font-family: 'Jost', sans-serif; margin-top: 18px; color: #b3a587; font-size: 10.5px; letter-spacing: .24em; text-transform: uppercase; }
+  .capa-cue { position: relative; z-index: 3; text-align: center; font-family: 'Jost', sans-serif; color: #b3a587; font-size: 10px; letter-spacing: .26em; text-transform: uppercase; animation: capabob 2.4s ease-in-out infinite; }
+  @keyframes capabob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+
+  /* ===== NAV (pills flutuando) ===== */
+  .nav { position: sticky; top: 0; z-index: 40; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 13px 12px; margin: 0 0 8px; background: transparent; }
   .nav::-webkit-scrollbar { display: none; }
-  .nav button {
-    flex: 0 0 auto;
-    min-height: 38px;
-    border: 1px solid rgba(212,175,55,.22);
-    border-radius: 999px;
-    padding: 9px 14px;
-    background: rgba(20,14,8,.72);
-    color: rgba(244,239,227,.7);
-    font-family: "Bebas Neue", "Jost", sans-serif;
-    font-size: 14px;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-  }
-  .nav button.on {
-    color: #191008;
-    background: linear-gradient(180deg, #e5c85e, #9f751d);
-    border-color: rgba(255,227,120,.8);
-    box-shadow: 0 10px 28px rgba(212,175,55,.18);
-  }
-  .section {
-    position: relative;
-    border-radius: 28px;
-    padding: 16px 0 0;
-  }
-  .section-head {
-    position: relative;
-    padding: 0 4px 14px;
-  }
-  .section-head::after {
-    content: "";
-    display: block;
-    width: 92px;
-    height: 1px;
-    margin-top: 10px;
-    background: linear-gradient(90deg, #d4af37, transparent);
-  }
-  .section-head .number {
-    font-family: "Bebas Neue", sans-serif;
-    color: #d4af37;
-    letter-spacing: .18em;
-    text-transform: uppercase;
-    font-size: 12px;
-    margin-bottom: 3px;
-  }
-  .section-head h2 {
-    display: inline;
-    color: #f8efd9;
-    font-family: "Playfair Display", "Cormorant Garamond", serif;
-    font-size: clamp(31px, 11vw, 50px);
-    line-height: .88;
-    font-weight: 800;
-    letter-spacing: -.045em;
-    text-shadow: 0 12px 38px rgba(0,0,0,.55);
-    background: linear-gradient(transparent 58%, rgba(212,175,55,.25) 58%, rgba(212,175,55,.25) 82%, transparent 82%);
-  }
-  .section-head p {
-    max-width: 28rem;
-    margin-top: 8px;
-    color: rgba(244,239,227,.66);
-    font-family: "Jost", sans-serif;
-    font-size: 13px;
-    line-height: 1.35;
-  }
-  .tag {
-    display: inline-flex;
-    width: max-content;
-    align-items: center;
-    border: 1px solid rgba(212,175,55,.35);
-    border-radius: 999px;
-    padding: 4px 8px;
-    color: #e8c85b;
-    background: rgba(8,6,4,.62);
-    font-family: "Bebas Neue", sans-serif;
-    font-size: 11px;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-  }
-  .poster-row {
-    display: flex;
-    gap: 14px;
-    overflow-x: auto;
-    padding: 2px 3px 12px;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-  }
+  .nav button { flex: 0 0 auto; color: #ffe7a0; border: 1px solid rgba(214,176,66,.28); background: rgba(10,9,8,.55); backdrop-filter: blur(6px); border-radius: 999px; padding: 11px 14px; font-family: 'Jost', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+  .nav button.on { background: #d4af37; color: #1a1204; border-color: #d4af37; }
+
+  /* ===== Carrossel Mais Pedidos ===== */
+  .poster-row { display: grid; grid-auto-flow: column; grid-auto-columns: 78%; gap: 12px; overflow-x: auto; scrollbar-width: none; padding: 4px 0 18px; scroll-snap-type: x mandatory; }
   .poster-row::-webkit-scrollbar { display: none; }
-  .poster-card {
-    position: relative;
-    flex: 0 0 74%;
-    min-height: 385px;
-    overflow: hidden;
-    border: 1px solid rgba(212,175,55,.36);
-    border-radius: 28px;
-    scroll-snap-align: start;
-    background: #160c05;
-    box-shadow: 0 28px 60px rgba(0,0,0,.45);
-  }
-  .poster-card::before {
-    content: "";
-    position: absolute;
-    inset: 10px;
-    z-index: 2;
-    pointer-events: none;
-    border: 1px solid rgba(231,202,105,.52);
-    border-radius: 21px;
-  }
-  .poster-card img {
-    width: 100%;
-    height: 100%;
-    min-height: 385px;
-    object-fit: cover;
-    transform: scale(1.02);
-    filter: saturate(1.03) contrast(1.04);
-  }
-  .poster-card::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, transparent 24%, rgba(0,0,0,.12) 42%, rgba(0,0,0,.9) 100%);
-  }
-  .poster-info {
-    position: absolute;
-    z-index: 3;
-    left: 18px;
-    right: 18px;
-    bottom: 19px;
-    color: #fff5dc;
-  }
-  .poster-info h3 {
-    margin: 8px 0 6px;
-    font-family: "Playfair Display", serif;
-    font-size: 27px;
-    line-height: .96;
-    font-weight: 800;
-    letter-spacing: -.04em;
-  }
-  .poster-info p {
-    color: rgba(255,246,226,.72);
-    font-family: "Jost", sans-serif;
-    font-size: 12px;
-    line-height: 1.32;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .poster-info strong {
-    display: block;
-    margin-top: 11px;
-    color: #f1cf62;
-    font-family: "Bebas Neue", sans-serif;
-    font-size: 24px;
-    letter-spacing: .04em;
-  }
+  .poster-card { min-height: 430px; position: relative; overflow: hidden; border-radius: 28px; border: 1px solid rgba(214,176,66,.24); box-shadow: 0 18px 44px rgba(0,0,0,.38); scroll-snap-align: start; background: #111; }
+  .poster-card::before { content: ""; position: absolute; inset: 12px; z-index: 2; border: 1px solid rgba(242,217,120,.54); border-radius: 21px; pointer-events: none; }
+  .poster-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: saturate(1.05) contrast(1.04) brightness(.78); }
+  .poster-card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 8%, rgba(0,0,0,.24) 42%, rgba(0,0,0,.92) 100%); }
+  .poster-info { position: absolute; z-index: 3; left: 22px; right: 22px; bottom: 22px; }
+  .poster-info h3 { font-family: 'Playfair Display', Georgia, serif; font-size: 28px; line-height: 1.02; letter-spacing: -.035em; margin-bottom: 10px; color: #fff7e7; }
+  .poster-info p { font-family: 'Cormorant Garamond', Georgia, serif; color: rgba(255,247,231,.78); font-size: 15px; line-height: 1.42; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .price { color: #e8d28f; font-family: 'Playfair Display', Georgia, serif; font-weight: 700; font-size: 23px; margin-top: 14px; }
+
+  /* ===== Seções e cabeçalho ===== */
+  .section { padding: 24px 0 4px; }
+  .section + .section { border-top: 1px solid rgba(212,175,55,.14); }
+  .section-head { padding: 12px 8px 14px; }
+  .section-head .number { font-family: 'Jost', sans-serif; color: #d4af37; letter-spacing: .28em; text-transform: uppercase; font-size: 10px; font-weight: 600; margin-bottom: 8px; }
+  .section-head h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 35px; line-height: .94; letter-spacing: -.052em; color: #fff7e7; }
+  .section-head p { font-family: 'Cormorant Garamond', Georgia, serif; color: #b3a587; font-size: 16px; line-height: 1.45; margin-top: 10px; max-width: 34ch; }
+
+  /* ===== Card de prato (lista) ===== */
   .dish-list { display: grid; gap: 12px; }
-  .dish-card {
-    display: grid;
-    grid-template-columns: 104px 1fr;
-    gap: 12px;
-    min-height: 132px;
-    padding: 10px;
-    border: 1px solid rgba(212,175,55,.18);
-    border-radius: 24px;
-    background: linear-gradient(135deg, rgba(255,255,255,.035), transparent), rgba(20,14,8,.78);
-    box-shadow: 0 14px 34px rgba(0,0,0,.24);
-  }
-  .dish-photo {
-    width: 104px;
-    height: 112px;
-    border-radius: 18px;
-    object-fit: cover;
-    border: 1px solid rgba(212,175,55,.18);
-  }
-  .dish-body {
-    display: grid;
-    align-content: space-between;
-    min-width: 0;
-  }
-  .dish-body h3 {
-    margin: 5px 0 4px;
-    color: #fff4dc;
-    font-family: "Playfair Display", serif;
-    font-size: 20px;
-    line-height: 1;
-    font-weight: 800;
-    letter-spacing: -.035em;
-  }
-  .dish-body p {
-    color: rgba(244,239,227,.62);
-    font-family: "Jost", sans-serif;
-    font-size: 12px;
-    line-height: 1.26;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .dish-foot {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-top: 9px;
-  }
-  .dish-foot span {
-    color: #e6c658;
-    font-family: "Bebas Neue", sans-serif;
-    font-size: 18px;
-    letter-spacing: .04em;
-  }
-  .dish-foot button {
-    min-height: 34px;
-    border: 0;
-    border-radius: 999px;
-    padding: 8px 13px;
-    color: #1a1107;
-    background: linear-gradient(180deg, #e6ca60, #9d721d);
-    font-family: "Bebas Neue", sans-serif;
-    font-size: 14px;
-    letter-spacing: .11em;
-    text-transform: uppercase;
-  }
+  .dish-card { display: grid; grid-template-columns: 126px 1fr; gap: 13px; border-radius: 25px; border: 1px solid rgba(214,176,66,.18); background: linear-gradient(135deg, rgba(255,255,255,.045), rgba(255,255,255,.018)); box-shadow: 0 14px 38px rgba(0,0,0,.28); overflow: hidden; margin-bottom: 12px; min-height: 154px; position: relative; }
+  .dish-card::before { content: ""; position: absolute; inset: 7px; border: 1px solid rgba(214,176,66,.12); border-radius: 20px; pointer-events: none; }
+  .dish-photo { width: 126px; height: 100%; min-height: 154px; object-fit: cover; }
+  .dish-body { min-width: 0; padding: 14px 13px 14px 0; }
+  .dish-body h3 { font-family: 'Playfair Display', Georgia, serif; font-size: 19px; line-height: 1.12; letter-spacing: -.015em; margin-bottom: 7px; color: #fff7e7; }
+  .dish-body p { font-family: 'Cormorant Garamond', Georgia, serif; color: #b3a587; font-size: 15px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .dish-bottom { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
+  .dish-bottom strong { color: #e8d28f; font-family: 'Playfair Display', Georgia, serif; font-size: 19px; white-space: nowrap; }
+  .see-btn { font-family: 'Jost', sans-serif; background: transparent; border: 1px solid #d4af37; color: #e8d28f; text-transform: uppercase; letter-spacing: .16em; font-size: 11px; padding: 10px 16px; border-radius: 2px; }
+  .see-btn:active, .see-btn:hover { background: #d4af37; color: #1a1206; }
+
+  /* etiquetas amarelas fora */
+  .tag { display: none !important; }
+
+  /* ===== card "Claude" (usado no NHOQUE) ===== */
+  .dish { position: relative; padding-top: 12px; }
+  .dish .ph { position: relative; overflow: hidden; border-radius: 24px; }
+  .dish .ph img { width: 100%; display: block; object-fit: cover; filter: saturate(1.06) contrast(1.04); }
+  .v-large .ph img { aspect-ratio: 4/3; }
+  .dish .ph::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 58%, rgba(8,7,6,.55)); pointer-events: none; }
+  .dish .body { padding: 16px 4px 8px; }
+  .dish .body h3 { font-family: 'Playfair Display', Georgia, serif; font-weight: 600; font-size: clamp(22px, 6.2vw, 28px); line-height: 1.1; margin-bottom: 9px; color: #efe7d6; }
+  .dish .body p { font-family: 'Cormorant Garamond', Georgia, serif; color: #b3a587; font-size: 17.5px; line-height: 1.5; margin-bottom: 15px; }
+  .priceline { display: flex; align-items: baseline; gap: 11px; margin-bottom: 16px; }
+  .priceline .lead { font-family: 'Jost', sans-serif; font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: #b3a587; }
+  .priceline .dots { flex: 1; border-bottom: 1px dotted rgba(212,175,55,.4); transform: translateY(-5px); }
+  .priceline .val { font-family: 'Playfair Display', Georgia, serif; font-size: 25px; color: #e8d28f; font-weight: 600; }
+  .btn-order { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; font-family: 'Jost', sans-serif; font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: #e8d28f; background: transparent; border: 1px solid #d4af37; padding: 15px; cursor: pointer; transition: .3s; border-radius: 2px; }
+  .btn-order:active, .btn-order:hover { background: #d4af37; color: #1a1206; }
+
+  /* ===== PÃO: feature full-bleed (brilho de forno + vapor) ===== */
   .feature-stack { display: grid; gap: 14px; }
-  .feature {
-    position: relative;
-    min-height: 430px;
-    overflow: hidden;
-    border-radius: 30px;
-    border: 1px solid rgba(212,175,55,.34);
-    background: #120b06;
-    box-shadow: 0 30px 70px rgba(0,0,0,.42);
-  }
-  .feature img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    filter: saturate(1.04) contrast(1.08);
-  }
-  .feature::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(0,0,0,.08) 0, rgba(0,0,0,.25) 42%, rgba(0,0,0,.86) 100%);
-  }
-  .feature .glow {
-    position: absolute;
-    inset: auto 15% 22% 15%;
-    height: 92px;
-    border-radius: 999px;
-    background: rgba(212,175,55,.24);
-    filter: blur(34px);
-    z-index: 1;
-  }
-  .feature .steam {
-    position: absolute;
-    top: 18px;
-    right: 22px;
-    z-index: 2;
-    display: flex;
-    gap: 5px;
-  }
-  .feature .steam span {
-    width: 5px;
-    height: 34px;
-    border-radius: 999px;
-    background: linear-gradient(180deg, rgba(255,255,255,.5), transparent);
-    opacity: .42;
-    animation: steamRise 2.5s ease-in-out infinite;
-  }
-  .feature .steam span:nth-child(2) { animation-delay: .35s; }
-  .feature .steam span:nth-child(3) { animation-delay: .7s; }
-  @keyframes steamRise {
-    0%, 100% { transform: translateY(8px); opacity: .18; }
-    45% { transform: translateY(-7px); opacity: .55; }
-  }
-  .feature .fc {
-    position: absolute;
-    z-index: 3;
-    left: 20px;
-    right: 20px;
-    bottom: 22px;
-  }
-  .feature .fc h3 {
-    margin: 9px 0 7px;
-    color: #fff4dc;
-    font-family: "Playfair Display", serif;
-    font-size: 33px;
-    line-height: .92;
-    letter-spacing: -.05em;
-  }
-  .feature .fc p {
-    color: rgba(255,246,226,.72);
-    font-family: "Jost", sans-serif;
-    font-size: 13px;
-    line-height: 1.3;
-  }
-  .feature .fc strong {
-    display: block;
-    margin-top: 12px;
-    color: #f0cf62;
-    font-family: "Bebas Neue", sans-serif;
-    font-size: 26px;
-    letter-spacing: .05em;
-  }
-  .nhoque-intro {
-    margin: 0 4px 12px;
-    color: rgba(244,239,227,.7);
-    font-family: "Jost", sans-serif;
-    font-size: 13px;
-  }
-  .sauce-tabs {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding: 0 3px 12px;
-    scrollbar-width: none;
-  }
-  .sauce-tabs::-webkit-scrollbar { display: none; }
-  .sauce-tabs button {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    min-height: 38px;
-    border: 1px solid rgba(212,175,55,.22);
-    border-radius: 999px;
-    padding: 9px 13px;
-    background: rgba(20,14,8,.72);
-    color: rgba(244,239,227,.78);
-    font-family: "Bebas Neue", sans-serif;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-  }
-  .sauce-tabs .dot { width: 9px; height: 9px; border-radius: 50%; }
-  .sauce-tabs button.on {
-    border-color: rgba(212,175,55,.58);
-    color: #f4e4a2;
-  }
-  .sauce-stage { display: grid; gap: 12px; margin-bottom: 12px; }
-  .doce-grid { display: grid; gap: 14px; }
-  .doce-card {
-    position: relative;
-    min-height: 330px;
-    overflow: hidden;
-    border-radius: 29px;
-    border: 1px solid rgba(212,175,55,.28);
-    background: #0b0b07;
-    box-shadow: 0 24px 58px rgba(0,0,0,.35);
-  }
-  .doce-card img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    filter: saturate(1.02) contrast(1.06);
-  }
-  .doce-card .wedge {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(100deg, rgba(246,239,219,.92) 0 43%, transparent 43% 100%);
-    opacity: .9;
-  }
-  .doce-card .vig {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, transparent 25%, rgba(0,0,0,.72) 100%);
-  }
-  .doce-copy {
-    position: absolute;
-    z-index: 3;
-    left: 18px;
-    bottom: 18px;
-    width: min(62%, 250px);
-  }
-  .doce-copy h3 {
-    margin: 8px 0 7px;
-    color: #1a120b;
-    font-family: "Playfair Display", serif;
-    font-size: 27px;
-    line-height: .95;
-    letter-spacing: -.04em;
-  }
-  .doce-copy p {
-    color: rgba(25,18,11,.72);
-    font-family: "Jost", sans-serif;
-    font-size: 12px;
-    line-height: 1.28;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .doce-copy strong {
-    display: block;
-    margin-top: 10px;
-    color: #7d5a17;
-    font-family: "Bebas Neue", sans-serif;
-    font-size: 24px;
-    letter-spacing: .04em;
-  }
+  .feature { position: relative; min-height: 84vh; display: flex; align-items: flex-end; overflow: hidden; margin: 6px -12px 10px; cursor: pointer; }
+  .feature > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+  .feature .glow { position: absolute; inset: 0; z-index: 1; background: radial-gradient(60% 40% at 50% 42%, rgba(234,165,59,.32), transparent 70%); mix-blend-mode: screen; animation: pulseGlow 4.5s ease-in-out infinite; }
+  @keyframes pulseGlow { 0%,100% { opacity: .55; } 50% { opacity: .9; } }
+  .feature::after { content: ""; position: absolute; inset: 0; z-index: 2; background: linear-gradient(180deg, rgba(8,6,4,.08) 0%, rgba(8,6,4,.2) 38%, rgba(8,6,4,.95) 100%); }
+  .feature .steam { position: absolute; z-index: 3; left: 0; right: 0; top: 18%; height: 46%; pointer-events: none; }
+  .feature .steam span { position: absolute; bottom: 0; width: 2px; height: 60%; background: linear-gradient(180deg, rgba(255,240,210,.5), transparent); filter: blur(2px); opacity: 0; animation: rise 4s ease-in infinite; }
+  .feature .steam span:nth-child(1) { left: 42%; }
+  .feature .steam span:nth-child(2) { left: 50%; height: 75%; animation-delay: 1.2s; }
+  .feature .steam span:nth-child(3) { left: 58%; animation-delay: 2.1s; }
+  @keyframes rise { 0% { opacity: 0; transform: translateY(20px) scaleY(.6); } 30% { opacity: .7; } 100% { opacity: 0; transform: translateY(-40px) scaleY(1.1); } }
+  .feature .fc { position: relative; z-index: 4; padding: 26px 22px 30px; width: 100%; }
+  .feature .kicker { font-family: 'Jost', sans-serif; font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: #e8d28f; margin-bottom: 12px; }
+  .feature .fc h3 { font-family: 'Playfair Display', Georgia, serif; font-weight: 800; font-size: clamp(30px, 9vw, 48px); line-height: 1.02; margin-bottom: 12px; color: #fff; }
+  .feature .fc p { font-family: 'Cormorant Garamond', Georgia, serif; color: #f0e2c8; font-size: 18px; max-width: 40ch; margin-bottom: 18px; }
+
+  /* ===== NHOQUE: seletor de molho ===== */
+  .nhoque-intro { padding: 4px 8px 6px; text-align: center; color: #b3a587; font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-size: 18px; }
+  .sauce-tabs { display: flex; gap: 8px; padding: 14px 4px 4px; }
+  .sauce-tabs button { flex: 1; font-family: 'Jost', sans-serif; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: #b3a587; background: transparent; border: 1px solid rgba(212,175,55,.25); border-radius: 999px; padding: 10px 6px; cursor: pointer; transition: .25s; display: flex; align-items: center; justify-content: center; gap: 7px; }
+  .sauce-tabs button .dot { width: 11px; height: 11px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0,0,0,.3) inset; }
+  .sauce-tabs button.on { color: #1a1206; background: #e8d28f; border-color: #e8d28f; }
+  .sauce-stage { position: relative; margin-top: 8px; }
+  .sauce-card { display: none; }
+  .sauce-card.on { display: block; animation: pxfade .35s ease; }
+  @keyframes pxfade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* ===== MASSAS: seção branca (corte limpo) ===== */
+  .px-white, .px-wine, .px-espresso { margin: 0 -12px; padding-left: 12px; padding-right: 12px; }
+  .px-white { color: #241c12; background: #f4efe3; }
+  .px-white .section-head .number { color: #9c7c1e; }
+  .px-white .section-head h2 { color: #241c12; }
+  .px-white .section-head p { color: #6b5a3a; }
+  .px-white .dish-card { background: #fffdf7; border-color: rgba(120,95,30,.18); box-shadow: 0 12px 30px rgba(60,40,10,.12); }
+  .px-white .dish-card::before { border-color: rgba(120,95,30,.12); }
+  .px-white .dish-body h3 { color: #241c12; }
+  .px-white .dish-body p { color: #6b5a3a; }
+  .px-white .dish-bottom strong { color: #7a5f1e; }
+  .px-white .see-btn { background: #d4af37; color: #241200; border-color: transparent; }
+
+  /* ===== RISOTOS: bordô vinho bem escuro ===== */
+  .px-wine { background: radial-gradient(120% 70% at 50% 0%, #2a0810, transparent 62%), #0c0306; }
+
+  /* ===== SOBREMESAS: espresso + corte diagonal ===== */
+  .px-espresso { background: radial-gradient(120% 60% at 50% 0%, #1f1109, transparent 60%), #0a0706; }
+  .doce-grid { display: grid; gap: 12px; }
+  .doce-card { position: relative; min-height: 300px; display: flex; align-items: flex-end; overflow: hidden; border: 1px solid rgba(202,168,106,.18); border-radius: 24px; margin-bottom: 12px; cursor: pointer; }
+  .doce-card > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; filter: brightness(.93) contrast(1.1) saturate(1.06) sepia(.1); }
+  .doce-card .wedge { position: absolute; inset: 0; z-index: 1; background: linear-gradient(108deg, rgba(8,5,4,.94) 0%, rgba(8,5,4,.78) 36%, rgba(8,5,4,.12) 64%, transparent 80%); }
+  .doce-card .vig { position: absolute; inset: 0; z-index: 1; box-shadow: inset 0 0 90px 30px rgba(0,0,0,.6); }
+  .doce-card .fc { position: relative; z-index: 2; padding: 22px 20px 24px; max-width: 78%; }
+  .doce-card .k { font-family: 'Jost', sans-serif; font-size: 9.5px; letter-spacing: .24em; text-transform: uppercase; color: #caa86a; margin-bottom: 9px; display: flex; align-items: center; gap: 6px; }
+  .doce-card h3 { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 600; font-size: 30px; line-height: 1.05; color: #fff; margin-bottom: 8px; }
+  .doce-card p { font-family: 'Cormorant Garamond', Georgia, serif; color: #d8c6ab; font-size: 16.5px; margin-bottom: 12px; }
+  .doce-card .price { color: #e7caa0; font-size: 24px; font-family: 'Bebas Neue', sans-serif; letter-spacing: .02em; }
+  .doce-card .btn-order { border: 1px solid #caa86a; color: #e7caa0; margin-top: 12px; width: auto; padding: 12px 22px; display: inline-flex; }
+  .doce-card .btn-order:active, .doce-card .btn-order:hover { background: #caa86a; color: #1a1206; }
+
+  @media (prefers-reduced-motion: reduce) { .feature .glow, .steam span { animation: none !important; } .steam span { opacity: .3; } }
 </style>
 </head>
 <body>
@@ -2713,6 +2450,7 @@ function App() {
   const [pratos, setPratos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [secoesLayout, setSecoesLayout] = useState([]);
+  const [nhoqueSel, setNhoqueSel] = useState({});
   const [cupons, setCupons] = useState([]);
   const [microcopy, setMicrocopy] = useState(DEFAULT_MICROCOPY);
   const [chatConfig, setChatConfig] = useState(DEFAULT_CHAT_CONFIG);
@@ -4122,6 +3860,29 @@ function App() {
     setTimeout(() => setBalaoTexto(null), 3500);
   };
 
+  const priceLine = (p) => (
+    <div className="priceline"><span className="lead">Valor</span><span className="dots"></span><span className="val">{fmtBRL(p.preco)}</span></div>
+  );
+
+  const renderDishClaude = (p, prefix = 'nh') => (
+    <article
+      key={`${prefix}-${p.id}`}
+      className="dish v-large"
+      onClick={() => abrirDetalhe(p)}
+      onContextMenu={(e) => { e.preventDefault(); longPressPrato(p); }}
+      onTouchStart={() => { lpTimer.current = setTimeout(() => longPressPrato(p), 520); }}
+      onTouchEnd={() => clearTimeout(lpTimer.current)}
+    >
+      <div className="ph"><img loading="lazy" src={p.foto} alt={p.nome} /></div>
+      <div className="body">
+        <h3>{p.nome}</h3>
+        {introPrato(p) && <p>{introPrato(p)}</p>}
+        {priceLine(p)}
+        <button className="btn-order" type="button" onClick={(e) => { e.stopPropagation(); abrirDetalhe(p); }}>Pedir agora →</button>
+      </div>
+    </article>
+  );
+
   const renderPratoCard = (p, prefix = 'prato') => (
     <article
       key={`${prefix}-${p.id}`}
@@ -4135,14 +3896,11 @@ function App() {
     >
       <img className="dish-photo" src={p.foto} alt={p.nome} loading="lazy" />
       <div className="dish-body">
-        {(p.badge || p.badge_destaque || p.selo_experiencia) && (
-          <span className="tag">{p.badge || p.badge_destaque || p.selo_experiencia}</span>
-        )}
         <h3>{p.nome}</h3>
         {introPrato(p) && <p>{introPrato(p)}</p>}
-        <div className="dish-foot">
-          <span>a partir de {fmtBRL(p.preco)}</span>
-          <button type="button" onClick={(e) => { e.stopPropagation(); abrirDetalhe(p); }}>Ver</button>
+        <div className="dish-bottom">
+          <strong>{fmtBRL(p.preco)}</strong>
+          <button className="see-btn" type="button" onClick={(e) => { e.stopPropagation(); abrirDetalhe(p); }}>Ver</button>
         </div>
       </div>
     </article>
@@ -4159,10 +3917,9 @@ function App() {
     >
       <img src={p.foto} alt={p.nome} loading="lazy" />
       <div className="poster-info">
-        {(p.badge || p.badge_destaque || p.selo_experiencia) && <span className="tag">{p.badge || p.badge_destaque || p.selo_experiencia}</span>}
         <h3>{p.nome}</h3>
         <p>{introPrato(p)}</p>
-        <strong>{fmtBRL(p.preco)}</strong>
+        <div className="price">{fmtBRL(p.preco)}</div>
       </div>
     </article>
   );
@@ -4180,10 +3937,11 @@ function App() {
       <div className="glow"></div>
       <div className="steam"><span></span><span></span><span></span></div>
       <div className="fc">
-        {(p.badge || p.badge_destaque || p.selo_experiencia) && <span className="tag">{p.badge || p.badge_destaque || p.selo_experiencia}</span>}
+        <div className="kicker">Para dividir · rasga e puxa o queijo</div>
         <h3>{p.nome}</h3>
-        <p>{introPrato(p)}</p>
-        <strong>{fmtBRL(p.preco)}</strong>
+        {introPrato(p) && <p>{introPrato(p)}</p>}
+        {priceLine(p)}
+        <button className="btn-order" type="button" onClick={(e) => { e.stopPropagation(); abrirDetalhe(p); }}>Pedir agora →</button>
       </div>
     </section>
   );
@@ -4198,23 +3956,25 @@ function App() {
   };
 
   const renderNhoqueSection = (lista = [], prefix = 'nhoque') => {
-    const principais = lista.slice(0, 3);
-    const outros = lista.slice(3);
+    const sel = nhoqueSel[prefix] || 0;
     return (
       <>
         <div className="nhoque-intro">O nhoque é da casa. Você escolhe o molho:</div>
         <div className="sauce-tabs">
-          {principais.map((p, i) => (
-            <button key={`${prefix}-tab-${p.id}`} className={i === 0 ? 'on' : ''} type="button" onClick={() => abrirDetalhe(p)}>
+          {lista.map((p, i) => (
+            <button key={`${prefix}-tab-${p.id}`} className={i === sel ? 'on' : ''} type="button" onClick={() => setNhoqueSel(s => ({ ...s, [prefix]: i }))}>
               <span className="dot" style={{ background: sauceColor(p.nome) }}></span>
               {String(p.nome).replace(/nhoque|molho/gi, '').trim() || p.nome}
             </button>
           ))}
         </div>
         <div className="sauce-stage">
-          {principais.map(p => renderPratoCard(p, `${prefix}-card`))}
+          {lista.map((p, i) => (
+            <div key={`${prefix}-card-${p.id}`} className={`sauce-card ${i === sel ? 'on' : ''}`}>
+              {renderDishClaude(p, `${prefix}-c`)}
+            </div>
+          ))}
         </div>
-        {!!outros.length && <div className="dish-list">{outros.map(p => renderPratoCard(p, `${prefix}-extra`))}</div>}
       </>
     );
   };
@@ -4224,11 +3984,16 @@ function App() {
       <img src={p.foto} alt={p.nome} loading="lazy" />
       <div className="wedge"></div>
       <div className="vig"></div>
-      <div className="doce-copy">
-        <span className="tag">{p.badge || p.badge_destaque || p.selo_experiencia || 'Sobremesa'}</span>
+      <div className="fc">
+        <div className="k">
+          <svg className="ic" viewBox="0 0 24 24"><path d="M5 8h11v5a5 5 0 01-5 5H10a5 5 0 01-5-5z"/><path d="M16 9h2a2 2 0 010 4h-2"/><path d="M8 3v2M11 3v2"/></svg>
+          Doce final
+        </div>
         <h3>{p.nome}</h3>
-        <p>{introPrato(p)}</p>
-        <strong>{fmtBRL(p.preco)}</strong>
+        {introPrato(p) && <p>{introPrato(p)}</p>}
+        <span className="price">{fmtBRL(p.preco)}</span>
+        <br />
+        <button className="btn-order" type="button" onClick={(e) => { e.stopPropagation(); abrirDetalhe(p); }}>Pedir →</button>
       </div>
     </div>
   );
@@ -4236,12 +4001,15 @@ function App() {
   const renderSecaoCardapio = (secao, index) => {
     const tipo = secao.tipo_visual || 'lista_editorial';
     const pratosSecao = secao.pratos || [];
+    const pxClass = tipo === 'lista_editorial' ? 'px-white'
+      : tipo === 'risotos' ? 'px-wine'
+      : tipo === 'sobremesas' ? 'px-espresso' : '';
     const style = {
       ...(secao.cor_fundo ? { background: secao.cor_fundo } : {}),
       ...(secao.cor_texto ? { color: secao.cor_texto } : {}),
     };
     return (
-      <section className={`section section-${tipo}`} key={secao.id} id={`secao-${secao.id}`} style={style}>
+      <section className={`section ${pxClass}`.trim()} key={secao.id} id={`secao-${secao.id}`} style={style}>
         <header className="section-head">
           <div className="number">Capítulo {String(index + 1).padStart(2, '0')}</div>
           <h2>{secao.titulo}</h2>
@@ -4252,17 +4020,17 @@ function App() {
         )}
         {tipo === 'feature_foto_grande' && (
           <div className="feature-stack">
-            {pratosSecao.map(p => renderFeatureCard(p, secao.id))}
+            {pratosSecao[0] && renderFeatureCard(pratosSecao[0], secao.id)}
+            {pratosSecao.length > 1 && (
+              <div className="dish-list">{pratosSecao.slice(1).map(p => renderPratoCard(p, secao.id))}</div>
+            )}
           </div>
         )}
         {tipo === 'nhoque_molhos' && renderNhoqueSection(pratosSecao, secao.id)}
         {tipo === 'sobremesas' && (
           <div className="doce-grid">{pratosSecao.map(p => renderDoceCard(p, secao.id))}</div>
         )}
-        {tipo === 'risotos' && (
-          <div className="dish-list risoto-list">{pratosSecao.map(p => renderPratoCard(p, secao.id))}</div>
-        )}
-        {!['carrossel_horizontal','feature_foto_grande','nhoque_molhos','sobremesas','risotos'].includes(tipo) && (
+        {!['carrossel_horizontal','feature_foto_grande','nhoque_molhos','sobremesas'].includes(tipo) && (
           <div className="dish-list">{pratosSecao.map(p => renderPratoCard(p, secao.id))}</div>
         )}
       </section>
@@ -4278,38 +4046,31 @@ function App() {
   const heroIsVideo = heroTipo === 'video' && !!heroMediaUrl;
   const heroHasMedia = !!heroMediaUrl;
   const heroShellClass = ['hero-shell', heroHasMedia ? 'has-media' : '', heroLogoUrl ? 'has-logo' : ''].filter(Boolean).join(' ');
+  const nomeCapa = String(topo.nome || 'Dom Leonardo').trim();
+  const nomeCapaParts = nomeCapa.split(/\s+/);
+  const nomeCapa1 = nomeCapaParts.shift() || nomeCapa;
+  const nomeCapa2 = nomeCapaParts.join(' ');
+  const totalCategoriasCapa = (categorias || []).length;
+  const totalPratosCapa = (pratos || []).length;
 
   return (
     <div className="min-h-dvh">
-      {heroHasMedia && (
-        <div className="hero-media-shell">
-          <div className="hero-media-frame">
-            {heroIsVideo ? (
-              <video src={heroMediaUrl} muted loop autoPlay playsInline preload="metadata" />
-            ) : (
-              <img src={heroMediaUrl} alt="" loading="eager" />
-            )}
-          </div>
-          {heroLogoUrl && (
-            <div className="hero-logo-float">
-              <img src={heroLogoUrl} alt={topo.nome || 'Dom Leonardo'} />
-            </div>
-          )}
+      <header className="capa">
+        <div className="capa-grain"></div>
+        <div className="capa-top">
+          {heroLogoUrl ? (
+            <div className="capa-logo"><img src={heroLogoUrl} alt={nomeCapa} /></div>
+          ) : <span></span>}
+          <span className="capa-pill">Aberto agora</span>
         </div>
-      )}
-
-      <header className={heroShellClass}>
-        <div className="hero-kicker">{topo.kicker}</div>
-        <h1 className="font-serif hero-title">{topo.nome}</h1>
-        <p className="hero-copy">{topo.descricao}</p>
-        <div className="trust-row">
-          <div className="trust-chip"><span>{topo.chip_1_label}</span><strong>{topo.chip_1_valor}</strong></div>
-          <div className="trust-chip"><span>{topo.chip_2_label}</span><strong>{topo.chip_2_valor}</strong></div>
-          <div className="trust-chip"><span>{topo.chip_3_label}</span><strong>{topo.chip_3_valor}</strong></div>
+        <div className="capa-center">
+          <span className="capa-eyebrow">{topo.kicker}</span>
+          <h1 className="capa-title">{nomeCapa1}{nomeCapa2 && <em>{nomeCapa2}</em>}</h1>
+          <div className="capa-orn"><span className="l"></span><i>◆</i><span className="r"></span></div>
+          <p className="capa-sub">{topo.descricao}</p>
+          <div className="capa-meta">{totalCategoriasCapa} capítulos · {totalPratosCapa} pratos</div>
         </div>
-        <div className="frete-chef-hero">
-          <strong>{topo.faixa_titulo}</strong> {topo.faixa_texto}
-        </div>
+        <div className="capa-cue">role o menu ↓</div>
       </header>
 
       {cuponsDisponiveis.length > 0 && (
@@ -4336,32 +4097,7 @@ function App() {
         </section>
       )}
 
-      <section className="px-5 pt-6">
-        <div className="section-head">
-          <div>
-            <h2 className="font-serif text-2xl" style={{color:'var(--gold)'}}>Hoje o Dom recomenda</h2>
-            <p>Fotos grandes, escolhas seguras e pratos que chegam bem.</p>
-          </div>
-        </div>
-        <div className="destaques-strip">
-          <div className={`destaques-track ${pratosDestaque.length > 1 ? 'is-looping' : ''}`}>
-            {destaquesLoop.map((p, index) => (
-              <button className="destaque-card" key={`${p.id}-${index}`} onClick={() => abrirDetalhe(p)}>
-                <div className="relative">
-                  <img src={p.foto} alt={p.nome} loading="lazy" />
-                  <span className="prato-badge">{p.badge_destaque || p.selo_experiencia || 'Escolha segura'}</span>
-                </div>
-                <div className="destaque-body">
-                  <strong>{p.nome}</strong>
-                  <small>{clampText(p.frase_fome || p.descricao, 82)}</small>
-                  <div className="destaque-price">a partir de {fmtBRL(p.preco)}</div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-      {/* Cardapio editorial conectado ao ecossistema real */}
+      {/* Cardapio editorial conectado ao ecossistema real (Mais Pedidos vira o carrossel da 1a secao) */}
       <section className="prototype-menu pb-36">
         <nav className="nav" aria-label="Categorias">
           <button className={categoriaAtiva === 'todos' ? 'on' : ''} onClick={() => selecionarCategoriaCardapio('todos', 'Todos')}>Todos</button>
