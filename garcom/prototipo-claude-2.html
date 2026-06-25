@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Dom Leonardo — Cardápio (protótipo 2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;0,900;1,500;1,600;1,700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Bebas+Neue&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --gold:#d4af37; --gold-soft:#e8d28f; --gold-dim:#8a6f1f;
+    --cream:#efe7d6; --muted:#b3a587;
+    --col:440px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:#040302;color:var(--cream);font-family:'Cormorant Garamond',Georgia,serif;font-size:19px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+  .device{position:relative;width:100%;max-width:var(--col);margin:0 auto;min-height:100vh;overflow:hidden;background:#0a0908;box-shadow:0 0 0 1px rgba(212,175,55,.10),0 24px 90px rgba(0,0,0,.7)}
+  .pad{padding:0 22px}
+
+  /* ===== barra topo + chips ===== */
+  .topbar{position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:space-between;height:54px;padding:0 18px;background:linear-gradient(180deg,rgba(8,7,6,.97),rgba(8,7,6,.7) 78%,transparent);backdrop-filter:blur(7px)}
+  .topbar .bm{font-family:'Jost',sans-serif;letter-spacing:.34em;font-size:11px;text-transform:uppercase;color:var(--gold-soft)}
+  .topbar .open{font-family:'Jost',sans-serif;letter-spacing:.16em;font-size:9.5px;text-transform:uppercase;color:var(--gold-dim);border:1px solid rgba(212,175,55,.3);padding:5px 9px;border-radius:999px}
+  .chips{position:sticky;top:54px;z-index:58;display:flex;gap:9px;overflow-x:auto;padding:11px 18px;background:rgba(8,7,6,.94);backdrop-filter:blur(7px);border-bottom:1px solid rgba(212,175,55,.10);scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chips a{flex:0 0 auto;font-family:'Jost',sans-serif;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid rgba(212,175,55,.22);padding:8px 13px;border-radius:999px;white-space:nowrap;transition:.25s}
+  .chips a:active,.chips a:hover{color:#1a1206;background:var(--gold);border-color:var(--gold)}
+
+  /* ===== capa ===== */
+  .hero{position:relative;min-height:82vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:54px 22px 48px;background:radial-gradient(120% 60% at 50% 0%,rgba(212,175,55,.12),transparent 55%),#0a0908;overflow:hidden}
+  .hero .grain{position:absolute;inset:0;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .hero>*{position:relative}
+  .hero .eyebrow{font-family:'Jost',sans-serif;letter-spacing:.42em;text-transform:uppercase;font-size:10.5px;color:var(--gold);margin-bottom:22px}
+  .hero h1{font-family:'Playfair Display',serif;font-weight:800;font-size:clamp(46px,16vw,76px);line-height:.92}
+  .hero h1 .it{font-style:italic;font-weight:600;color:var(--gold-soft);display:block;font-size:.64em}
+  .orn{display:flex;align-items:center;justify-content:center;gap:14px;margin:26px auto 18px;width:78%}
+  .orn .l{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--gold))}
+  .orn .r{flex:1;height:1px;background:linear-gradient(90deg,var(--gold),transparent)}
+  .orn .d{color:var(--gold);font-size:12px;transform:rotate(45deg)}
+  .hero .sub{font-style:italic;font-size:20px;color:var(--muted);max-width:34ch}
+  .hero .meta{margin-top:24px;font-family:'Jost',sans-serif;font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--gold-dim)}
+  .cue{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font-family:'Jost',sans-serif;font-size:9.5px;letter-spacing:.28em;color:var(--muted);text-transform:uppercase;animation:bob 2.4s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(5px)}}
+
+  /* ===== SEÇÃO com tema (cada capítulo = uma "sala") ===== */
+  .sec{position:relative;padding-bottom:26px;background:
+      radial-gradient(120% 70% at 50% 0%, var(--bg2), transparent 60%),
+      var(--bg);
+    transition:background .4s}
+  .sec .tex{position:absolute;inset:0;z-index:0;pointer-events:none}
+  .sec>.inner{position:relative;z-index:1}
+  /* paletas por tema */
+  .t-favoritas{--bg:#0a0908;--bg2:#181106;--accent:var(--gold);--acc-soft:var(--gold-soft)}
+  .t-pao{--bg:#170f08;--bg2:#3a2008;--accent:#eaa53b;--acc-soft:#f3cd84}
+  .t-risoto{--bg:#0e0d0a;--bg2:#23200f;--accent:#e8d28f;--acc-soft:#f3e6b8}
+  .t-massa{--bg:#150b08;--bg2:#3a140b;--accent:#dd8a45;--acc-soft:#f0b07a}
+  .t-nhoque{--bg:#0b0c0a;--bg2:#1a1810;--accent:#cdb36a;--acc-soft:#e6d49a}
+  .t-doce{--bg:#0a0706;--bg2:#1f1109;--accent:#caa86a;--acc-soft:#e7caa0}
+  /* texturas de "papel de parede" distintas */
+  .tex-grain{opacity:.06;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .tex-kraft{opacity:.5;background-image:repeating-linear-gradient(135deg,rgba(0,0,0,.12) 0 2px,transparent 2px 9px),repeating-linear-gradient(45deg,rgba(255,200,120,.04) 0 1px,transparent 1px 7px)}
+  .tex-linen{opacity:.4;background-image:repeating-linear-gradient(90deg,rgba(212,175,55,.05) 0 1px,transparent 1px 6px)}
+  .tex-flour{opacity:.5;background-image:radial-gradient(rgba(230,212,154,.10) 1px,transparent 1.4px);background-size:14px 14px}
+  .tex-cloth{opacity:.35;background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.10) 0 1px,transparent 1px 11px),repeating-linear-gradient(90deg,rgba(0,0,0,.10) 0 1px,transparent 1px 11px)}
+
+  /* ===== cabeçalho de capítulo (varia o tipo por tema) ===== */
+  .chapter{padding:56px 22px 10px;text-align:center;position:relative}
+  .chapter .num{font-family:'Jost',sans-serif;letter-spacing:.36em;text-transform:uppercase;font-size:10px;color:var(--accent)}
+  .chapter h2{margin:11px 0 6px;color:var(--cream)}
+  .chapter .flank{display:flex;align-items:center;justify-content:center;gap:13px;margin:6px auto 0;width:62%}
+  .chapter .flank .l,.chapter .flank .r{flex:1;height:1px;background:rgba(212,175,55,.22)}
+  .chapter .flank .d{color:var(--accent);font-size:10px;transform:rotate(45deg)}
+  .chapter .desc{font-style:italic;color:var(--muted);max-width:36ch;margin:13px auto 0;font-size:18px}
+  /* tipos por tema */
+  .t-favoritas h2{font-family:'Playfair Display',serif;font-weight:800;font-size:clamp(30px,8.5vw,44px)}
+  .t-pao h2{font-family:'Bebas Neue',sans-serif;font-weight:400;letter-spacing:.06em;font-size:clamp(40px,13vw,66px);color:var(--acc-soft)}
+  .t-risoto h2{font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:clamp(30px,9vw,46px);color:var(--acc-soft)}
+  .t-massa h2{font-family:'Playfair Display',serif;font-weight:900;font-size:clamp(30px,8.5vw,44px)}
+  .t-nhoque h2{font-family:'Bebas Neue',sans-serif;letter-spacing:.04em;font-size:clamp(38px,12vw,60px)}
+  .t-doce h2{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:clamp(30px,9vw,44px);color:var(--acc-soft)}
+
+  /* ===== card padrão (foto em cima) — variantes de tamanho ===== */
+  .dish{position:relative;padding-top:12px}
+  .dish .ph{position:relative;overflow:hidden}
+  .dish .ph img{width:100%;display:block;object-fit:cover;filter:saturate(1.06) contrast(1.04)}
+  .v-large .ph img{aspect-ratio:4/3}
+  .v-row .ph img{aspect-ratio:16/10}
+  .v-square .ph img{aspect-ratio:1/1}
+  .dish .ph::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 58%,rgba(8,7,6,.55));pointer-events:none}
+  .seal{position:absolute;top:13px;left:13px;z-index:3;background:var(--accent);color:#1a1206;font-family:'Jost',sans-serif;font-size:9px;letter-spacing:.16em;text-transform:uppercase;padding:6px 10px;font-weight:500;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+  .dish .body{padding:16px 22px 24px}
+  .dish h3{font-family:'Playfair Display',serif;font-weight:600;font-size:clamp(22px,6.2vw,28px);line-height:1.1;margin-bottom:9px}
+  .dish p{color:var(--muted);font-size:17.5px;line-height:1.5;margin-bottom:15px}
+  .priceline{display:flex;align-items:baseline;gap:11px;margin-bottom:16px}
+  .priceline .lead{font-family:'Jost',sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+  .priceline .dots{flex:1;border-bottom:1px dotted rgba(212,175,55,.4);transform:translateY(-5px)}
+  .priceline .val{font-family:'Playfair Display',serif;font-size:25px;color:var(--acc-soft);font-weight:600}
+  .priceline .val s{color:var(--gold-dim);font-size:.6em;margin-right:8px;opacity:.7}
+  .btn-order{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;font-family:'Jost',sans-serif;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--acc-soft);background:transparent;border:1px solid var(--accent);padding:15px;cursor:pointer;transition:.3s;border-radius:2px}
+  .btn-order:active,.btn-order:hover{background:var(--accent);color:#1a1206}
+  .dish + .dish{border-top:1px solid rgba(212,175,55,.08);margin-top:10px}
+
+  /* ===== destaque full-bleed (Pão) com brilho de forno + vapor ===== */
+  .feature{position:relative;min-height:84vh;display:flex;align-items:flex-end;overflow:hidden}
+  .feature img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+  .feature .glow{position:absolute;inset:0;z-index:1;background:radial-gradient(60% 40% at 50% 42%,rgba(234,165,59,.32),transparent 70%);mix-blend-mode:screen;animation:pulseGlow 4.5s ease-in-out infinite}
+  @keyframes pulseGlow{0%,100%{opacity:.55}50%{opacity:.9}}
+  .feature::after{content:"";position:absolute;inset:0;z-index:2;background:linear-gradient(180deg,rgba(8,6,4,.08) 0%,rgba(8,6,4,.2) 38%,rgba(8,6,4,.95) 100%)}
+  .steam{position:absolute;z-index:3;left:0;right:0;top:18%;height:46%;pointer-events:none}
+  .steam span{position:absolute;bottom:0;width:2px;height:60%;background:linear-gradient(180deg,rgba(255,240,210,.5),transparent);filter:blur(2px);opacity:0;animation:rise 4s ease-in infinite}
+  .steam span:nth-child(1){left:42%;animation-delay:0s}
+  .steam span:nth-child(2){left:50%;height:75%;animation-delay:1.2s}
+  .steam span:nth-child(3){left:58%;animation-delay:2.1s}
+  @keyframes rise{0%{opacity:0;transform:translateY(20px) scaleY(.6)}30%{opacity:.7}100%{opacity:0;transform:translateY(-40px) scaleY(1.1)}}
+  .feature .fc{position:relative;z-index:4;padding:26px 22px 30px;width:100%}
+  .feature .kicker{font-family:'Jost',sans-serif;font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--acc-soft);margin-bottom:12px}
+  .feature h3{font-family:'Playfair Display',serif;font-weight:800;font-size:clamp(30px,9vw,48px);line-height:1.02;margin-bottom:12px}
+  .feature p{color:#f0e2c8;font-size:18px;max-width:40ch;margin-bottom:18px}
+
+  /* ===== chuva de queijo (cabeçalho dos Risotos) ===== */
+  .cheese-rain{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+  .cheese-rain i{position:absolute;top:-14px;width:7px;height:3px;background:linear-gradient(90deg,#f3e6b8,#cdb36a);border-radius:2px;opacity:0;animation:cheesefall linear infinite}
+  @keyframes cheesefall{0%{opacity:0;transform:translateY(-10px) rotate(0deg)}10%{opacity:.95}100%{opacity:0;transform:translateY(190px) rotate(220deg)}}
+
+  /* ===== Monte seu Nhoque — seletor dos 3 molhos ===== */
+  .nhoque-intro{padding:4px 22px 6px;text-align:center;color:var(--muted);font-style:italic;font-size:18px}
+  .sauce-tabs{display:flex;gap:8px;padding:14px 22px 4px}
+  .sauce-tabs button{flex:1;font-family:'Jost',sans-serif;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid rgba(212,175,55,.25);border-radius:999px;padding:10px 6px;cursor:pointer;transition:.25s;display:flex;align-items:center;justify-content:center;gap:7px}
+  .sauce-tabs button .dot{width:11px;height:11px;border-radius:50%;box-shadow:0 0 0 2px rgba(0,0,0,.3) inset}
+  .sauce-tabs button.on{color:#1a1206;background:var(--acc-soft);border-color:var(--acc-soft)}
+  .sauce-stage{position:relative;margin-top:8px}
+  .sauce-card{display:none}
+  .sauce-card.on{display:block;animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* ===== divisórias variadas ===== */
+  .wave{display:block;width:100%;height:44px;color:var(--gold-dim);opacity:.5;margin:6px 0}
+  .filig{text-align:center;color:var(--gold-dim);letter-spacing:.5em;font-size:14px;margin:14px 0;opacity:.7}
+
+  /* ===== barra inferior ===== */
+  .cart{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(var(--col),100%);z-index:70;display:flex;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(180deg,transparent,rgba(8,7,6,.96) 30%)}
+  .cart button{flex:1;font-family:'Jost',sans-serif;font-size:11px;letter-spacing:.2em;text-transform:uppercase;padding:15px;border:none;cursor:pointer;border-radius:2px}
+  .cart .bell{flex:0 0 auto;background:transparent;color:var(--gold-soft);border:1px solid var(--gold-dim)}
+  .cart .bag{background:var(--gold);color:#1a1206;font-weight:500}
+
+  footer{padding:60px 22px 120px;text-align:center}
+  footer .mk{font-family:'Playfair Display',serif;font-style:italic;font-size:26px;color:var(--gold-soft)}
+  footer .sm{font-family:'Jost',sans-serif;font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--muted);margin-top:12px}
+  .protonote{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:80;font-family:'Jost',sans-serif;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-dim);background:rgba(5,4,3,.85);border:1px solid rgba(212,175,55,.2);padding:4px 10px;border-radius:999px;pointer-events:none}
+  .loading{min-height:70vh;display:flex;align-items:center;justify-content:center;font-style:italic;color:var(--muted);font-size:20px;text-align:center;padding:0 24px}
+
+  @media(prefers-reduced-motion:reduce){
+    .cue,.feature .glow,.steam span,.cheese-rain i{animation:none!important}
+    .steam span{opacity:.3}
+  }
+</style>
+</head>
+<body>
+
+<div class="protonote">protótipo claude · 2</div>
+
+<div class="device" id="device">
+  <div class="loading">Servindo o cardápio…</div>
+</div>
+
+<script>
+const GARCOM_RESPONDER_URL='https://jewamqbdonudiapxbzay.supabase.co/functions/v1/garcom-responder';
+const ANON='sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY';
+const ROMAN=['','I','II','III','IV','V','VI','VII','VIII','IX','X'];
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function brl(v){return 'R$ '+Number(v||0).toFixed(2).replace('.',',');}
+function foto(p){return p.foto_url||p.foto||'';}
+function preco(p){return p.preco_promocional||p.preco_base||p.preco||0;}
+function desc(p){return p.descricao_curta||p.descricao_completa||p.descricao||p.frase_fome||'';}
+
+function themeFor(nome){
+  const n=String(nome||'').toLowerCase();
+  if(n.includes('mais pedido')) return 'favoritas';
+  if(n.includes('pão')||n.includes('pao')) return 'pao';
+  if(n.includes('risoto')) return 'risoto';
+  if(n.includes('massa')) return 'massa';
+  if(n.includes('nhoque')) return 'nhoque';
+  if(n.includes('sobremesa')||n.includes('doce')) return 'doce';
+  return 'favoritas';
+}
+const TEX={favoritas:'tex-grain',pao:'tex-kraft',risoto:'tex-linen',massa:'tex-cloth',nhoque:'tex-flour',doce:'tex-grain'};
+
+const WAVE=`<svg class="wave" viewBox="0 0 440 44" preserveAspectRatio="none" fill="none"><path d="M0 22 C 60 4, 120 40, 180 22 S 300 4, 360 22 440 22 440 22" stroke="currentColor" stroke-width="1.1"/><circle cx="220" cy="22" r="2.5" fill="currentColor"/></svg>`;
+const FILIG=`<div class="filig">✦ ❖ ✦</div>`;
+
+async function carregar(){
+  const r=await fetch(GARCOM_RESPONDER_URL+'?_='+Date.now(),{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+ANON},body:JSON.stringify({acao:'listar_pratos'})});
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+function pedir(nome){alert('🔔 (protótipo) Aqui abriria o pedido de:\n\n'+nome+'\n\nNo cardápio real, leva pra sacola/checkout.');}
+
+function priceHTML(p){
+  const promo=(p.preco_promocional&&p.preco_base&&p.preco_promocional<p.preco_base)?`<s>${brl(p.preco_base)}</s>`:'';
+  return `<div class="priceline"><span class="lead">Valor</span><span class="dots"></span><span class="val">${promo}${brl(preco(p))}</span></div>`;
+}
+function dishCard(p,variant){
+  const badge=p.badge_destaque?`<span class="seal">${esc(p.badge_destaque)}</span>`:'';
+  return `<article class="dish ${variant}">
+    <div class="ph">${badge}<img loading="lazy" src="${esc(foto(p))}" alt="${esc(p.nome)}"></div>
+    <div class="body"><h3>${esc(p.nome)}</h3><p>${esc(desc(p))}</p>${priceHTML(p)}
+    <button class="btn-order" onclick="pedir('${esc(p.nome)}')">Pedir agora →</button></div>
+  </article>`;
+}
+function featurePao(p){
+  return `<section class="feature">
+    <img loading="lazy" src="${esc(foto(p))}" alt="${esc(p.nome)}">
+    <div class="glow"></div>
+    <div class="steam"><span></span><span></span><span></span></div>
+    <div class="fc">
+      <div class="kicker">Para dividir · rasga e puxa o queijo</div>
+      <h3>${esc(p.nome)}</h3><p>${esc(desc(p))}</p>${priceHTML(p)}
+      <button class="btn-order" onclick="pedir('${esc(p.nome)}')">Pedir agora →</button>
+    </div>
+  </section>`;
+}
+function cheeseRain(n){let s='';for(let i=0;i<n;i++){const l=Math.random()*100,d=(Math.random()*2.2).toFixed(2),dur=(2.2+Math.random()*1.8).toFixed(2);s+=`<i style="left:${l}%;animation-delay:${d}s;animation-duration:${dur}s"></i>`;}return `<div class="cheese-rain">${s}</div>`;}
+
+function sauceColor(nome){const n=nome.toLowerCase();if(n.includes('vermelh'))return '#c0392b';if(n.includes('branco'))return '#efe7d6';if(n.includes('rose')||n.includes('rosé')||n.includes('rosa'))return '#d98c8c';return '#cdb36a';}
+function nhoqueModule(list){
+  const tabs=list.map((p,i)=>`<button class="${i===0?'on':''}" onclick="selSauce(this,${i})"><span class="dot" style="background:${sauceColor(p.nome)}"></span>${esc(p.nome.replace(/.*molho\s*/i,'')||p.nome)}</button>`).join('');
+  const cards=list.map((p,i)=>`<div class="sauce-card ${i===0?'on':''}" data-i="${i}">${dishCard(p,'v-large')}</div>`).join('');
+  return `<div class="nhoque-intro">O nhoque é da casa. Você escolhe o molho:</div>
+    <div class="sauce-tabs">${tabs}</div>
+    <div class="sauce-stage">${cards}</div>`;
+}
+function selSauce(btn,i){
+  const sec=btn.closest('section');
+  sec.querySelectorAll('.sauce-tabs button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  sec.querySelectorAll('.sauce-card').forEach(c=>c.classList.toggle('on',Number(c.dataset.i)===i));
+}
+
+function render(data){
+  const cats=(data.categorias||[]).slice().sort((a,b)=>(a.ordem||0)-(b.ordem||0));
+  const pratos=data.pratos||[];
+  const cfg=data.config||{};
+  const byCat={};
+  for(const p of pratos){(byCat[p.categoria_id]||=[]).push(p);}
+  for(const k in byCat){byCat[k].sort((a,b)=>(a.ordem||0)-(b.ordem||0));}
+
+  const nome=cfg.restaurante_nome||'Dom Leonardo';
+  const partes=String(nome).trim().split(' ');
+  const heroNome=partes.length>1?`${esc(partes[0])}<span class="it">${esc(partes.slice(1).join(' '))}</span>`:esc(nome);
+
+  let body=`
+  <div class="topbar"><span class="bm">Dom Leonardo</span><span class="open">● Aberto</span></div>
+  <nav class="chips" id="chips"></nav>
+  <header class="hero"><div class="grain"></div>
+    <div class="eyebrow">Cozinha Italiana · Curitiba</div>
+    <h1>${heroNome}</h1>
+    <div class="orn"><span class="l"></span><span class="d">◆</span><span class="r"></span></div>
+    <p class="sub">${esc(cfg.restaurante_descricao||'Risotos cremosos, massas da casa e o pão recheado que pede pra ser dividido.')}</p>
+    <div class="meta">${cats.length} salas · ${pratos.length} pratos</div>
+    <div class="cue">role o menu ↓</div>
+  </header>`;
+
+  const nav=[];
+  cats.forEach((c,idx)=>{
+    const list=byCat[c.id]||[];
+    if(!list.length) return;
+    const th=themeFor(c.nome);
+    const anchor='cap'+idx;
+    nav.push(`<a href="#${anchor}">${esc(c.nome)}</a>`);
+
+    const rain = th==='risoto' ? cheeseRain(16) : '';
+    let inner=`<div class="chapter">${rain}
+      <div class="num">Sala ${ROMAN[idx+1]||(idx+1)}</div>
+      <h2>${esc(c.nome)}</h2>
+      <div class="flank"><span class="l"></span><span class="d">◆</span><span class="r"></span></div>
+      ${c.descricao?`<p class="desc">${esc(c.descricao)}</p>`:''}
+    </div>`;
+
+    if(th==='pao'&&list.length===1){
+      inner+=featurePao(list[0]);
+    } else if(th==='nhoque'){
+      inner+=nhoqueModule(list);
+    } else if(th==='favoritas'){
+      inner+=dishCard(list[0],'v-large');
+      list.slice(1).forEach(p=>inner+=dishCard(p,'v-large'));
+    } else if(th==='risoto'){
+      list.forEach(p=>inner+=dishCard(p,'v-row'));
+    } else if(th==='doce'){
+      list.forEach(p=>inner+=dishCard(p,'v-square'));
+    } else {
+      list.forEach(p=>inner+=dishCard(p,'v-large'));
+    }
+
+    body+=`<section id="${anchor}" class="sec t-${th}"><div class="tex ${TEX[th]}"></div><div class="inner">${inner}</div></section>`;
+    if(idx<cats.length-1) body+=`<div class="pad">${idx%2===0?WAVE:FILIG}</div>`;
+  });
+
+  body+=`
+  <footer><div class="mk">Dom Leonardo</div><div class="sm">feito com fogo · servido com cuidado</div></footer>
+  <div class="cart"><button class="bell" onclick="pedir('chamar o garçom')">🔔 Garçom</button><button class="bag" onclick="pedir('ver sacola')">Ver sacola</button></div>`;
+
+  const dev=document.getElementById('device');
+  dev.innerHTML=body;
+  document.getElementById('chips').innerHTML=nav.join('');
+}
+
+carregar().then(render).catch(err=>{
+  document.getElementById('device').innerHTML='<div class="loading">Não consegui carregar o cardápio ao vivo.<br><br>'+esc(err.message||err)+'</div>';
+});
+</script>
+</body>
+</html>
