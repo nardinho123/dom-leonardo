@@ -1257,10 +1257,6 @@ function openDish(id) {
         <h2 class="sheet-title">${esc(prato.nome)}</h2>
         <p class="sheet-desc">${esc(prato.descricao_completa || textOf(prato))}</p>
 
-        ${prato.frase_fome ? `<div class="info-card"><small>Fome visual</small><p>${esc(prato.frase_fome)}</p></div>` : ''}
-        ${prato.como_chega_texto ? `<div class="info-card"><small>Como chega</small><p>${esc(prato.como_chega_texto)}</p></div>` : ''}
-        ${prato.porcao_texto ? `<div class="info-card"><small>Tamanho</small><p>${esc(prato.porcao_texto)}</p></div>` : ''}
-
         ${sizes.length ? `
           <section class="option-group">
             <h4>Tamanho</h4>

@@ -1253,6 +1253,7 @@ Deno.serve(async (req) => {
 
     const [
       categoriasRes,
+      secoesRes,
       pratosRes,
       tamanhosRes,
       gruposRes,
@@ -1261,6 +1262,7 @@ Deno.serve(async (req) => {
       pratoCuponsRes,
     ] = await Promise.all([
       supabase.from("categorias").select("*").eq("ativo", true).order("ordem").order("nome"),
+      supabase.from("cardapio_secoes").select("*").eq("ativo", true).order("ordem").order("titulo"),
       supabase.from("pratos").select("*").eq("ativo", true).order("ordem").order("nome"),
       supabase.from("pratos_tamanhos").select("*").eq("ativo", true).order("ordem").order("nome"),
       supabase.from("grupos_opcionais").select("*").eq("ativo", true).order("ordem").order("nome"),
@@ -1269,7 +1271,7 @@ Deno.serve(async (req) => {
       supabase.from("prato_cupons").select("*, cupons(*)").eq("ativo", true).order("ordem"),
     ]);
 
-    for (const res of [categoriasRes, pratosRes, tamanhosRes, gruposRes, opcionaisRes, cuponsRes, pratoCuponsRes]) {
+    for (const res of [categoriasRes, secoesRes, pratosRes, tamanhosRes, gruposRes, opcionaisRes, cuponsRes, pratoCuponsRes]) {
       if (res.error) throw res.error;
     }
 
@@ -1302,6 +1304,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         categorias: categoriasRes.data ?? [],
+        secoes: secoesRes.data ?? [],
         pratos,
         cupons: cuponsRes.data ?? [],
         config: mapConfig(config as Record<string, unknown> | null),

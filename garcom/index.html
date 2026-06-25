@@ -13,6 +13,9 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="format-detection" content="telephone=no" />
 <link rel="manifest" href="manifest.json" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500;1,600&family=Bebas+Neue&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
 <title>Dom Leonardo - Cardapio</title>
 <script src="https://js.stripe.com/v3/"></script>
 <script>
@@ -2039,6 +2042,453 @@
     font-size: 13px;
     line-height: 1.38;
   }
+
+  /* Prototipo Codex aplicado ao cardapio real: secoes editoriais, sem tocar no checkout. */
+  .prototype-menu {
+    position: relative;
+    padding: 0 0 calc(118px + env(safe-area-inset-bottom));
+    background:
+      radial-gradient(circle at 18% 0%, rgba(212,175,55,.13), transparent 34%),
+      linear-gradient(180deg, rgba(71,38,13,.18), transparent 18%),
+      #050504;
+    overflow: hidden;
+  }
+  .prototype-menu::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: .18;
+    background-image:
+      linear-gradient(rgba(212,175,55,.16) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(212,175,55,.14) 1px, transparent 1px);
+    background-size: 58px 58px;
+    mask-image: linear-gradient(180deg, transparent 0, #000 8%, #000 75%, transparent 100%);
+  }
+  .prototype-sections {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 34px;
+    padding: 8px 14px 0;
+  }
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 22;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 12px 14px 10px;
+    background: linear-gradient(180deg, rgba(5,5,4,.96), rgba(5,5,4,.75));
+    backdrop-filter: blur(18px);
+    border-bottom: 1px solid rgba(212,175,55,.16);
+    scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav button {
+    flex: 0 0 auto;
+    min-height: 38px;
+    border: 1px solid rgba(212,175,55,.22);
+    border-radius: 999px;
+    padding: 9px 14px;
+    background: rgba(20,14,8,.72);
+    color: rgba(244,239,227,.7);
+    font-family: "Bebas Neue", "Jost", sans-serif;
+    font-size: 14px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .nav button.on {
+    color: #191008;
+    background: linear-gradient(180deg, #e5c85e, #9f751d);
+    border-color: rgba(255,227,120,.8);
+    box-shadow: 0 10px 28px rgba(212,175,55,.18);
+  }
+  .section {
+    position: relative;
+    border-radius: 28px;
+    padding: 16px 0 0;
+  }
+  .section-head {
+    position: relative;
+    padding: 0 4px 14px;
+  }
+  .section-head::after {
+    content: "";
+    display: block;
+    width: 92px;
+    height: 1px;
+    margin-top: 10px;
+    background: linear-gradient(90deg, #d4af37, transparent);
+  }
+  .section-head .number {
+    font-family: "Bebas Neue", sans-serif;
+    color: #d4af37;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    font-size: 12px;
+    margin-bottom: 3px;
+  }
+  .section-head h2 {
+    display: inline;
+    color: #f8efd9;
+    font-family: "Playfair Display", "Cormorant Garamond", serif;
+    font-size: clamp(31px, 11vw, 50px);
+    line-height: .88;
+    font-weight: 800;
+    letter-spacing: -.045em;
+    text-shadow: 0 12px 38px rgba(0,0,0,.55);
+    background: linear-gradient(transparent 58%, rgba(212,175,55,.25) 58%, rgba(212,175,55,.25) 82%, transparent 82%);
+  }
+  .section-head p {
+    max-width: 28rem;
+    margin-top: 8px;
+    color: rgba(244,239,227,.66);
+    font-family: "Jost", sans-serif;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+  .tag {
+    display: inline-flex;
+    width: max-content;
+    align-items: center;
+    border: 1px solid rgba(212,175,55,.35);
+    border-radius: 999px;
+    padding: 4px 8px;
+    color: #e8c85b;
+    background: rgba(8,6,4,.62);
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .poster-row {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding: 2px 3px 12px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .poster-row::-webkit-scrollbar { display: none; }
+  .poster-card {
+    position: relative;
+    flex: 0 0 74%;
+    min-height: 385px;
+    overflow: hidden;
+    border: 1px solid rgba(212,175,55,.36);
+    border-radius: 28px;
+    scroll-snap-align: start;
+    background: #160c05;
+    box-shadow: 0 28px 60px rgba(0,0,0,.45);
+  }
+  .poster-card::before {
+    content: "";
+    position: absolute;
+    inset: 10px;
+    z-index: 2;
+    pointer-events: none;
+    border: 1px solid rgba(231,202,105,.52);
+    border-radius: 21px;
+  }
+  .poster-card img {
+    width: 100%;
+    height: 100%;
+    min-height: 385px;
+    object-fit: cover;
+    transform: scale(1.02);
+    filter: saturate(1.03) contrast(1.04);
+  }
+  .poster-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 24%, rgba(0,0,0,.12) 42%, rgba(0,0,0,.9) 100%);
+  }
+  .poster-info {
+    position: absolute;
+    z-index: 3;
+    left: 18px;
+    right: 18px;
+    bottom: 19px;
+    color: #fff5dc;
+  }
+  .poster-info h3 {
+    margin: 8px 0 6px;
+    font-family: "Playfair Display", serif;
+    font-size: 27px;
+    line-height: .96;
+    font-weight: 800;
+    letter-spacing: -.04em;
+  }
+  .poster-info p {
+    color: rgba(255,246,226,.72);
+    font-family: "Jost", sans-serif;
+    font-size: 12px;
+    line-height: 1.32;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .poster-info strong {
+    display: block;
+    margin-top: 11px;
+    color: #f1cf62;
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 24px;
+    letter-spacing: .04em;
+  }
+  .dish-list { display: grid; gap: 12px; }
+  .dish-card {
+    display: grid;
+    grid-template-columns: 104px 1fr;
+    gap: 12px;
+    min-height: 132px;
+    padding: 10px;
+    border: 1px solid rgba(212,175,55,.18);
+    border-radius: 24px;
+    background: linear-gradient(135deg, rgba(255,255,255,.035), transparent), rgba(20,14,8,.78);
+    box-shadow: 0 14px 34px rgba(0,0,0,.24);
+  }
+  .dish-photo {
+    width: 104px;
+    height: 112px;
+    border-radius: 18px;
+    object-fit: cover;
+    border: 1px solid rgba(212,175,55,.18);
+  }
+  .dish-body {
+    display: grid;
+    align-content: space-between;
+    min-width: 0;
+  }
+  .dish-body h3 {
+    margin: 5px 0 4px;
+    color: #fff4dc;
+    font-family: "Playfair Display", serif;
+    font-size: 20px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -.035em;
+  }
+  .dish-body p {
+    color: rgba(244,239,227,.62);
+    font-family: "Jost", sans-serif;
+    font-size: 12px;
+    line-height: 1.26;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .dish-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 9px;
+  }
+  .dish-foot span {
+    color: #e6c658;
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 18px;
+    letter-spacing: .04em;
+  }
+  .dish-foot button {
+    min-height: 34px;
+    border: 0;
+    border-radius: 999px;
+    padding: 8px 13px;
+    color: #1a1107;
+    background: linear-gradient(180deg, #e6ca60, #9d721d);
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 14px;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+  }
+  .feature-stack { display: grid; gap: 14px; }
+  .feature {
+    position: relative;
+    min-height: 430px;
+    overflow: hidden;
+    border-radius: 30px;
+    border: 1px solid rgba(212,175,55,.34);
+    background: #120b06;
+    box-shadow: 0 30px 70px rgba(0,0,0,.42);
+  }
+  .feature img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(1.04) contrast(1.08);
+  }
+  .feature::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,.08) 0, rgba(0,0,0,.25) 42%, rgba(0,0,0,.86) 100%);
+  }
+  .feature .glow {
+    position: absolute;
+    inset: auto 15% 22% 15%;
+    height: 92px;
+    border-radius: 999px;
+    background: rgba(212,175,55,.24);
+    filter: blur(34px);
+    z-index: 1;
+  }
+  .feature .steam {
+    position: absolute;
+    top: 18px;
+    right: 22px;
+    z-index: 2;
+    display: flex;
+    gap: 5px;
+  }
+  .feature .steam span {
+    width: 5px;
+    height: 34px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(255,255,255,.5), transparent);
+    opacity: .42;
+    animation: steamRise 2.5s ease-in-out infinite;
+  }
+  .feature .steam span:nth-child(2) { animation-delay: .35s; }
+  .feature .steam span:nth-child(3) { animation-delay: .7s; }
+  @keyframes steamRise {
+    0%, 100% { transform: translateY(8px); opacity: .18; }
+    45% { transform: translateY(-7px); opacity: .55; }
+  }
+  .feature .fc {
+    position: absolute;
+    z-index: 3;
+    left: 20px;
+    right: 20px;
+    bottom: 22px;
+  }
+  .feature .fc h3 {
+    margin: 9px 0 7px;
+    color: #fff4dc;
+    font-family: "Playfair Display", serif;
+    font-size: 33px;
+    line-height: .92;
+    letter-spacing: -.05em;
+  }
+  .feature .fc p {
+    color: rgba(255,246,226,.72);
+    font-family: "Jost", sans-serif;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+  .feature .fc strong {
+    display: block;
+    margin-top: 12px;
+    color: #f0cf62;
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 26px;
+    letter-spacing: .05em;
+  }
+  .nhoque-intro {
+    margin: 0 4px 12px;
+    color: rgba(244,239,227,.7);
+    font-family: "Jost", sans-serif;
+    font-size: 13px;
+  }
+  .sauce-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 0 3px 12px;
+    scrollbar-width: none;
+  }
+  .sauce-tabs::-webkit-scrollbar { display: none; }
+  .sauce-tabs button {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 38px;
+    border: 1px solid rgba(212,175,55,.22);
+    border-radius: 999px;
+    padding: 9px 13px;
+    background: rgba(20,14,8,.72);
+    color: rgba(244,239,227,.78);
+    font-family: "Bebas Neue", sans-serif;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .sauce-tabs .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .sauce-tabs button.on {
+    border-color: rgba(212,175,55,.58);
+    color: #f4e4a2;
+  }
+  .sauce-stage { display: grid; gap: 12px; margin-bottom: 12px; }
+  .doce-grid { display: grid; gap: 14px; }
+  .doce-card {
+    position: relative;
+    min-height: 330px;
+    overflow: hidden;
+    border-radius: 29px;
+    border: 1px solid rgba(212,175,55,.28);
+    background: #0b0b07;
+    box-shadow: 0 24px 58px rgba(0,0,0,.35);
+  }
+  .doce-card img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(1.02) contrast(1.06);
+  }
+  .doce-card .wedge {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, rgba(246,239,219,.92) 0 43%, transparent 43% 100%);
+    opacity: .9;
+  }
+  .doce-card .vig {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 25%, rgba(0,0,0,.72) 100%);
+  }
+  .doce-copy {
+    position: absolute;
+    z-index: 3;
+    left: 18px;
+    bottom: 18px;
+    width: min(62%, 250px);
+  }
+  .doce-copy h3 {
+    margin: 8px 0 7px;
+    color: #1a120b;
+    font-family: "Playfair Display", serif;
+    font-size: 27px;
+    line-height: .95;
+    letter-spacing: -.04em;
+  }
+  .doce-copy p {
+    color: rgba(25,18,11,.72);
+    font-family: "Jost", sans-serif;
+    font-size: 12px;
+    line-height: 1.28;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .doce-copy strong {
+    display: block;
+    margin-top: 10px;
+    color: #7d5a17;
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 24px;
+    letter-spacing: .04em;
+  }
 </style>
 </head>
 <body>
@@ -2140,6 +2590,7 @@ async function listarPratos() {
   const data = await r.json();
   return {
     categorias: Array.isArray(data?.categorias) ? data.categorias : [],
+    secoes: Array.isArray(data?.secoes) ? data.secoes : [],
     pratos: Array.isArray(data?.pratos) ? data.pratos : [],
     cupons: Array.isArray(data?.cupons) ? data.cupons : [],
     config: data?.config ?? {},
@@ -2261,6 +2712,7 @@ function App() {
   const [carrinhoOpen, setCarrinhoOpen] = useState(false);
   const [pratos, setPratos] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  const [secoesLayout, setSecoesLayout] = useState([]);
   const [cupons, setCupons] = useState([]);
   const [microcopy, setMicrocopy] = useState(DEFAULT_MICROCOPY);
   const [chatConfig, setChatConfig] = useState(DEFAULT_CHAT_CONFIG);
@@ -2418,6 +2870,7 @@ function App() {
         if (!vivo) return;
         if (dados.pratos?.length) setPratos(dados.pratos);
         setCategorias(dados.categorias ?? []);
+        setSecoesLayout(dados.secoes ?? []);
         setCupons(dados.cupons ?? []);
         setDeliveryConfig(prev => ({ ...prev, ...(dados.config ?? {}) }));
         setMicrocopy({ ...DEFAULT_MICROCOPY, ...(dados.microcopy ?? {}) });
@@ -3203,6 +3656,10 @@ function App() {
     acc[String(cat.id)] = cat.nome;
     return acc;
   }, {});
+  const categoriaPorId = categorias.reduce((acc, cat) => {
+    acc[String(cat.id)] = cat;
+    return acc;
+  }, {});
   const selecionarCategoriaCardapio = (id, nome) => {
     setCategoriaAtiva(id);
     trackMeta('MenuCategory', {
@@ -3211,21 +3668,57 @@ function App() {
       page_path: window.location.pathname,
     });
   };
+  const tipoSecaoPorTitulo = (titulo = '') => {
+    const t = String(titulo || '').toLowerCase();
+    if (t.includes('pedido') || t.includes('destaque')) return 'carrossel_horizontal';
+    if (t.includes('pao') || t.includes('pão')) return 'feature_foto_grande';
+    if (t.includes('nhoque')) return 'nhoque_molhos';
+    if (t.includes('sobrem') || t.includes('doce')) return 'sobremesas';
+    if (t.includes('risot')) return 'risotos';
+    return 'lista_editorial';
+  };
+  const montarSecao = (secao, index) => {
+    const categoria = categoriaPorId[String(secao.categoria_id)] ?? {};
+    const titulo = secao.titulo || categoria.nome || 'Cardapio';
+    return {
+      id: String(secao.id ?? secao.categoria_id ?? `secao-${index}`),
+      categoria_id: secao.categoria_id,
+      titulo,
+      descricao: secao.descricao || categoria.descricao || '',
+      tipo_visual: secao.tipo_visual || tipoSecaoPorTitulo(titulo),
+      cor_fundo: secao.cor_fundo || '',
+      cor_texto: secao.cor_texto || '',
+      pratos: pratos.filter(p => String(p.categoria_id) === String(secao.categoria_id)),
+    };
+  };
   const secoesCardapio = categoriaAtiva === 'todos'
     ? [
-        ...(maisPedidos.length ? [{ id: 'mais-pedidos', titulo: 'Mais pedidos', pratos: maisPedidos }] : []),
-        ...categorias
-          .map(cat => ({
-            id: String(cat.id),
-            titulo: cat.nome,
-            pratos: pratos.filter(p => String(p.categoria_id) === String(cat.id)),
-          }))
+        ...(maisPedidos.length ? [{
+          id: 'mais-pedidos',
+          titulo: 'Mais pedidos do Dom',
+          descricao: 'Um carrossel mais editorial para sentir o prato antes de tocar.',
+          tipo_visual: 'carrossel_horizontal',
+          pratos: maisPedidos,
+        }] : []),
+        ...(secoesLayout.length
+          ? secoesLayout.map(montarSecao)
+          : categorias.map((cat) => ({
+              id: String(cat.id),
+              categoria_id: cat.id,
+              titulo: cat.nome,
+              descricao: cat.descricao || '',
+              tipo_visual: tipoSecaoPorTitulo(cat.nome),
+              pratos: pratos.filter(p => String(p.categoria_id) === String(cat.id)),
+            })))
           .filter(sec => sec.pratos.length && !/mais\s*pedido/i.test(sec.titulo || '')),
         ...(categorias.length ? [] : [{ id: 'todos', titulo: 'Cardapio', pratos }]),
       ]
     : [{
         id: String(categoriaAtiva),
+        categoria_id: categoriaAtiva,
         titulo: categoriaNomePorId[String(categoriaAtiva)] || 'Cardapio',
+        descricao: categoriaPorId[String(categoriaAtiva)]?.descricao || '',
+        tipo_visual: tipoSecaoPorTitulo(categoriaNomePorId[String(categoriaAtiva)] || ''),
         pratos: pratosVisiveis,
       }];
 
@@ -3632,7 +4125,7 @@ function App() {
   const renderPratoCard = (p, prefix = 'prato') => (
     <article
       key={`${prefix}-${p.id}`}
-      className="prato-card compact relative"
+      className="dish-card"
       data-prato-id={p.id}
       data-prato-nome={p.nome}
       onClick={() => abrirDetalhe(p)}
@@ -3640,31 +4133,141 @@ function App() {
       onTouchStart={() => { lpTimer.current = setTimeout(() => longPressPrato(p), 520); }}
       onTouchEnd={() => clearTimeout(lpTimer.current)}
     >
-      <div className="prato-copy">
-        <div>
-          {p.badge && (
-            <span className="inline-block mb-2 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-[0.08em]" style={{background:'rgba(212,175,55,0.12)', color:'var(--gold)', border:'1px solid rgba(212,175,55,0.2)'}}>
-              {p.badge}
-            </span>
-          )}
-          <h3 className="font-serif prato-title">{p.nome}</h3>
-          {introPrato(p) && <p className="prato-desc">{introPrato(p)}</p>}
+      <img className="dish-photo" src={p.foto} alt={p.nome} loading="lazy" />
+      <div className="dish-body">
+        {(p.badge || p.badge_destaque || p.selo_experiencia) && (
+          <span className="tag">{p.badge || p.badge_destaque || p.selo_experiencia}</span>
+        )}
+        <h3>{p.nome}</h3>
+        {introPrato(p) && <p>{introPrato(p)}</p>}
+        <div className="dish-foot">
+          <span>a partir de {fmtBRL(p.preco)}</span>
+          <button type="button" onClick={(e) => { e.stopPropagation(); abrirDetalhe(p); }}>Ver</button>
         </div>
-        <div className="mt-3 flex items-end justify-between gap-2">
-          <span className="prato-price">a partir de {fmtBRL(p.preco)}</span>
-          <button
-            className="prato-cta"
-            onClick={(e) => { e.stopPropagation(); abrirDetalhe(p); }}
-          >
-            Ver
-          </button>
-        </div>
-      </div>
-      <div className="relative">
-        <img src={p.foto} alt={p.nome} loading="lazy" />
       </div>
     </article>
   );
+
+  const renderPosterCard = (p, prefix = 'poster') => (
+    <article
+      key={`${prefix}-${p.id}`}
+      className="poster-card"
+      onClick={() => abrirDetalhe(p)}
+      onContextMenu={(e) => { e.preventDefault(); longPressPrato(p); }}
+      onTouchStart={() => { lpTimer.current = setTimeout(() => longPressPrato(p), 520); }}
+      onTouchEnd={() => clearTimeout(lpTimer.current)}
+    >
+      <img src={p.foto} alt={p.nome} loading="lazy" />
+      <div className="poster-info">
+        {(p.badge || p.badge_destaque || p.selo_experiencia) && <span className="tag">{p.badge || p.badge_destaque || p.selo_experiencia}</span>}
+        <h3>{p.nome}</h3>
+        <p>{introPrato(p)}</p>
+        <strong>{fmtBRL(p.preco)}</strong>
+      </div>
+    </article>
+  );
+
+  const renderFeatureCard = (p, prefix = 'feature') => (
+    <section
+      key={`${prefix}-${p.id}`}
+      className="feature"
+      onClick={() => abrirDetalhe(p)}
+      onContextMenu={(e) => { e.preventDefault(); longPressPrato(p); }}
+      onTouchStart={() => { lpTimer.current = setTimeout(() => longPressPrato(p), 520); }}
+      onTouchEnd={() => clearTimeout(lpTimer.current)}
+    >
+      <img src={p.foto} alt={p.nome} loading="lazy" />
+      <div className="glow"></div>
+      <div className="steam"><span></span><span></span><span></span></div>
+      <div className="fc">
+        {(p.badge || p.badge_destaque || p.selo_experiencia) && <span className="tag">{p.badge || p.badge_destaque || p.selo_experiencia}</span>}
+        <h3>{p.nome}</h3>
+        <p>{introPrato(p)}</p>
+        <strong>{fmtBRL(p.preco)}</strong>
+      </div>
+    </section>
+  );
+
+  const sauceColor = (nome = '') => {
+    const t = String(nome).toLowerCase();
+    if (t.includes('bolonh') || t.includes('tomate')) return '#b63a2b';
+    if (t.includes('pesto')) return '#6d9a4a';
+    if (t.includes('rose') || t.includes('rosé')) return '#d98b73';
+    if (t.includes('alfredo') || t.includes('branco')) return '#ecd9a7';
+    return '#c9a23a';
+  };
+
+  const renderNhoqueSection = (lista = [], prefix = 'nhoque') => {
+    const principais = lista.slice(0, 3);
+    const outros = lista.slice(3);
+    return (
+      <>
+        <div className="nhoque-intro">O nhoque é da casa. Você escolhe o molho:</div>
+        <div className="sauce-tabs">
+          {principais.map((p, i) => (
+            <button key={`${prefix}-tab-${p.id}`} className={i === 0 ? 'on' : ''} type="button" onClick={() => abrirDetalhe(p)}>
+              <span className="dot" style={{ background: sauceColor(p.nome) }}></span>
+              {String(p.nome).replace(/nhoque|molho/gi, '').trim() || p.nome}
+            </button>
+          ))}
+        </div>
+        <div className="sauce-stage">
+          {principais.map(p => renderPratoCard(p, `${prefix}-card`))}
+        </div>
+        {!!outros.length && <div className="dish-list">{outros.map(p => renderPratoCard(p, `${prefix}-extra`))}</div>}
+      </>
+    );
+  };
+
+  const renderDoceCard = (p, prefix = 'doce') => (
+    <div key={`${prefix}-${p.id}`} className="doce-card" onClick={() => abrirDetalhe(p)}>
+      <img src={p.foto} alt={p.nome} loading="lazy" />
+      <div className="wedge"></div>
+      <div className="vig"></div>
+      <div className="doce-copy">
+        <span className="tag">{p.badge || p.badge_destaque || p.selo_experiencia || 'Sobremesa'}</span>
+        <h3>{p.nome}</h3>
+        <p>{introPrato(p)}</p>
+        <strong>{fmtBRL(p.preco)}</strong>
+      </div>
+    </div>
+  );
+
+  const renderSecaoCardapio = (secao, index) => {
+    const tipo = secao.tipo_visual || 'lista_editorial';
+    const pratosSecao = secao.pratos || [];
+    const style = {
+      ...(secao.cor_fundo ? { background: secao.cor_fundo } : {}),
+      ...(secao.cor_texto ? { color: secao.cor_texto } : {}),
+    };
+    return (
+      <section className={`section section-${tipo}`} key={secao.id} id={`secao-${secao.id}`} style={style}>
+        <header className="section-head">
+          <div className="number">Capítulo {String(index + 1).padStart(2, '0')}</div>
+          <h2>{secao.titulo}</h2>
+          {secao.descricao && <p>{secao.descricao}</p>}
+        </header>
+        {tipo === 'carrossel_horizontal' && (
+          <div className="poster-row">{pratosSecao.map(p => renderPosterCard(p, secao.id))}</div>
+        )}
+        {tipo === 'feature_foto_grande' && (
+          <div className="feature-stack">
+            {pratosSecao.map(p => renderFeatureCard(p, secao.id))}
+          </div>
+        )}
+        {tipo === 'nhoque_molhos' && renderNhoqueSection(pratosSecao, secao.id)}
+        {tipo === 'sobremesas' && (
+          <div className="doce-grid">{pratosSecao.map(p => renderDoceCard(p, secao.id))}</div>
+        )}
+        {tipo === 'risotos' && (
+          <div className="dish-list risoto-list">{pratosSecao.map(p => renderPratoCard(p, secao.id))}</div>
+        )}
+        {!['carrossel_horizontal','feature_foto_grande','nhoque_molhos','sobremesas','risotos'].includes(tipo) && (
+          <div className="dish-list">{pratosSecao.map(p => renderPratoCard(p, secao.id))}</div>
+        )}
+      </section>
+    );
+  };
 
   const topo = { ...DEFAULT_TOPO_CONFIG, ...(deliveryConfig.topo || {}) };
   const heroLogoUrl = String(topo.logo_url || '').trim();
@@ -3758,32 +4361,20 @@ function App() {
           </div>
         </div>
       </section>
-      {/* Cardapio */}
-      <section className="px-5 pb-36">
-        <div className="cat-strip">
-          <button className={`cat-chip ${categoriaAtiva === 'todos' ? 'active' : ''}`} onClick={() => selecionarCategoriaCardapio('todos', 'Todos')}>Todos</button>
+      {/* Cardapio editorial conectado ao ecossistema real */}
+      <section className="prototype-menu pb-36">
+        <nav className="nav" aria-label="Categorias">
+          <button className={categoriaAtiva === 'todos' ? 'on' : ''} onClick={() => selecionarCategoriaCardapio('todos', 'Todos')}>Todos</button>
           {categorias.map(cat => (
-            <button key={cat.id} className={`cat-chip ${String(categoriaAtiva) === String(cat.id) ? 'active' : ''}`} onClick={() => selecionarCategoriaCardapio(cat.id, cat.nome)}>
+            <button key={cat.id} className={String(categoriaAtiva) === String(cat.id) ? 'on' : ''} onClick={() => selecionarCategoriaCardapio(cat.id, cat.nome)}>
               {cat.nome}
             </button>
           ))}
-        </div>
-        <div className="menu-sections">
+        </nav>
+        <div className="prototype-sections">
           {carregandoPratos && <div className="cart-empty">Carregando cardapio...</div>}
           {menuErro && <div className="cart-empty">{menuErro}</div>}
-          {!carregandoPratos && !menuErro && secoesCardapio.map(secao => (
-            <div className="menu-section" key={secao.id}>
-              <div className="menu-section-head">
-                <h2 className="font-serif menu-section-title">{secao.titulo}</h2>
-                <span className="menu-section-count">
-                  {secao.pratos.length} {secao.pratos.length === 1 ? 'prato' : 'pratos'}
-                </span>
-              </div>
-              <div className="menu-section-grid">
-                {secao.pratos.map(p => renderPratoCard(p, secao.id))}
-              </div>
-            </div>
-          ))}
+          {!carregandoPratos && !menuErro && secoesCardapio.map((secao, index) => renderSecaoCardapio(secao, index))}
           {!carregandoPratos && !menuErro && secoesCardapio.length === 0 && (
             <div className="cart-empty">Nenhum prato encontrado nessa categoria.</div>
           )}
@@ -3823,23 +4414,6 @@ function App() {
                 {pratoAberto.frase_fome && <p style={{color:'rgba(243,236,224,0.9)', fontWeight:700}}>{pratoAberto.frase_fome}</p>}
                 {pratoAberto.descricao && <p>{clampText(pratoAberto.descricao, 165)}</p>}
                 <div className="dish-start-price">a partir de {fmtBRL(pratoAberto.preco)}</div>
-              </div>
-
-              <div className="dish-senses">
-                <div className="sense-card">
-                  <strong>Porcao sem misterio</strong>
-                  <p>{pratoAberto.porcao_texto || microcopy.tamanhos_texto}</p>
-                </div>
-                <div className="sense-card">
-                  <strong>Como chega ai</strong>
-                  <p>{pratoAberto.como_chega_texto || 'Vai em embalagem firme e bem fechada para preservar calor, textura e molho.'}</p>
-                </div>
-                {pratoAberto.melhor_para && (
-                  <div className="sense-card">
-                    <strong>Melhor para</strong>
-                    <p>{pratoAberto.melhor_para}</p>
-                  </div>
-                )}
               </div>
 
               <div className="choice-block">

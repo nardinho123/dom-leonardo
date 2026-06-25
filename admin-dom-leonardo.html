@@ -801,6 +801,216 @@
       text-align: center;
       padding: 34px 18px;
     }
+    .visual-builder {
+      display: grid;
+      gap: 18px;
+    }
+    .visual-builder-head,
+    .editor-section {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+    .visual-builder-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      padding: 18px;
+    }
+    .visual-builder-head h3,
+    .editor-section-toolbar h3,
+    .editor-list-card h4,
+    .editor-poster-card h4,
+    .editor-feature-card h4 {
+      margin: 0;
+      color: var(--ink);
+    }
+    .eyebrow {
+      display: inline-block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+    .editor-section {
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 8% 0%, rgba(248,200,70,.10), transparent 26%),
+        linear-gradient(140deg, #fff, #fff8f2);
+    }
+    .editor-section-toolbar,
+    .editor-section-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px 18px;
+    }
+    .editor-section-toolbar {
+      border-bottom: 1px solid rgba(40, 30, 15, .08);
+    }
+    .section-identity {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      min-width: 0;
+    }
+    .section-identity p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .editor-preview {
+      padding: 16px 18px;
+    }
+    .editor-section-foot {
+      border-top: 1px solid rgba(40, 30, 15, .08);
+      background: rgba(255,255,255,.68);
+    }
+    .editor-poster-row {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scroll-snap-type: x mandatory;
+    }
+    .editor-poster-card {
+      flex: 0 0 240px;
+      min-height: 330px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(180,131,42,.28);
+      background: #1d1309;
+      color: #fff;
+      position: relative;
+      scroll-snap-align: start;
+    }
+    .poster-thumb,
+    .feature-img {
+      background: #17110a;
+      display: grid;
+      place-items: center;
+      color: #d6b34a;
+      font-weight: 900;
+    }
+    .poster-thumb {
+      height: 176px;
+    }
+    .poster-thumb img,
+    .feature-img img,
+    .editor-list-card .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .poster-copy {
+      padding: 14px;
+    }
+    .poster-copy h4 {
+      color: #fff;
+      font-family: Georgia, serif;
+      font-size: 21px;
+      line-height: 1.02;
+      margin: 8px 0;
+    }
+    .poster-copy p {
+      color: rgba(255,255,255,.72);
+      font-size: 13px;
+      line-height: 1.35;
+      margin: 0 0 10px;
+    }
+    .poster-copy strong,
+    .editor-feature-card strong {
+      color: #d6b34a;
+      font-size: 18px;
+    }
+    .editor-feature-stack {
+      display: grid;
+      gap: 14px;
+    }
+    .editor-feature-card {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 18px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 18px;
+      background: #1d1309;
+      color: #fff;
+      border: 1px solid rgba(180,131,42,.28);
+    }
+    .editor-feature-card h4 {
+      color: #fff;
+      font-size: 24px;
+      font-family: Georgia, serif;
+      line-height: 1.05;
+      margin: 3px 0 8px;
+    }
+    .editor-feature-card p {
+      margin: 0 0 10px;
+      color: rgba(255,255,255,.72);
+      line-height: 1.45;
+    }
+    .feature-img {
+      min-height: 190px;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .editor-dish-grid {
+      display: grid;
+      gap: 12px;
+    }
+    .editor-dish-grid.sobremesas {
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    }
+    .editor-list-card {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.88);
+      border: 1px solid rgba(30, 22, 12, .08);
+    }
+    .editor-list-card .thumb {
+      width: 110px;
+      height: 92px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #f4efe7;
+      display: grid;
+      place-items: center;
+      color: #d6b34a;
+      font-weight: 900;
+    }
+    .editor-list-copy p {
+      margin: 4px 0 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .dish-admin-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .editor-poster-card .dish-admin-actions {
+      padding: 0 12px 12px;
+    }
+    .paused {
+      opacity: .55;
+      filter: grayscale(.6);
+    }
+    .editor-add-empty {
+      width: 100%;
+      min-height: 80px;
+    }
     @media (max-width: 940px) {
       .app-shell { grid-template-columns: 1fr; }
       .sidebar {
@@ -821,6 +1031,10 @@
       .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .topbar { flex-direction: column; }
       .actions { justify-content: flex-start; }
+      .visual-builder-head,
+      .editor-section-toolbar,
+      .editor-section-foot { flex-direction: column; align-items: stretch; }
+      .editor-feature-card { grid-template-columns: 1fr; }
       .topo-editor { grid-template-columns: 1fr; }
       .topo-preview-phone { position: static; margin: 0 auto; }
     }
@@ -850,13 +1064,16 @@
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const NAV = [
-      { id: 'painel', icon: '📊', label: 'Painel' },
       { id: 'cardapio', icon: '🍝', label: 'Cardápio' },
-      { id: 'pedidos', icon: '🧾', label: 'Pedidos' },
-      { id: 'atendimento', icon: '💬', label: 'Atendimento' },
-      { id: 'clientes', icon: '👤', label: 'Clientes' },
-      { id: 'cupons', icon: '🎟️', label: 'Cupons' },
-      { id: 'config', icon: '⚙️', label: 'Configurações' },
+    ];
+
+    const SECTION_TYPES = [
+      { id: 'carrossel_horizontal', label: 'Rolagem lateral' },
+      { id: 'feature_foto_grande', label: 'Foto grande + texto' },
+      { id: 'nhoque_molhos', label: 'Escolha de molhos' },
+      { id: 'sobremesas', label: 'Sobremesas editorial' },
+      { id: 'risotos', label: 'Risotos premium' },
+      { id: 'lista_editorial', label: 'Lista editorial' },
     ];
 
     const STATUS = ['novo', 'em_preparo', 'pronto', 'saiu_entrega', 'entregue', 'cancelado'];
@@ -1153,7 +1370,7 @@
       const [toastState, setToastState] = useState(null);
       const [data, setData] = useState({
         categorias: [], pratos: [], tamanhos: [], grupos: [], opcionais: [], pratoCupons: [],
-        cupons: [], pedidos: [], atendimentos: [], clientes: [], config: null,
+        secoes: [], cupons: [], pedidos: [], atendimentos: [], clientes: [], config: null,
       });
       const [modal, setModal] = useState(null);
       const [statusFilter, setStatusFilter] = useState('');
@@ -1330,8 +1547,9 @@
       async function loadAll() {
         setLoading(true);
         try {
-          const [categorias, pratos, tamanhos, grupos, opcionais, pratoCupons, cupons, clientes, config, atendimentos] = await Promise.all([
+          const [categorias, secoes, pratos, tamanhos, grupos, opcionais, pratoCupons, cupons, clientes, config, atendimentos] = await Promise.all([
             run('categorias', sb.from('categorias').select('*').order('ordem').order('nome')),
+            run('secoes', sb.from('cardapio_secoes').select('*').order('ordem').order('titulo')),
             run('pratos', sb.from('pratos').select('*').order('ordem').order('nome')),
             run('tamanhos', sb.from('pratos_tamanhos').select('*').order('ordem').order('nome')),
             run('grupos', sb.from('grupos_opcionais').select('*').order('ordem').order('nome')),
@@ -1342,7 +1560,7 @@
             run('config', sb.from('configuracoes').select('*').eq('id', 1).single()),
             run('atendimentos', sb.from('atendimentos').select('*').order('ultima_mensagem_em', { ascending: false }).limit(100)),
           ]);
-          setData(prev => ({ ...prev, categorias, pratos, tamanhos, grupos, opcionais, pratoCupons, cupons, clientes, config, atendimentos }));
+          setData(prev => ({ ...prev, categorias, secoes, pratos, tamanhos, grupos, opcionais, pratoCupons, cupons, clientes, config, atendimentos }));
           await loadPedidos();
         } catch (error) {
           toast(error.message, 'error');
@@ -1454,6 +1672,144 @@
           await loadAll();
         } catch (error) {
           toast('Não consegui excluir. Se tiver itens dentro, exclua/desative os itens primeiro.', 'error');
+        }
+      }
+
+      async function saveSection(form) {
+        try {
+          const titulo = form.titulo?.trim();
+          if (!titulo) throw new Error('Titulo da seção é obrigatório.');
+          const ordem = toNum(form.ordem) || 0;
+          const categoriaPayload = {
+            nome: titulo,
+            slug: form.slug?.trim() || slugify(titulo),
+            descricao: form.descricao || null,
+            icone: form.icone || '🍝',
+            ordem,
+            ativo: form.ativo !== false,
+          };
+          let categoriaId = form.categoria_id || form.id || null;
+          if (categoriaId) {
+            const { error } = await sb.from('categorias').update(categoriaPayload).eq('id', categoriaId);
+            if (error) throw error;
+          } else {
+            const { data: created, error } = await sb.from('categorias').insert(categoriaPayload).select('id').single();
+            if (error) throw error;
+            categoriaId = created.id;
+          }
+
+          const secaoPayload = {
+            categoria_id: categoriaId,
+            titulo,
+            descricao: form.descricao || null,
+            tipo_visual: form.tipo_visual || 'lista_editorial',
+            cor_fundo: form.cor_fundo || null,
+            cor_texto: form.cor_texto || null,
+            ordem,
+            ativo: form.ativo !== false,
+          };
+          const existing = data.secoes.find(s => s.categoria_id === categoriaId || s.id === form.id);
+          if (existing) {
+            const { error } = await sb.from('cardapio_secoes').update(secaoPayload).eq('id', existing.id);
+            if (error) throw error;
+          } else {
+            const { error } = await sb.from('cardapio_secoes').insert(secaoPayload);
+            if (error) throw error;
+          }
+          setModal(null);
+          toast('Seção salva.');
+          await loadAll();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function deleteSection(secao) {
+        if (!confirm(`Desativar a seção "${secao.titulo || secao.nome}"? Os pratos não serão apagados.`)) return;
+        try {
+          if (secao.secao_id || secao.id) {
+            const { error } = await sb.from('cardapio_secoes').update({ ativo: false }).eq('id', secao.secao_id || secao.id);
+            if (error) throw error;
+          }
+          if (secao.categoria_id || secao.id) {
+            const { error } = await sb.from('categorias').update({ ativo: false }).eq('id', secao.categoria_id || secao.id);
+            if (error) throw error;
+          }
+          toast('Seção desativada. Os itens ficaram preservados.');
+          await loadAll();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function duplicateSection(secao) {
+        try {
+          const titulo = `${secao.titulo || secao.nome} cópia`;
+          const maxOrdem = Math.max(0, ...data.categorias.map(c => Number(c.ordem || 0)), ...data.secoes.map(s => Number(s.ordem || 0))) + 1;
+          const { data: created, error: catError } = await sb.from('categorias').insert({
+            nome: titulo,
+            slug: `${slugify(titulo)}-${Date.now().toString(36)}`,
+            descricao: secao.descricao || null,
+            icone: secao.icone || '🍝',
+            ordem: maxOrdem,
+            ativo: true,
+          }).select('id').single();
+          if (catError) throw catError;
+          const { error } = await sb.from('cardapio_secoes').insert({
+            categoria_id: created.id,
+            titulo,
+            descricao: secao.descricao || null,
+            tipo_visual: secao.tipo_visual || 'lista_editorial',
+            cor_fundo: secao.cor_fundo || null,
+            cor_texto: secao.cor_texto || null,
+            ordem: maxOrdem,
+            ativo: true,
+          });
+          if (error) throw error;
+          toast('Seção duplicada sem copiar pratos, para você montar do zero.');
+          await loadAll();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function moveSection(secao, delta) {
+        const ordered = [...nested].sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0));
+        const index = ordered.findIndex(item => (item.secao_id || item.id) === (secao.secao_id || secao.id));
+        const target = ordered[index + delta];
+        if (!target) return;
+        try {
+          const results = await Promise.all([
+            sb.from('categorias').update({ ordem: Number(target.ordem || 0) }).eq('id', secao.categoria_id || secao.id),
+            sb.from('categorias').update({ ordem: Number(secao.ordem || 0) }).eq('id', target.categoria_id || target.id),
+            secao.secao_id ? sb.from('cardapio_secoes').update({ ordem: Number(target.ordem || 0) }).eq('id', secao.secao_id) : Promise.resolve({ error: null }),
+            target.secao_id ? sb.from('cardapio_secoes').update({ ordem: Number(secao.ordem || 0) }).eq('id', target.secao_id) : Promise.resolve({ error: null }),
+          ]);
+          const failed = results.find(result => result?.error);
+          if (failed?.error) throw failed.error;
+          await loadAll();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function moveDish(prato, delta) {
+        const siblings = data.pratos
+          .filter(p => p.categoria_id === prato.categoria_id)
+          .sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0));
+        const index = siblings.findIndex(p => p.id === prato.id);
+        const target = siblings[index + delta];
+        if (!target) return;
+        try {
+          const results = await Promise.all([
+            sb.from('pratos').update({ ordem: Number(target.ordem || 0) }).eq('id', prato.id),
+            sb.from('pratos').update({ ordem: Number(prato.ordem || 0) }).eq('id', target.id),
+          ]);
+          const failed = results.find(result => result?.error);
+          if (failed?.error) throw failed.error;
+          await loadAll();
+        } catch (error) {
+          toast(error.message, 'error');
         }
       }
 
@@ -1790,14 +2146,17 @@
               <CardapioBuilder
                 nested={nested}
                 data={data}
-                onAddCategory={() => setModal({ type: 'categoria', item: null })}
-                onEditCategory={item => setModal({ type: 'categoria', item })}
-                onDeleteCategory={deleteCategory}
+                onAddSection={() => setModal({ type: 'secao', item: null })}
+                onEditSection={item => setModal({ type: 'secao', item })}
+                onDeleteSection={deleteSection}
+                onDuplicateSection={duplicateSection}
+                onMoveSection={moveSection}
                 onAddDish={categoria => setModal({ type: 'prato', item: blankDish(categoria.id, data.pratos.length) })}
                 onEditDish={prato => setModal({ type: 'prato', item: dishToForm(prato, data) })}
                 onDuplicateDish={prato => setModal({ type: 'prato', item: duplicateDishToForm(prato, data.pratos.length) })}
                 onDeleteDish={deleteDish}
                 onToggleDish={toggleDish}
+                onMoveDish={moveDish}
               />
             )}
             {active === 'pedidos' && <Pedidos pedidos={data.pedidos} statusFilter={statusFilter} setStatusFilter={setStatusFilter} reload={loadPedidos} openOrder={openOrder} updateStatus={updateStatus} />}
@@ -1808,6 +2167,7 @@
           </main>
 
           {modal?.type === 'categoria' && <CategoryModal item={modal.item} onClose={() => setModal(null)} onSave={saveCategory} />}
+          {modal?.type === 'secao' && <SectionModal item={modal.item} onClose={() => setModal(null)} onSave={saveSection} />}
           {modal?.type === 'prato' && <DishModal item={modal.item} categorias={data.categorias} cupons={data.cupons} onClose={() => setModal(null)} onSave={saveDish} />}
           {modal?.type === 'cupom' && <CupomModal item={modal.item} onClose={() => setModal(null)} onSave={saveCupom} />}
           {orderDetail && <OrderModal detail={orderDetail} onClose={() => setOrderDetail(null)} />}
@@ -1823,15 +2183,40 @@
       const opcionaisByGrupo = groupBy(data.opcionais, 'grupo_id');
       const cuponsByPrato = groupBy(data.pratoCupons, 'prato_id');
       const pratosByCat = groupBy(data.pratos, 'categoria_id');
-      return data.categorias.map(cat => ({
+      const secoesByCat = groupBy(data.secoes || [], 'categoria_id');
+      return data.categorias
+        .map(cat => {
+          const secao = (secoesByCat[cat.id] || [])[0] || {};
+          return {
         ...cat,
+        secao_id: secao.id || null,
+        categoria_id: cat.id,
+        titulo: secao.titulo || cat.nome,
+        descricao: secao.descricao || cat.descricao || '',
+        tipo_visual: secao.tipo_visual || inferSectionType(cat.nome),
+        cor_fundo: secao.cor_fundo || '',
+        cor_texto: secao.cor_texto || '',
+        ativo: secao.id ? secao.ativo !== false && cat.ativo !== false : cat.ativo !== false,
         pratos: (pratosByCat[cat.id] || []).map(prato => ({
           ...prato,
           tamanhos: tamanhosByPrato[prato.id] || [],
           grupos: (gruposByPrato[prato.id] || []).map(g => ({ ...g, opcionais: opcionaisByGrupo[g.id] || [] })),
           cupons: cuponsByPrato[prato.id] || [],
         })),
-      }));
+      };
+        })
+        .filter(cat => cat.ativo !== false)
+        .sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0));
+    }
+
+    function inferSectionType(nome = '') {
+      const n = nome.toLowerCase();
+      if (n.includes('mais') || n.includes('querid')) return 'carrossel_horizontal';
+      if (n.includes('pão') || n.includes('pao')) return 'feature_foto_grande';
+      if (n.includes('nhoque')) return 'nhoque_molhos';
+      if (n.includes('sobrem') || n.includes('doce')) return 'sobremesas';
+      if (n.includes('risot')) return 'risotos';
+      return 'lista_editorial';
     }
 
     function groupBy(items, key) {
@@ -1961,66 +2346,207 @@
       );
     }
 
-    function CardapioBuilder({ nested, data, onAddCategory, onEditCategory, onDeleteCategory, onAddDish, onEditDish, onDuplicateDish, onDeleteDish, onToggleDish }) {
+    function CardapioBuilder({ nested, data, onAddSection, onEditSection, onDeleteSection, onDuplicateSection, onMoveSection, onAddDish, onEditDish, onDuplicateDish, onDeleteDish, onToggleDish, onMoveDish }) {
       if (!nested.length) {
         return (
           <div className="empty-builder">
             <div>
-              <button className="empty-plus" onClick={onAddCategory}>+</button>
+              <button className="empty-plus" onClick={onAddSection}>+</button>
               <h3>Cardápio vazio</h3>
-              <p className="muted">Comece criando a primeira categoria, por exemplo: Mais pedidos.</p>
-              <button className="btn btn-primary" onClick={onAddCategory}>Adicionar categoria</button>
+              <p className="muted">Comece criando a primeira seção, por exemplo: Mais pedidos.</p>
+              <button className="btn btn-primary" onClick={onAddSection}>Adicionar seção</button>
             </div>
           </div>
         );
       }
       return (
-        <div>
-          {nested.map(cat => (
-            <section className="category-block" key={cat.id}>
-              <div className="category-head">
-                <div className="category-title">
+        <div className="visual-builder">
+          <div className="visual-builder-head">
+            <div>
+              <span className="eyebrow">Editor visual</span>
+              <h3>Cardápio do cliente, só que editável</h3>
+              <p className="muted">A ordem daqui é a mesma ordem que aparece no celular.</p>
+            </div>
+            <button className="btn btn-primary" onClick={onAddSection}>+ Nova seção</button>
+          </div>
+          {nested.map((cat, index) => (
+            <section className={`editor-section ${cat.tipo_visual || 'lista_editorial'}`} key={cat.id} style={{ background: cat.cor_fundo || undefined, color: cat.cor_texto || undefined }}>
+              <div className="editor-section-toolbar">
+                <div className="section-identity">
                   <span className="badge purple">{cat.icone || '🍝'}</span>
                   <div>
-                    <h3>{cat.nome}</h3>
-                    {cat.descricao && <p className="muted" style={{margin:'2px 0 0'}}>{cat.descricao}</p>}
+                    <span className="eyebrow">{SECTION_TYPES.find(t => t.id === cat.tipo_visual)?.label || 'Seção'}</span>
+                    <h3>{cat.titulo || cat.nome}</h3>
+                    {cat.descricao && <p>{cat.descricao}</p>}
                   </div>
                 </div>
                 <div className="actions">
-                  <button className="btn btn-primary" onClick={() => onAddDish(cat)}>Adicionar item</button>
-                  <button className="btn btn-small" onClick={() => onEditCategory(cat)}>Editar</button>
-                  <button className="btn btn-small btn-danger" onClick={() => onDeleteCategory(cat)}>Excluir</button>
+                  <button className="btn btn-small" disabled={index === 0} onClick={() => onMoveSection(cat, -1)}>↑</button>
+                  <button className="btn btn-small" disabled={index === nested.length - 1} onClick={() => onMoveSection(cat, 1)}>↓</button>
+                  <button className="btn btn-small" onClick={() => onEditSection(cat)}>Editar seção</button>
+                  <button className="btn btn-small" onClick={() => onDuplicateSection(cat)}>Duplicar</button>
+                  <button className="btn btn-small btn-danger" onClick={() => onDeleteSection(cat)}>Excluir</button>
                 </div>
               </div>
-              <div className="category-body">
-                {cat.pratos.map(prato => (
-                  <div className="dish-row" key={prato.id}>
-                    <div className="thumb">{prato.foto_url ? <img src={prato.foto_url} alt="" /> : 'DL'}</div>
-                    <div>
-                      <h4>{prato.nome}</h4>
-                      <p>{prato.descricao_curta || 'Sem descrição'}</p>
-                      {prato.frase_fome && <p className="muted" style={{marginTop:4}}>Fome: {prato.frase_fome}</p>}
-                      <div className="dish-meta">
-                        <span className="money">{fmtMoney(prato.preco_base)}</span>
-                        <span className={`badge ${prato.ativo ? 'on' : 'off'}`}>{prato.ativo ? 'Ativo' : 'Inativo'}</span>
-                        <span className="badge">{prato.tamanhos.length} tamanhos</span>
-                        <span className="badge">{prato.grupos.length} grupos</span>
-                        {!!prato.cupons.length && <span className="badge purple">{prato.cupons.length} cupons</span>}
-                      </div>
-                    </div>
-                    <div className="actions">
-                      <button className="btn btn-small" onClick={() => onEditDish(prato)}>Editar</button>
-                      <button className="btn btn-small" onClick={() => onDuplicateDish(prato)}>Duplicar</button>
-                      <button className="btn btn-small" onClick={() => onToggleDish(prato)}>{prato.ativo ? 'Pausar' : 'Ativar'}</button>
-                      <button className="btn btn-small btn-danger" onClick={() => onDeleteDish(prato)}>Excluir</button>
-                    </div>
+              <div className="editor-preview">
+                {cat.tipo_visual === 'carrossel_horizontal' && (
+                  <div className="editor-poster-row">
+                    {cat.pratos.map((prato, dishIndex) => (
+                      <DishPosterAdmin key={prato.id} prato={prato} dishIndex={dishIndex} total={cat.pratos.length} onEditDish={onEditDish} onDuplicateDish={onDuplicateDish} onDeleteDish={onDeleteDish} onToggleDish={onToggleDish} onMoveDish={onMoveDish} />
+                    ))}
                   </div>
-                ))}
-                {!cat.pratos.length && <button className="category-add" onClick={() => onAddDish(cat)}>+ Adicionar primeiro item em {cat.nome}</button>}
+                )}
+                {cat.tipo_visual === 'feature_foto_grande' && (
+                  <div className="editor-feature-stack">
+                    {cat.pratos.map((prato, dishIndex) => (
+                      <DishFeatureAdmin key={prato.id} prato={prato} dishIndex={dishIndex} total={cat.pratos.length} onEditDish={onEditDish} onDuplicateDish={onDuplicateDish} onDeleteDish={onDeleteDish} onToggleDish={onToggleDish} onMoveDish={onMoveDish} />
+                    ))}
+                  </div>
+                )}
+                {['nhoque_molhos', 'sobremesas', 'risotos', 'lista_editorial'].includes(cat.tipo_visual || 'lista_editorial') && (
+                  <div className={`editor-dish-grid ${cat.tipo_visual || 'lista_editorial'}`}>
+                    {cat.pratos.map((prato, dishIndex) => (
+                      <DishListAdmin key={prato.id} prato={prato} dishIndex={dishIndex} total={cat.pratos.length} onEditDish={onEditDish} onDuplicateDish={onDuplicateDish} onDeleteDish={onDeleteDish} onToggleDish={onToggleDish} onMoveDish={onMoveDish} />
+                    ))}
+                  </div>
+                )}
+                {!cat.pratos.length && <button className="category-add editor-add-empty" onClick={() => onAddDish(cat)}>+ Adicionar primeiro item em {cat.titulo || cat.nome}</button>}
+              </div>
+              <div className="editor-section-foot">
+                <button className="btn btn-primary" onClick={() => onAddDish(cat)}>+ Adicionar prato nessa seção</button>
+                <button className="btn" onClick={onAddSection}>+ Adicionar seção depois</button>
               </div>
             </section>
           ))}
-          <button className="add-category-footer" onClick={onAddCategory}>+ Adicionar outra categoria</button>
+          <button className="add-category-footer" onClick={onAddSection}>+ Adicionar outra seção</button>
+        </div>
+      );
+    }
+
+    function DishAdminActions({ prato, dishIndex, total, onEditDish, onDuplicateDish, onDeleteDish, onToggleDish, onMoveDish }) {
+      return (
+        <div className="dish-admin-actions">
+          <button className="btn btn-small" disabled={dishIndex === 0} onClick={() => onMoveDish(prato, -1)}>↑</button>
+          <button className="btn btn-small" disabled={dishIndex === total - 1} onClick={() => onMoveDish(prato, 1)}>↓</button>
+          <button className="btn btn-small" onClick={() => onEditDish(prato)}>Editar</button>
+          <button className="btn btn-small" onClick={() => onDuplicateDish(prato)}>Duplicar</button>
+          <button className="btn btn-small" onClick={() => onToggleDish(prato)}>{prato.ativo ? 'Pausar' : 'Ativar'}</button>
+          <button className="btn btn-small btn-danger" onClick={() => onDeleteDish(prato)}>Excluir</button>
+        </div>
+      );
+    }
+
+    function DishPosterAdmin(props) {
+      const { prato } = props;
+      return (
+        <article className={`editor-poster-card ${prato.ativo ? '' : 'paused'}`}>
+          <div className="poster-thumb">{prato.foto_url ? <img src={prato.foto_url} alt="" /> : 'DL'}</div>
+          <div className="poster-copy">
+            <span className="badge">{prato.badge_destaque || 'Prato'}</span>
+            <h4>{prato.nome}</h4>
+            <p>{compactText(prato.descricao_curta || prato.frase_fome || '', 98)}</p>
+            <strong>{fmtMoney(prato.preco_base)}</strong>
+          </div>
+          <DishAdminActions {...props} />
+        </article>
+      );
+    }
+
+    function DishFeatureAdmin(props) {
+      const { prato } = props;
+      return (
+        <article className={`editor-feature-card ${prato.ativo ? '' : 'paused'}`}>
+          <div className="feature-img">{prato.foto_url ? <img src={prato.foto_url} alt="" /> : 'DL'}</div>
+          <div>
+            <span className="eyebrow">{prato.badge_destaque || 'Capítulo do Dom'}</span>
+            <h4>{prato.nome}</h4>
+            <p>{compactText(prato.descricao_curta || '', 150)}</p>
+            <strong>{fmtMoney(prato.preco_base)}</strong>
+            <DishAdminActions {...props} />
+          </div>
+        </article>
+      );
+    }
+
+    function DishListAdmin(props) {
+      const { prato } = props;
+      return (
+        <article className={`editor-list-card ${prato.ativo ? '' : 'paused'}`}>
+          <div className="thumb">{prato.foto_url ? <img src={prato.foto_url} alt="" /> : 'DL'}</div>
+          <div className="editor-list-copy">
+            <h4>{prato.nome}</h4>
+            <p>{compactText(prato.descricao_curta || 'Sem descrição', 120)}</p>
+            <div className="dish-meta">
+              <span className="money">{fmtMoney(prato.preco_base)}</span>
+              <span className={`badge ${prato.ativo ? 'on' : 'off'}`}>{prato.ativo ? 'Ativo' : 'Inativo'}</span>
+              <span className="badge">{prato.tamanhos.length} tamanhos</span>
+              <span className="badge">{prato.grupos.length} grupos</span>
+              {!!prato.cupons.length && <span className="badge purple">{prato.cupons.length} cupons</span>}
+            </div>
+            <DishAdminActions {...props} />
+          </div>
+        </article>
+      );
+    }
+
+    function compactText(text, max = 120) {
+      const clean = String(text || '').replace(/\s+/g, ' ').trim();
+      if (clean.length <= max) return clean;
+      return `${clean.slice(0, max - 1).trim()}…`;
+    }
+
+    function SectionModal({ item, onClose, onSave }) {
+      const [form, setForm] = useState(() => item ? {
+        id: item.secao_id || item.id,
+        categoria_id: item.categoria_id || item.id,
+        titulo: item.titulo || item.nome || '',
+        slug: item.slug || '',
+        descricao: item.descricao || '',
+        icone: item.icone || '🍝',
+        tipo_visual: item.tipo_visual || inferSectionType(item.titulo || item.nome),
+        cor_fundo: item.cor_fundo || '',
+        cor_texto: item.cor_texto || '',
+        ordem: item.ordem || 0,
+        ativo: item.ativo !== false,
+      } : {
+        titulo: '',
+        slug: '',
+        descricao: '',
+        icone: '🍝',
+        tipo_visual: 'lista_editorial',
+        cor_fundo: '',
+        cor_texto: '',
+        ordem: 0,
+        ativo: true,
+      });
+      const set = (key, value) => setForm(prev => ({ ...prev, [key]: value, ...(key === 'titulo' && !item ? { slug: slugify(value) } : {}) }));
+      return (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <div className="modal-head">
+              <h3>{item ? 'Editar seção' : 'Adicionar seção'}</h3>
+              <button className="btn btn-ghost" onClick={onClose}>Fechar</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div className="field full"><TextField label="Título da seção" value={form.titulo} onChange={v => set('titulo', v)} /></div>
+                <div className="field full"><TextField label="Descrição curta" value={form.descricao} onChange={v => set('descricao', v)} textarea /></div>
+                <SelectField label="Tipo de seção" value={form.tipo_visual} onChange={v => set('tipo_visual', v)}>
+                  {SECTION_TYPES.map(type => <option key={type.id} value={type.id}>{type.label}</option>)}
+                </SelectField>
+                <TextField label="Ícone pequeno" value={form.icone} onChange={v => set('icone', v)} />
+                <TextField label="Cor de fundo (opcional)" value={form.cor_fundo} onChange={v => set('cor_fundo', v)} />
+                <TextField label="Cor do texto (opcional)" value={form.cor_texto} onChange={v => set('cor_texto', v)} />
+                <TextField label="Ordem" type="number" step="1" value={form.ordem} onChange={v => set('ordem', v)} />
+                <label className="field"><span style={{display:'block', fontSize:12, color:'var(--muted)', fontWeight:850, marginBottom:6}}>ATIVO</span><div className="check-row"><input type="checkbox" checked={!!form.ativo} onChange={e => set('ativo', e.target.checked)} /> <span>{form.ativo ? 'Sim' : 'Não'}</span></div></label>
+                <div className="field full" style={{display:'none'}}><TextField label="Slug" value={form.slug} onChange={v => set('slug', v)} /></div>
+              </div>
+            </div>
+            <div className="modal-foot">
+              <button className="btn" onClick={onClose}>Cancelar</button>
+              <button className="btn btn-primary" onClick={() => onSave(form)}>Salvar seção</button>
+            </div>
+          </div>
         </div>
       );
     }
@@ -2067,6 +2593,50 @@
       }
       function addOption(gi) {
         setForm(prev => ({ ...prev, grupos: prev.grupos.map((g, i) => i === gi ? { ...g, opcionais: [...g.opcionais, { localId: uuid(), nome: '', descricao: '', preco_delta: 0, foto_url: '', fotoFile: null, ativo: true }] } : g) }));
+      }
+      function moveItem(list, index, delta) {
+        const nextIndex = index + delta;
+        if (nextIndex < 0 || nextIndex >= list.length) return list;
+        const copy = [...list];
+        const [item] = copy.splice(index, 1);
+        copy.splice(nextIndex, 0, item);
+        return copy;
+      }
+      function moveGroup(gi, delta) {
+        setForm(prev => ({ ...prev, grupos: moveItem(prev.grupos, gi, delta) }));
+      }
+      function duplicateGroup(gi) {
+        setForm(prev => ({
+          ...prev,
+          grupos: prev.grupos.flatMap((g, i) => i === gi
+            ? [g, {
+                ...JSON.parse(JSON.stringify(g)),
+                id: null,
+                prato_id: null,
+                nome: `${g.nome || 'Grupo'} cópia`,
+                opcionais: (g.opcionais || []).map(o => ({ ...o, id: null, grupo_id: null, localId: uuid(), fotoFile: null })),
+              }]
+            : [g])
+        }));
+      }
+      function moveOption(gi, oi, delta) {
+        setForm(prev => ({
+          ...prev,
+          grupos: prev.grupos.map((g, i) => i === gi ? { ...g, opcionais: moveItem(g.opcionais, oi, delta) } : g),
+        }));
+      }
+      function duplicateOption(gi, oi) {
+        setForm(prev => ({
+          ...prev,
+          grupos: prev.grupos.map((g, i) => i === gi
+            ? {
+                ...g,
+                opcionais: g.opcionais.flatMap((o, j) => j === oi
+                  ? [o, { ...JSON.parse(JSON.stringify(o)), id: null, grupo_id: null, localId: uuid(), nome: `${o.nome || 'Opcional'} cópia`, fotoFile: null }]
+                  : [o])
+              }
+            : g),
+        }));
       }
 
       return (
@@ -2134,6 +2704,9 @@
                       <div className="span-2"><TextField label="Mínimo" type="number" step="1" value={grupo.min_escolhas} onChange={v => patchGroup(gi, { min_escolhas: v })} /></div>
                       <div className="span-2"><TextField label="Máximo" type="number" step="1" value={grupo.max_escolhas} onChange={v => patchGroup(gi, { max_escolhas: v })} /></div>
                       <div className="span-4 actions">
+                        <button className="btn btn-small" disabled={gi === 0} onClick={() => moveGroup(gi, -1)}>↑</button>
+                        <button className="btn btn-small" disabled={gi === form.grupos.length - 1} onClick={() => moveGroup(gi, 1)}>↓</button>
+                        <button className="btn btn-small" onClick={() => duplicateGroup(gi)}>Duplicar</button>
                         <button className="btn btn-small btn-primary" onClick={() => addOption(gi)}>Adicionar item</button>
                         <button className="btn btn-small btn-danger" onClick={() => removeArray('grupos', gi)}>Remover grupo</button>
                       </div>
@@ -2146,7 +2719,12 @@
                           <div className="span-3"><TextField label="Nome" value={op.nome} onChange={v => patchOption(gi, oi, { nome: v })} /></div>
                           <div className="span-3"><TextField label="Descrição" value={op.descricao} onChange={v => patchOption(gi, oi, { descricao: v })} /></div>
                           <div className="span-2"><TextField label="Preço" type="number" value={op.preco_delta} onChange={v => patchOption(gi, oi, { preco_delta: v })} /></div>
-                          <div className="span-1"><button className="btn btn-small btn-danger" onClick={() => patchGroup(gi, { opcionais: grupo.opcionais.filter((_, j) => j !== oi) })}>X</button></div>
+                          <div className="span-1 actions" style={{gap:4}}>
+                            <button className="btn btn-small" disabled={oi === 0} onClick={() => moveOption(gi, oi, -1)}>↑</button>
+                            <button className="btn btn-small" disabled={oi === grupo.opcionais.length - 1} onClick={() => moveOption(gi, oi, 1)}>↓</button>
+                            <button className="btn btn-small" onClick={() => duplicateOption(gi, oi)}>Dup</button>
+                            <button className="btn btn-small btn-danger" onClick={() => patchGroup(gi, { opcionais: grupo.opcionais.filter((_, j) => j !== oi) })}>X</button>
+                          </div>
                         </div>
                       </div>
                     ))}
