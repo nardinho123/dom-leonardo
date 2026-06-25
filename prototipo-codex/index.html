@@ -95,6 +95,127 @@
     color: #fff2c6;
   }
 
+  /* ===== CAPA (estilo html 3) — encurtada p/ Mais Pedidos espiar ===== */
+  .capa {
+    position: relative;
+    min-height: clamp(420px, 62vh, 520px);
+    display: flex;
+    flex-direction: column;
+    padding: 22px 24px 24px;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    border: 1px solid rgba(214,176,66,.2);
+    box-shadow: var(--shadow);
+    background:
+      radial-gradient(120% 70% at 50% -8%, rgba(214,176,66,.16), transparent 58%),
+      linear-gradient(180deg, #0c0b07 0%, #060504 100%);
+    isolation: isolate;
+  }
+  .capa::before {
+    content: "";
+    position: absolute;
+    inset: 13px;
+    z-index: 2;
+    border: 1px solid rgba(242,217,120,.5);
+    border-radius: 24px;
+    pointer-events: none;
+  }
+  .capa-grain {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: .06;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .capa-top {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .capa-pill {
+    border: 1px solid rgba(242,217,120,.34);
+    border-radius: 999px;
+    background: rgba(0,0,0,.38);
+    color: #fff4d0;
+    backdrop-filter: blur(16px);
+    padding: 8px 13px;
+    font-size: 10px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    font-weight: 800;
+  }
+  .capa-center {
+    position: relative;
+    z-index: 3;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .capa-eyebrow {
+    color: var(--gold-soft);
+    font-size: 10.5px;
+    font-weight: 900;
+    letter-spacing: .34em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .capa-title {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(50px, 16vw, 78px);
+    line-height: .9;
+    letter-spacing: -.05em;
+    text-shadow: 0 18px 46px rgba(0,0,0,.7);
+  }
+  .capa-title em {
+    display: block;
+    font-style: italic;
+    font-weight: 400;
+    color: var(--gold-soft);
+  }
+  .capa-orn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 72%;
+    max-width: 300px;
+    margin: 22px 0 16px;
+  }
+  .capa-orn .l, .capa-orn .r { flex: 1; height: 1px; }
+  .capa-orn .l { background: linear-gradient(90deg, transparent, var(--gold)); }
+  .capa-orn .r { background: linear-gradient(90deg, var(--gold), transparent); }
+  .capa-orn i { color: var(--gold); font-size: 12px; font-style: normal; transform: rotate(45deg); }
+  .capa-sub {
+    color: rgba(255,247,231,.82);
+    font-style: italic;
+    font-size: 16px;
+    line-height: 1.45;
+    max-width: 30ch;
+  }
+  .capa-meta {
+    margin-top: 18px;
+    color: var(--muted);
+    font-size: 10.5px;
+    letter-spacing: .24em;
+    text-transform: uppercase;
+  }
+  .capa-cue {
+    position: relative;
+    z-index: 3;
+    text-align: center;
+    color: var(--muted);
+    font-size: 10px;
+    letter-spacing: .26em;
+    text-transform: uppercase;
+    animation: capabob 2.4s ease-in-out infinite;
+  }
+  @keyframes capabob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+
   .hero {
     min-height: 680px;
     position: relative;
@@ -497,9 +618,9 @@
     left: 50%;
     bottom: 12px;
     transform: translateX(-50%);
-    width: min(calc(100% - 24px), 436px);
+    width: auto;
     display: grid;
-    grid-template-columns: 54px 1fr;
+    grid-template-columns: 54px;
     gap: 10px;
     padding: 10px;
     border-radius: 24px;
@@ -529,7 +650,19 @@
     color: #211601;
     font-weight: 950;
     letter-spacing: -.01em;
+    display: none;            /* escondida até ter item na sacola */
+    align-items: center;
+    justify-content: center;
+    padding: 0 18px;
+    min-height: 54px;
   }
+
+  /* sacola só "abre" quando tem item */
+  .floating-bag.has-items {
+    width: min(calc(100% - 24px), 436px);
+    grid-template-columns: 54px 1fr;
+  }
+  .floating-bag.has-items .bag-cta { display: flex; }
 
   .sheet-backdrop {
     position: fixed;
@@ -858,23 +991,21 @@ function render() {
   }).join('');
 
   app.innerHTML = `
-    <section class="hero">
-      <div class="hero-bg"><img src="${esc(imageOf(first))}" alt="" /></div>
-      <div class="hero-top">
-        ${logo ? `<div class="logo-mark"><img src="${esc(logo)}" alt="Dom Leonardo" /></div>` : `<div></div>`}
-        <div class="pill">Mobile preview</div>
+    <header class="capa">
+      <div class="capa-grain"></div>
+      <div class="capa-top">
+        ${logo ? `<div class="logo-mark"><img src="${esc(logo)}" alt="Dom Leonardo" /></div>` : `<span></span>`}
+        <span class="capa-pill">Aberto agora</span>
       </div>
-      <div class="hero-copy">
-        <span class="kicker">${esc(cfg.kicker || 'Trattoria delivery')}</span>
-        <h1>Dom <em>Leonardo</em></h1>
-        <p class="hero-lead">${esc(cfg.descricao || DATA.config?.restaurante_descricao || 'Risotos, massas e pães italianos artesanais feitos com alma pelo Dom.')}</p>
-        <div class="trust-row">
-          <div class="trust"><span>${esc(cfg.chip_1_label || 'Preparo')}</span><strong>${esc(cfg.chip_1_valor || '5 min')}</strong></div>
-          <div class="trust"><span>${esc(cfg.chip_2_label || 'Entrega')}</span><strong>${esc(cfg.chip_2_valor || '12 a 30 min')}</strong></div>
-          <div class="trust"><span>${esc(cfg.chip_3_label || 'Varia pelo')}</span><strong>${esc(cfg.chip_3_valor || 'endereço')}</strong></div>
-        </div>
+      <div class="capa-center">
+        <span class="capa-eyebrow">${esc(cfg.kicker || 'Cozinha Italiana · Curitiba')}</span>
+        <h1 class="capa-title">Dom <em>Leonardo</em></h1>
+        <div class="capa-orn"><span class="l"></span><i>◆</i><span class="r"></span></div>
+        <p class="capa-sub">${esc(cfg.descricao || DATA.config?.restaurante_descricao || 'Risotos, massas e pães italianos artesanais feitos com alma pelo Dom.')}</p>
+        <div class="capa-meta">${categorias.length} capítulos · ${pratos.length} pratos</div>
       </div>
-    </section>
+      <div class="capa-cue">role o menu ↓</div>
+    </header>
 
     <nav class="nav">
       ${categorias.map((cat, index) => `<a href="#${categorySlug(cat, index)}">${esc(cat.nome)}</a>`).join('')}
@@ -893,9 +1024,9 @@ function render() {
 
     ${categoriesHtml}
 
-    <div class="floating-bag">
+    <div class="floating-bag" id="floatingBag">
       <button class="waiter" type="button" onclick="alert('Protótipo visual. Aqui ficaria o Marco.')">M</button>
-      <button class="bag-cta" type="button" onclick="alert('Protótipo seguro: sem checkout real, sem chamada de API.')">Ver sacola do protótipo</button>
+      <button class="bag-cta" id="bagCta" type="button" onclick="alert('Protótipo: aqui abriria a sacola.')">Ver sacola</button>
     </div>
   `;
 }
@@ -964,7 +1095,7 @@ function openDish(id) {
 
         <div class="sheet-footer">
           <div class="qty">− 1 +</div>
-          <button class="add" type="button" onclick="closeDish()">Adicionar · ${money(priceOf(prato))}</button>
+          <button class="add" type="button" onclick="addToCart()">Adicionar · ${money(priceOf(prato))}</button>
         </div>
       </div>
     </div>
@@ -984,7 +1115,24 @@ sheetBackdrop.addEventListener('click', closeDish);
 window.openDish = openDish;
 window.closeDish = closeDish;
 
+// sacola do protótipo: "Ver sacola" só aparece quando há item
+let cartCount = 0;
+function updateBag() {
+  const fb = document.getElementById('floatingBag');
+  const cta = document.getElementById('bagCta');
+  if (!fb || !cta) return;
+  if (cartCount > 0) {
+    fb.classList.add('has-items');
+    cta.textContent = 'Ver sacola · ' + cartCount + (cartCount > 1 ? ' itens' : ' item');
+  } else {
+    fb.classList.remove('has-items');
+  }
+}
+function addToCart() { cartCount++; updateBag(); closeDish(); }
+window.addToCart = addToCart;
+
 render();
+updateBag();
 </script>
 </body>
 </html>
