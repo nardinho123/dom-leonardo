@@ -20,9 +20,9 @@
   .topbar{position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:space-between;height:54px;padding:0 18px;background:linear-gradient(180deg,rgba(8,7,6,.97),rgba(8,7,6,.7) 78%,transparent);backdrop-filter:blur(7px)}
   .topbar .bm{font-family:'Jost',sans-serif;letter-spacing:.34em;font-size:11px;text-transform:uppercase;color:var(--gold-soft)}
   .topbar .open{font-family:'Jost',sans-serif;letter-spacing:.16em;font-size:9.5px;text-transform:uppercase;color:var(--gold-dim);border:1px solid rgba(212,175,55,.3);padding:5px 9px;border-radius:999px}
-  .chips{position:sticky;top:54px;z-index:58;display:flex;gap:9px;overflow-x:auto;padding:11px 18px;background:rgba(8,7,6,.94);backdrop-filter:blur(7px);border-bottom:1px solid rgba(212,175,55,.10);scrollbar-width:none}
+  .chips{position:sticky;top:54px;z-index:58;display:flex;gap:9px;overflow-x:auto;padding:11px 18px;background:transparent;scrollbar-width:none}
   .chips::-webkit-scrollbar{display:none}
-  .chips a{flex:0 0 auto;font-family:'Jost',sans-serif;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid rgba(212,175,55,.22);padding:8px 13px;border-radius:999px;white-space:nowrap;transition:.25s}
+  .chips a{flex:0 0 auto;font-family:'Jost',sans-serif;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid rgba(212,175,55,.22);background:rgba(10,9,8,.55);backdrop-filter:blur(6px);padding:8px 13px;border-radius:999px;white-space:nowrap;transition:.25s}
   .chips a:active,.chips a:hover{color:#1a1206;background:var(--gold);border-color:var(--gold)}
 
   /* capa */
@@ -61,26 +61,26 @@
   /* =========================================================
      SALA 1 — MAIS PEDIDOS · pedra fria · destaque + grade
   ========================================================= */
-  .s-fav{background:radial-gradient(130% 60% at 50% -5%,#23262c,transparent 60%),radial-gradient(80% 50% at 80% 30%,#1b1d22,transparent 60%),#101216}
+  .s-fav{background:#0a0908}
   .s-fav .tex{opacity:.5;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");mix-blend-mode:overlay}
-  .s-fav .num{color:#9fb0c4}
+  .s-fav .num{color:var(--gold)}
   .s-fav h2{font-family:'Bebas Neue',sans-serif;letter-spacing:.04em;font-size:clamp(42px,13vw,64px);color:#eef2f7}
-  .s-fav .flank .l,.s-fav .flank .r{background:rgba(150,170,190,.3)}.s-fav .flank .d{color:#9fb0c4}
+  .s-fav .flank .l,.s-fav .flank .r{background:rgba(212,175,55,.3)}.s-fav .flank .d{color:var(--gold)}
   .g-stone img{filter:contrast(1.13) saturate(1.04) brightness(.98)}
-  .fav-feat{position:relative;margin:8px 22px 0;overflow:hidden;border:1px solid rgba(170,190,210,.18)}
+  .fav-feat{position:relative;margin:8px 22px 0;overflow:hidden}
   .fav-feat img{width:100%;aspect-ratio:16/10;object-fit:cover}
-  .fav-feat::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(10,12,16,.92))}
+  .fav-feat::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(10,9,8,.96))}
   .fav-feat .fc{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:18px 18px 20px}
   .tag-pop{display:inline-flex;align-items:center;gap:6px;font-family:'Jost',sans-serif;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:#1a1206;background:var(--gold);padding:5px 9px;margin-bottom:10px;font-weight:600}
   .fav-feat h3{font-family:'Bebas Neue',sans-serif;letter-spacing:.02em;font-size:clamp(30px,9vw,42px);line-height:1;color:#fff;margin-bottom:6px}
   .fav-feat p{color:#c7cdd6;font-size:16px;max-width:40ch;margin-bottom:12px}
   .fav-feat .price{color:#fff;font-size:24px}
-  .fav-feat .btn-order{border:1px solid #aeb9c6;color:#eef2f7;margin-top:12px}
-  .fav-feat .btn-order:active,.fav-feat .btn-order:hover{background:#eef2f7;color:#12151a}
+  .fav-feat .btn-order{border:1px solid var(--gold-dim);color:var(--gold-soft);margin-top:12px}
+  .fav-feat .btn-order:active,.fav-feat .btn-order:hover{background:var(--gold);color:#1a1206}
   .fav-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;padding:11px 22px 0}
-  .fav-cell{position:relative;overflow:hidden;cursor:pointer;border:1px solid rgba(170,190,210,.14)}
+  .fav-cell{position:relative;overflow:hidden;cursor:pointer}
   .fav-cell img{width:100%;aspect-ratio:1/1;object-fit:cover}
-  .fav-cell::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(10,12,16,.92))}
+  .fav-cell::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(10,9,8,.96))}
   .fav-cell .star{position:absolute;top:9px;left:9px;z-index:3;color:var(--gold)}
   .fav-cell .cap{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:11px 12px}
   .fav-cell .cap h4{font-family:'Bebas Neue',sans-serif;letter-spacing:.02em;font-size:18px;line-height:1.02;color:#fff;margin-bottom:3px}
