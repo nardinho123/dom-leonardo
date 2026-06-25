@@ -871,6 +871,72 @@
     .app { padding-top: 24px; }
     .prototype-ribbon { top: 16px; }
   }
+  /* ===================== SEÇÕES COM PEGADA (portadas dos protótipos) ===================== */
+  /* full-bleed helpers: cancelam o padding lateral do .app */
+  .px-white, .px-wine, .px-espresso { margin: 0 -12px; padding-left: 12px; padding-right: 12px; }
+
+  /* --- PÃO ITALIANO: destaque cinematográfico full-bleed (protótipo 2) --- */
+  .px-feature {
+    position: relative;
+    min-height: clamp(360px, 52vh, 480px);
+    display: flex; align-items: flex-end; overflow: hidden;
+    margin: 6px -12px 10px;            /* sangra ate as bordas */
+    cursor: pointer;
+  }
+  .px-feature > img {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;
+    filter: saturate(1.12) contrast(1.05) brightness(.92);
+  }
+  .px-feat-grad { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(8,6,4,.05) 0%, rgba(8,6,4,.2) 38%, rgba(8,6,4,.93) 100%); }
+  .px-feat-fc { position: relative; z-index: 2; padding: 22px 22px 26px; width: 100%; }
+  .px-kicker { color: var(--gold-soft); font-size: 10px; font-weight: 900; letter-spacing: .28em; text-transform: uppercase; margin-bottom: 10px; }
+  .px-feat-fc h3 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(28px, 8vw, 40px); line-height: 1.02; letter-spacing: -.03em; margin-bottom: 10px; color: #fff; text-shadow: 0 12px 30px rgba(0,0,0,.6); }
+  .px-feat-fc p { color: #f0e2c8; font-size: 14.5px; line-height: 1.45; max-width: 42ch; }
+  .px-order { margin-top: 16px; border: 1px solid var(--gold); background: transparent; color: var(--gold-soft); border-radius: 999px; padding: 12px 22px; font-size: 12px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+  .px-order:active { background: var(--gold); color: #1a1206; }
+
+  /* --- MONTE SEU NHOQUE: seletor de molho (protótipo 2) --- */
+  .px-nh-intro { padding: 2px 8px 6px; color: var(--muted); font-style: italic; font-size: 15px; }
+  .px-sauce-tabs { display: flex; gap: 8px; padding: 8px 8px 6px; }
+  .px-sauce-tabs button { flex: 1; color: var(--muted); background: rgba(214,176,66,.06); border: 1px solid rgba(214,176,66,.25); border-radius: 999px; padding: 11px 6px; font-size: 11px; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 7px; }
+  .px-sauce-tabs button .px-dot { width: 11px; height: 11px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0,0,0,.3) inset; }
+  .px-sauce-tabs button.on { color: #1a1206; background: var(--gold); border-color: var(--gold); }
+  .px-sauce-card { display: none; }
+  .px-sauce-card.on { display: block; animation: pxfade .32s ease; }
+  @keyframes pxfade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .px-nh-card { position: relative; overflow: hidden; border-radius: var(--radius-lg); cursor: pointer; margin: 8px 0 4px; }
+  .px-nh-card img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; filter: saturate(1.06) contrast(1.03); }
+  .px-nh-card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 48%, rgba(7,6,4,.92)); }
+  .px-nh-fc { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 16px 18px 18px; }
+  .px-nh-fc h3 { font-family: Georgia, "Times New Roman", serif; font-size: 26px; letter-spacing: -.02em; color: #fff; margin-bottom: 6px; }
+  .px-nh-fc p { color: #e0d4b6; font-size: 13.5px; line-height: 1.4; margin-bottom: 4px; }
+
+  /* --- MASSAS: seção BRANCA (cards iguais, só cor) + transição suave nas bordas --- */
+  .px-white { color: #241c12; background: linear-gradient(180deg, transparent 0, #f4efe3 86px, #f4efe3 calc(100% - 86px), transparent 100%); }
+  .px-white .section-head { padding: 88px 8px 14px; }
+  .px-white .section-head .number { color: #9c7c1e; }
+  .px-white .section-head h2 { color: #241c12; }
+  .px-white .section-head p { color: #6b5a3a; }
+  .px-white .dish-card { background: #fffdf7; border-color: rgba(120,95,30,.18); box-shadow: 0 12px 30px rgba(60,40,10,.12); }
+  .px-white .dish-card::before { border-color: rgba(120,95,30,.12); }
+  .px-white .dish-body h3 { color: #241c12; }
+  .px-white .dish-body p { color: #6b5a3a; }
+  .px-white .dish-bottom strong { color: #7a5f1e; }
+  .px-white .see-btn { background: var(--gold); color: #241200; }
+
+  /* --- RISOTOS: bordô vinho quase preto --- */
+  .px-wine { background: radial-gradient(120% 70% at 50% 0%, #3a0f1c, transparent 60%), radial-gradient(90% 50% at 82% 26%, #25060f, transparent 58%), #14060a; }
+
+  /* --- SOBREMESAS: espresso + corte diagonal (protótipo 3) --- */
+  .px-espresso { background: radial-gradient(120% 60% at 50% 0%, #1f1109, transparent 60%), #0a0706; }
+  .px-doce-card { position: relative; min-height: 280px; display: flex; align-items: flex-end; overflow: hidden; border-radius: var(--radius-lg); margin-bottom: 12px; cursor: pointer; }
+  .px-doce-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; filter: brightness(.93) contrast(1.1) saturate(1.06) sepia(.08); }
+  .px-doce-wedge { position: absolute; inset: 0; z-index: 1; background: linear-gradient(108deg, rgba(8,5,4,.94) 0%, rgba(8,5,4,.78) 36%, rgba(8,5,4,.12) 64%, transparent 80%); }
+  .px-doce-vig { position: absolute; inset: 0; z-index: 1; box-shadow: inset 0 0 90px 30px rgba(0,0,0,.6); }
+  .px-doce-fc { position: relative; z-index: 2; padding: 20px 20px 22px; max-width: 78%; }
+  .px-doce-k { color: #caa86a; font-size: 9.5px; font-weight: 900; letter-spacing: .24em; text-transform: uppercase; margin-bottom: 9px; }
+  .px-doce-fc h3 { font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 27px; line-height: 1.05; color: #fff; margin-bottom: 8px; }
+  .px-doce-fc p { color: #d8c6ab; font-size: 13.5px; line-height: 1.4; margin-bottom: 8px; }
 </style>
 </head>
 <body>
@@ -955,6 +1021,102 @@ function renderDishCard(prato) {
   `;
 }
 
+function themeFor(nome) {
+  const n = String(nome || '').toLowerCase();
+  if (n.includes('mais pedido')) return 'fav';
+  if (n.includes('pão') || n.includes('pao')) return 'pao';
+  if (n.includes('risoto')) return 'risoto';
+  if (n.includes('massa')) return 'massa';
+  if (n.includes('nhoque')) return 'nhoque';
+  if (n.includes('sobremesa') || n.includes('doce')) return 'doce';
+  return 'fav';
+}
+
+function sauceColor(nome) {
+  const n = String(nome).toLowerCase();
+  if (n.includes('vermelh')) return '#c0392b';
+  if (n.includes('branco')) return '#efe7d6';
+  if (n.includes('rose') || n.includes('rosé') || n.includes('rosa')) return '#d98c8c';
+  return '#cdb36a';
+}
+
+function selSauce(btn, i) {
+  const sec = btn.closest('section');
+  sec.querySelectorAll('.px-sauce-tabs button').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  sec.querySelectorAll('.px-sauce-card').forEach(c => c.classList.toggle('on', Number(c.dataset.i) === i));
+}
+window.selSauce = selSauce;
+
+function renderPaoFeature(p) {
+  return `
+    <article class="px-feature" onclick="openDish('${esc(p.id)}')">
+      <img src="${esc(imageOf(p))}" alt="${esc(p.nome)}" loading="lazy" />
+      <div class="px-feat-grad"></div>
+      <div class="px-feat-fc">
+        <div class="px-kicker">Para dividir · rasga e puxa o queijo</div>
+        <h3>${esc(p.nome)}</h3>
+        <p>${esc(shortText(textOf(p), 150))}</p>
+        <div class="price">${money(priceOf(p))}</div>
+        <button class="px-order" type="button" onclick="event.stopPropagation(); openDish('${esc(p.id)}')">Ver / pedir</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderNhoque(lista) {
+  const tabs = lista.map((p, i) =>
+    `<button class="${i === 0 ? 'on' : ''}" type="button" onclick="selSauce(this, ${i})"><span class="px-dot" style="background:${sauceColor(p.nome)}"></span>${esc((String(p.nome).match(/molho\s*(.*)$/i) || [])[1] || p.nome)}</button>`
+  ).join('');
+  const cards = lista.map((p, i) => `
+    <div class="px-sauce-card ${i === 0 ? 'on' : ''}" data-i="${i}">
+      <article class="px-nh-card" onclick="openDish('${esc(p.id)}')">
+        <img src="${esc(imageOf(p))}" alt="${esc(p.nome)}" loading="lazy" />
+        <div class="px-nh-fc"><h3>${esc(p.nome)}</h3><p>${esc(shortText(textOf(p), 96))}</p><div class="price">${money(priceOf(p))}</div></div>
+      </article>
+    </div>`).join('');
+  return `<div class="px-nh-intro">O nhoque é da casa. Você escolhe o molho:</div><div class="px-sauce-tabs">${tabs}</div>${cards}`;
+}
+
+function renderDoceCard(p) {
+  return `
+    <div class="px-doce-card" onclick="openDish('${esc(p.id)}')">
+      <img src="${esc(imageOf(p))}" alt="${esc(p.nome)}" loading="lazy" />
+      <div class="px-doce-wedge"></div>
+      <div class="px-doce-vig"></div>
+      <div class="px-doce-fc"><div class="px-doce-k">Doce final</div><h3>${esc(p.nome)}</h3><p>${esc(shortText(textOf(p), 110))}</p><div class="price">${money(priceOf(p))}</div></div>
+    </div>
+  `;
+}
+
+function renderCategory(cat, index, lista) {
+  const th = themeFor(cat.nome);
+  const id = categorySlug(cat, index);
+  const head = `
+      <header class="section-head">
+        <div class="number">Capítulo ${String(index + 1).padStart(2, '0')}</div>
+        <h2>${esc(cat.nome)}</h2>
+        <p>${esc(cat.descricao || 'Escolhas do Dom para matar a fome sem transformar o pedido em formulário.')}</p>
+      </header>`;
+  if (th === 'pao') {
+    const rest = lista.slice(1).map(renderDishCard).join('');
+    return `<section class="section" id="${id}">${head}${renderPaoFeature(lista[0])}${rest}</section>`;
+  }
+  if (th === 'nhoque') {
+    return `<section class="section" id="${id}">${head}${renderNhoque(lista)}</section>`;
+  }
+  if (th === 'doce') {
+    return `<section class="section px-espresso" id="${id}">${head}${lista.map(renderDoceCard).join('')}</section>`;
+  }
+  if (th === 'massa') {
+    return `<section class="section px-white" id="${id}">${head}${lista.map(renderDishCard).join('')}</section>`;
+  }
+  if (th === 'risoto') {
+    return `<section class="section px-wine" id="${id}">${head}${lista.map(renderDishCard).join('')}</section>`;
+  }
+  return `<section class="section" id="${id}">${head}${lista.map(renderDishCard).join('')}</section>`;
+}
+
 function render() {
   const categorias = [...(DATA.categorias || [])].sort((a,b) => (a.ordem || 0) - (b.ordem || 0));
   const pratos = DATA.pratos || [];
@@ -968,16 +1130,7 @@ function render() {
       .filter(p => p.categoria_id === cat.id)
       .sort((a,b) => (a.ordem || 0) - (b.ordem || 0));
     if (!lista.length) return '';
-    return `
-      <section class="section" id="${categorySlug(cat, index)}">
-        <header class="section-head">
-          <div class="number">Capítulo ${String(index + 1).padStart(2, '0')}</div>
-          <h2>${esc(cat.nome)}</h2>
-          <p>${esc(cat.descricao || 'Escolhas do Dom para matar a fome sem transformar o pedido em formulário.')}</p>
-        </header>
-        ${lista.map(renderDishCard).join('')}
-      </section>
-    `;
+    return renderCategory(cat, index, lista);
   }).join('');
 
   app.innerHTML = `
