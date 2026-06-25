@@ -1,0 +1,32 @@
+{
+  "servers": {
+    "stripe": {
+      "type": "http",
+      "url": "https://mcp.stripe.com"
+    },
+    "google-cloud-gcloud": {
+      "command": "C:\\Users\\leona\\dom-leonardo\\scripts\\mcp\\google-cloud-gcloud.cmd",
+      "args": [],
+      "env": {
+        "GOOGLE_CLOUD_PROJECT": "cardapio-dom-leonardo"
+      }
+    },
+    "google-cloud-observability": {
+      "command": "C:\\Users\\leona\\dom-leonardo\\scripts\\mcp\\google-cloud-observability.cmd",
+      "args": [],
+      "env": {
+        "GOOGLE_CLOUD_PROJECT": "cardapio-dom-leonardo"
+      }
+    },
+    "google-cloud-storage": {
+      "command": "C:\\Users\\leona\\dom-leonardo\\scripts\\mcp\\google-cloud-storage.cmd",
+      "args": [],
+      "env": {
+        "GOOGLE_CLOUD_PROJECT": "cardapio-dom-leonardo"
+      }
+    },
+    "google-developer-knowledge": {
+      "url": "https://developerknowledge.googleapis.com/mcp"
+    }
+  }
+}

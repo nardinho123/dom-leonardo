@@ -1,0 +1,44 @@
+﻿{
+  "mcpServers": {
+    "supabase-erp": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=ippeiearkgnqdeiquiuy&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching%2Cstorage"
+    },
+    "supabase-cardapio": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=jewamqbdonudiapxbzay&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching%2Cstorage"
+    },
+    "google-cloud-gcloud": {
+      "command": "C:\\Users\\leona\\dom-leonardo\\scripts\\mcp\\google-cloud-gcloud.cmd",
+      "args": [],
+      "env": {
+        "GOOGLE_CLOUD_PROJECT": "cardapio-dom-leonardo"
+      }
+    },
+    "google-cloud-observability": {
+      "command": "C:\\Users\\leona\\dom-leonardo\\scripts\\mcp\\google-cloud-observability.cmd",
+      "args": [],
+      "env": {
+        "GOOGLE_CLOUD_PROJECT": "cardapio-dom-leonardo"
+      }
+    },
+    "google-cloud-storage": {
+      "command": "C:\\Users\\leona\\dom-leonardo\\scripts\\mcp\\google-cloud-storage.cmd",
+      "args": [],
+      "env": {
+        "GOOGLE_CLOUD_PROJECT": "cardapio-dom-leonardo"
+      }
+    },
+    "google-developer-knowledge": {
+      "httpUrl": "https://developerknowledge.googleapis.com/mcp",
+      "authProviderType": "google_credentials",
+      "oauth": {
+        "scopes": ["https://www.googleapis.com/auth/cloud-platform"]
+      },
+      "timeout": 30000,
+      "headers": {
+        "X-goog-user-project": "cardapio-dom-leonardo"
+      }
+    }
+  }
+}
