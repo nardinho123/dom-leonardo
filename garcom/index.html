@@ -2848,6 +2848,7 @@ function App() {
   const etapaAnteriorRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const ultimoWhatsBuscado = useRef('');
   const stripeElementsRef = useRef(null);
   const stripePaymentElementRef = useRef(null);
   const mapsPromiseRef = useRef(null);
@@ -3715,6 +3716,40 @@ function App() {
     const t = setTimeout(() => { calcularEntregaCheckout(); }, 700);
     return () => clearTimeout(t);
   }, [whatsEnderecoOpen, checkoutStage, mapPin?.lat, mapPin?.lng, checkoutDados.rua, checkoutDados.numero, checkoutDados.bairro]);
+
+  // Reconhece o cliente pelo WhatsApp: ao digitar um numero valido, busca no banco
+  // e pre-preenche nome + endereco (sem login). E o "saber que e voce ao por os dados".
+  useEffect(() => {
+    if (!whatsEnderecoOpen || checkoutStage !== 'dados') return;
+    const whats = (checkoutDados.whatsapp || '').replace(/\D/g, '');
+    if (whats.length < 10 || whats === ultimoWhatsBuscado.current) return;
+    const t = setTimeout(async () => {
+      ultimoWhatsBuscado.current = whats;
+      try {
+        const r = await fetch(GARCOM_RESPONDER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+          body: JSON.stringify({ acao: 'buscar_cliente', whatsapp: whats }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!data?.encontrado || !data.cliente) return;
+        const c = data.cliente;
+        const end = data.endereco || null;
+        setCheckoutDados(prev => ({
+          ...prev,
+          nome: prev.nome || c.nome || '',
+          rua: prev.rua || (end && end.logradouro) || '',
+          numero: prev.numero || (end && end.numero) || '',
+          bairro: prev.bairro || (end && end.bairro) || '',
+          complemento: prev.complemento || (end && end.complemento) || '',
+        }));
+        salvarClienteLocal({ nome: c.nome || '', whatsapp: whats });
+        const primeiro = (c.nome || '').trim().split(' ')[0];
+        falarMarco(primeiro ? `Bem-vindo de volta, ${primeiro}! Ja deixei seus dados aqui.` : 'Bem-vindo de volta! Ja recuperei seus dados.', 4200);
+      } catch (_) {}
+    }, 650);
+    return () => clearTimeout(t);
+  }, [checkoutDados.whatsapp, whatsEnderecoOpen, checkoutStage]);
 
   const criarCheckoutStripe = async () => {
     if (!carrinho.length) return;
