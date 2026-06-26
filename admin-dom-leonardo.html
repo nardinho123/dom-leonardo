@@ -1277,6 +1277,7 @@
     const NAV = [
       { id: 'gestor', icon: '🧾', label: 'Gestor de Pedidos' },
       { id: 'cardapio', icon: '🍝', label: 'Cardápio' },
+      { id: 'crm', icon: '📈', label: 'CRM' },
     ];
 
     const SECTION_TYPES = [
@@ -2502,6 +2503,7 @@
             {active === 'pedidos' && <Pedidos pedidos={data.pedidos} statusFilter={statusFilter} setStatusFilter={setStatusFilter} reload={loadPedidos} openOrder={openOrder} updateStatus={updateStatus} />}
             {active === 'atendimento' && <Atendimento atendimentos={data.atendimentos} reload={loadAtendimentos} openAtendimento={openAtendimento} ringing={ringing} stopSoundLoop={stopSoundLoop} />}
             {active === 'clientes' && <Clientes clientes={data.clientes} />}
+            {active === 'crm' && <CRM clientes={data.clientes} pedidos={data.pedidos} />}
             {active === 'cupons' && <Cupons cupons={data.cupons} onNew={() => setModal({ type: 'cupom', item: null })} onEdit={item => setModal({ type: 'cupom', item })} onSave={saveCupom} reload={loadAll} toast={toast} />}
             {active === 'config' && <ConfigScreen config={data.config} onSave={saveConfig} />}
           </main>
@@ -3662,6 +3664,155 @@
             <div className="modal-foot"><button className="btn" onClick={() => window.print()}>Imprimir</button><button className="btn btn-primary" onClick={onClose}>Ok</button></div>
           </div>
         </div>
+      );
+    }
+
+    const CRM_SEG = {
+      ativo: { label: 'Ativos', cor: '#2faa6a', hint: 'Pediram nos últimos 30 dias' },
+      risco: { label: 'Em risco', cor: '#c98a1e', hint: '30 a 60 dias sem pedir' },
+      inativo: { label: 'Inativos', cor: '#c0392b', hint: 'Mais de 60 dias sem pedir' },
+      sem_pedido: { label: 'Sem pedido', cor: '#888', hint: 'Cadastrados, ainda não compraram' },
+    };
+
+    function CRM({ clientes, pedidos }) {
+      const [filtro, setFiltro] = useState('todos');
+      const [busca, setBusca] = useState('');
+      const DIA = 86400000;
+      const now = Date.now();
+
+      const enriquecidos = useMemo(() => {
+        const diasDesde = d => d ? Math.floor((now - new Date(d).getTime()) / DIA) : null;
+        const seg = c => {
+          const dias = diasDesde(c.ultimo_pedido_em);
+          if (!Number(c.total_pedidos) || dias === null) return 'sem_pedido';
+          if (dias <= 30) return 'ativo';
+          if (dias <= 60) return 'risco';
+          return 'inativo';
+        };
+        return clientes
+          .map(c => ({ ...c, dias: diasDesde(c.ultimo_pedido_em), segmento: seg(c) }))
+          .sort((a, b) => Number(b.total_gasto || 0) - Number(a.total_gasto || 0));
+      }, [clientes]);
+
+      const kpi = useMemo(() => {
+        const total = clientes.length;
+        const receita = clientes.reduce((s, c) => s + Number(c.total_gasto || 0), 0);
+        const somaPedidos = clientes.reduce((s, c) => s + Number(c.total_pedidos || 0), 0);
+        const cont = { ativo: 0, risco: 0, inativo: 0, sem_pedido: 0 };
+        enriquecidos.forEach(c => { cont[c.segmento] = (cont[c.segmento] || 0) + 1; });
+        return {
+          total, receita, somaPedidos,
+          ticket: somaPedidos ? receita / somaPedidos : 0,
+          ltv: total ? receita / total : 0,
+          cont,
+          churn: total ? Math.round(((cont.risco + cont.inativo) / total) * 100) : 0,
+        };
+      }, [clientes, enriquecidos]);
+
+      const funil = useMemo(() => {
+        const t = pedidos.length;
+        const pagos = pedidos.filter(p => p.pagamento_status === 'pago' || p.pago_em).length;
+        const aceitos = pedidos.filter(p => p.aceite_status === 'aceito').length;
+        const entregues = pedidos.filter(p => p.status === 'entregue').length;
+        const recusados = pedidos.filter(p => p.aceite_status === 'recusado').length;
+        return { t, pagos, aceitos, entregues, recusados };
+      }, [pedidos]);
+
+      const lista = enriquecidos.filter(c =>
+        (filtro === 'todos' || c.segmento === filtro) &&
+        (!busca || (c.nome || '').toLowerCase().includes(busca.toLowerCase()) || String(c.whatsapp || '').includes(busca)));
+
+      const card = (titulo, valor, sub) => (
+        <div style={{ background: 'var(--surface,#fff)', border: '1px solid rgba(0,0,0,.08)', borderRadius: 14, padding: '14px 16px' }}>
+          <div className="muted" style={{ fontSize: 12 }}>{titulo}</div>
+          <div style={{ fontSize: 22, fontWeight: 800, marginTop: 4 }}>{valor}</div>
+          {sub && <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>{sub}</div>}
+        </div>
+      );
+
+      const barra = (label, valor, base, cor) => {
+        const pct = base ? Math.round((valor / base) * 100) : 0;
+        return (
+          <div style={{ marginBottom: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
+              <span>{label}</span><strong>{valor} <span className="muted">({pct}%)</span></strong>
+            </div>
+            <div style={{ height: 8, borderRadius: 6, background: 'rgba(0,0,0,.08)' }}>
+              <div style={{ width: pct + '%', height: '100%', borderRadius: 6, background: cor }}></div>
+            </div>
+          </div>
+        );
+      };
+
+      return (
+        <section className="card panel">
+          <div className="panel-head">
+            <h3>CRM · Clientes</h3>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 16 }}>
+            {card('Clientes', kpi.total, `${kpi.cont.ativo} ativos`)}
+            {card('Receita total', fmtMoney(kpi.receita), `${kpi.somaPedidos} pedidos`)}
+            {card('Ticket médio', fmtMoney(kpi.ticket), 'por pedido')}
+            {card('LTV médio', fmtMoney(kpi.ltv), 'por cliente')}
+            {card('Churn', kpi.churn + '%', 'sem pedir há 30+ dias')}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }} className="crm-cols">
+            <div style={{ border: '1px solid rgba(0,0,0,.08)', borderRadius: 14, padding: 16 }}>
+              <h4 style={{ margin: '0 0 12px' }}>Funil de pedidos</h4>
+              {barra('Pedidos criados', funil.t, funil.t, '#8a8a8a')}
+              {barra('Pagos', funil.pagos, funil.t, '#3a7bd5')}
+              {barra('Aceitos', funil.aceitos, funil.t, '#2faa6a')}
+              {barra('Entregues', funil.entregues, funil.t, '#1f8a52')}
+              {barra('Recusados (estorno)', funil.recusados, funil.t, '#c0392b')}
+            </div>
+            <div style={{ border: '1px solid rgba(0,0,0,.08)', borderRadius: 14, padding: 16 }}>
+              <h4 style={{ margin: '0 0 12px' }}>Segmentos</h4>
+              {Object.keys(CRM_SEG).map(k => (
+                <div key={k} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid rgba(0,0,0,.05)' }}>
+                  <div>
+                    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, background: CRM_SEG[k].cor, marginRight: 8 }}></span>
+                    <strong>{CRM_SEG[k].label}</strong>
+                    <div className="muted" style={{ fontSize: 11, marginLeft: 18 }}>{CRM_SEG[k].hint}</div>
+                  </div>
+                  <button className="btn btn-small" onClick={() => setFiltro(k)}>{kpi.cont[k] || 0}</button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="panel-head" style={{ gap: 8, flexWrap: 'wrap' }}>
+            <div className="actions" style={{ flexWrap: 'wrap' }}>
+              {['todos', 'ativo', 'risco', 'inativo', 'sem_pedido'].map(k => (
+                <button key={k} className={`btn btn-small ${filtro === k ? 'btn-primary' : ''}`} onClick={() => setFiltro(k)}>
+                  {k === 'todos' ? 'Todos' : CRM_SEG[k].label}
+                </button>
+              ))}
+            </div>
+            <input className="input" placeholder="Buscar nome ou WhatsApp" value={busca} onChange={e => setBusca(e.target.value)} style={{ maxWidth: 240 }} />
+          </div>
+
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Cliente</th><th>WhatsApp</th><th>Segmento</th><th>Pedidos</th><th>LTV</th><th>Último pedido</th><th></th></tr></thead>
+              <tbody>
+                {lista.map(c => (
+                  <tr key={c.id}>
+                    <td><strong>{c.nome || 'Sem nome'}</strong></td>
+                    <td>{c.whatsapp}</td>
+                    <td><span style={{ background: CRM_SEG[c.segmento].cor, color: '#fff', borderRadius: 999, padding: '2px 9px', fontSize: 11, fontWeight: 700 }}>{CRM_SEG[c.segmento].label}</span></td>
+                    <td>{c.total_pedidos || 0}</td>
+                    <td className="money">{fmtMoney(c.total_gasto)}</td>
+                    <td>{c.ultimo_pedido_em ? `${fmtDate(c.ultimo_pedido_em)} · ${c.dias}d` : '—'}</td>
+                    <td>{c.whatsapp && <a className="btn btn-small" target="_blank" rel="noreferrer" href={`https://wa.me/55${String(c.whatsapp).replace(/\D/g, '').replace(/^55/, '')}`}>WhatsApp</a>}</td>
+                  </tr>
+                ))}
+                {!lista.length && <tr><td colSpan="7" className="empty">Nenhum cliente neste filtro.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </section>
       );
     }
 

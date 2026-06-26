@@ -13,6 +13,8 @@ const allowedEvents = new Set([
   'ViewContent',
   'AddToCart',
   'InitiateCheckout',
+  'AddPaymentInfo',
+  'Purchase',
   'Contact',
   'Search',
   'Lead',
