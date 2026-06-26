@@ -1746,6 +1746,62 @@
     font-size: 14px;
     line-height: 1.45;
   }
+  .pedido-pill {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    max-width: 92vw;
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(79,224,154,0.5);
+    background: rgba(12,20,14,0.93);
+    backdrop-filter: blur(8px);
+    color: #eafff3;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.42);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pedido-pill.recusado { border-color: rgba(224,70,58,0.6); }
+  .pedido-pill-dot {
+    width: 9px; height: 9px; border-radius: 50%; background: #4fe09a; flex: none;
+    animation: pixPulse 1.6s ease-out infinite;
+  }
+  .pedido-pill.recusado .pedido-pill-dot { background: #e0463a; animation: none; }
+  .acomp-backdrop {
+    position: fixed; inset: 0; z-index: 120;
+    background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .acomp-card {
+    position: relative;
+    width: 100%; max-width: 420px;
+    background: linear-gradient(180deg, #14110b, #0d0b07);
+    border: 1px solid rgba(212,175,55,0.28);
+    border-radius: 20px;
+    padding: 22px 20px 20px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+  }
+  .acomp-card h3 { font-family: 'Playfair Display', Georgia, serif; color: #fff7e7; margin: 0 0 6px; font-size: 22px; }
+  .acomp-close {
+    position: absolute; top: 12px; right: 12px;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(255,255,255,0.08); color: #e8d28f; border: none; cursor: pointer; font-size: 14px;
+  }
+  .acomp-chat-btn {
+    width: 100%; margin-top: 16px;
+    border: 1px solid #d4af37; background: transparent; color: #e8d28f;
+    font-family: 'Jost', sans-serif; letter-spacing: .08em; text-transform: uppercase; font-size: 12px;
+    padding: 13px; border-radius: 12px; cursor: pointer;
+  }
   .checkout-error {
     margin-top: 10px;
     border: 1px solid rgba(255,99,99,0.26);
@@ -2544,6 +2600,13 @@ function blobParaBase64(blob) {
   });
 }
 
+const ETAPA_LABEL = {
+  aguardando_aceite: 'Pago · aguardando o Dom',
+  preparo: 'Em preparo',
+  a_caminho: 'A caminho',
+  entregue: 'Entregue',
+  recusado: 'Estornado',
+};
 const MARCO_ETAPA_MSG = {
   aguardando_aceite: 'Recebi seu pagamento! 🎉 Ja mandei seu pedido pro Dom — assim que ele confirmar na cozinha, te aviso aqui.',
   preparo: 'O Dom aceitou seu pedido e ja esta na cozinha preparando tudo. 👨‍🍳',
@@ -2628,6 +2691,32 @@ function getChatDeviceId() {
     localStorage.setItem(key, id);
   }
   return id;
+}
+
+// Memoria de identidade + pedidos do cliente (pos-venda persistente, sem login).
+const CLIENTE_KEY = 'dom_leonardo_cliente';
+const PEDIDOS_KEY = 'dom_leonardo_pedidos';
+function getClienteSalvo() {
+  try { return JSON.parse(localStorage.getItem(CLIENTE_KEY) || 'null'); } catch (_) { return null; }
+}
+function salvarClienteLocal(cliente) {
+  try {
+    if (cliente && (cliente.nome || cliente.whatsapp)) {
+      localStorage.setItem(CLIENTE_KEY, JSON.stringify({ nome: cliente.nome || '', whatsapp: cliente.whatsapp || '' }));
+    }
+  } catch (_) {}
+}
+function getPedidosSalvos() {
+  try { const a = JSON.parse(localStorage.getItem(PEDIDOS_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (_) { return []; }
+}
+function salvarPedidoLocal(pedido) {
+  try {
+    const pid = pedido && (pedido.pedido_id || pedido.id);
+    if (!pid) return;
+    const atuais = getPedidosSalvos().filter(p => p.pedido_id !== pid);
+    const novo = [{ pedido_id: pid, numero: pedido.numero_pedido || pedido.numero || null, criado_em: Date.now() }, ...atuais].slice(0, 10);
+    localStorage.setItem(PEDIDOS_KEY, JSON.stringify(novo));
+  } catch (_) {}
 }
 function labelCupom(cupom) {
   if (!cupom) return '';
@@ -2746,6 +2835,7 @@ function App() {
   const [pixVerificando, setPixVerificando] = useState(false);
   const [pedidoEmAcompanhamento, setPedidoEmAcompanhamento] = useState(null); // { pedido_id, numero }
   const [pedidoStatus, setPedidoStatus] = useState(null);
+  const [acompanhamentoOpen, setAcompanhamentoOpen] = useState(false);
   const [entregaEstimativa, setEntregaEstimativa] = useState(null);
   const [entregaLoading, setEntregaLoading] = useState(false);
   const [entregaError, setEntregaError] = useState('');
@@ -3073,6 +3163,40 @@ function App() {
     timer = setInterval(tick, 6000);
     return () => { ativo = false; if (timer) clearInterval(timer); };
   }, [pedidoEmAcompanhamento?.pedido_id]);
+
+  // No load: reconhece o cliente (pre-preenche) e retoma o acompanhamento do pedido recente.
+  useEffect(() => {
+    const cli = getClienteSalvo();
+    if (cli) {
+      setCheckoutDados(prev => ({
+        ...prev,
+        nome: prev.nome || cli.nome || '',
+        whatsapp: prev.whatsapp || cli.whatsapp || '',
+      }));
+    }
+    const pedidos = getPedidosSalvos();
+    const recente = pedidos[0];
+    if (!recente || (Date.now() - (recente.criado_em || 0)) > 24 * 3600 * 1000) return;
+    let vivo = true;
+    (async () => {
+      try {
+        const r = await fetch(GARCOM_RESPONDER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+          body: JSON.stringify({ acao: 'status_pedido_publico', pedido_id: recente.pedido_id }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!vivo || !data?.ok) return;
+        const etapa = etapaDoPedido(data);
+        etapaAnteriorRef.current = etapa.key; // sincroniza sem re-anunciar no Marco
+        setPedidoStatus(data);
+        if (!etapa.terminal) {
+          setPedidoEmAcompanhamento({ pedido_id: recente.pedido_id, numero: recente.numero });
+        }
+      } catch (_) {}
+    })();
+    return () => { vivo = false; };
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -3792,6 +3916,9 @@ function App() {
         pedido: data?.pedido || null,
         total: totalComEntrega,
       });
+      // Memoria pos-venda: lembra do cliente e do pedido (sobrevive a recarregar).
+      salvarClienteLocal({ nome: checkoutDados.nome.trim(), whatsapp });
+      salvarPedidoLocal(data?.pedido);
       setPixCopiado(false);
       setCheckoutStage('pagamento');
       trackMeta('AddPaymentInfo', { value: totalComEntrega, currency: 'BRL' });
@@ -4246,7 +4373,11 @@ function App() {
     setBalaoTexto(null);
     setGarcomState('peek');
     if (mensagens.length === 0) {
-      const saudacao = sortear(chatConfig.saudacoes ?? SAUDACOES_INICIAIS);
+      const cli = getClienteSalvo();
+      const primeiroNome = cli && cli.nome ? String(cli.nome).trim().split(' ')[0] : '';
+      const saudacao = primeiroNome
+        ? `Ciao de novo, ${primeiroNome}! Que bom te ver por aqui de novo. 👋`
+        : sortear(chatConfig.saudacoes ?? SAUDACOES_INICIAIS);
       const mensagem = sortear(chatConfig.mensagens_automaticas ?? DEFAULT_CHAT_CONFIG.mensagens_automaticas);
       setMensagens([
         { id: Date.now(), autor: 'marco', texto: saudacao },
@@ -4289,7 +4420,7 @@ function App() {
       body: JSON.stringify({
         acao: 'registrar_atendimento',
         device_id: chatDeviceId.current,
-        cliente_nome: null,
+        cliente_nome: (getClienteSalvo() && getClienteSalvo().nome) || checkoutDados.nome.trim() || null,
         texto: texto || '',
         midia: midia || undefined,
         contexto: {
@@ -5163,6 +5294,63 @@ function App() {
           )}
         </div>
       </section>
+
+      {pedidoStatus && !sacolaOpen && !chatOpen && !pratoAberto && !acompanhamentoOpen && (() => {
+        const et = etapaDoPedido(pedidoStatus);
+        return (
+          <button className={`pedido-pill ${et.key === 'recusado' ? 'recusado' : ''}`} onClick={() => setAcompanhamentoOpen(true)}>
+            <span className="pedido-pill-dot"></span>
+            <span>📦 Pedido{pedidoStatus.numero_pedido ? ` #${pedidoStatus.numero_pedido}` : ''} · {ETAPA_LABEL[et.key] || 'acompanhar'}</span>
+          </button>
+        );
+      })()}
+
+      {acompanhamentoOpen && (() => {
+        const et = etapaDoPedido(pedidoStatus);
+        const recusado = et.key === 'recusado';
+        const steps = [
+          { k: 'aguardando_aceite', label: 'Pago' },
+          { k: 'preparo', label: 'Em preparo' },
+          { k: 'a_caminho', label: 'A caminho' },
+          { k: 'entregue', label: 'Entregue' },
+        ];
+        const cur = recusado ? -1 : et.idx;
+        const msgEtapa = {
+          aguardando_aceite: 'Pagamento confirmado! Esperando o Dom aceitar na cozinha…',
+          preparo: 'O Dom aceitou e esta preparando seu pedido. 👨‍🍳',
+          a_caminho: 'Saiu para entrega! 🛵',
+          entregue: 'Entregue. Buon appetito! 🍝',
+        };
+        return (
+          <div className="acomp-backdrop" onClick={() => setAcompanhamentoOpen(false)}>
+            <div className="acomp-card" onClick={e => e.stopPropagation()}>
+              <button className="acomp-close" onClick={() => setAcompanhamentoOpen(false)} aria-label="Fechar">✕</button>
+              <h3>{recusado ? 'Pedido nao aceito' : `Seu pedido${pedidoStatus?.numero_pedido ? ` #${pedidoStatus.numero_pedido}` : ''}`}</h3>
+              {recusado ? (
+                <div className="pedido-recusado">O Dom nao conseguiu preparar e seu Pix foi estornado — o valor volta pra sua conta.</div>
+              ) : (
+                <>
+                  <div className="pedido-track">
+                    {steps.map((s, i) => (
+                      <div key={s.k} className={`pedido-step ${i <= cur ? 'done' : ''} ${i === cur ? 'current' : ''}`}>
+                        <span className="pedido-dot"></span>
+                        <span className="pedido-step-label">{s.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="pedido-track-msg">{msgEtapa[et.key] || 'Acompanhe seu pedido por aqui.'}</p>
+                  {pedidoStatus?.uber_tracking_url && et.key === 'a_caminho' && (
+                    <a className="pedido-track-link" href={pedidoStatus.uber_tracking_url} target="_blank" rel="noreferrer">Rastrear o motoboy →</a>
+                  )}
+                </>
+              )}
+              <button className="acomp-chat-btn" onClick={() => { setAcompanhamentoOpen(false); setSacolaOpen(false); setPratoAberto(null); setChatOpen(true); }}>
+                {(et.key === 'entregue' || recusado) ? 'Algum problema? Fala com a gente' : 'Falar com a gente'}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {fotoAberta && (
         <div className="photo-viewer-backdrop" onClick={() => setFotoAberta(null)}>
