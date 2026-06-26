@@ -2453,10 +2453,11 @@
     border-top: 1px solid rgba(212,175,55,.18);
     border-bottom: 1px solid rgba(212,175,55,.18);
   }
-  .section-head h2 { margin: 0; font-family: 'Playfair Display', Georgia, serif; font-size: 33px; line-height: .96; letter-spacing: -.05em; color: #fff7e7; text-shadow: 0 2px 12px rgba(0,0,0,.32); }
+  .section-head h2 { margin: 0; font-family: 'Playfair Display', Georgia, serif; font-size: 33px; line-height: .96; letter-spacing: -.05em; color: #fff7e7; text-shadow: 0 1px 1px rgba(0,0,0,.55), 0 5px 20px rgba(0,0,0,.42); }
   /* linhas adaptativas: mais escuras no branco, douradas-claras no escuro */
   .px-white .section-head { border-top-color: rgba(120,95,30,.22); border-bottom-color: rgba(120,95,30,.22); }
-  .px-white .section-head h2 { text-shadow: 0 1px 3px rgba(80,55,15,.12); }
+  /* no branco: leve relevo (luz em cima + sombra embaixo) */
+  .px-white .section-head h2 { text-shadow: 0 1px 0 rgba(255,255,255,.7), 0 2px 6px rgba(70,48,12,.22); }
 
   /* ===== Card de prato (lista) ===== */
   .dish-list { display: grid; gap: 12px; }
