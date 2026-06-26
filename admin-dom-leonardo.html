@@ -2266,6 +2266,12 @@
             horario_texto: form.horario_texto ?? cur.horario_texto ?? '',
             area_entrega: form.area_entrega ?? cur.area_entrega ?? '',
             maps_url: form.maps_url ?? cur.maps_url ?? '',
+            chip_1_label: form.chip_1_label ?? cur.chip_1_label,
+            chip_1_valor: form.chip_1_valor ?? cur.chip_1_valor,
+            chip_2_label: form.chip_2_label ?? cur.chip_2_label,
+            chip_2_valor: form.chip_2_valor ?? cur.chip_2_valor,
+            chip_3_label: form.chip_3_label ?? cur.chip_3_label,
+            chip_3_valor: form.chip_3_valor ?? cur.chip_3_valor,
           };
           const payload = {
             topo_config,
@@ -3873,33 +3879,32 @@
       );
     }
 
-    function TopoPreview({ topo }) {
-      const mediaUrl = topo.capa_tipo === 'video' ? (topo.capa_video_url || topo.capa_url) : topo.capa_url;
-      const isVideo = topo.capa_tipo === 'video' && mediaUrl;
+    function TopoPreview({ topo, aberta = true }) {
+      const nome = String(topo.nome || 'Dom Leonardo').trim();
+      const parts = nome.split(/\s+/);
+      const w1 = parts.shift() || nome;
+      const w2 = parts.join(' ');
+      const chips = [[topo.chip_2_valor, topo.chip_2_label], [topo.chip_1_valor, topo.chip_1_label], [topo.chip_3_valor, topo.chip_3_label]];
       return (
-        <div className="topo-preview-phone">
-          <div className="topo-preview-cover">
-            <div className="topo-preview-media">
-              {mediaUrl ? (
-                isVideo ? <video src={mediaUrl} muted loop autoPlay playsInline /> : <img src={mediaUrl} alt="" />
-              ) : <span className="muted">Capa opcional</span>}
+        <div style={{ background: '#f7f3ea', borderRadius: 16, padding: '22px 16px', textAlign: 'center', border: '1px solid rgba(160,120,20,.18)' }}>
+          <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 9, letterSpacing: '.3em', textTransform: 'uppercase', color: '#9c7c1e', fontWeight: 600 }}>{topo.kicker}</div>
+          <div style={{ position: 'relative', display: 'inline-flex', margin: '14px 0 2px' }}>
+            <div style={{ width: 78, height: 78, borderRadius: '50%', overflow: 'hidden', background: '#fff', border: '1px solid rgba(160,120,20,.45)', boxShadow: '0 10px 20px rgba(40,28,8,.16)' }}>
+              {topo.logo_url ? <img src={topo.logo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontFamily: "'Playfair Display',serif", color: '#c0972c', fontSize: 24 }}>DL</div>}
             </div>
-            {topo.logo_url && (
-              <div className="topo-preview-logo">
-                <img src={topo.logo_url} alt={topo.nome || 'Dom Leonardo'} />
-              </div>
-            )}
+            <span style={{ position: 'absolute', top: -8, right: -22, border: `2px solid ${aberta ? '#b8901f' : '#a8392b'}`, color: aberta ? '#1a1305' : '#a8392b', background: '#fffdf8', fontFamily: "'Bebas Neue',sans-serif", letterSpacing: '.12em', fontSize: 10, padding: '3px 7px', borderRadius: 4, boxShadow: '0 5px 12px rgba(40,28,8,.18)' }}>{aberta ? 'ABERTO' : 'FECHADO'}</span>
           </div>
-          <div className="topo-preview-card">
-            <div className="topo-preview-kicker">{topo.kicker}</div>
-            <h3 className="topo-preview-title">{topo.nome}</h3>
-            <p className="topo-preview-copy">{topo.descricao}</p>
-            <div className="topo-preview-chips">
-              <div className="topo-preview-chip"><span>{topo.chip_1_label}</span><strong>{topo.chip_1_valor}</strong></div>
-              <div className="topo-preview-chip"><span>{topo.chip_2_label}</span><strong>{topo.chip_2_valor}</strong></div>
-              <div className="topo-preview-chip"><span>{topo.chip_3_label}</span><strong>{topo.chip_3_valor}</strong></div>
-            </div>
-            <div className="topo-preview-frete"><strong>{topo.faixa_titulo}</strong> {topo.faixa_texto}</div>
+          <div style={{ width: 96, height: 2, background: 'linear-gradient(90deg,transparent,#1a1305,transparent)', margin: '7px auto 12px' }}></div>
+          <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 10, letterSpacing: '.26em', textTransform: 'uppercase', color: '#1a1305', fontWeight: 600, marginBottom: 6 }}>Bem-vindo</div>
+          <div style={{ fontFamily: "'Playfair Display',Georgia,serif", color: '#c0972c', fontSize: 34, lineHeight: .92, letterSpacing: '-.03em' }}>{w1}{w2 && <em style={{ display: 'block', fontStyle: 'italic', fontWeight: 400 }}>{w2}</em>}</div>
+          <p style={{ fontFamily: "'Cormorant Garamond',Georgia,serif", fontStyle: 'italic', color: '#6b5a3a', fontSize: 15, lineHeight: 1.4, margin: '10px auto 0', maxWidth: '30ch' }}>{topo.descricao}</p>
+          <div style={{ display: 'flex', gap: 18, justifyContent: 'center', flexWrap: 'wrap', marginTop: 16 }}>
+            {chips.map((c, i) => (
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <span style={{ fontFamily: "'Jost',sans-serif", fontWeight: 700, color: '#1a1305', fontSize: 13 }}>{c[0]}</span>
+                <span style={{ fontFamily: "'Jost',sans-serif", fontSize: 8.5, letterSpacing: '.18em', textTransform: 'uppercase', color: '#9c7c1e' }}>{c[1]}</span>
+              </div>
+            ))}
           </div>
         </div>
       );
@@ -3918,6 +3923,12 @@
           horario_texto: c.horario_texto || '',
           area_entrega: c.area_entrega || 'Curitiba e região',
           maps_url: c.maps_url || '',
+          chip_1_label: c.chip_1_label || 'Preparo',
+          chip_1_valor: c.chip_1_valor || '5 min',
+          chip_2_label: c.chip_2_label || 'Entrega',
+          chip_2_valor: c.chip_2_valor || '12 a 30 min',
+          chip_3_label: c.chip_3_label || 'Varia pelo',
+          chip_3_valor: c.chip_3_valor || 'endereço',
           lojaAberta: config ? config.loja_aberta_manual !== false : true,
         });
       }, [config]);
@@ -3930,7 +3941,7 @@
             <button className="btn btn-primary" onClick={() => onSave(form)}>Salvar topo</button>
           </div>
           <div className="topo-editor">
-            <TopoPreview topo={{ ...TOPO_DEFAULTS, ...cur, descricao: form.descricao }} />
+            <TopoPreview aberta={form.lojaAberta} topo={{ ...TOPO_DEFAULTS, ...cur, descricao: form.descricao, chip_1_label: form.chip_1_label, chip_1_valor: form.chip_1_valor, chip_2_label: form.chip_2_label, chip_2_valor: form.chip_2_valor, chip_3_label: form.chip_3_label, chip_3_valor: form.chip_3_valor }} />
             <div className="topo-fields">
               <ImageInput label="Logo (centro do topo)" value={cur.logo_url} file={form.logoFile} onFile={f => set('logoFile', f)} kind="logo" empty="DL" />
               <label className="field full" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, cursor: 'pointer' }}>
@@ -3938,6 +3949,19 @@
                 <input type="checkbox" checked={form.lojaAberta} onChange={e => set('lojaAberta', e.target.checked)} />
               </label>
               <div className="field full"><TextField label="Texto abaixo do Dom Leonardo" value={form.descricao} onChange={v => set('descricao', v)} textarea /></div>
+              <div className="field full" style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', marginTop: 4 }}>Selos de entrega (os 3 chips do topo)</div>
+              <div className="topo-field-row">
+                <TextField label="Chip 1 - título" value={form.chip_1_label} onChange={v => set('chip_1_label', v)} />
+                <TextField label="Chip 1 - valor" value={form.chip_1_valor} onChange={v => set('chip_1_valor', v)} />
+              </div>
+              <div className="topo-field-row">
+                <TextField label="Chip 2 - título" value={form.chip_2_label} onChange={v => set('chip_2_label', v)} />
+                <TextField label="Chip 2 - valor" value={form.chip_2_valor} onChange={v => set('chip_2_valor', v)} />
+              </div>
+              <div className="topo-field-row">
+                <TextField label="Chip 3 - título" value={form.chip_3_label} onChange={v => set('chip_3_label', v)} />
+                <TextField label="Chip 3 - valor" value={form.chip_3_valor} onChange={v => set('chip_3_valor', v)} />
+              </div>
               <TextField label="Horário de funcionamento" value={form.horario_texto} onChange={v => set('horario_texto', v)} placeholder="Ex.: Ter a Dom · 18h às 23h30" />
               <TextField label="Área de entrega" value={form.area_entrega} onChange={v => set('area_entrega', v)} />
               <div className="field full"><TextField label="Endereço" value={form.endereco} onChange={v => set('endereco', v)} /></div>
