@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0704" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>Sua chave do menu · Dom Leonardo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,600&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b0704;
+      --gold: #d4af37;
+      --gold-2: #f6dd96;
+      --gold-deep: #9a7518;
+      --cream: #f3e6c8;
+      --muted: rgba(243, 230, 200, .58);
+      --line: rgba(212, 175, 55, .26);
+      --danger: #e7a892;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-top: env(safe-area-inset-top, 0px);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      background:
+        radial-gradient(120% 60% at 50% -8%, rgba(214, 175, 55, .14), transparent 52%),
+        radial-gradient(90% 50% at 50% 116%, rgba(120, 64, 20, .22), transparent 60%),
+        linear-gradient(168deg, #110a05 0%, #0b0704 46%, #060402 100%);
+      color: var(--cream);
+      font-family: Jost, system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    /* grão sutil */
+    body::after {
+      content: "";
+      position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .05;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    .stage {
+      position: relative; z-index: 1;
+      min-height: 100svh;
+      display: grid; place-items: center;
+      padding: calc(20px + var(--safe-top)) 16px calc(20px + var(--safe-bottom));
+    }
+
+    /* ===== MENU DE COURO ===== */
+    .menu {
+      position: relative;
+      width: min(100%, 420px);
+      border-radius: 22px;
+      padding: 30px 22px 26px;
+      background:
+        radial-gradient(140% 80% at 50% 0%, rgba(214, 175, 55, .10), transparent 46%),
+        linear-gradient(150deg, #2a1a0d 0%, #1a1009 44%, #120b06 100%);
+      box-shadow:
+        0 40px 90px rgba(0, 0, 0, .62),
+        inset 0 1px 0 rgba(255, 233, 170, .07),
+        inset 0 0 60px rgba(0, 0, 0, .5);
+      border: 1px solid rgba(214, 175, 55, .22);
+      isolation: isolate;
+      overflow: hidden;
+    }
+    /* textura de couro (poros) */
+    .menu::before {
+      content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: .5;
+      background-image:
+        radial-gradient(rgba(0,0,0,.28) 1px, transparent 1.4px),
+        radial-gradient(rgba(255,230,170,.05) 1px, transparent 1.4px);
+      background-size: 11px 11px, 17px 17px;
+      background-position: 0 0, 5px 6px;
+      mix-blend-mode: overlay;
+    }
+    /* moldura dourada interna (debossed) */
+    .menu::after {
+      content: ""; position: absolute; inset: 11px; z-index: 1; pointer-events: none;
+      border: 1px solid rgba(246, 221, 150, .34);
+      border-radius: 15px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.4), 0 0 22px rgba(214,175,55,.08);
+    }
+
+    /* ===== 4 QUINAS DOURADAS ===== */
+    .corner {
+      position: absolute; width: 34px; height: 34px; z-index: 3; pointer-events: none;
+      border: 0 solid var(--gold);
+    }
+    .corner::after {
+      content: ""; position: absolute; width: 8px; height: 8px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, var(--gold-2), var(--gold-deep));
+      box-shadow: 0 0 8px rgba(246, 221, 150, .5);
+    }
+    .corner.tl { top: 6px; left: 6px; border-top-width: 2px; border-left-width: 2px; border-top-left-radius: 12px; }
+    .corner.tr { top: 6px; right: 6px; border-top-width: 2px; border-right-width: 2px; border-top-right-radius: 12px; }
+    .corner.bl { bottom: 6px; left: 6px; border-bottom-width: 2px; border-left-width: 2px; border-bottom-left-radius: 12px; }
+    .corner.br { bottom: 6px; right: 6px; border-bottom-width: 2px; border-right-width: 2px; border-bottom-right-radius: 12px; }
+    .corner.tl::after { top: -5px; left: -5px; }
+    .corner.tr::after { top: -5px; right: -5px; }
+    .corner.bl::after { bottom: -5px; left: -5px; }
+    .corner.br::after { bottom: -5px; right: -5px; }
+
+    .inner { position: relative; z-index: 4; display: flex; flex-direction: column; align-items: center; text-align: center; }
+
+    .brand { font-family: Jost, sans-serif; font-size: 9.5px; letter-spacing: .42em; text-transform: uppercase; color: rgba(246, 221, 150, .8); font-weight: 600; }
+
+    /* ===== CHAVE ===== */
+    .key-zone { position: relative; height: 96px; width: 100%; display: grid; place-items: center; margin: 14px 0 2px; }
+    .key-glow {
+      position: absolute; width: 150px; height: 64px; border-radius: 999px;
+      background: radial-gradient(circle, rgba(246, 221, 150, .42), rgba(214,175,55,.06) 55%, transparent 72%);
+      filter: blur(9px); animation: breathe 3s ease-in-out infinite;
+    }
+    .key {
+      position: relative; z-index: 3; width: 118px; height: 66px;
+      filter: drop-shadow(0 10px 22px rgba(214, 175, 55, .3));
+      animation: keyPulse 2.4s ease-in-out infinite;
+      transform-origin: center;
+    }
+    .key svg { width: 100%; height: 100%; overflow: visible; }
+    .key .stroke { stroke: url(#kg); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+    .menu.valid .key { filter: drop-shadow(0 8px 30px rgba(246, 221, 150, .72)); }
+    .menu.valid .key-glow { animation-duration: 1.9s; }
+    .spark { position: absolute; width: 4px; height: 4px; border-radius: 99px; background: #fff3bf; box-shadow: 0 0 10px #ffdf6e; opacity: 0; }
+    .menu.valid .spark { animation: spark 1.8s ease-in-out infinite; }
+    .spark.a { top: 14px; left: 60%; animation-delay: .1s; }
+    .spark.b { top: 52px; left: 38%; animation-delay: .7s; }
+    .spark.c { top: 28px; left: 70%; animation-delay: 1.2s; }
+
+    h1 { margin: 4px 0 0; font-family: "Playfair Display", serif; font-weight: 600; font-size: clamp(30px, 9vw, 40px); line-height: 1.0; color: #f7dd92; text-shadow: 0 10px 30px rgba(0,0,0,.6); }
+    h1 em { font-style: italic; font-weight: 600; }
+    .subtitle { margin: 10px auto 0; max-width: 300px; font-family: "Cormorant Garamond", serif; font-style: italic; font-size: 17px; line-height: 1.32; color: rgba(243, 230, 200, .78); }
+
+    .ornament { display: flex; align-items: center; gap: 11px; width: 64%; max-width: 230px; margin: 16px 0 4px; opacity: .9; }
+    .ornament i { width: 7px; height: 7px; transform: rotate(45deg); background: var(--gold); flex: none; }
+    .ornament span { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-deep), transparent); }
+
+    /* ===== FORM ===== */
+    form { width: 100%; margin-top: 14px; }
+    .field {
+      display: flex; align-items: center; gap: 10px; height: 52px;
+      border: 1px solid rgba(214, 175, 55, .22); background: rgba(0, 0, 0, .3);
+      border-radius: 13px; padding: 0 14px; margin-bottom: 11px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .field:focus-within { border-color: rgba(246, 221, 150, .7); box-shadow: 0 0 0 4px rgba(214, 175, 55, .1); }
+    .field.bad { border-color: rgba(231, 168, 146, .7); }
+    .field svg { width: 18px; height: 18px; color: var(--gold); flex: none; }
+    .field input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--cream); font: 500 15.5px/1 Jost, sans-serif; }
+    .field input::placeholder { color: rgba(243, 230, 200, .4); }
+
+    .btn {
+      position: relative; width: 100%; height: 54px; border: 1px solid rgba(214,175,55,.2);
+      border-radius: 13px; cursor: not-allowed;
+      font-family: Jost, sans-serif; font-weight: 700; font-size: 14px; letter-spacing: .14em; text-transform: uppercase;
+      color: rgba(243, 230, 200, .42);
+      background: linear-gradient(180deg, #38302520, #211a1140), #2a241c;
+      transition: color .25s, background .25s, box-shadow .25s, transform .15s, border-color .25s;
+    }
+    .btn.ready {
+      cursor: pointer; color: #20140433; color: #2a1804;
+      background: linear-gradient(180deg, #f8df7c, #c9911f);
+      border-color: transparent;
+      box-shadow: 0 14px 32px rgba(214, 175, 55, .3), inset 0 1px rgba(255,255,255,.4);
+      animation: btnGlow 2.4s ease-in-out infinite;
+    }
+    .btn.ready:active { transform: scale(.985); }
+    .btn.busy { animation: none; cursor: wait; }
+
+    .ghost-link {
+      margin-top: 16px; background: none; border: 0; cursor: pointer;
+      font-family: Jost, sans-serif; font-size: 12.5px; letter-spacing: .06em;
+      color: rgba(246, 221, 150, .82); text-decoration: underline; text-underline-offset: 3px;
+    }
+
+    .returning { width: 100%; margin-top: 4px; overflow: hidden; max-height: 0; opacity: 0; transition: max-height .42s ease, opacity .35s ease; }
+    .returning.open { max-height: 340px; opacity: 1; }
+    .returning-card { margin-top: 12px; padding: 16px 14px 14px; border-radius: 15px; border: 1px solid rgba(214,175,55,.2); background: linear-gradient(180deg, rgba(10,6,3,.5), rgba(30,18,9,.4)); }
+    .returning-title { font-family: "Playfair Display", serif; font-size: 19px; color: #f7dd92; }
+    .returning-sub { margin: 4px 0 12px; font-family: "Cormorant Garamond", serif; font-style: italic; font-size: 15px; color: var(--muted); }
+    .found { min-height: 16px; margin: 9px 2px 0; font-size: 12.5px; color: rgba(246, 221, 150, .9); text-align: center; }
+    .found.bad { color: var(--danger); }
+
+    .status { min-height: 18px; margin-top: 14px; font-size: 12px; color: var(--muted); text-align: center; }
+    .status.bad { color: var(--danger); }
+    .status.ok { color: rgba(246, 221, 150, .92); }
+
+    /* lacre / selo */
+    .seal {
+      position: absolute; right: 16px; bottom: 16px; z-index: 5; width: 48px; height: 48px;
+      display: grid; place-items: center; border-radius: 50%;
+      background: radial-gradient(circle at 32% 26%, #fff0b0, #c89127 44%, #5e360c);
+      box-shadow: 0 10px 24px rgba(0,0,0,.45), 0 0 18px rgba(214,175,55,.25);
+      border: 1px solid rgba(255, 238, 169, .5); color: #2a1604;
+    }
+    .seal svg { width: 24px; height: 24px; }
+
+    /* desbloqueio */
+    .menu.opened { animation: menuOpen 1s ease forwards; }
+    .menu.opened .seal { animation: sealPop .7s ease forwards; }
+
+    @keyframes breathe { 0%,100% { transform: scale(.9); opacity: .55; } 50% { transform: scale(1.12); opacity: .95; } }
+    @keyframes keyPulse { 0%,100% { transform: scale(.97) rotate(-6deg); } 50% { transform: scale(1.06) rotate(2deg); } }
+    @keyframes spark { 0%,100% { opacity: 0; transform: translateY(6px) scale(.4); } 35% { opacity: 1; transform: translateY(0) scale(1); } 70% { opacity: 0; transform: translateY(-9px) scale(.6); } }
+    @keyframes btnGlow { 0%,100% { box-shadow: 0 14px 30px rgba(214,175,55,.26), inset 0 1px rgba(255,255,255,.4); } 50% { box-shadow: 0 16px 40px rgba(246,221,150,.5), inset 0 1px rgba(255,255,255,.5); } }
+    @keyframes menuOpen { 0% { transform: scale(1); filter: brightness(1); } 45% { transform: scale(1.015); filter: brightness(1.14); } 100% { transform: perspective(900px) rotateY(-14deg) scale(.99); filter: brightness(1.22); } }
+    @keyframes sealPop { 0% { transform: rotate(0) scale(1); } 55% { transform: rotate(18deg) scale(1.14); } 100% { transform: rotate(36deg) scale(.6) translateY(-10px); opacity: 0; } }
+
+    @media (max-height: 700px) {
+      .key-zone { height: 76px; margin-top: 8px; }
+      .key { width: 100px; height: 56px; }
+      h1 { font-size: 30px; }
+      .subtitle { font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <section class="menu" id="menu">
+      <span class="corner tl"></span><span class="corner tr"></span>
+      <span class="corner bl"></span><span class="corner br"></span>
+
+      <div class="seal" id="seal" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+          <rect x="5" y="10" width="14" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" />
+        </svg>
+      </div>
+
+      <div class="inner">
+        <div class="brand">Dom Leonardo · Trattoria</div>
+
+        <div class="key-zone">
+          <div class="key-glow"></div>
+          <div class="key" id="key" title="Abrir o menu">
+            <svg viewBox="0 0 140 80" aria-hidden="true">
+              <defs>
+                <linearGradient id="kg" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#fff3a8" /><stop offset="48%" stop-color="#d4af37" /><stop offset="100%" stop-color="#8a5b16" />
+                </linearGradient>
+              </defs>
+              <circle class="stroke" cx="34" cy="40" r="19" />
+              <path class="stroke" d="M53 40H125" />
+              <path class="stroke" d="M92 40V56M107 40V51M120 40V60" />
+              <circle cx="34" cy="40" r="6.5" fill="#160b04" stroke="#ffdf72" stroke-width="2" />
+            </svg>
+          </div>
+          <span class="spark a"></span><span class="spark b"></span><span class="spark c"></span>
+        </div>
+
+        <h1>Sua chave<br /><em>do menu</em></h1>
+        <p class="subtitle">Deixe seu nome e WhatsApp uma vez. Eu guardo sua entrada e abro o cardápio no seu próprio link.</p>
+        <div class="ornament"><span></span><i></i><span></span></div>
+
+        <!-- CLIENTE NOVO -->
+        <form id="formNovo" autocomplete="on">
+          <label class="field" id="fNome">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 21a8 8 0 0 0-16 0" /><circle cx="12" cy="7" r="4" /></svg>
+            <input id="nome" name="name" autocomplete="name" placeholder="Seu nome" />
+          </label>
+          <label class="field" id="fWhats">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.5 11.8a8.5 8.5 0 0 1-12.7 7.4L3 20.5l1.3-4.6A8.5 8.5 0 1 1 20.5 11.8Z" /></svg>
+            <input id="whats" name="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="Seu WhatsApp" />
+          </label>
+          <button class="btn" id="btnNovo" type="submit" disabled>Abrir o menu</button>
+        </form>
+
+        <button class="ghost-link" id="toggleReturn" type="button">Já sou cliente</button>
+
+        <!-- CLIENTE ANTIGO -->
+        <div class="returning" id="returning">
+          <form class="returning-card" id="formAntigo" autocomplete="on">
+            <div class="returning-title">Seu telefone é sua chave</div>
+            <div class="returning-sub">Digite o número do seu último pedido.</div>
+            <label class="field" id="fWhats2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.5 11.8a8.5 8.5 0 0 1-12.7 7.4L3 20.5l1.3-4.6A8.5 8.5 0 1 1 20.5 11.8Z" /></svg>
+              <input id="whats2" name="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="Seu WhatsApp" />
+            </label>
+            <button class="btn" id="btnAntigo" type="submit" disabled>Abrir o menu</button>
+            <div class="found" id="found"></div>
+            <button class="ghost-link" id="toggleNew" type="button" style="display:block;margin:10px auto 0;">Criar nova chave</button>
+          </form>
+        </div>
+
+        <div class="status" id="status">O menu abre no fim da animação.</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const SUPABASE_URL = 'https://jewamqbdonudiapxbzay.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY';
+    const FN_URL = SUPABASE_URL + '/functions/v1/cliente-entrada';
+    const CLIENTE_KEY = 'dom_leonardo_cliente';
+    const TOKEN_KEY = 'dom_leonardo_cliente_token';
+    const DEVICE_KEY = 'dom_marco_device_id';
+
+    const menu = document.getElementById('menu');
+    const key = document.getElementById('key');
+    const seal = document.getElementById('seal');
+    const statusEl = document.getElementById('status');
+
+    const nome = document.getElementById('nome');
+    const whats = document.getElementById('whats');
+    const btnNovo = document.getElementById('btnNovo');
+    const fNome = document.getElementById('fNome');
+    const fWhats = document.getElementById('fWhats');
+
+    const returning = document.getElementById('returning');
+    const whats2 = document.getElementById('whats2');
+    const btnAntigo = document.getElementById('btnAntigo');
+    const found = document.getElementById('found');
+
+    let tokenAntigo = '';
+    let nomeAntigo = '';
+
+    function digits(v) { return String(v || '').replace(/\D/g, ''); }
+    function normalizePhone(v) { let d = digits(v); if (d.length === 10 || d.length === 11) d = '55' + d; return d; }
+    function prettyPhone(v) {
+      const d = digits(v).replace(/^55/, '').slice(0, 11);
+      if (d.length <= 2) return d;
+      if (d.length <= 7) return '(' + d.slice(0, 2) + ') ' + d.slice(2);
+      return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
+    }
+    function maskOn(el) {
+      el.addEventListener('input', () => { el.value = prettyPhone(el.value); try { el.setSelectionRange(el.value.length, el.value.length); } catch (_) {} });
+    }
+    maskOn(whats); maskOn(whats2);
+
+    function getDeviceId() {
+      try {
+        let id = localStorage.getItem(DEVICE_KEY);
+        if (!id) { id = (crypto.randomUUID ? crypto.randomUUID() : 'dev_' + Date.now().toString(36)); localStorage.setItem(DEVICE_KEY, id); }
+        return id;
+      } catch (_) { return 'dev_' + Date.now().toString(36); }
+    }
+    function setStatus(t, cls) { statusEl.textContent = t; statusEl.className = 'status' + (cls ? ' ' + cls : ''); }
+    function setReady(btn, on) { btn.classList.toggle('ready', on); btn.disabled = !on; }
+    function setValidGlow() { menu.classList.toggle('valid', btnNovo.classList.contains('ready') || btnAntigo.classList.contains('ready')); }
+
+    // ===== validação cliente novo (cinza -> dourado) =====
+    function validateNovo() {
+      const n = nome.value.trim();
+      const w = normalizePhone(whats.value);
+      const okN = n.length >= 2;
+      const okW = w.length >= 12 && w.length <= 14;
+      fNome.classList.toggle('bad', !!n && !okN);
+      fWhats.classList.toggle('bad', !!whats.value && !okW);
+      setReady(btnNovo, okN && okW);
+      setValidGlow();
+      return okN && okW;
+    }
+    nome.addEventListener('input', validateNovo);
+    whats.addEventListener('input', validateNovo);
+
+    // ===== já sou cliente: debounce buscar =====
+    document.getElementById('toggleReturn').addEventListener('click', () => {
+      returning.classList.add('open');
+      setTimeout(() => whats2.focus(), 250);
+    });
+    document.getElementById('toggleNew').addEventListener('click', () => {
+      returning.classList.remove('open');
+      setTimeout(() => nome.focus(), 200);
+    });
+
+    let buscaTimer = null;
+    whats2.addEventListener('input', () => {
+      tokenAntigo = ''; setReady(btnAntigo, false); setValidGlow();
+      const w = normalizePhone(whats2.value);
+      found.textContent = ''; found.className = 'found';
+      if (buscaTimer) clearTimeout(buscaTimer);
+      if (w.length < 12 || w.length > 14) return;
+      found.textContent = 'Procurando sua chave...';
+      buscaTimer = setTimeout(async () => {
+        try {
+          const r = await fetch(FN_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+            body: JSON.stringify({ acao: 'buscar', whatsapp: w })
+          });
+          const d = await r.json().catch(() => ({}));
+          if (normalizePhone(whats2.value) !== w) return; // mudou enquanto buscava
+          if (d.existe && d.link_token) {
+            tokenAntigo = d.link_token; nomeAntigo = d.primeiro_nome || '';
+            found.textContent = nomeAntigo ? ('Chave encontrada para ' + nomeAntigo + ' 🔑') : 'Chave encontrada 🔑';
+            found.className = 'found';
+            setReady(btnAntigo, true); setValidGlow();
+          } else {
+            found.textContent = 'Não encontramos uma chave para esse número.';
+            found.className = 'found bad';
+          }
+        } catch (_) {
+          found.textContent = 'Não consegui verificar agora. Tenta de novo.';
+          found.className = 'found bad';
+        }
+      }, 520);
+    });
+
+    // ===== animação de desbloqueio =====
+    async function animateUnlock() {
+      const kr = key.getBoundingClientRect();
+      const sr = seal.getBoundingClientRect();
+      const dx = (sr.left + sr.width / 2) - (kr.left + kr.width / 2);
+      const dy = (sr.top + sr.height / 2) - (kr.top + kr.height / 2);
+      try {
+        await key.animate([
+          { transform: 'scale(1.04) rotate(-6deg)', filter: 'drop-shadow(0 8px 26px rgba(246,221,150,.7))' },
+          { transform: 'translate(' + (dx * .58) + 'px,' + (dy * .62) + 'px) scale(1.06) rotate(20deg)', offset: .6 },
+          { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(.62) rotate(104deg)', filter: 'drop-shadow(0 0 40px rgba(246,221,150,.95))' }
+        ], { duration: 1100, easing: 'cubic-bezier(.2,.76,.16,1)', fill: 'forwards' }).finished;
+      } catch (_) {}
+      menu.classList.add('opened');
+      await new Promise(r => setTimeout(r, 760));
+    }
+
+    // ===== redirect forçando Chrome, no link pessoal =====
+    function menuUrl(token) {
+      const u = new URL('/garcom/', window.location.origin);
+      if (token) u.searchParams.set('cliente', token);
+      u.searchParams.set('entrada', 'chave');
+      return u.toString();
+    }
+    function chromeUrl(url) {
+      const href = String(url), ua = navigator.userAgent || '';
+      const isIOS = /iPad|iPhone|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isAndroid = /Android/i.test(ua);
+      if (isAndroid) {
+        const parsed = new URL(href);
+        return 'intent://' + href.replace(/^https?:\/\//, '') + '#Intent;scheme=' + parsed.protocol.replace(':', '') + ';package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(href) + ';end';
+      }
+      if (isIOS) {
+        if (href.startsWith('https://')) return href.replace(/^https:\/\//, 'googlechromes://');
+        if (href.startsWith('http://')) return href.replace(/^http:\/\//, 'googlechrome://');
+      }
+      return href;
+    }
+    function redirectToMenu(url) {
+      const target = chromeUrl(url), fallback = String(url);
+      if (target === fallback) { window.location.href = fallback; return; }
+      window.location.href = target;
+      setTimeout(() => { window.location.href = fallback; }, 1100);
+    }
+    function saveLocal(nomeV, whatsV, token) {
+      try {
+        localStorage.setItem(CLIENTE_KEY, JSON.stringify({ nome: nomeV || '', whatsapp: whatsV || '', link_token: token || '' }));
+        if (token) localStorage.setItem(TOKEN_KEY, token);
+      } catch (_) {}
+    }
+
+    // ===== submit cliente novo =====
+    document.getElementById('formNovo').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!validateNovo()) { setStatus('Confere nome e WhatsApp com DDD.', 'bad'); return; }
+      btnNovo.classList.add('busy'); btnNovo.disabled = true; btnNovo.textContent = 'Girando a chave...';
+      setStatus('Guardando sua entrada...', 'ok');
+      try {
+        const r = await fetch(FN_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+          body: JSON.stringify({ acao: 'capturar', nome: nome.value.trim(), whatsapp: normalizePhone(whats.value), device_id: getDeviceId(), origem: 'chave-do-menu' })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || !d.link_token) throw new Error(d.error || 'Não consegui criar sua chave agora.');
+        saveLocal((d.cliente || {}).nome || nome.value.trim(), normalizePhone(whats.value), d.link_token);
+        setStatus('Chave adquirida 🔑  Bem-vindo, ' + ((d.cliente || {}).nome || nome.value.trim()).split(' ')[0] + '.', 'ok');
+        await animateUnlock();
+        setTimeout(() => redirectToMenu(menuUrl(d.link_token)), 220);
+      } catch (err) {
+        btnNovo.classList.remove('busy'); setReady(btnNovo, true); btnNovo.textContent = 'Abrir o menu';
+        setStatus((err && err.message) || 'Não consegui abrir agora. Tenta de novo.', 'bad');
+      }
+    });
+
+    // ===== submit cliente antigo =====
+    document.getElementById('formAntigo').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!tokenAntigo) return;
+      btnAntigo.classList.add('busy'); btnAntigo.disabled = true; btnAntigo.textContent = 'Girando a chave...';
+      setStatus('Chave recuperada 🔑  Bem-vindo de volta' + (nomeAntigo ? ', ' + nomeAntigo : '') + '.', 'ok');
+      saveLocal(nomeAntigo, normalizePhone(whats2.value), tokenAntigo);
+      await animateUnlock();
+      setTimeout(() => redirectToMenu(menuUrl(tokenAntigo)), 220);
+    });
+
+    key.addEventListener('click', () => {
+      if (returning.classList.contains('open')) { if (!btnAntigo.disabled) document.getElementById('formAntigo').requestSubmit(); }
+      else if (!btnNovo.disabled) document.getElementById('formNovo').requestSubmit();
+    });
+  </script>
+</body>
+</html>

@@ -2633,6 +2633,7 @@ const DEFAULT_TOPO_CONFIG = {
 const SUPABASE_URL = 'https://jewamqbdonudiapxbzay.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY';
 const GARCOM_RESPONDER_URL = SUPABASE_URL + '/functions/v1/garcom-responder';
+const CLIENTE_ENTRADA_URL = SUPABASE_URL + '/functions/v1/cliente-entrada';
 const REVERSE_GEOCODE_URL = SUPABASE_URL + '/functions/v1/reverse-geocode';
 const ENTREGA_FAIXAS_URL = SUPABASE_URL + '/rest/v1/entrega_faixas?select=raio_km,tempo_min,taxa&order=raio_km.asc';
 const COZINHA_ORIGEM = { lat: -25.39426, lng: -49.33568 };
@@ -3278,6 +3279,41 @@ function App() {
         if (!etapa.terminal) {
           setPedidoEmAcompanhamento({ pedido_id: recente.pedido_id, numero: recente.numero });
         }
+      } catch (_) {}
+    })();
+    return () => { vivo = false; };
+  }, []);
+
+  // Link pessoal: ?cliente=TOKEN -> recupera nome/numero/endereco do Supabase (funciona em
+  // qualquer navegador, mesmo forcando Chrome, porque a identidade viaja no link, nao no localStorage).
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get('cliente');
+    if (!token) return;
+    let vivo = true;
+    (async () => {
+      try {
+        const r = await fetch(CLIENTE_ENTRADA_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+          body: JSON.stringify({ acao: 'por_token', token }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!vivo || !data?.encontrado || !data.cliente) return;
+        const c = data.cliente;
+        const end = data.endereco || null;
+        try {
+          localStorage.setItem('dom_leonardo_cliente', JSON.stringify({ nome: c.nome || '', whatsapp: c.whatsapp || '', link_token: c.link_token || token }));
+          localStorage.setItem('dom_leonardo_cliente_token', c.link_token || token);
+        } catch (_) {}
+        setCheckoutDados(prev => ({
+          ...prev,
+          nome: prev.nome || c.nome || '',
+          whatsapp: prev.whatsapp || c.whatsapp || '',
+          rua: prev.rua || (end && end.logradouro) || '',
+          numero: prev.numero || (end && end.numero) || '',
+          bairro: prev.bairro || (end && end.bairro) || '',
+          complemento: prev.complemento || (end && end.complemento) || '',
+        }));
       } catch (_) {}
     })();
     return () => { vivo = false; };
