@@ -55,6 +55,204 @@ function countByCustomer(rows: Array<Record<string, unknown>>) {
   return { byClienteId, byPhone };
 }
 
+// ===== Uber Direct (motoboy) =====
+const RESTAURANTE_NOME = "Dom Leonardo";
+const RESTAURANTE_PHONE_FALLBACK = "+5541999999999";
+const RESTAURANTE_ADDRESS = JSON.stringify({
+  street_address: ["Rua Francisco Dallaribera, 1811"],
+  city: "Curitiba",
+  state: "PR",
+  zip_code: "82410-030",
+  country: "BR",
+});
+
+function num(value: unknown): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function toE164(value: unknown): string {
+  const d = normalizePhone(value);
+  if (!d) return "";
+  return d.startsWith("55") ? `+${d}` : `+55${d}`;
+}
+
+function uberDropoffAddress(snapshot: Record<string, unknown> | null): string {
+  const s = (snapshot || {}) as Record<string, unknown>;
+  const rua = cleanText(s.logradouro);
+  const numero = cleanText(s.numero);
+  const linha = [rua, numero].filter(Boolean).join(", ");
+  return JSON.stringify({
+    street_address: [linha || rua || "Endereco"],
+    city: cleanText(s.cidade) || "Curitiba",
+    state: cleanText(s.uf) || "PR",
+    zip_code: cleanText(s.cep),
+    country: "BR",
+  });
+}
+
+async function callUber(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/uber-entrega`;
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const r = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${key}`,
+      "apikey": key,
+    },
+    body: JSON.stringify(payload),
+  });
+  return await r.json().catch(() => ({})) as Record<string, unknown>;
+}
+
+async function cotarMotoboy(supabase: ReturnType<typeof createClient>, pedidoId: string) {
+  const { data: pedido, error } = await supabase
+    .from("pedidos")
+    .select("id, endereco_snapshot")
+    .eq("id", pedidoId)
+    .single();
+  if (error) throw error;
+
+  const resp = await callUber({
+    acao: "quote",
+    pickup_address: RESTAURANTE_ADDRESS,
+    dropoff_address: uberDropoffAddress(pedido.endereco_snapshot as Record<string, unknown>),
+  });
+  if (!resp.ok) return { ok: false, erro: resp.quote ?? resp.error ?? resp };
+
+  const q = (resp.quote || {}) as Record<string, unknown>;
+  return {
+    ok: true,
+    fee: num(q.fee) ? num(q.fee) / 100 : 0,
+    eta_min: num(q.duration) || num(q.dropoff_eta),
+    quote: q,
+  };
+}
+
+async function chamarMotoboy(supabase: ReturnType<typeof createClient>, pedidoId: string) {
+  const { data: pedido, error } = await supabase
+    .from("pedidos")
+    .select("*")
+    .eq("id", pedidoId)
+    .single();
+  if (error) throw error;
+  if (!pedido) throw new Error("Pedido nao encontrado.");
+  if (pedido.pagamento_status !== "pago") throw new Error("So e possivel chamar motoboy para pedido pago.");
+  if (cleanText(pedido.uber_delivery_id)) throw new Error("Motoboy ja foi chamado para este pedido.");
+
+  const { data: itens } = await supabase
+    .from("pedido_itens")
+    .select("prato_nome, quantidade")
+    .eq("pedido_id", pedidoId);
+  const manifest = (itens || []).map((i: Record<string, unknown>) => ({
+    name: cleanText(i.prato_nome) || "Item",
+    quantity: Math.max(1, Math.floor(num(i.quantidade) || 1)),
+    size: "small",
+  }));
+  if (manifest.length === 0) {
+    manifest.push({ name: `Pedido ${pedido.numero_pedido}`, quantity: 1, size: "small" });
+  }
+
+  let pickupPhone = RESTAURANTE_PHONE_FALLBACK;
+  const { data: cfg } = await supabase.from("configuracoes").select("whatsapp_pedidos").eq("id", 1).single();
+  const cfgPhone = toE164(cfg?.whatsapp_pedidos);
+  if (cfgPhone) pickupPhone = cfgPhone;
+
+  const snapshot = (pedido.endereco_snapshot || {}) as Record<string, unknown>;
+  const notas = [cleanText(snapshot.complemento), cleanText(snapshot.ponto_referencia)].filter(Boolean).join(" - ");
+
+  const delivery = {
+    pickup_name: RESTAURANTE_NOME,
+    pickup_address: RESTAURANTE_ADDRESS,
+    pickup_phone_number: pickupPhone,
+    dropoff_name: cleanText(pedido.cliente_nome) || "Cliente",
+    dropoff_address: uberDropoffAddress(snapshot),
+    dropoff_phone_number: toE164(pedido.cliente_whatsapp) || pickupPhone,
+    dropoff_notes: notas || undefined,
+    manifest_items: manifest,
+  };
+
+  const resp = await callUber({ acao: "create", delivery });
+  if (!resp.ok) return { ok: false, erro: resp.delivery ?? resp.error ?? resp };
+
+  const d = (resp.delivery || {}) as Record<string, unknown>;
+  const { data: updated, error: upErr } = await supabase
+    .from("pedidos")
+    .update({
+      uber_delivery_id: cleanText(d.id),
+      uber_status: cleanText(d.status) || "pending",
+      uber_tracking_url: cleanText(d.tracking_url),
+      uber_fee: num(d.fee) ? num(d.fee) / 100 : null,
+      uber_eta_min: num(d.duration) || null,
+      atualizado_em: new Date().toISOString(),
+    })
+    .eq("id", pedidoId)
+    .select("*")
+    .single();
+  if (upErr) throw upErr;
+  return { ok: true, pedido: updated, delivery: d };
+}
+
+async function statusMotoboy(supabase: ReturnType<typeof createClient>, pedidoId: string) {
+  const { data: pedido, error } = await supabase
+    .from("pedidos")
+    .select("id, uber_delivery_id, status")
+    .eq("id", pedidoId)
+    .single();
+  if (error) throw error;
+  if (!cleanText(pedido?.uber_delivery_id)) throw new Error("Sem entrega Uber para este pedido.");
+
+  const resp = await callUber({ acao: "status", delivery_id: cleanText(pedido.uber_delivery_id) });
+  if (!resp.ok) return { ok: false, erro: resp.delivery ?? resp.error ?? resp };
+
+  const d = (resp.delivery || {}) as Record<string, unknown>;
+  const uberStatus = cleanText(d.status);
+
+  await supabase
+    .from("pedidos")
+    .update({
+      uber_status: uberStatus,
+      uber_tracking_url: cleanText(d.tracking_url) || undefined,
+      atualizado_em: new Date().toISOString(),
+    })
+    .eq("id", pedidoId);
+
+  // Reflete no status da cozinha (best-effort).
+  if (uberStatus === "delivered" && pedido.status !== "entregue") {
+    await supabase.rpc("atualizar_status_pedido", { p_pedido_id: pedidoId, p_novo_status: "entregue", p_motivo: null });
+  } else if (
+    ["pickup_complete", "dropoff", "en_route_to_dropoff", "courier_en_route_to_dropoff"].includes(uberStatus)
+    && !["saiu_entrega", "entregue"].includes(cleanText(pedido.status))
+  ) {
+    await supabase.rpc("atualizar_status_pedido", { p_pedido_id: pedidoId, p_novo_status: "saiu_entrega", p_motivo: null });
+  }
+
+  const { data: fresh } = await supabase.from("pedidos").select("*").eq("id", pedidoId).single();
+  return { ok: true, uber_status: uberStatus, pedido: fresh };
+}
+
+async function cancelarMotoboy(supabase: ReturnType<typeof createClient>, pedidoId: string) {
+  const { data: pedido, error } = await supabase
+    .from("pedidos")
+    .select("id, uber_delivery_id")
+    .eq("id", pedidoId)
+    .single();
+  if (error) throw error;
+  if (!cleanText(pedido?.uber_delivery_id)) throw new Error("Sem entrega Uber para cancelar.");
+
+  const resp = await callUber({ acao: "cancel", delivery_id: cleanText(pedido.uber_delivery_id) });
+  if (!resp.ok) return { ok: false, erro: resp.delivery ?? resp.error ?? resp };
+
+  const { data: updated } = await supabase
+    .from("pedidos")
+    .update({ uber_status: "canceled", atualizado_em: new Date().toISOString() })
+    .eq("id", pedidoId)
+    .select("*")
+    .single();
+  return { ok: true, pedido: updated };
+}
+
 async function assertAuthenticated(req: Request, supabase: ReturnType<typeof createClient>) {
   const authHeader = req.headers.get("Authorization") || "";
   if (!authHeader.startsWith("Bearer ")) throw new Error("nao autenticado");
@@ -258,6 +456,30 @@ Deno.serve(async (req) => {
     if (acao === "alterar_status") {
       const pedido = await alterarStatus(supabase, pedidoId, cleanText(body.status));
       return json({ ok: true, pedido });
+    }
+
+    if (acao === "cotar_motoboy") {
+      const result = await cotarMotoboy(supabase, pedidoId);
+      if (!result.ok) return json({ error: "Falha ao cotar entrega na Uber.", detalhe: result.erro }, 502);
+      return json(result);
+    }
+
+    if (acao === "chamar_motoboy") {
+      const result = await chamarMotoboy(supabase, pedidoId);
+      if (!result.ok) return json({ error: "Falha ao chamar motoboy na Uber.", detalhe: result.erro }, 502);
+      return json(result);
+    }
+
+    if (acao === "status_motoboy") {
+      const result = await statusMotoboy(supabase, pedidoId);
+      if (!result.ok) return json({ error: "Falha ao consultar entrega na Uber.", detalhe: result.erro }, 502);
+      return json(result);
+    }
+
+    if (acao === "cancelar_motoboy") {
+      const result = await cancelarMotoboy(supabase, pedidoId);
+      if (!result.ok) return json({ error: "Falha ao cancelar entrega na Uber.", detalhe: result.erro }, 502);
+      return json(result);
     }
 
     return json({ error: "acao desconhecida" }, 400);

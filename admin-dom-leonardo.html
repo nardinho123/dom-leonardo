@@ -2290,6 +2290,38 @@
         }
       }
 
+      async function chamarMotoboy(pedido) {
+        if (!confirm(`Chamar motoboy (Uber) para ${orderLabel(pedido)}?`)) return;
+        try {
+          await callAdminPedidos({ acao: 'chamar_motoboy', pedido_id: pedido.id });
+          toast(`Motoboy chamado para ${orderLabel(pedido)}.`);
+          await loadPedidos();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function atualizarEntrega(pedido) {
+        try {
+          const r = await callAdminPedidos({ acao: 'status_motoboy', pedido_id: pedido.id });
+          toast(`Entrega Uber: ${r?.uber_status || 'status atualizado'}.`);
+          await loadPedidos();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function cancelarMotoboy(pedido) {
+        if (!confirm(`Cancelar a entrega Uber de ${orderLabel(pedido)}?`)) return;
+        try {
+          await callAdminPedidos({ acao: 'cancelar_motoboy', pedido_id: pedido.id });
+          toast('Entrega Uber cancelada.');
+          await loadPedidos();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
       async function openOrder(pedido) {
         try {
           stopSoundLoop();
@@ -2419,6 +2451,9 @@
                 aceitarPedido={aceitarPedido}
                 recusarPedido={recusarPedido}
                 updateStatus={updateStatus}
+                chamarMotoboy={chamarMotoboy}
+                atualizarEntrega={atualizarEntrega}
+                cancelarMotoboy={cancelarMotoboy}
               />
             )}
             {active === 'cardapio' && (
@@ -3296,7 +3331,7 @@
       );
     }
 
-    function GestorPedidos({ pedidos, reload, openOrder, aceitarPedido, recusarPedido, updateStatus }) {
+    function GestorPedidos({ pedidos, reload, openOrder, aceitarPedido, recusarPedido, updateStatus, chamarMotoboy, atualizarEntrega, cancelarMotoboy }) {
       const lanes = [
         {
           id: 'aguardando_pagamento',
@@ -3364,6 +3399,9 @@
                         aceitarPedido={aceitarPedido}
                         recusarPedido={recusarPedido}
                         updateStatus={updateStatus}
+                        chamarMotoboy={chamarMotoboy}
+                        atualizarEntrega={atualizarEntrega}
+                        cancelarMotoboy={cancelarMotoboy}
                       />
                     ))}
                   </div>
@@ -3375,12 +3413,13 @@
       );
     }
 
-    function PedidoGestorCard({ pedido, laneId, openOrder, aceitarPedido, recusarPedido, updateStatus }) {
+    function PedidoGestorCard({ pedido, laneId, openOrder, aceitarPedido, recusarPedido, updateStatus, chamarMotoboy, atualizarEntrega, cancelarMotoboy }) {
       const itens = pedido.itens || [];
       const whatsapp = cleanText(pedido.cliente_whatsapp);
       const totalPedidos = Number(pedido.cliente_total_pedidos || 1);
       const endereco = formatAddress(pedido.endereco_snapshot);
       const pago = pedido.pagamento_status === 'pago';
+      const uberId = cleanText(pedido.uber_delivery_id);
 
       return (
         <article className={`gestor-card ${pago ? 'pago' : ''}`}>
@@ -3400,6 +3439,15 @@
             <span>📱 {whatsapp || 'WhatsApp nao informado'}</span>
             <span>👤 {totalPedidos} pedido{totalPedidos === 1 ? '' : 's'} deste cliente</span>
           </div>
+
+          {uberId && (
+            <div className="gestor-info">
+              <span>🛵 Uber: {pedido.uber_status || 'pendente'}{pedido.uber_fee ? ` · ${fmtMoney(pedido.uber_fee)}` : ''}{pedido.uber_eta_min ? ` · ~${pedido.uber_eta_min} min` : ''}</span>
+              {pedido.uber_tracking_url && (
+                <a href={pedido.uber_tracking_url} target="_blank" rel="noreferrer">Rastrear motoboy</a>
+              )}
+            </div>
+          )}
 
           <div className="gestor-items">
             {itens.length === 0 && <span>Itens ainda nao carregados.</span>}
@@ -3426,12 +3474,16 @@
           {laneId === 'em_andamento' && (
             <div className="gestor-actions">
               <button className="btn" onClick={() => updateStatus(pedido, 'pronto')}>Pronto</button>
+              {uberId
+                ? <button className="btn" onClick={() => atualizarEntrega(pedido)}>Atualizar entrega</button>
+                : <button className="btn btn-primary" onClick={() => chamarMotoboy(pedido)}>Chamar motoboy</button>}
               <button className="btn btn-primary" onClick={() => updateStatus(pedido, 'saiu_entrega')}>Saiu entrega</button>
             </div>
           )}
 
           {laneId === 'entregando' && (
-            <div className="gestor-actions single">
+            <div className="gestor-actions">
+              {uberId && <button className="btn" onClick={() => atualizarEntrega(pedido)}>Atualizar entrega</button>}
               <button className="btn btn-primary" onClick={() => updateStatus(pedido, 'entregue')}>Marcar entregue</button>
             </div>
           )}
