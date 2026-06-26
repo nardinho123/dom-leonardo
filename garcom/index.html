@@ -2359,7 +2359,7 @@
   }
   .capa-top { position: relative; z-index: 3; display: flex; justify-content: space-between; align-items: center; }
   .capa-pill { border: 1px solid rgba(160,120,20,.4); border-radius: 999px; background: rgba(255,255,255,.55); color: #8a6d12; backdrop-filter: blur(16px); padding: 8px 13px; font-family: 'Jost', sans-serif; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; font-weight: 600; }
-  .capa-logo { width: 58px; height: 58px; border-radius: 999px; border: 1px solid rgba(160,120,20,.5); overflow: hidden; background: #fff; box-shadow: 0 8px 22px rgba(120,90,20,.15); }
+  .capa-logo { width: 104px; height: 104px; border-radius: 50%; border: 1px solid rgba(160,120,20,.45); overflow: hidden; background: #fff; box-shadow: 0 16px 30px rgba(40,28,8,.18), 0 3px 8px rgba(40,28,8,.12); }
   .capa-logo img { width: 100%; height: 100%; object-fit: cover; }
   .capa-center { position: relative; z-index: 3; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
   .capa-eyebrow { font-family: 'Jost', sans-serif; color: #9c7c1e; font-size: 10.5px; font-weight: 600; letter-spacing: .34em; text-transform: uppercase; margin-bottom: 16px; }
@@ -2375,6 +2375,24 @@
   .capa-meta { font-family: 'Jost', sans-serif; margin-top: 18px; color: #8a7a55; font-size: 10.5px; letter-spacing: .24em; text-transform: uppercase; }
   .capa-cue { position: relative; z-index: 3; text-align: center; font-family: 'Jost', sans-serif; color: #1a1305; font-size: 10px; letter-spacing: .26em; text-transform: uppercase; animation: capabob 2.4s ease-in-out infinite; }
   @keyframes capabob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+  .capa-topbar { position: relative; z-index: 3; text-align: center; font-family: 'Jost', sans-serif; color: #9c7c1e; font-size: 10.5px; letter-spacing: .3em; text-transform: uppercase; font-weight: 600; margin-bottom: 16px; }
+  .capa-brand { position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; margin: 4px 0 16px; }
+  .capa-logo-wrap { position: relative; display: inline-flex; }
+  .capa-logo-empty { display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', Georgia, serif; color: #c0972c; font-size: 34px; }
+  .capa-logo-base { width: 132px; height: 14px; position: relative; margin-top: 9px; }
+  .capa-logo-base::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 124px; height: 2px; background: linear-gradient(90deg, transparent, #1a1305 18%, #1a1305 82%, transparent); }
+  .capa-logo-base::after { content: ""; position: absolute; top: 4px; left: 50%; transform: translateX(-50%); width: 96px; height: 11px; border-radius: 50%; background: radial-gradient(ellipse at center, rgba(40,28,8,.22), transparent 70%); filter: blur(2px); }
+  .capa-placa { position: absolute; top: -16px; right: -34px; z-index: 6; transform-origin: 50% -6px; animation: placaSway 4.2s ease-in-out infinite; }
+  .capa-placa .chain { position: absolute; top: -2px; width: 1.5px; height: 20px; background: #b8901f; }
+  .capa-placa .chain.l { left: 30%; transform: rotate(10deg); }
+  .capa-placa .chain.r { right: 30%; transform: rotate(-10deg); }
+  .capa-placa .sign { display: block; margin-top: 17px; border: 2px solid #b8901f; background: #fffdf8; color: #1a1305; font-family: 'Bebas Neue', sans-serif; letter-spacing: .14em; font-size: 14px; line-height: 1; padding: 5px 11px 4px; border-radius: 5px; box-shadow: 0 7px 16px rgba(40,28,8,.2); }
+  .capa-placa.fechado .sign { color: #a8392b; border-color: #a8392b; }
+  @keyframes placaSway { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+  .capa-chips { display: flex; gap: 22px; margin-top: 20px; flex-wrap: wrap; justify-content: center; }
+  .capa-chip { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .capa-chip .v { font-family: 'Jost', sans-serif; font-weight: 700; color: #1a1305; font-size: 14px; }
+  .capa-chip .l { font-family: 'Jost', sans-serif; font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: #9c7c1e; }
 
   /* ===== NAV (pills flutuando) ===== */
   .nav { position: sticky; top: 0; z-index: 40; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 13px 12px; margin: 0 0 8px; background: transparent; }
@@ -4778,6 +4796,7 @@ function App() {
   };
 
   const topo = { ...DEFAULT_TOPO_CONFIG, ...(deliveryConfig.topo || {}) };
+  const lojaAberta = deliveryConfig.loja_aberta_manual !== false;
   const heroLogoUrl = String(topo.logo_url || '').trim();
   const heroCapaUrl = String(topo.capa_url || '').trim();
   const heroVideoUrl = String(topo.capa_video_url || '').trim();
@@ -4797,19 +4816,29 @@ function App() {
     <div className="min-h-dvh">
       <header className="capa">
         <div className="capa-grain"></div>
-        <div className="capa-top">
-          {heroLogoUrl ? (
-            <div className="capa-logo"><img src={heroLogoUrl} alt={nomeCapa} /></div>
-          ) : <span></span>}
-          <span className="capa-pill">Aberto agora</span>
+        {topo.kicker && <div className="capa-topbar">{topo.kicker}</div>}
+        <div className="capa-brand">
+          <div className="capa-logo-wrap">
+            {heroLogoUrl
+              ? <div className="capa-logo"><img src={heroLogoUrl} alt={nomeCapa} /></div>
+              : <div className="capa-logo capa-logo-empty">DL</div>}
+            <div className={`capa-placa ${lojaAberta ? '' : 'fechado'}`}>
+              <span className="chain l"></span>
+              <span className="chain r"></span>
+              <span className="sign">{lojaAberta ? 'ABERTO' : 'FECHADO'}</span>
+            </div>
+          </div>
+          <div className="capa-logo-base"></div>
         </div>
         <div className="capa-center">
-          <span className="capa-eyebrow">{topo.kicker}</span>
           <span className="capa-bemvindo">Bem-vindo</span>
           <h1 className="capa-title">{nomeCapa1}{nomeCapa2 && <em>{nomeCapa2}</em>}</h1>
-          <div className="capa-orn"><span className="l"></span><i>◆</i><span className="r"></span></div>
           <p className="capa-sub">{topo.descricao}</p>
-          <div className="capa-meta">{totalCategoriasCapa} capítulos · {totalPratosCapa} pratos</div>
+          <div className="capa-chips">
+            <div className="capa-chip"><span className="v">{topo.chip_2_valor}</span><span className="l">{topo.chip_2_label}</span></div>
+            <div className="capa-chip"><span className="v">{topo.chip_1_valor}</span><span className="l">{topo.chip_1_label}</span></div>
+            <div className="capa-chip"><span className="v">Curitiba</span><span className="l">e regiao</span></div>
+          </div>
         </div>
         <div className="capa-cue">role o menu ↓</div>
       </header>
