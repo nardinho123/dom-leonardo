@@ -2340,7 +2340,7 @@
   }
   .ic { width: 1em; height: 1em; display: inline-block; vertical-align: -.12em; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 
-  /* ===== CAPA editorial (preta, sangra nas bordas) ===== */
+  /* ===== CAPA editorial (branca) ===== */
   .capa {
     position: relative;
     min-height: clamp(440px, 64vh, 540px);
@@ -2349,30 +2349,31 @@
     padding: 42px 24px 26px;
     overflow: hidden;
     background:
-      radial-gradient(120% 60% at 50% 0%, rgba(214,176,66,.13), transparent 55%),
-      #0a0908;
+      radial-gradient(120% 60% at 50% 0%, rgba(214,176,66,.10), transparent 58%),
+      #f7f3ea;
     isolation: isolate;
   }
   .capa-grain {
-    position: absolute; inset: 0; z-index: 0; opacity: .06; pointer-events: none;
+    position: absolute; inset: 0; z-index: 0; opacity: .04; pointer-events: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
   .capa-top { position: relative; z-index: 3; display: flex; justify-content: space-between; align-items: center; }
-  .capa-pill { border: 1px solid rgba(242,217,120,.34); border-radius: 999px; background: rgba(0,0,0,.38); color: #fff4d0; backdrop-filter: blur(16px); padding: 8px 13px; font-family: 'Jost', sans-serif; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; font-weight: 600; }
-  .capa-logo { width: 58px; height: 58px; border-radius: 999px; border: 1px solid rgba(242,217,120,.55); overflow: hidden; background: rgba(0,0,0,.28); box-shadow: 0 10px 26px rgba(0,0,0,.32); }
+  .capa-pill { border: 1px solid rgba(160,120,20,.4); border-radius: 999px; background: rgba(255,255,255,.55); color: #8a6d12; backdrop-filter: blur(16px); padding: 8px 13px; font-family: 'Jost', sans-serif; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; font-weight: 600; }
+  .capa-logo { width: 58px; height: 58px; border-radius: 999px; border: 1px solid rgba(160,120,20,.5); overflow: hidden; background: #fff; box-shadow: 0 8px 22px rgba(120,90,20,.15); }
   .capa-logo img { width: 100%; height: 100%; object-fit: cover; }
   .capa-center { position: relative; z-index: 3; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-  .capa-eyebrow { font-family: 'Jost', sans-serif; color: #e8d28f; font-size: 10.5px; font-weight: 600; letter-spacing: .34em; text-transform: uppercase; margin-bottom: 16px; }
-  .capa-title { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(50px, 16vw, 78px); line-height: .9; letter-spacing: -.05em; text-shadow: 0 18px 46px rgba(0,0,0,.7); color: #fff7e7; }
-  .capa-title em { display: block; font-style: italic; font-weight: 400; color: #e8d28f; }
+  .capa-eyebrow { font-family: 'Jost', sans-serif; color: #9c7c1e; font-size: 10.5px; font-weight: 600; letter-spacing: .34em; text-transform: uppercase; margin-bottom: 16px; }
+  .capa-bemvindo { font-family: 'Jost', sans-serif; color: #1a1305; font-size: 13px; font-weight: 600; letter-spacing: .26em; text-transform: uppercase; margin-bottom: 10px; }
+  .capa-title { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(50px, 16vw, 78px); line-height: .9; letter-spacing: -.05em; text-shadow: none; color: #c0972c; }
+  .capa-title em { display: block; font-style: italic; font-weight: 400; color: #c0972c; }
   .capa-orn { display: flex; align-items: center; gap: 14px; width: 72%; max-width: 300px; margin: 22px 0 16px; }
   .capa-orn .l, .capa-orn .r { flex: 1; height: 1px; }
   .capa-orn .l { background: linear-gradient(90deg, transparent, #d4af37); }
   .capa-orn .r { background: linear-gradient(90deg, #d4af37, transparent); }
   .capa-orn i { color: #d4af37; font-size: 12px; font-style: normal; transform: rotate(45deg); }
-  .capa-sub { font-family: 'Cormorant Garamond', Georgia, serif; color: rgba(255,247,231,.82); font-style: italic; font-size: 18px; line-height: 1.45; max-width: 30ch; }
-  .capa-meta { font-family: 'Jost', sans-serif; margin-top: 18px; color: #b3a587; font-size: 10.5px; letter-spacing: .24em; text-transform: uppercase; }
-  .capa-cue { position: relative; z-index: 3; text-align: center; font-family: 'Jost', sans-serif; color: #b3a587; font-size: 10px; letter-spacing: .26em; text-transform: uppercase; animation: capabob 2.4s ease-in-out infinite; }
+  .capa-sub { font-family: 'Cormorant Garamond', Georgia, serif; color: #6b5a3a; font-style: italic; font-size: 18px; line-height: 1.45; max-width: 30ch; }
+  .capa-meta { font-family: 'Jost', sans-serif; margin-top: 18px; color: #8a7a55; font-size: 10.5px; letter-spacing: .24em; text-transform: uppercase; }
+  .capa-cue { position: relative; z-index: 3; text-align: center; font-family: 'Jost', sans-serif; color: #1a1305; font-size: 10px; letter-spacing: .26em; text-transform: uppercase; animation: capabob 2.4s ease-in-out infinite; }
   @keyframes capabob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
 
   /* ===== NAV (pills flutuando) ===== */
@@ -4804,6 +4805,7 @@ function App() {
         </div>
         <div className="capa-center">
           <span className="capa-eyebrow">{topo.kicker}</span>
+          <span className="capa-bemvindo">Bem-vindo</span>
           <h1 className="capa-title">{nomeCapa1}{nomeCapa2 && <em>{nomeCapa2}</em>}</h1>
           <div className="capa-orn"><span className="l"></span><i>◆</i><span className="r"></span></div>
           <p className="capa-sub">{topo.descricao}</p>
