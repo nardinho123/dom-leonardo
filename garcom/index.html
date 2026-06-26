@@ -2424,7 +2424,9 @@
   }
 
   /* ===== NAV (pills flutuando) ===== */
-  .nav { position: sticky; top: 0; z-index: 40; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 13px 12px; margin: 0 0 8px; background: transparent; }
+  .nav { position: sticky; top: 0; z-index: 40; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 13px 12px; margin: 0 0 8px; background: linear-gradient(180deg, rgba(8,6,4,.92) 0%, rgba(8,6,4,.66) 68%, rgba(8,6,4,0) 100%); backdrop-filter: blur(4px); transition: transform .32s cubic-bezier(.25,.8,.25,1), opacity .28s ease; }
+  .nav.nav-hide { transform: translateY(-130%); opacity: 0; pointer-events: none; }
+  .nav.nav-show { transform: translateY(0); opacity: 1; }
   .nav::-webkit-scrollbar { display: none; }
   .nav button { flex: 0 0 auto; color: #ffe7a0; border: 1px solid rgba(214,176,66,.28); background: rgba(10,9,8,.55); backdrop-filter: blur(6px); border-radius: 999px; padding: 11px 14px; font-family: 'Jost', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
   .nav button.on { background: #d4af37; color: #1a1204; border-color: #d4af37; }
@@ -2445,7 +2447,7 @@
   /* Seções padronizadas: título enquadrado por 2 linhas (cima e embaixo),
      mesma distância nos 4 espaços (linha->título->linha->cards), linhas
      com cor adaptativa, e sombra bem sutil no título (só profundidade). */
-  .section { padding: 0; }
+  .section { padding: 0; scroll-margin-top: 72px; }
   .section-head {
     display: block;
     padding: 28px 8px;
@@ -2890,6 +2892,9 @@ function App() {
   const [carregandoPratos, setCarregandoPratos] = useState(true);
   const [menuErro, setMenuErro] = useState(null);
   const [categoriaAtiva, setCategoriaAtiva] = useState('todos');
+  const [navVisivel, setNavVisivel] = useState(false);
+  const [secaoVisivel, setSecaoVisivel] = useState('');
+  const navRef = useRef(null);
   const [pratoAberto, setPratoAberto] = useState(null);
   const [fotoAberta, setFotoAberta] = useState(null);
   const [detailQty, setDetailQty] = useState(1);
@@ -4210,6 +4215,38 @@ function App() {
         pratos: pratosVisiveis,
       }];
 
+  const irParaSecao = (id) => {
+    const el = document.getElementById('secao-' + id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // Barra de secao: escondida no topo; aparece quando o usuario sai do hero.
+  useEffect(() => {
+    const capa = document.querySelector('.capa');
+    if (!capa) return;
+    const obs = new IntersectionObserver(([e]) => setNavVisivel(!e.isIntersecting), { threshold: 0, rootMargin: '-70px 0px 0px 0px' });
+    obs.observe(capa);
+    return () => obs.disconnect();
+  }, [carregandoPratos]);
+
+  // Scrollspy: pinta a pilula da secao em que o usuario esta enquanto rola.
+  useEffect(() => {
+    const secs = Array.from(document.querySelectorAll('.prototype-sections .section[id^="secao-"]'));
+    if (!secs.length) return;
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) setSecaoVisivel(e.target.id.replace('secao-', '')); });
+    }, { rootMargin: '-90px 0px -72% 0px', threshold: 0 });
+    secs.forEach((s) => obs.observe(s));
+    return () => obs.disconnect();
+  }, [secoesCardapio.length, carregandoPratos]);
+
+  // Mantem a pilula ativa visivel dentro da barra.
+  useEffect(() => {
+    if (!secaoVisivel || !navRef.current) return;
+    const btn = navRef.current.querySelector(`[data-sec="${secaoVisivel}"]`);
+    if (btn) btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, [secaoVisivel]);
+
   const tamanhosDoPrato = (prato) => {
     const list = (prato?.tamanhos ?? []).filter(t => t.ativo !== false);
     return list.length ? list : [{
@@ -4915,11 +4952,10 @@ function App() {
 
       {/* Cardapio editorial conectado ao ecossistema real (Mais Pedidos vira o carrossel da 1a secao) */}
       <section className="prototype-menu pb-36">
-        <nav className="nav" aria-label="Categorias">
-          <button className={categoriaAtiva === 'todos' ? 'on' : ''} onClick={() => selecionarCategoriaCardapio('todos', 'Todos')}>Todos</button>
-          {categorias.map(cat => (
-            <button key={cat.id} className={String(categoriaAtiva) === String(cat.id) ? 'on' : ''} onClick={() => selecionarCategoriaCardapio(cat.id, cat.nome)}>
-              {cat.nome}
+        <nav className={`nav ${navVisivel ? 'nav-show' : 'nav-hide'}`} aria-label="Seções" ref={navRef}>
+          {secoesCardapio.map(sec => (
+            <button key={`nav-${sec.id}`} data-sec={sec.id} className={String(secaoVisivel) === String(sec.id) ? 'on' : ''} onClick={() => irParaSecao(sec.id)}>
+              {sec.titulo}
             </button>
           ))}
         </nav>
