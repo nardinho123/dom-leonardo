@@ -3556,6 +3556,7 @@ function App() {
           endereco,
           itens: carrinho,
           cupom_codigo: cupomResumo.ok && cupomAplicado?.codigo ? String(cupomAplicado.codigo).toUpperCase() : null,
+          taxa_entrega: Number(taxaEntregaFinal || 0),
           form_data: {
             payment_method_id: 'pix',
             payer: { email: `pix-${whatsapp || Date.now()}@cliente.domleonardo.com.br` },

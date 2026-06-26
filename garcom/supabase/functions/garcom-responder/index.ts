@@ -1004,7 +1004,29 @@ Deno.serve(async (req) => {
       if (pedidoError) throw pedidoError;
 
       const pedidoObj = pedido as Record<string, unknown>;
-      const total = toNumber(pedidoObj.total, 0);
+      let total = toNumber(pedidoObj.total, 0);
+
+      // Frete: criar_pedido so conhece a taxa_entrega_padrao (hoje 0). O cardapio calcula o
+      // frete real (Google/faixa) e envia em body.taxa_entrega. Aqui ajustamos o pedido e o
+      // valor cobrado para incluir a entrega (sem isso o cliente nao paga o frete).
+      const taxaInformada = toNumber(body?.taxa_entrega, NaN);
+      if (Number.isFinite(taxaInformada) && taxaInformada >= 0) {
+        const subtotalPedido = toNumber(pedidoObj.subtotal, 0);
+        const descontoPedido = toNumber(pedidoObj.desconto, 0);
+        const freteAtual = toNumber(pedidoObj.taxa_entrega, 0);
+        if (Math.abs(taxaInformada - freteAtual) > 0.009) {
+          const novoTotal = Math.max(0, subtotalPedido + taxaInformada - descontoPedido);
+          const { error: freteError } = await supabase
+            .from("pedidos")
+            .update({
+              taxa_entrega: Number(taxaInformada.toFixed(2)),
+              total: Number(novoTotal.toFixed(2)),
+            })
+            .eq("id", pedidoObj.pedido_id);
+          if (freteError) throw freteError;
+          total = Number(novoTotal.toFixed(2));
+        }
+      }
 
       const paymentBody: Record<string, unknown> = {
         transaction_amount: Number(total.toFixed(2)),
