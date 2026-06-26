@@ -2442,12 +2442,13 @@
   .price { color: #e8d28f; font-family: 'Playfair Display', Georgia, serif; font-weight: 700; font-size: 23px; margin-top: 14px; }
 
   /* ===== Seções e cabeçalho ===== */
-  .section { padding: 24px 0 4px; }
-  .section + .section { border-top: 1px solid rgba(212,175,55,.14); }
-  .section-head { display: block; padding: 12px 8px 14px; margin: 0; }
-  .section-head .number { display: block; font-family: 'Jost', sans-serif; color: #d4af37; letter-spacing: .28em; text-transform: uppercase; font-size: 10px; font-weight: 600; margin-bottom: 8px; }
-  .section-head h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 35px; line-height: .94; letter-spacing: -.052em; color: #fff7e7; }
-  .section-head p { font-family: 'Cormorant Garamond', Georgia, serif; color: #b3a587; font-size: 16px; line-height: 1.45; margin-top: 10px; max-width: 34ch; }
+  /* Seções padronizadas: título sozinho, mesma distância em cima e embaixo,
+     linha quase transparente separando, e sombra bem sutil (só profundidade). */
+  .section { padding: 34px 0; border-top: 1px solid rgba(212,175,55,.12); }
+  .section + .section { border-top: 1px solid rgba(212,175,55,.12); }
+  .section-head { display: block; padding: 0 8px 18px; margin: 0; }
+  .section-head h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 33px; line-height: .96; letter-spacing: -.05em; color: #fff7e7; text-shadow: 0 2px 12px rgba(0,0,0,.32); }
+  .px-white .section-head h2 { text-shadow: 0 1px 3px rgba(80,55,15,.12); }
 
   /* ===== Card de prato (lista) ===== */
   .dish-list { display: grid; gap: 12px; }
@@ -2480,6 +2481,20 @@
   .priceline .val { font-family: 'Playfair Display', Georgia, serif; font-size: 25px; color: #e8d28f; font-weight: 600; }
   .btn-order { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; font-family: 'Jost', sans-serif; font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: #e8d28f; background: transparent; border: 1px solid #d4af37; padding: 15px; cursor: pointer; transition: .3s; border-radius: 2px; }
   .btn-order:active, .btn-order:hover { background: #d4af37; color: #1a1206; }
+
+  /* ===== PREÇO PADRONIZADO (Valor ···· R$) com dourado adaptativo ===== */
+  .priceline { display: flex; align-items: baseline; gap: 11px; margin: 12px 0 2px; }
+  .priceline .lead { font-family: 'Jost', sans-serif; font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: #b3a587; }
+  .priceline .dots { flex: 1; border-bottom: 1px dotted rgba(212,175,55,.4); transform: translateY(-5px); }
+  .priceline .val { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 600; white-space: nowrap; color: #ecd9a7; }
+  /* sobre fundo branco: dourado mais escuro */
+  .px-white .priceline .val { color: #9a7518; }
+  .px-white .priceline .lead { color: #9c8a63; }
+  .px-white .priceline .dots { border-bottom-color: rgba(160,120,20,.45); }
+  /* sobre foto (pôster, pão, sobremesa): dourado médio-escuro, lê bem no degradê */
+  .poster-info .priceline .val, .feature .fc .priceline .val, .doce-card .fc .priceline .val { color: #e3bd63; }
+  .poster-info .priceline .lead, .feature .fc .priceline .lead, .doce-card .fc .priceline .lead { color: rgba(255,247,231,.72); }
+  .poster-info .priceline .dots, .feature .fc .priceline .dots, .doce-card .fc .priceline .dots { border-bottom-color: rgba(255,247,231,.32); }
 
   /* ===== PÃO: feature full-bleed (brilho de forno + vapor) ===== */
   .feature-stack { display: grid; gap: 14px; }
@@ -4671,9 +4686,7 @@ function App() {
       <div className="body">
         <h3>{p.nome}</h3>
         {introPrato(p) && <p>{introPrato(p)}</p>}
-        {priceLine(p)}
-        <button className="btn-order" type="button" onClick={(e) => { e.stopPropagation(); abrirDetalhe(p); }}>Pedir agora →</button>
-      </div>
+        {priceLine(p)}      </div>
     </article>
   );
 
@@ -4692,10 +4705,7 @@ function App() {
       <div className="dish-body">
         <h3>{p.nome}</h3>
         {introPrato(p) && <p>{introPrato(p)}</p>}
-        <div className="dish-bottom">
-          <strong>{fmtBRL(p.preco)}</strong>
-          <button className="see-btn" type="button" onClick={(e) => { e.stopPropagation(); abrirDetalhe(p); }}>Ver</button>
-        </div>
+        {priceLine(p)}
       </div>
     </article>
   );
@@ -4713,7 +4723,7 @@ function App() {
       <div className="poster-info">
         <h3>{p.nome}</h3>
         <p>{introPrato(p)}</p>
-        <div className="price">{fmtBRL(p.preco)}</div>
+        {priceLine(p)}
       </div>
     </article>
   );
@@ -4734,9 +4744,7 @@ function App() {
         <div className="kicker">Para dividir · rasga e puxa o queijo</div>
         <h3>{p.nome}</h3>
         {introPrato(p) && <p>{introPrato(p)}</p>}
-        {priceLine(p)}
-        <button className="btn-order" type="button" onClick={(e) => { e.stopPropagation(); abrirDetalhe(p); }}>Pedir agora →</button>
-      </div>
+        {priceLine(p)}      </div>
     </section>
   );
 
@@ -4785,9 +4793,7 @@ function App() {
         </div>
         <h3>{p.nome}</h3>
         {introPrato(p) && <p>{introPrato(p)}</p>}
-        <span className="price">{fmtBRL(p.preco)}</span>
-        <br />
-        <button className="btn-order" type="button" onClick={(e) => { e.stopPropagation(); abrirDetalhe(p); }}>Pedir →</button>
+        {priceLine(p)}
       </div>
     </div>
   );
@@ -4805,9 +4811,7 @@ function App() {
     return (
       <section className={`section ${pxClass}`.trim()} key={secao.id} id={`secao-${secao.id}`} style={style}>
         <header className="section-head">
-          <div className="number">Capítulo {String(index + 1).padStart(2, '0')}</div>
           <h2>{secao.titulo}</h2>
-          {secao.descricao && <p>{secao.descricao}</p>}
         </header>
         {tipo === 'carrossel_horizontal' && (
           <div className="poster-row">{pratosSecao.map(p => renderPosterCard(p, secao.id))}</div>
