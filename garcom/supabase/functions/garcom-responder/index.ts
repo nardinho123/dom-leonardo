@@ -1094,6 +1094,26 @@ Deno.serve(async (req) => {
       }
 
       const status = cleanText((mpData as Record<string, unknown>).status);
+      const mpPaymentId = cleanText((mpData as Record<string, unknown>).id);
+      if (mpPaymentId) {
+        const updatePagamento: Record<string, unknown> = {
+          mp_payment_id: mpPaymentId,
+          pagamento_status: status === "approved" ? "pago" : "pendente",
+        };
+        if (status === "approved") {
+          updatePagamento.pago_em = new Date().toISOString();
+        }
+
+        const { error: mpPedidoUpdateError } = await supabase
+          .from("pedidos")
+          .update(updatePagamento)
+          .eq("id", pedidoObj.pedido_id);
+
+        if (mpPedidoUpdateError) {
+          console.warn("falha ao registrar pagamento Mercado Pago no pedido", mpPedidoUpdateError);
+        }
+      }
+
       if (["rejected", "cancelled", "refunded", "charged_back"].includes(status)) {
         await supabase.rpc("atualizar_status_pedido", {
           p_pedido_id: pedidoObj.pedido_id,
@@ -1153,9 +1173,13 @@ Deno.serve(async (req) => {
         try {
           await supabase
             .from("pedidos")
-            .update({ pago_em: new Date().toISOString() })
+            .update({
+              pagamento_status: "pago",
+              pago_em: new Date().toISOString(),
+              mp_payment_id: paymentId,
+            })
             .eq("id", externalReference)
-            .is("pago_em", null);
+            .or(`pago_em.is.null,pagamento_status.neq.pago`);
         } catch (err) {
           console.warn("falha ao marcar pedido pago (pix)", err);
         }
