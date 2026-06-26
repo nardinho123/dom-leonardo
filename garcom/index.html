@@ -2393,6 +2393,31 @@
   .capa-chip { display: flex; flex-direction: column; align-items: center; gap: 3px; }
   .capa-chip .v { font-family: 'Jost', sans-serif; font-weight: 700; color: #1a1305; font-size: 14px; }
   .capa-chip .l { font-family: 'Jost', sans-serif; font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: #9c7c1e; }
+  .info-bar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    flex-wrap: wrap;
+    padding: 11px 16px;
+    background: #f1ead9;
+    border-top: 1px solid rgba(160,120,20,.18);
+    border-bottom: 1px solid rgba(160,120,20,.18);
+    font-family: 'Jost', sans-serif;
+    font-size: 12px;
+    color: #5b4a2c;
+    cursor: pointer;
+  }
+  .info-bar-sep { color: rgba(91,74,44,.4); }
+  .info-bar-cta { color: #9c7c1e; font-weight: 700; letter-spacing: .04em; margin-left: 4px; }
+  .info-card { max-width: 440px; }
+  .info-row { display: flex; gap: 13px; align-items: flex-start; padding: 13px 0; border-top: 1px solid rgba(212,175,55,.14); }
+  .info-row:first-of-type { border-top: none; }
+  .info-ic { font-size: 18px; line-height: 1.2; flex: none; }
+  .info-row strong { display: block; font-family: 'Jost', sans-serif; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #e8d28f; margin-bottom: 3px; }
+  .info-row p { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 16px; line-height: 1.4; color: rgba(243,236,224,.88); margin: 0; }
+  .info-link { display: inline-block; margin-top: 6px; color: #4fe09a; font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 700; text-decoration: none; }
 
   /* ===== NAV (pills flutuando) ===== */
   .nav { position: sticky; top: 0; z-index: 40; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 13px 12px; margin: 0 0 8px; background: transparent; }
@@ -2560,6 +2585,12 @@ const DEFAULT_TOPO_CONFIG = {
   chip_3_valor: 'endereco',
   faixa_titulo: 'Frete do chef:',
   faixa_texto: 'acima de R$ 60,00, ate R$ 10,00 da entrega fica por nossa conta.',
+  endereco: '',
+  telefone: '',
+  maps_url: '',
+  horario_texto: '',
+  area_entrega: 'Curitiba e região',
+  como_funciona: 'Chega quentinho na sua casa em 20 a 30 min. Pediu, preparamos na hora e mandamos pra você.',
   logo_url: '',
   capa_url: '',
   capa_tipo: 'imagem',
@@ -2855,6 +2886,7 @@ function App() {
   const [pedidoEmAcompanhamento, setPedidoEmAcompanhamento] = useState(null); // { pedido_id, numero }
   const [pedidoStatus, setPedidoStatus] = useState(null);
   const [acompanhamentoOpen, setAcompanhamentoOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const [entregaEstimativa, setEntregaEstimativa] = useState(null);
   const [entregaLoading, setEntregaLoading] = useState(false);
   const [entregaError, setEntregaError] = useState('');
@@ -4797,6 +4829,18 @@ function App() {
 
   const topo = { ...DEFAULT_TOPO_CONFIG, ...(deliveryConfig.topo || {}) };
   const lojaAberta = deliveryConfig.loja_aberta_manual !== false;
+  const fmtHoraSimples = (h) => {
+    const s = String(h || '').slice(0, 5);
+    if (!s.includes(':')) return '';
+    const [hh, mm] = s.split(':');
+    return mm === '00' ? `${parseInt(hh, 10)}h` : `${parseInt(hh, 10)}h${mm}`;
+  };
+  const horarioResumo = String(topo.horario_texto || '').trim()
+    || ((deliveryConfig.horario_abertura && deliveryConfig.horario_fechamento)
+      ? `${fmtHoraSimples(deliveryConfig.horario_abertura)} às ${fmtHoraSimples(deliveryConfig.horario_fechamento)}`
+      : 'Consulte o horário');
+  const telefoneContato = String(topo.telefone || deliveryConfig.whatsapp_pedidos || '').trim();
+  const telefoneDigits = telefoneContato.replace(/\D/g, '');
   const heroLogoUrl = String(topo.logo_url || '').trim();
   const heroCapaUrl = String(topo.capa_url || '').trim();
   const heroVideoUrl = String(topo.capa_video_url || '').trim();
@@ -4842,6 +4886,13 @@ function App() {
         </div>
         <div className="capa-cue">role o menu ↓</div>
       </header>
+
+      <button className="info-bar" onClick={() => setInfoOpen(true)}>
+        <span className="info-bar-item">🕒 {horarioResumo}</span>
+        <span className="info-bar-sep">·</span>
+        <span className="info-bar-item">📍 {topo.area_entrega}</span>
+        <span className="info-bar-cta">ⓘ Informações</span>
+      </button>
 
       {/* tira o strip de cupons do inicio (cupom continua valendo no checkout) */}
 
@@ -5417,6 +5468,24 @@ function App() {
           </div>
         );
       })()}
+
+      {infoOpen && (
+        <div className="acomp-backdrop" onClick={() => setInfoOpen(false)}>
+          <div className="acomp-card info-card" onClick={e => e.stopPropagation()}>
+            <button className="acomp-close" onClick={() => setInfoOpen(false)} aria-label="Fechar">✕</button>
+            <h3>Informações</h3>
+            <div className="info-row"><span className="info-ic">🕒</span><div><strong>Horário</strong><p>{horarioResumo}</p></div></div>
+            <div className="info-row"><span className="info-ic">🛵</span><div><strong>Como funciona a entrega</strong><p>{topo.como_funciona}</p></div></div>
+            <div className="info-row"><span className="info-ic">📍</span><div><strong>Onde atendemos</strong><p>{topo.area_entrega}</p></div></div>
+            {topo.endereco && (
+              <div className="info-row"><span className="info-ic">🏠</span><div><strong>Endereço</strong><p>{topo.endereco}</p>{topo.maps_url && <a href={topo.maps_url} target="_blank" rel="noreferrer" className="info-link">Como chegar →</a>}</div></div>
+            )}
+            {telefoneDigits && (
+              <div className="info-row"><span className="info-ic">📞</span><div><strong>Contato</strong><p>{telefoneContato}</p><a href={`https://wa.me/${telefoneDigits.startsWith('55') ? telefoneDigits : '55' + telefoneDigits}`} target="_blank" rel="noreferrer" className="info-link">Chamar no WhatsApp →</a></div></div>
+            )}
+          </div>
+        </div>
+      )}
 
       {fotoAberta && (
         <div className="photo-viewer-backdrop" onClick={() => setFotoAberta(null)}>

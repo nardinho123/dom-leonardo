@@ -1333,6 +1333,12 @@
       chip_3_valor: 'endereco',
       faixa_titulo: 'Frete do chef:',
       faixa_texto: 'acima de R$ 60,00, ate R$ 10,00 da entrega fica por nossa conta.',
+      endereco: '',
+      telefone: '',
+      maps_url: '',
+      horario_texto: '',
+      area_entrega: 'Curitiba e região',
+      como_funciona: 'Chega quentinho na sua casa em 20 a 30 min. Pediu, preparamos na hora e mandamos pra você.',
       logo_url: '',
       capa_url: '',
       capa_tipo: 'imagem',
@@ -3932,6 +3938,15 @@
               </div>
               <TextField label="Faixa inferior - destaque" value={form.topo.faixa_titulo} onChange={v => setTopo('faixa_titulo', v)} />
               <TextField label="Faixa inferior - texto" value={form.topo.faixa_texto} onChange={v => setTopo('faixa_texto', v)} />
+              <div className="field full" style={{ borderTop: '1px solid rgba(0,0,0,.08)', paddingTop: 12, marginTop: 4 }}>
+                <strong style={{ fontSize: 13 }}>Informações de contato (painel "Informações")</strong>
+              </div>
+              <TextField label="Horário (texto livre)" value={form.topo.horario_texto} onChange={v => setTopo('horario_texto', v)} placeholder="Ex.: Ter a Dom · 18h às 23h30" />
+              <TextField label="Área de entrega" value={form.topo.area_entrega} onChange={v => setTopo('area_entrega', v)} />
+              <div className="field full"><TextField label="Endereço" value={form.topo.endereco} onChange={v => setTopo('endereco', v)} /></div>
+              <TextField label="Telefone / WhatsApp de contato" value={form.topo.telefone} onChange={v => setTopo('telefone', v)} placeholder="(41) 9 9999-9999" />
+              <TextField label="Link do Google Maps (como chegar)" value={form.topo.maps_url} onChange={v => setTopo('maps_url', v)} placeholder="https://maps.app.goo.gl/..." />
+              <div className="field full"><TextField label='Como funciona a entrega' value={form.topo.como_funciona} onChange={v => setTopo('como_funciona', v)} textarea /></div>
             </div>
           </div>
         </section>
