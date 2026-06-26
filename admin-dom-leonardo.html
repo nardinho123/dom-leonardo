@@ -716,6 +716,113 @@
       color: var(--muted);
       font-size: 13px;
     }
+    .gestor-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(240px, 1fr));
+      gap: 14px;
+      align-items: start;
+      overflow-x: auto;
+      padding-bottom: 10px;
+    }
+    .gestor-lane {
+      min-width: 240px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 12px 28px rgba(17, 24, 39, .05);
+      overflow: hidden;
+    }
+    .gestor-lane header {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #fff, #fafafa);
+    }
+    .gestor-lane h3 {
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: -.01em;
+    }
+    .gestor-lane p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .gestor-lane-body {
+      display: grid;
+      gap: 10px;
+      padding: 10px;
+      min-height: 120px;
+    }
+    .gestor-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fff;
+      box-shadow: 0 8px 18px rgba(17, 24, 39, .06);
+    }
+    .gestor-card.pago {
+      border-color: rgba(34, 197, 94, .38);
+      box-shadow: 0 10px 24px rgba(34, 197, 94, .10);
+    }
+    .gestor-card h4 {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.25;
+    }
+    .gestor-card-top,
+    .gestor-card-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .gestor-badge {
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: #f3f4f6;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .gestor-badge.gold {
+      background: rgba(245, 183, 0, .15);
+      color: #8a6500;
+    }
+    .gestor-info {
+      display: grid;
+      gap: 5px;
+      margin: 10px 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .gestor-items {
+      display: grid;
+      gap: 5px;
+      margin: 10px 0;
+      padding: 9px;
+      border-radius: 10px;
+      background: #f9fafb;
+      color: var(--text);
+      font-size: 12px;
+    }
+    .gestor-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 10px;
+    }
+    .gestor-actions.single { grid-template-columns: 1fr; }
+    .gestor-empty {
+      padding: 18px 10px;
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 12px;
+      background: #fafafa;
+    }
     .chat-list { display: grid; gap: 12px; }
     .chat-card {
       display: grid;
@@ -1168,6 +1275,7 @@
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const NAV = [
+      { id: 'gestor', icon: '🧾', label: 'Gestor de Pedidos' },
       { id: 'cardapio', icon: '🍝', label: 'Cardápio' },
     ];
 
@@ -1237,6 +1345,22 @@
     const textToList = (value) => String(value || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean);
     const listToText = (value) => Array.isArray(value) ? value.join('\n') : String(value || '');
     const cleanText = (value) => String(value ?? '').trim();
+    const normalizePhone = (value) => cleanText(value).replace(/\D/g, '');
+    const isPaidPending = (pedido) => pedido?.pagamento_status === 'pago' && pedido?.aceite_status === 'pendente' && pedido?.status !== 'cancelado';
+    const orderLabel = (pedido) => pedido?.numero_pedido ? `#${pedido.numero_pedido}` : `#${String(pedido?.id || '').slice(0, 8)}`;
+    const formatAddress = (snapshot = {}) => {
+      const endereco = snapshot && typeof snapshot === 'object' ? snapshot : {};
+      const rua = cleanText(endereco.rua || endereco.logradouro || endereco.endereco || endereco.address);
+      const numero = cleanText(endereco.numero || endereco.number);
+      const bairro = cleanText(endereco.bairro || endereco.neighborhood);
+      const complemento = cleanText(endereco.complemento || endereco.complement);
+      const cidade = cleanText(endereco.cidade || endereco.city);
+      const uf = cleanText(endereco.uf || endereco.estado || endereco.state);
+      const cep = cleanText(endereco.cep || endereco.zipcode || endereco.postal_code);
+      const linha1 = [rua, numero].filter(Boolean).join(', ');
+      const linha2 = [bairro, cidade && uf ? `${cidade}/${uf}` : cidade || uf, cep].filter(Boolean).join(' · ');
+      return [linha1, complemento, linha2].filter(Boolean).join(' · ') || 'Endereco nao informado';
+    };
     const mergeTopoConfig = (config = {}) => {
       const topo = config.topo_config && typeof config.topo_config === 'object' && !Array.isArray(config.topo_config)
         ? config.topo_config
@@ -1488,6 +1612,7 @@
       const soundInputRef = useRef(null);
       const ringIntervalRef = useRef(null);
       const chatDetailRef = useRef(null);
+      const paidPendingNotifiedRef = useRef(new Set());
 
       const toast = (message, type = 'ok') => setToastState({ message, type });
 
@@ -1612,14 +1737,19 @@
 
       useEffect(() => {
         if (!session) return;
-        const channel = sb.channel('admin-pedidos')
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos' }, payload => {
-            if (payload?.new?.status === 'novo') {
-              toast(`Novo pedido chegou${payload.new.numero_pedido ? `: #${payload.new.numero_pedido}` : ''}.`);
+        const handlePedidoChange = (pedido) => {
+          if (isPaidPending(pedido)) {
+            const key = pedido.id || pedido.mp_payment_id || pedido.numero_pedido;
+            if (key && !paidPendingNotifiedRef.current.has(key)) {
+              paidPendingNotifiedRef.current.add(key);
+              toast(`Pedido pago aguardando aceite: ${orderLabel(pedido)}.`);
               startSoundLoop();
             }
-            loadPedidos();
-          })
+          }
+          loadPedidos();
+        };
+        const channel = sb.channel('admin-pedidos')
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos' }, payload => handlePedidoChange(payload?.new))
           .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'atendimento_mensagens' }, payload => {
             if (payload?.new?.autor === 'cliente') {
               const aberto = chatDetailRef.current?.atendimento?.id === payload.new.atendimento_id;
@@ -1636,7 +1766,7 @@
             }
           })
           .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'atendimentos' }, () => loadAtendimentos())
-          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pedidos' }, () => loadPedidos())
+          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pedidos' }, payload => handlePedidoChange(payload?.new))
           .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'pedidos' }, () => loadPedidos())
           .subscribe();
         return () => { sb.removeChannel(channel); };
@@ -1714,10 +1844,11 @@
 
       async function loadPedidos() {
         try {
-          const pedidos = await run('pedidos', sb.rpc('pedidos_admin', {
-            p_status: statusFilter || null,
-            p_limite: 100,
-          }));
+          const { data: result, error } = await sb.functions.invoke('admin-pedidos', {
+            body: { acao: 'listar' },
+          });
+          if (error) throw error;
+          const pedidos = result?.pedidos || [];
           setData(prev => ({ ...prev, pedidos }));
         } catch (error) {
           toast(error.message, 'error');
@@ -2113,16 +2244,46 @@
         }
       }
 
+      async function callAdminPedidos(body) {
+        const { data: result, error } = await sb.functions.invoke('admin-pedidos', { body });
+        if (error) throw error;
+        if (result?.error) {
+          const detalhe = result?.detalhe ? ` ${JSON.stringify(result.detalhe)}` : '';
+          throw new Error(`${result.error}${detalhe}`);
+        }
+        return result;
+      }
+
+      async function aceitarPedido(pedido) {
+        if (!confirm(`Aceitar o pedido ${orderLabel(pedido)} e mandar para preparo?`)) return;
+        try {
+          await callAdminPedidos({ acao: 'aceitar', pedido_id: pedido.id });
+          toast(`Pedido ${orderLabel(pedido)} aceito.`);
+          stopSoundLoop();
+          await loadPedidos();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
+      async function recusarPedido(pedido) {
+        const motivo = prompt(`Motivo para recusar ${orderLabel(pedido)}:`, 'Nao conseguimos preparar esse pedido agora.');
+        if (motivo === null) return;
+        if (!confirm(`Recusar ${orderLabel(pedido)} e estornar o PIX no Mercado Pago?`)) return;
+        try {
+          await callAdminPedidos({ acao: 'recusar', pedido_id: pedido.id, motivo });
+          toast(`Pedido ${orderLabel(pedido)} recusado e estornado.`);
+          stopSoundLoop();
+          await loadPedidos();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
       async function updateStatus(pedido, status) {
         try {
-          const motivo = status === 'cancelado' ? prompt('Motivo do cancelamento:') || null : null;
-          const { error } = await sb.rpc('atualizar_status_pedido', {
-            p_pedido_id: pedido.id,
-            p_novo_status: status,
-            p_motivo: motivo,
-          });
-          if (error) throw error;
-          toast(`Pedido #${pedido.numero_pedido} atualizado.`);
+          await callAdminPedidos({ acao: 'alterar_status', pedido_id: pedido.id, status });
+          toast(`Pedido ${orderLabel(pedido)} atualizado.`);
           await loadPedidos();
         } catch (error) {
           toast(error.message, 'error');
@@ -2229,7 +2390,7 @@
             <div className="topbar">
               <div>
                 <h2>{title}</h2>
-                <p>Monte o cardápio na mesma ordem que o cliente vê.</p>
+                <p>{active === 'gestor' ? 'Pedidos pagos aparecem aqui para aceitar, preparar e acompanhar.' : 'Monte o cardápio na mesma ordem que o cliente vê.'}</p>
               </div>
               <div className="actions">
                 <a className="btn" href="/garcom/" target="_blank">Abrir Garçom</a>
@@ -2250,6 +2411,16 @@
             </div>
 
             {active === 'painel' && <Painel stats={stats} data={data} setActive={setActive} />}
+            {active === 'gestor' && (
+              <GestorPedidos
+                pedidos={data.pedidos}
+                reload={loadPedidos}
+                openOrder={openOrder}
+                aceitarPedido={aceitarPedido}
+                recusarPedido={recusarPedido}
+                updateStatus={updateStatus}
+              />
+            )}
             {active === 'cardapio' && (
               <CardapioBuilder
                 nested={nested}
@@ -3122,6 +3293,149 @@
             </div>
           </div>
         </div>
+      );
+    }
+
+    function GestorPedidos({ pedidos, reload, openOrder, aceitarPedido, recusarPedido, updateStatus }) {
+      const lanes = [
+        {
+          id: 'aguardando_pagamento',
+          title: 'Aguardando pagamento',
+          hint: 'PIX gerado, ainda sem pagamento.',
+          filter: p => p.pagamento_status === 'pendente',
+        },
+        {
+          id: 'aguardando_aceite',
+          title: 'Aguardando aceite',
+          hint: 'Pagamento aprovado. Decida rapido.',
+          filter: p => isPaidPending(p),
+        },
+        {
+          id: 'em_andamento',
+          title: 'Em andamento',
+          hint: 'Aceitos e dentro da cozinha.',
+          filter: p => p.aceite_status === 'aceito' && ['novo', 'em_preparo', 'pronto'].includes(p.status),
+        },
+        {
+          id: 'entregando',
+          title: 'Entregando',
+          hint: 'Saiu para entrega.',
+          filter: p => p.status === 'saiu_entrega',
+        },
+        {
+          id: 'entregue',
+          title: 'Entregue',
+          hint: 'Finalizados hoje e recentes.',
+          filter: p => p.status === 'entregue',
+        },
+      ];
+
+      return (
+        <section className="panel">
+          <div className="section-title">
+            <div>
+              <h2>Gestor de Pedidos</h2>
+              <p>O pagamento caiu, o pedido aparece aqui. Aceite, recuse com estorno ou avance o status.</p>
+            </div>
+            <button className="btn" onClick={reload}>Atualizar</button>
+          </div>
+          <div className="gestor-grid">
+            {lanes.map(lane => {
+              const lanePedidos = pedidos.filter(lane.filter);
+              return (
+                <div className="gestor-lane" key={lane.id}>
+                  <header>
+                    <div className="gestor-card-row">
+                      <div>
+                        <h3>{lane.title}</h3>
+                        <p>{lane.hint}</p>
+                      </div>
+                      <span className={`gestor-badge ${lane.id === 'aguardando_aceite' ? 'gold' : ''}`}>{lanePedidos.length}</span>
+                    </div>
+                  </header>
+                  <div className="gestor-lane-body">
+                    {lanePedidos.length === 0 && <div className="gestor-empty">Nada por aqui agora.</div>}
+                    {lanePedidos.map(pedido => (
+                      <PedidoGestorCard
+                        key={pedido.id}
+                        pedido={pedido}
+                        laneId={lane.id}
+                        openOrder={openOrder}
+                        aceitarPedido={aceitarPedido}
+                        recusarPedido={recusarPedido}
+                        updateStatus={updateStatus}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      );
+    }
+
+    function PedidoGestorCard({ pedido, laneId, openOrder, aceitarPedido, recusarPedido, updateStatus }) {
+      const itens = pedido.itens || [];
+      const whatsapp = cleanText(pedido.cliente_whatsapp);
+      const totalPedidos = Number(pedido.cliente_total_pedidos || 1);
+      const endereco = formatAddress(pedido.endereco_snapshot);
+      const pago = pedido.pagamento_status === 'pago';
+
+      return (
+        <article className={`gestor-card ${pago ? 'pago' : ''}`}>
+          <div className="gestor-card-top">
+            <div>
+              <h4>{orderLabel(pedido)} · {pedido.cliente_nome || 'Cliente'}</h4>
+              <div className="order-meta">
+                <span>{fmtDate(pedido.criado_em)}</span>
+                <span>{pago ? 'Pago' : 'Pendente'}</span>
+              </div>
+            </div>
+            <span className="gestor-badge gold">{fmtMoney(pedido.total)}</span>
+          </div>
+
+          <div className="gestor-info">
+            <span>📍 {endereco}</span>
+            <span>📱 {whatsapp || 'WhatsApp nao informado'}</span>
+            <span>👤 {totalPedidos} pedido{totalPedidos === 1 ? '' : 's'} deste cliente</span>
+          </div>
+
+          <div className="gestor-items">
+            {itens.length === 0 && <span>Itens ainda nao carregados.</span>}
+            {itens.slice(0, 4).map(item => (
+              <span key={item.id}>{item.quantidade || 1}x {item.prato_nome}{item.tamanho_nome ? ` · ${item.tamanho_nome}` : ''}</span>
+            ))}
+            {itens.length > 4 && <span>+ {itens.length - 4} item(ns)</span>}
+          </div>
+
+          <div className="gestor-card-row">
+            <button className="btn btn-small" onClick={() => openOrder(pedido)}>Ver detalhes</button>
+            {whatsapp && (
+              <a className="btn btn-small" target="_blank" href={`https://wa.me/55${normalizePhone(whatsapp).replace(/^55/, '')}`}>WhatsApp</a>
+            )}
+          </div>
+
+          {laneId === 'aguardando_aceite' && (
+            <div className="gestor-actions">
+              <button className="btn btn-primary" onClick={() => aceitarPedido(pedido)}>Aceitar</button>
+              <button className="btn btn-danger" onClick={() => recusarPedido(pedido)}>Recusar</button>
+            </div>
+          )}
+
+          {laneId === 'em_andamento' && (
+            <div className="gestor-actions">
+              <button className="btn" onClick={() => updateStatus(pedido, 'pronto')}>Pronto</button>
+              <button className="btn btn-primary" onClick={() => updateStatus(pedido, 'saiu_entrega')}>Saiu entrega</button>
+            </div>
+          )}
+
+          {laneId === 'entregando' && (
+            <div className="gestor-actions single">
+              <button className="btn btn-primary" onClick={() => updateStatus(pedido, 'entregue')}>Marcar entregue</button>
+            </div>
+          )}
+        </article>
       );
     }
 
