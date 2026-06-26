@@ -606,7 +606,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    if (!["listar_pratos", "listar_cardapio", "mensagens_chat", "registrar_atendimento", "listar_atendimento", "buscar_cliente", "maps_public_config", "calcular_entrega_google", "criar_checkout", "processar_pagamento_brick", "criar_pagamento_stripe", "status_pagamento_mp"].includes(acao)) {
+    if (!["listar_pratos", "listar_cardapio", "mensagens_chat", "registrar_atendimento", "listar_atendimento", "buscar_cliente", "maps_public_config", "calcular_entrega_google", "criar_checkout", "processar_pagamento_brick", "criar_pagamento_stripe", "status_pagamento_mp", "status_pedido_publico"].includes(acao)) {
       return new Response(JSON.stringify({ error: "acao invalida" }), {
         status: 400,
         headers: { ...cors, "Content-Type": "application/json" },
@@ -1157,6 +1157,30 @@ Deno.serve(async (req) => {
           transaction_details: (mpData as Record<string, unknown>).transaction_details,
         },
       }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
+    if (acao === "status_pedido_publico") {
+      // Acompanhamento do pedido pelo cliente. O pedido_id e um UUID nao-adivinhavel
+      // (funciona como link magico); devolve apenas campos seguros de status.
+      const pedidoId = cleanText(body?.pedido_id);
+      if (!pedidoId) throw new Error("pedido_id nao informado.");
+
+      const { data: pedidoStatus, error: statusError } = await supabase
+        .from("pedidos")
+        .select("numero_pedido, status, pagamento_status, aceite_status, uber_status, uber_tracking_url")
+        .eq("id", pedidoId)
+        .single();
+
+      if (statusError || !pedidoStatus) {
+        return new Response(JSON.stringify({ error: "pedido nao encontrado" }), {
+          status: 404,
+          headers: { ...cors, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ ok: true, ...pedidoStatus }), {
         headers: { ...cors, "Content-Type": "application/json" },
       });
     }

@@ -1636,6 +1636,84 @@
   }
   .pix-total span { font-size: 13px; color: rgba(243,236,224,0.6); }
   .pix-total strong { font-size: 20px; color: #e8d28f; font-family: 'Playfair Display', Georgia, serif; }
+  .pedido-track {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 6px;
+    margin: 16px 0 6px;
+    position: relative;
+  }
+  .pedido-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    position: relative;
+  }
+  .pedido-step::before {
+    content: "";
+    position: absolute;
+    top: 7px;
+    left: -50%;
+    width: 100%;
+    height: 2px;
+    background: rgba(243,236,224,0.14);
+    z-index: 0;
+  }
+  .pedido-step:first-child::before { display: none; }
+  .pedido-step.done::before { background: #4fe09a; }
+  .pedido-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: rgba(243,236,224,0.14);
+    border: 2px solid rgba(243,236,224,0.22);
+    z-index: 1;
+  }
+  .pedido-step.done .pedido-dot { background: #4fe09a; border-color: #4fe09a; }
+  .pedido-step.current .pedido-dot {
+    box-shadow: 0 0 0 4px rgba(79,224,154,0.18);
+    animation: pixPulse 1.6s ease-out infinite;
+  }
+  .pedido-step-label {
+    font-size: 10.5px;
+    text-align: center;
+    color: rgba(243,236,224,0.55);
+    line-height: 1.2;
+  }
+  .pedido-step.done .pedido-step-label { color: rgba(243,236,224,0.92); }
+  .pedido-track-msg {
+    margin-top: 14px;
+    font-size: 14px;
+    color: rgba(243,236,224,0.85);
+    text-align: center;
+  }
+  .pedido-track-link {
+    display: inline-block;
+    margin-top: 10px;
+    color: #4fe09a;
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+  }
+  .pedido-track-hint {
+    margin-top: 12px;
+    font-size: 12px;
+    color: rgba(243,236,224,0.45);
+    text-align: center;
+  }
+  .pedido-recusado {
+    margin-top: 12px;
+    border: 1px solid rgba(255,99,99,0.26);
+    background: rgba(255,99,99,0.10);
+    color: #ffd0c8;
+    border-radius: 14px;
+    padding: 12px 13px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
   .checkout-error {
     margin-top: 10px;
     border: 1px solid rgba(255,99,99,0.26);
@@ -2390,6 +2468,26 @@ const GARCOM_RESPONDER_URL = SUPABASE_URL + '/functions/v1/garcom-responder';
 const REVERSE_GEOCODE_URL = SUPABASE_URL + '/functions/v1/reverse-geocode';
 const ENTREGA_FAIXAS_URL = SUPABASE_URL + '/rest/v1/entrega_faixas?select=raio_km,tempo_min,taxa&order=raio_km.asc';
 const COZINHA_ORIGEM = { lat: -25.39426, lng: -49.33568 };
+
+// Etapa do pedido (visao do cliente) a partir do status publico.
+function etapaDoPedido(st) {
+  if (!st) return { idx: 0, key: 'aguardando_aceite', terminal: false };
+  if (st.aceite_status === 'recusado' || st.pagamento_status === 'estornado' || st.status === 'cancelado') {
+    return { idx: -1, key: 'recusado', terminal: true };
+  }
+  if (st.status === 'entregue') return { idx: 3, key: 'entregue', terminal: true };
+  if (st.status === 'saiu_entrega') return { idx: 2, key: 'a_caminho', terminal: false };
+  if (st.aceite_status === 'aceito') return { idx: 1, key: 'preparo', terminal: false };
+  return { idx: 0, key: 'aguardando_aceite', terminal: false };
+}
+const MARCO_ETAPA_MSG = {
+  aguardando_aceite: 'Recebi seu pagamento! 🎉 Ja mandei seu pedido pro Dom — assim que ele confirmar na cozinha, te aviso aqui.',
+  preparo: 'O Dom aceitou seu pedido e ja esta na cozinha preparando tudo. 👨‍🍳',
+  a_caminho: 'Seu pedido saiu para entrega! 🛵',
+  entregue: 'Pedido entregue! Buon appetito 🍝 Qualquer coisa, e so me chamar.',
+  recusado: 'Poxa, o Dom nao conseguiu preparar seu pedido agora e o pagamento foi estornado — o valor volta pro seu Pix. Me chama que a gente resolve. 🙏',
+};
+
 let entregaFaixasCache = null;
 function haversineKm(a, b) {
   if (!a || !b) return null;
@@ -2581,6 +2679,8 @@ function App() {
   const [pixData, setPixData] = useState(null);
   const [pixCopiado, setPixCopiado] = useState(false);
   const [pixVerificando, setPixVerificando] = useState(false);
+  const [pedidoEmAcompanhamento, setPedidoEmAcompanhamento] = useState(null); // { pedido_id, numero }
+  const [pedidoStatus, setPedidoStatus] = useState(null);
   const [entregaEstimativa, setEntregaEstimativa] = useState(null);
   const [entregaLoading, setEntregaLoading] = useState(false);
   const [entregaError, setEntregaError] = useState('');
@@ -2590,6 +2690,7 @@ function App() {
   const [mapPin, setMapPin] = useState(null);
   const [mapAddressLabel, setMapAddressLabel] = useState('');
   const stripeRef = useRef(null);
+  const etapaAnteriorRef = useRef(null);
   const stripeElementsRef = useRef(null);
   const stripePaymentElementRef = useRef(null);
   const mapsPromiseRef = useRef(null);
@@ -2862,6 +2963,47 @@ function App() {
     }, 4000);
     return () => { ativo = false; clearInterval(id); };
   }, [checkoutStage, pixData?.payment_id, sacolaOpen]);
+
+  // Acompanhamento do pedido apos o pagamento: status ao vivo + Marco avisa cada etapa.
+  useEffect(() => {
+    const pid = pedidoEmAcompanhamento?.pedido_id;
+    if (!pid) return;
+    let ativo = true;
+    let timer = null;
+    const tick = async () => {
+      if (!ativo) return;
+      try {
+        const r = await fetch(GARCOM_RESPONDER_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({ acao: 'status_pedido_publico', pedido_id: pid }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!ativo || !data?.ok) return;
+        setPedidoStatus(data);
+        const etapa = etapaDoPedido(data);
+        if (etapa.key !== etapaAnteriorRef.current) {
+          etapaAnteriorRef.current = etapa.key;
+          let texto = MARCO_ETAPA_MSG[etapa.key];
+          if (etapa.key === 'a_caminho' && data.uber_tracking_url) {
+            texto += ` Acompanhe o motoboy: ${data.uber_tracking_url}`;
+          }
+          if (texto) {
+            setMensagens(m => [...m, { id: `etapa-${etapa.key}-${Date.now()}`, autor: 'marco', texto }]);
+            vibrate(20);
+          }
+        }
+        if (etapa.terminal) { ativo = false; if (timer) clearInterval(timer); }
+      } catch (_) {}
+    };
+    tick();
+    timer = setInterval(tick, 6000);
+    return () => { ativo = false; if (timer) clearInterval(timer); };
+  }, [pedidoEmAcompanhamento?.pedido_id]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -3620,10 +3762,18 @@ function App() {
 
   const confirmarPixAprovado = () => {
     setCheckoutStage('sucesso');
+    // Inicia o acompanhamento do pedido (status ao vivo + Marco por etapa).
+    const pedidoId = pixData?.pedido?.pedido_id || null;
+    const numero = pixData?.pedido?.numero_pedido || null;
+    etapaAnteriorRef.current = 'aguardando_aceite';
+    if (pedidoId) {
+      setPedidoEmAcompanhamento({ pedido_id: pedidoId, numero });
+      setPedidoStatus({ numero_pedido: numero, pagamento_status: 'pago', aceite_status: 'pendente', status: 'novo' });
+    }
     setMensagens(m => [...m, {
       id: `pix-ok-${Date.now()}`,
       autor: 'marco',
-      texto: 'Pix confirmado! O pedido ja entrou para o Dom preparar. Obrigado!',
+      texto: MARCO_ETAPA_MSG.aguardando_aceite,
     }]);
     trackMeta('Purchase', {
       value: pixData?.total || totalComEntrega,
@@ -4776,16 +4926,52 @@ function App() {
             </div>
           )}
 
-          {whatsEnderecoOpen && checkoutStage === 'sucesso' && (
-            <div className="bag-values">
-              <div className="checkout-card">
-                <h3>Pedido recebido</h3>
-                <div className="checkout-success">
-                  Pagamento enviado com sucesso. O pedido ja entrou para o Dom preparar.
+          {whatsEnderecoOpen && checkoutStage === 'sucesso' && (() => {
+            const et = etapaDoPedido(pedidoStatus);
+            const recusado = et.key === 'recusado';
+            const steps = [
+              { k: 'aguardando_aceite', label: 'Pago' },
+              { k: 'preparo', label: 'Em preparo' },
+              { k: 'a_caminho', label: 'A caminho' },
+              { k: 'entregue', label: 'Entregue' },
+            ];
+            const cur = recusado ? -1 : et.idx;
+            const numero = pedidoStatus?.numero_pedido || pedidoEmAcompanhamento?.numero || '';
+            const msgEtapa = {
+              aguardando_aceite: 'Pagamento confirmado! Esperando o Dom aceitar na cozinha…',
+              preparo: 'O Dom aceitou e esta preparando seu pedido. 👨‍🍳',
+              a_caminho: 'Saiu para entrega! 🛵',
+              entregue: 'Entregue. Buon appetito! 🍝',
+            };
+            return (
+              <div className="bag-values">
+                <div className="checkout-card pedido-card">
+                  <h3>{recusado ? 'Pedido nao aceito' : `Pedido${numero ? ` #${numero}` : ''}`}</h3>
+                  {recusado ? (
+                    <div className="pedido-recusado">
+                      O Dom nao conseguiu preparar agora e seu Pix foi <strong>estornado</strong> — o valor volta pra sua conta. Qualquer duvida, chama o Marco aqui.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="pedido-track">
+                        {steps.map((s, i) => (
+                          <div key={s.k} className={`pedido-step ${i <= cur ? 'done' : ''} ${i === cur ? 'current' : ''}`}>
+                            <span className="pedido-dot"></span>
+                            <span className="pedido-step-label">{s.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="pedido-track-msg">{msgEtapa[et.key] || 'Acompanhe seu pedido por aqui.'}</p>
+                      {pedidoStatus?.uber_tracking_url && et.key === 'a_caminho' && (
+                        <a className="pedido-track-link" href={pedidoStatus.uber_tracking_url} target="_blank" rel="noreferrer">Rastrear o motoboy →</a>
+                      )}
+                      <p className="pedido-track-hint">Pode fechar — o Marco te avisa aqui a cada novidade.</p>
+                    </>
+                  )}
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {checkoutStage === 'dados' && (
           <div className="bag-values">
