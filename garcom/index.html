@@ -2418,6 +2418,10 @@
   .info-row strong { display: block; font-family: 'Jost', sans-serif; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #e8d28f; margin-bottom: 3px; }
   .info-row p { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 16px; line-height: 1.4; color: rgba(243,236,224,.88); margin: 0; }
   .info-link { display: inline-block; margin-top: 6px; color: #4fe09a; font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 700; text-decoration: none; }
+  /* No celular o topo ocupa quase a tela toda: 1a rolagem = so o topo, com a 2a secao so espiando. */
+  @media (max-width: 640px) {
+    .capa { min-height: calc(100svh - 116px); }
+  }
 
   /* ===== NAV (pills flutuando) ===== */
   .nav { position: sticky; top: 0; z-index: 40; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 13px 12px; margin: 0 0 8px; background: transparent; }

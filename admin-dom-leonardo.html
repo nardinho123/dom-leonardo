@@ -2252,6 +2252,36 @@
         }
       }
 
+      async function saveTopoRapido(form) {
+        try {
+          const cur = (data.config && data.config.topo_config && typeof data.config.topo_config === 'object') ? data.config.topo_config : {};
+          let logo = cur.logo_url || null;
+          if (form.logoFile) logo = await uploadImage(form.logoFile, 'logo', 'marca/logo', 'dom');
+          const topo_config = {
+            ...TOPO_DEFAULTS, ...cur,
+            logo_url: logo,
+            descricao: form.descricao ?? cur.descricao ?? '',
+            endereco: form.endereco ?? cur.endereco ?? '',
+            telefone: form.telefone ?? cur.telefone ?? '',
+            horario_texto: form.horario_texto ?? cur.horario_texto ?? '',
+            area_entrega: form.area_entrega ?? cur.area_entrega ?? '',
+            maps_url: form.maps_url ?? cur.maps_url ?? '',
+          };
+          const payload = {
+            topo_config,
+            restaurante_logo_url: logo,
+            restaurante_descricao: topo_config.descricao || null,
+            loja_aberta_manual: form.lojaAberta !== false,
+          };
+          const { error } = await sb.from('configuracoes').update(payload).eq('id', 1);
+          if (error) throw error;
+          toast('Topo salvo.');
+          await loadAll();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
       async function callAdminPedidos(body) {
         const { data: result, error } = await sb.functions.invoke('admin-pedidos', { body });
         if (error) throw error;
@@ -2491,6 +2521,8 @@
               />
             )}
             {active === 'cardapio' && (
+              <>
+              <TopoEditor config={data.config} onSave={saveTopoRapido} />
               <CardapioBuilder
                 nested={nested}
                 data={data}
@@ -2506,6 +2538,7 @@
                 onToggleDish={toggleDish}
                 onMoveDish={moveDish}
               />
+              </>
             )}
             {active === 'pedidos' && <Pedidos pedidos={data.pedidos} statusFilter={statusFilter} setStatusFilter={setStatusFilter} reload={loadPedidos} openOrder={openOrder} updateStatus={updateStatus} />}
             {active === 'atendimento' && <Atendimento atendimentos={data.atendimentos} reload={loadAtendimentos} openAtendimento={openAtendimento} ringing={ringing} stopSoundLoop={stopSoundLoop} />}
@@ -3869,6 +3902,50 @@
             <div className="topo-preview-frete"><strong>{topo.faixa_titulo}</strong> {topo.faixa_texto}</div>
           </div>
         </div>
+      );
+    }
+
+    function TopoEditor({ config, onSave }) {
+      const cur = (config && config.topo_config && typeof config.topo_config === 'object' && !Array.isArray(config.topo_config)) ? config.topo_config : {};
+      const [form, setForm] = useState(null);
+      useEffect(() => {
+        const c = (config && config.topo_config && typeof config.topo_config === 'object') ? config.topo_config : {};
+        setForm({
+          logoFile: null,
+          descricao: c.descricao || '',
+          endereco: c.endereco || '',
+          telefone: c.telefone || '',
+          horario_texto: c.horario_texto || '',
+          area_entrega: c.area_entrega || 'Curitiba e região',
+          maps_url: c.maps_url || '',
+          lojaAberta: config ? config.loja_aberta_manual !== false : true,
+        });
+      }, [config]);
+      if (!form) return null;
+      const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+      return (
+        <section className="card panel">
+          <div className="panel-head">
+            <div><h3>Topo do cardápio</h3><p className="muted" style={{ margin: '4px 0 0' }}>O primeiro que o cliente vê. Edite e salve.</p></div>
+            <button className="btn btn-primary" onClick={() => onSave(form)}>Salvar topo</button>
+          </div>
+          <div className="topo-editor">
+            <TopoPreview topo={{ ...TOPO_DEFAULTS, ...cur, descricao: form.descricao }} />
+            <div className="topo-fields">
+              <ImageInput label="Logo (centro do topo)" value={cur.logo_url} file={form.logoFile} onFile={f => set('logoFile', f)} kind="logo" empty="DL" />
+              <label className="field full" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, cursor: 'pointer' }}>
+                <span><strong>Loja {form.lojaAberta ? 'aberta' : 'fechada'}</strong><br /><span className="muted" style={{ fontSize: 12 }}>Muda a plaquinha ABERTO/FECHADO no topo</span></span>
+                <input type="checkbox" checked={form.lojaAberta} onChange={e => set('lojaAberta', e.target.checked)} />
+              </label>
+              <div className="field full"><TextField label="Texto abaixo do Dom Leonardo" value={form.descricao} onChange={v => set('descricao', v)} textarea /></div>
+              <TextField label="Horário de funcionamento" value={form.horario_texto} onChange={v => set('horario_texto', v)} placeholder="Ex.: Ter a Dom · 18h às 23h30" />
+              <TextField label="Área de entrega" value={form.area_entrega} onChange={v => set('area_entrega', v)} />
+              <div className="field full"><TextField label="Endereço" value={form.endereco} onChange={v => set('endereco', v)} /></div>
+              <TextField label="Telefone / WhatsApp" value={form.telefone} onChange={v => set('telefone', v)} placeholder="(41) 9 9999-9999" />
+              <TextField label="Link do Google Maps" value={form.maps_url} onChange={v => set('maps_url', v)} placeholder="https://maps.app.goo.gl/..." />
+            </div>
+          </div>
+        </section>
       );
     }
 
