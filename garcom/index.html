@@ -2442,12 +2442,20 @@
   .price { color: #e8d28f; font-family: 'Playfair Display', Georgia, serif; font-weight: 700; font-size: 23px; margin-top: 14px; }
 
   /* ===== Seções e cabeçalho ===== */
-  /* Seções padronizadas: título sozinho, mesma distância em cima e embaixo,
-     linha quase transparente separando, e sombra bem sutil (só profundidade). */
-  .section { padding: 34px 0; border-top: 1px solid rgba(212,175,55,.12); }
-  .section + .section { border-top: 1px solid rgba(212,175,55,.12); }
-  .section-head { display: block; padding: 0 8px 18px; margin: 0; }
-  .section-head h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 33px; line-height: .96; letter-spacing: -.05em; color: #fff7e7; text-shadow: 0 2px 12px rgba(0,0,0,.32); }
+  /* Seções padronizadas: título enquadrado por 2 linhas (cima e embaixo),
+     mesma distância nos 4 espaços (linha->título->linha->cards), linhas
+     com cor adaptativa, e sombra bem sutil no título (só profundidade). */
+  .section { padding: 0; }
+  .section-head {
+    display: block;
+    padding: 28px 8px;
+    margin: 28px 0;
+    border-top: 1px solid rgba(212,175,55,.18);
+    border-bottom: 1px solid rgba(212,175,55,.18);
+  }
+  .section-head h2 { margin: 0; font-family: 'Playfair Display', Georgia, serif; font-size: 33px; line-height: .96; letter-spacing: -.05em; color: #fff7e7; text-shadow: 0 2px 12px rgba(0,0,0,.32); }
+  /* linhas adaptativas: mais escuras no branco, douradas-claras no escuro */
+  .px-white .section-head { border-top-color: rgba(120,95,30,.22); border-bottom-color: rgba(120,95,30,.22); }
   .px-white .section-head h2 { text-shadow: 0 1px 3px rgba(80,55,15,.12); }
 
   /* ===== Card de prato (lista) ===== */
