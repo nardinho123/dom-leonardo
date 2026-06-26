@@ -422,6 +422,36 @@
     opacity: .45;
     filter: grayscale(.5);
   }
+  .chat-attach {
+    width: 42px;
+    height: 46px;
+    flex: none;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(212,175,55,0.28);
+    color: var(--gold);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+  .chat-attach.off { opacity: .45; pointer-events: none; }
+  .chat-attach.rec {
+    background: #e0463a;
+    border-color: #e0463a;
+    color: #fff;
+    animation: pixPulse 1.3s ease-out infinite;
+  }
+  .msg-foto {
+    display: block;
+    max-width: 200px;
+    max-height: 240px;
+    border-radius: 12px;
+    object-fit: cover;
+    cursor: pointer;
+  }
+  .msg-audio { display: block; width: 210px; max-width: 60vw; margin: 2px 0; }
+  .msg .msg-texto { display: block; }
+  .msg-foto + .msg-texto, .msg-audio + .msg-texto { margin-top: 6px; }
   .msg {
     max-width: 80%;
     padding: 10px 14px;
@@ -2480,6 +2510,38 @@ function etapaDoPedido(st) {
   if (st.aceite_status === 'aceito') return { idx: 1, key: 'preparo', terminal: false };
   return { idx: 0, key: 'aguardando_aceite', terminal: false };
 }
+// Comprime imagem no navegador antes de enviar (canvas -> jpeg base64 sem prefixo).
+function comprimirImagemBase64(file, maxLado = 1280, q = 0.72) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let width = img.width, height = img.height;
+      if (width > maxLado || height > maxLado) {
+        const r = Math.min(maxLado / width, maxLado / height);
+        width = Math.round(width * r);
+        height = Math.round(height * r);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', q);
+      resolve({ base64: dataUrl.split(',')[1], mime: 'image/jpeg' });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Imagem invalida.')); };
+    img.src = url;
+  });
+}
+function blobParaBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(String(fr.result).split(',')[1]);
+    fr.onerror = () => reject(new Error('Falha ao ler audio.'));
+    fr.readAsDataURL(blob);
+  });
+}
+
 const MARCO_ETAPA_MSG = {
   aguardando_aceite: 'Recebi seu pagamento! 🎉 Ja mandei seu pedido pro Dom — assim que ele confirmar na cozinha, te aviso aqui.',
   preparo: 'O Dom aceitou seu pedido e ja esta na cozinha preparando tudo. 👨‍🍳',
@@ -2642,6 +2704,7 @@ function App() {
   const [chatOpen, setChatOpen] = useState(false);
   const [mensagens, setMensagens] = useState([]);
   const [chatInput, setChatInput] = useState('');
+  const [gravandoAudio, setGravandoAudio] = useState(false);
   const [chatSending, setChatSending] = useState(false);
   const [carrinho, setCarrinho] = useState([]);
   const [carrinhoTotal, setCarrinhoTotal] = useState(0);
@@ -2691,6 +2754,8 @@ function App() {
   const [mapAddressLabel, setMapAddressLabel] = useState('');
   const stripeRef = useRef(null);
   const etapaAnteriorRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
   const stripeElementsRef = useRef(null);
   const stripePaymentElementRef = useRef(null);
   const mapsPromiseRef = useRef(null);
@@ -2858,8 +2923,10 @@ function App() {
             .map(msg => ({
               id: msg.id,
               remote_id: msg.id,
-              autor: msg.autor === 'admin' ? 'marco' : msg.autor,
+              autor: (msg.autor === 'admin' || msg.autor === 'loja') ? 'marco' : msg.autor,
               texto: msg.texto,
+              midia_url: (msg.contexto && msg.contexto.midia_url) || null,
+              midia_tipo: (msg.contexto && msg.contexto.midia_tipo) || null,
             }));
           return novas.length ? [...prev, ...novas].slice(-80) : prev;
         });
@@ -4210,7 +4277,7 @@ function App() {
     setMensagens(m => [...m, { id: Date.now(), autor: 'marco', texto }]);
   };
 
-  const registrarMensagemCliente = async (texto) => {
+  const registrarMensagemCliente = async (texto, midia = null) => {
     const r = await fetch(GARCOM_RESPONDER_URL, {
       method: 'POST',
       headers: {
@@ -4221,7 +4288,8 @@ function App() {
         acao: 'registrar_atendimento',
         device_id: chatDeviceId.current,
         cliente_nome: null,
-        texto,
+        texto: texto || '',
+        midia: midia || undefined,
         contexto: {
           carrinho_total: carrinhoTotal,
           total_itens: totalItens,
@@ -4232,6 +4300,69 @@ function App() {
     const data = await r.json();
     if (!r.ok) throw new Error(data?.error || 'Nao consegui enviar a mensagem.');
     return data;
+  };
+
+  const enviarImagemChat = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file || chatSending) return;
+    setChatSending(true);
+    const localId = `local-img-${Date.now()}`;
+    try {
+      const { base64, mime } = await comprimirImagemBase64(file);
+      setMensagens(m => [...m, { id: localId, autor: 'cliente', midia_url: `data:${mime};base64,${base64}`, midia_tipo: 'imagem' }]);
+      const data = await registrarMensagemCliente('', { base64, mime, tipo: 'imagem' });
+      const url = data?.mensagem?.contexto?.midia_url;
+      if (url) setMensagens(m => m.map(msg => msg.id === localId ? { ...msg, remote_id: data.mensagem.id, midia_url: url } : msg));
+    } catch (err) {
+      setMensagens(m => [...m, { id: `err-${Date.now()}`, autor: 'marco', texto: 'Nao consegui enviar a foto. Tenta de novo.' }]);
+    } finally {
+      setChatSending(false);
+    }
+  };
+
+  const toggleGravacaoAudio = async () => {
+    if (gravandoAudio) {
+      try { mediaRecorderRef.current && mediaRecorderRef.current.stop(); } catch (_) {}
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+      setMensagens(m => [...m, { id: `err-${Date.now()}`, autor: 'marco', texto: 'Seu navegador nao permite gravar audio por aqui.' }]);
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimePref = (typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported('audio/webm')) ? 'audio/webm' : '';
+      const rec = new MediaRecorder(stream, mimePref ? { mimeType: mimePref } : undefined);
+      audioChunksRef.current = [];
+      rec.ondataavailable = ev => { if (ev.data && ev.data.size) audioChunksRef.current.push(ev.data); };
+      rec.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        setGravandoAudio(false);
+        const tipoBlob = (rec.mimeType || 'audio/webm').split(';')[0];
+        const blob = new Blob(audioChunksRef.current, { type: tipoBlob });
+        if (blob.size < 800) return;
+        setChatSending(true);
+        const localId = `local-aud-${Date.now()}`;
+        try {
+          setMensagens(m => [...m, { id: localId, autor: 'cliente', midia_url: URL.createObjectURL(blob), midia_tipo: 'audio' }]);
+          const base64 = await blobParaBase64(blob);
+          const data = await registrarMensagemCliente('', { base64, mime: tipoBlob, tipo: 'audio' });
+          const url = data?.mensagem?.contexto?.midia_url;
+          if (url) setMensagens(m => m.map(msg => msg.id === localId ? { ...msg, remote_id: data.mensagem.id, midia_url: url } : msg));
+        } catch (err) {
+          setMensagens(m => [...m, { id: `err-${Date.now()}`, autor: 'marco', texto: 'Nao consegui enviar o audio.' }]);
+        } finally {
+          setChatSending(false);
+        }
+      };
+      mediaRecorderRef.current = rec;
+      rec.start();
+      setGravandoAudio(true);
+      vibrate(15);
+    } catch (err) {
+      setMensagens(m => [...m, { id: `err-${Date.now()}`, autor: 'marco', texto: 'Preciso da permissao do microfone pra gravar o audio.' }]);
+    }
   };
 
   const enviarMensagemChat = async () => {
@@ -5115,17 +5246,35 @@ function App() {
 
         <div className="messages">
           {mensagens.map(m => (
-            <div key={m.id} className={`msg ${m.autor}`}>{m.texto}</div>
+            <div key={m.id} className={`msg ${m.autor}`}>
+              {m.midia_tipo === 'imagem' && m.midia_url && (
+                <img className="msg-foto" src={m.midia_url} alt="foto" onClick={() => setFotoAberta({ src: m.midia_url, alt: 'Foto do chat' })} />
+              )}
+              {m.midia_tipo === 'audio' && m.midia_url && (
+                <audio className="msg-audio" src={m.midia_url} controls preload="none"></audio>
+              )}
+              {m.texto && <span className="msg-texto">{m.texto}</span>}
+            </div>
           ))}
         </div>
         <div className="chat-compose">
+          <label className={`chat-attach ${chatSending ? 'off' : ''}`} aria-label="Enviar foto">
+            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={enviarImagemChat} disabled={chatSending} />
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h3l2-2h6l2 2h3v12H4z"/><circle cx="12" cy="13" r="3.2"/></svg>
+          </label>
+          <button className={`chat-attach ${gravandoAudio ? 'rec' : ''}`} onClick={toggleGravacaoAudio} disabled={chatSending} aria-label={gravandoAudio ? 'Parar gravacao' : 'Gravar audio'}>
+            {gravandoAudio
+              ? <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+              : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>}
+          </button>
           <input
             className="chat-input"
             value={chatInput}
             onChange={e => setChatInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') enviarMensagemChat(); }}
-            placeholder="Mensagem para o Marco..."
+            placeholder={gravandoAudio ? 'Gravando audio...' : 'Mensagem para o Marco...'}
             autoComplete="off"
+            disabled={gravandoAudio}
           />
           <button className="chat-send" onClick={enviarMensagemChat} disabled={!chatInput.trim() || chatSending} aria-label="Enviar mensagem">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>

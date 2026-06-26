@@ -2366,6 +2366,32 @@
         }
       }
 
+      async function sendAtendimentoMidia(blob, tipo, contentType, ext) {
+        if (!chatDetail?.atendimento?.id || !blob) return;
+        try {
+          const atendimentoId = chatDetail.atendimento.id;
+          const path = `chat/loja/${atendimentoId}-${Date.now()}.${ext}`;
+          const { error: upErr } = await sb.storage.from(BUCKET).upload(path, blob, { contentType, upsert: false });
+          if (upErr) throw upErr;
+          const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(path);
+          const { error: insErr } = await sb.from('atendimento_mensagens').insert({
+            atendimento_id: atendimentoId,
+            autor: 'admin',
+            texto: '',
+            contexto: { origem: 'painel_admin', midia_url: pub.publicUrl, midia_tipo: tipo },
+          });
+          if (insErr) throw insErr;
+          await sb.from('atendimentos').update({
+            ultimo_texto: tipo === 'audio' ? '🎤 Áudio' : '📷 Foto',
+            ultima_mensagem_em: new Date().toISOString(),
+            status: 'em_atendimento',
+          }).eq('id', atendimentoId);
+          await refreshChatDetail(atendimentoId, false);
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      }
+
       async function closeAtendimento() {
         if (!chatDetail?.atendimento?.id) {
           setChatDetail(null);
@@ -2485,7 +2511,7 @@
           {modal?.type === 'prato' && <DishModal item={modal.item} categorias={data.categorias} cupons={data.cupons} onClose={() => setModal(null)} onSave={saveDish} />}
           {modal?.type === 'cupom' && <CupomModal item={modal.item} onClose={() => setModal(null)} onSave={saveCupom} />}
           {orderDetail && <OrderModal detail={orderDetail} onClose={() => setOrderDetail(null)} />}
-          {chatDetail && <AtendimentoModal detail={chatDetail} onClose={() => setChatDetail(null)} onSend={sendAtendimentoReply} onResolve={closeAtendimento} />}
+          {chatDetail && <AtendimentoModal detail={chatDetail} onClose={() => setChatDetail(null)} onSend={sendAtendimentoReply} onSendMidia={sendAtendimentoMidia} onResolve={closeAtendimento} />}
           <Toast toast={toastState} onClose={() => setToastState(null)} />
         </div>
       );
@@ -3272,9 +3298,13 @@
       );
     }
 
-    function AtendimentoModal({ detail, onClose, onSend, onResolve }) {
+    function AtendimentoModal({ detail, onClose, onSend, onSendMidia, onResolve }) {
       const [reply, setReply] = useState('');
+      const [gravando, setGravando] = useState(false);
+      const [enviandoMidia, setEnviandoMidia] = useState(false);
       const scrollRef = useRef(null);
+      const recorderRef = useRef(null);
+      const chunksRef = useRef([]);
       const { atendimento, mensagens } = detail;
 
       useEffect(() => {
@@ -3290,6 +3320,58 @@
         await onSend(texto);
       };
 
+      const enviarFoto = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        e.target.value = '';
+        if (!file) return;
+        setEnviandoMidia(true);
+        try {
+          const blob = await resizeImage(file, IMAGE_PRESETS.prato);
+          await onSendMidia(blob, 'imagem', 'image/webp', 'webp');
+        } catch (err) {
+          toast(err.message, 'error');
+        } finally {
+          setEnviandoMidia(false);
+        }
+      };
+
+      const toggleAudio = async () => {
+        if (gravando) {
+          try { recorderRef.current && recorderRef.current.stop(); } catch (_) {}
+          return;
+        }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+          toast('Navegador nao permite gravar audio.', 'error');
+          return;
+        }
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const mimePref = (typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported('audio/webm')) ? 'audio/webm' : '';
+          const rec = new MediaRecorder(stream, mimePref ? { mimeType: mimePref } : undefined);
+          chunksRef.current = [];
+          rec.ondataavailable = ev => { if (ev.data && ev.data.size) chunksRef.current.push(ev.data); };
+          rec.onstop = async () => {
+            stream.getTracks().forEach(t => t.stop());
+            setGravando(false);
+            const tipoBlob = (rec.mimeType || 'audio/webm').split(';')[0];
+            const blob = new Blob(chunksRef.current, { type: tipoBlob });
+            if (blob.size < 800) return;
+            const ext = tipoBlob.includes('ogg') ? 'ogg' : 'webm';
+            setEnviandoMidia(true);
+            try {
+              await onSendMidia(blob, 'audio', tipoBlob, ext);
+            } finally {
+              setEnviandoMidia(false);
+            }
+          };
+          recorderRef.current = rec;
+          rec.start();
+          setGravando(true);
+        } catch (err) {
+          toast('Preciso da permissao do microfone.', 'error');
+        }
+      };
+
       return (
         <div className="modal-backdrop">
           <div className="modal">
@@ -3302,13 +3384,23 @@
             </div>
             <div className="modal-body">
               <div className="chat-thread" ref={scrollRef}>
-                {mensagens.map(msg => (
-                  <div key={msg.id} className={`chat-bubble ${msg.autor}`}>
-                    <strong>{msg.autor === 'admin' ? 'Você' : msg.autor === 'cliente' ? 'Cliente' : 'Sistema'}</strong>
-                    <span>{msg.texto}</span>
-                    <small>{fmtDate(msg.criado_em)}</small>
-                  </div>
-                ))}
+                {mensagens.map(msg => {
+                  const midiaUrl = msg.contexto && msg.contexto.midia_url;
+                  const midiaTipo = msg.contexto && msg.contexto.midia_tipo;
+                  return (
+                    <div key={msg.id} className={`chat-bubble ${msg.autor}`}>
+                      <strong>{msg.autor === 'admin' ? 'Você' : msg.autor === 'cliente' ? 'Cliente' : 'Sistema'}</strong>
+                      {midiaTipo === 'imagem' && midiaUrl && (
+                        <a href={midiaUrl} target="_blank" rel="noreferrer"><img src={midiaUrl} alt="foto" style={{ display:'block', maxWidth:'220px', maxHeight:'240px', borderRadius:'10px', margin:'4px 0' }} /></a>
+                      )}
+                      {midiaTipo === 'audio' && midiaUrl && (
+                        <audio src={midiaUrl} controls preload="none" style={{ display:'block', width:'230px', maxWidth:'100%', margin:'4px 0' }}></audio>
+                      )}
+                      {msg.texto && <span>{msg.texto}</span>}
+                      <small>{fmtDate(msg.criado_em)}</small>
+                    </div>
+                  );
+                })}
                 {!mensagens.length && <div className="empty">Ainda não tem mensagem nesta conversa.</div>}
               </div>
               <div className="reply-box">
@@ -3321,6 +3413,13 @@
                   placeholder="Responda como Marco. Ctrl+Enter envia."
                 />
                 <div className="actions">
+                  <label className="btn" style={{ cursor:'pointer', opacity: enviandoMidia ? .5 : 1 }}>
+                    📷 Foto
+                    <input type="file" accept="image/*" style={{ display:'none' }} onChange={enviarFoto} disabled={enviandoMidia || gravando} />
+                  </label>
+                  <button className={`btn ${gravando ? 'btn-danger' : ''}`} onClick={toggleAudio} disabled={enviandoMidia}>
+                    {gravando ? '■ Parar' : '🎤 Áudio'}
+                  </button>
                   <button className="btn" onClick={onResolve}>Resolver</button>
                   <button className="btn btn-primary" onClick={send} disabled={!reply.trim()}>Enviar</button>
                 </div>

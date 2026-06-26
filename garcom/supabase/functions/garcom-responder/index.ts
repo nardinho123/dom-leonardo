@@ -191,6 +191,48 @@ function normalizeSiteUrl(value: unknown): string {
   }
 }
 
+// ===== Upload de midia do chat (imagem/audio) no bucket publico "cardapio" =====
+const CHAT_MIME_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "audio/webm": "webm",
+  "audio/ogg": "ogg",
+  "audio/mpeg": "mp3",
+  "audio/mp3": "mp3",
+  "audio/wav": "wav",
+  "audio/mp4": "m4a",
+};
+
+function base64ToBytes(b64: string): Uint8Array {
+  const limpo = String(b64 || "").replace(/^data:[^;]+;base64,/, "");
+  const bin = atob(limpo);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+// deno-lint-ignore no-explicit-any
+async function uploadChatMidia(supabase: any, midia: Record<string, unknown>, prefixo: string): Promise<{ url: string; tipo: string }> {
+  const mime = cleanText(midia.mime).toLowerCase();
+  const ext = CHAT_MIME_EXT[mime];
+  if (!ext) throw new Error("Tipo de midia nao suportado.");
+  const tipo = mime.startsWith("audio/") ? "audio" : "imagem";
+  const bytes = base64ToBytes(String(midia.base64 || ""));
+  if (!bytes.length) throw new Error("Midia vazia.");
+  if (bytes.length > 12 * 1024 * 1024) throw new Error("Midia muito grande (max 12MB).");
+  const path = `chat/${prefixo}/${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from("cardapio").upload(path, bytes, {
+    contentType: mime,
+    upsert: false,
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from("cardapio").getPublicUrl(path);
+  return { url: String(data?.publicUrl || ""), tipo };
+}
+
 function toPedidoItens(rawItens: unknown): unknown[] {
   if (!Array.isArray(rawItens)) return [];
   return rawItens.map((item) => {
@@ -628,10 +670,25 @@ Deno.serve(async (req) => {
       const deviceId = cleanText(body?.device_id);
       const texto = cleanText(body?.texto);
       if (!deviceId) throw new Error("device_id obrigatorio");
-      if (!texto) throw new Error("Mensagem vazia");
 
       const clienteNome = cleanText(body?.cliente_nome) || null;
-      const contexto = typeof body?.contexto === "object" && body?.contexto !== null ? body.contexto : {};
+      const contexto = typeof body?.contexto === "object" && body?.contexto !== null
+        ? { ...body.contexto as Record<string, unknown> }
+        : {};
+
+      // Midia opcional (imagem/audio). Sem texto, exige midia.
+      const midia = (typeof body?.midia === "object" && body?.midia !== null)
+        ? body.midia as Record<string, unknown>
+        : null;
+      let resumoMidia = "";
+      if (midia && cleanText(midia.base64)) {
+        const up = await uploadChatMidia(supabase, midia, deviceId);
+        contexto.midia_url = up.url;
+        contexto.midia_tipo = up.tipo;
+        resumoMidia = up.tipo === "audio" ? "🎤 Audio" : "📷 Foto";
+      }
+      if (!texto && !resumoMidia) throw new Error("Mensagem vazia");
+      const ultimoTexto = texto || resumoMidia;
 
       const { data: existente, error: buscarError } = await supabase
         .from("atendimentos")
@@ -647,7 +704,7 @@ Deno.serve(async (req) => {
           .insert({
             device_id: deviceId,
             cliente_nome: clienteNome,
-            ultimo_texto: texto,
+            ultimo_texto: ultimoTexto,
             nao_lidas: 1,
             ultima_mensagem_em: new Date().toISOString(),
           })
@@ -661,7 +718,7 @@ Deno.serve(async (req) => {
           .update({
             cliente_nome: clienteNome || atendimento.cliente_nome || null,
             status: "aberto",
-            ultimo_texto: texto,
+            ultimo_texto: ultimoTexto,
             nao_lidas: toNumber(atendimento.nao_lidas, 0) + 1,
             ultima_mensagem_em: new Date().toISOString(),
           })
