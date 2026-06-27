@@ -3481,34 +3481,36 @@
     function GestorPedidos({ pedidos, reload, openOrder, aceitarPedido, recusarPedido, updateStatus, chamarMotoboy, atualizarEntrega, cancelarMotoboy }) {
       const lanes = [
         {
-          id: 'aguardando_pagamento',
-          title: 'Aguardando pagamento',
-          hint: 'PIX gerado, ainda sem pagamento.',
-          filter: p => p.pagamento_status === 'pendente',
+          id: 'em_preparo',
+          title: 'Em preparo',
+          hint: 'Pagos entram aqui. Aceite e acompanhe a cozinha.',
+          filter: p => p.pagamento_status === 'pago' && p.status !== 'cancelado' && (
+            isPaidPending(p) || (p.aceite_status === 'aceito' && ['novo', 'em_preparo'].includes(p.status))
+          ),
         },
         {
-          id: 'aguardando_aceite',
-          title: 'Aguardando aceite',
-          hint: 'Pagamento aprovado. Decida rapido.',
-          filter: p => isPaidPending(p),
+          id: 'pronto',
+          title: 'Pronto',
+          hint: 'Aguardando coleta ou conferência do motoboy.',
+          filter: p => p.pagamento_status === 'pago' && p.aceite_status === 'aceito' && p.status === 'pronto',
         },
         {
-          id: 'em_andamento',
-          title: 'Em andamento',
-          hint: 'Aceitos e dentro da cozinha.',
-          filter: p => p.aceite_status === 'aceito' && ['novo', 'em_preparo', 'pronto'].includes(p.status),
+          id: 'em_rota',
+          title: 'Em rota',
+          hint: 'Motoboy saiu para entregar.',
+          filter: p => p.pagamento_status === 'pago' && p.aceite_status === 'aceito' && p.status === 'saiu_entrega',
         },
         {
-          id: 'entregando',
-          title: 'Entregando',
-          hint: 'Saiu para entrega.',
-          filter: p => p.status === 'saiu_entrega',
+          id: 'finalizados',
+          title: 'Finalizados',
+          hint: 'Pedidos concluídos.',
+          filter: p => p.pagamento_status === 'pago' && p.status === 'entregue',
         },
         {
-          id: 'entregue',
-          title: 'Entregue',
-          hint: 'Finalizados hoje e recentes.',
-          filter: p => p.status === 'entregue',
+          id: 'recusados',
+          title: 'Recusados',
+          hint: 'Cancelados ou estornados.',
+          filter: p => p.aceite_status === 'recusado' || p.pagamento_status === 'estornado',
         },
       ];
 
@@ -3532,7 +3534,7 @@
                         <h3>{lane.title}</h3>
                         <p>{lane.hint}</p>
                       </div>
-                      <span className={`gestor-badge ${lane.id === 'aguardando_aceite' ? 'gold' : ''}`}>{lanePedidos.length}</span>
+                    <span className={`gestor-badge ${lane.id === 'em_preparo' ? 'gold' : ''}`}>{lanePedidos.length}</span>
                     </div>
                   </header>
                   <div className="gestor-lane-body">
@@ -3611,24 +3613,32 @@
             )}
           </div>
 
-          {laneId === 'aguardando_aceite' && (
+          {laneId === 'em_preparo' && isPaidPending(pedido) && (
             <div className="gestor-actions">
               <button className="btn btn-primary" onClick={() => aceitarPedido(pedido)}>Aceitar</button>
               <button className="btn btn-danger" onClick={() => recusarPedido(pedido)}>Recusar</button>
             </div>
           )}
 
-          {laneId === 'em_andamento' && (
+          {laneId === 'em_preparo' && !isPaidPending(pedido) && (
             <div className="gestor-actions">
               <button className="btn" onClick={() => updateStatus(pedido, 'pronto')}>Pronto</button>
               {uberId
                 ? <button className="btn" onClick={() => atualizarEntrega(pedido)}>Atualizar entrega</button>
                 : <button className="btn btn-primary" onClick={() => chamarMotoboy(pedido)}>Chamar motoboy</button>}
-              <button className="btn btn-primary" onClick={() => updateStatus(pedido, 'saiu_entrega')}>Saiu entrega</button>
             </div>
           )}
 
-          {laneId === 'entregando' && (
+          {laneId === 'pronto' && (
+            <div className="gestor-actions">
+              {uberId
+                ? <button className="btn" onClick={() => atualizarEntrega(pedido)}>Atualizar entrega</button>
+                : <button className="btn btn-primary" onClick={() => chamarMotoboy(pedido)}>Chamar motoboy</button>}
+              <button className="btn btn-primary" onClick={() => updateStatus(pedido, 'saiu_entrega')}>Saiu para entrega</button>
+            </div>
+          )}
+
+          {laneId === 'em_rota' && (
             <div className="gestor-actions">
               {uberId && <button className="btn" onClick={() => atualizarEntrega(pedido)}>Atualizar entrega</button>}
               <button className="btn btn-primary" onClick={() => updateStatus(pedido, 'entregue')}>Marcar entregue</button>

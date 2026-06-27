@@ -801,6 +801,7 @@
   .bag-sheet.checkout-full { height: 100dvh; max-height: 100dvh; border-radius: 0; border: 0; }
   .bag-sheet.checkout-full .bag-store,
   .bag-sheet.checkout-full .bag-item { display: none; }
+  .bag-sheet.checkout-full .bag-cross-sell { display: none; }
   .bag-sheet.checkout-full .bag-values { animation: cpSlide .34s cubic-bezier(.25,.8,.25,1); }
   @keyframes cpSlide { from { transform: translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
   .dish-sheet {
@@ -1193,6 +1194,79 @@
   }
   .bag-values { padding: 18px 20px; }
   .bag-values h3 { margin: 0 0 12px; font-size: 18px; }
+  .bag-cross-sell {
+    padding: 10px 18px 2px;
+    border-top: 1px solid rgba(212,175,55,0.12);
+  }
+  .bag-cross-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .bag-cross-head h3 {
+    margin: 0;
+    color: var(--gold);
+    font-size: 15px;
+    font-weight: 950;
+  }
+  .bag-cross-head span {
+    color: rgba(243,236,224,0.50);
+    font-size: 11px;
+  }
+  .bag-cross-list {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 132px;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 0 1px 10px;
+    scroll-snap-type: x mandatory;
+  }
+  .bag-cross-card {
+    scroll-snap-align: start;
+    border: 1px solid rgba(212,175,55,0.18);
+    background: rgba(255,255,255,0.035);
+    border-radius: 16px;
+    overflow: hidden;
+    color: var(--text);
+    text-align: left;
+    min-height: 188px;
+  }
+  .bag-cross-card img {
+    width: 100%;
+    height: 92px;
+    object-fit: cover;
+    display: block;
+  }
+  .bag-cross-info { padding: 9px; }
+  .bag-cross-info strong {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 12px;
+    line-height: 1.18;
+  }
+  .bag-cross-info span {
+    display: block;
+    color: var(--gold);
+    font-size: 12px;
+    font-weight: 900;
+    margin-top: 6px;
+  }
+  .bag-cross-add {
+    margin-top: 8px;
+    width: 100%;
+    border: 1px solid rgba(212,175,55,0.28);
+    background: rgba(0,0,0,0.30);
+    color: rgba(243,236,224,0.9);
+    border-radius: 10px;
+    min-height: 34px;
+    font-size: 11px;
+    font-weight: 900;
+  }
   .value-row {
     display: flex;
     align-items: center;
@@ -1677,6 +1751,112 @@
   }
   .pix-total span { font-size: 13px; color: rgba(243,236,224,0.6); }
   .pix-total strong { font-size: 20px; color: #e8d28f; font-family: 'Playfair Display', Georgia, serif; }
+  .pix-countdown {
+    margin-top: 12px;
+    border: 1px solid rgba(212,175,55,0.18);
+    background: rgba(0,0,0,0.22);
+    border-radius: 14px;
+    padding: 10px 12px;
+  }
+  .pix-countdown-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: rgba(243,236,224,0.70);
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .pix-countdown-row strong { color: var(--gold); }
+  .pix-countdown-bar {
+    height: 5px;
+    margin-top: 8px;
+    border-radius: 999px;
+    background: rgba(243,236,224,0.10);
+    overflow: hidden;
+  }
+  .pix-countdown-bar span {
+    display: block;
+    height: 100%;
+    width: var(--pix-left, 100%);
+    background: linear-gradient(90deg, #4fe09a, var(--gold));
+    transition: width .35s ease;
+  }
+  .review-card {
+    border-color: rgba(212,175,55,0.34);
+    animation: reviewRise .32s cubic-bezier(.2,.85,.2,1);
+  }
+  @keyframes reviewRise {
+    from { transform: translateY(28px); opacity: 0; }
+    to { transform: none; opacity: 1; }
+  }
+  .review-list {
+    display: grid;
+    gap: 10px;
+    margin: 12px 0;
+  }
+  .review-line {
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    gap: 10px;
+    align-items: start;
+    color: rgba(243,236,224,0.82);
+    font-size: 13px;
+    line-height: 1.35;
+  }
+  .review-line b { color: var(--gold); }
+  .review-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    border: 1px solid rgba(212,175,55,0.22);
+    display: grid;
+    place-items: center;
+    background: rgba(0,0,0,0.24);
+  }
+  .chef-loading {
+    min-height: 70dvh;
+    display: grid;
+    place-items: center;
+    text-align: center;
+  }
+  .chef-loading-figure {
+    width: 116px;
+    height: 116px;
+    margin: 0 auto 16px;
+    border-radius: 34px;
+    border: 1px solid rgba(212,175,55,0.32);
+    background:
+      radial-gradient(circle at 45% 24%, rgba(255,245,191,0.28), transparent 18%),
+      radial-gradient(circle at 50% 58%, rgba(212,175,55,0.20), transparent 48%),
+      rgba(0,0,0,0.32);
+    display: grid;
+    place-items: center;
+    box-shadow: 0 18px 42px rgba(0,0,0,0.42);
+    animation: chefFloat 1.25s ease-in-out infinite alternate;
+  }
+  .chef-loading-figure span { font-size: 50px; filter: drop-shadow(0 10px 18px rgba(0,0,0,.35)); }
+  .chef-dots {
+    display: inline-flex;
+    gap: 5px;
+    margin-top: 10px;
+  }
+  .chef-dots i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--gold);
+    animation: chefDot .85s ease-in-out infinite;
+  }
+  .chef-dots i:nth-child(2) { animation-delay: .14s; }
+  .chef-dots i:nth-child(3) { animation-delay: .28s; }
+  @keyframes chefFloat {
+    from { transform: translateY(0) rotate(-1.2deg); }
+    to { transform: translateY(-8px) rotate(1.2deg); }
+  }
+  @keyframes chefDot {
+    0%, 100% { transform: translateY(0); opacity: .45; }
+    50% { transform: translateY(-5px); opacity: 1; }
+  }
   .pedido-track {
     display: flex;
     align-items: flex-start;
@@ -2919,11 +3099,13 @@ function App() {
   const [whatsEndereco, setWhatsEndereco] = useState({ ruaNumero: '', bairro: '' });
   const [checkoutDados, setCheckoutDados] = useState({ nome: '', whatsapp: '', email: '', rua: '', numero: '', bairro: '', complemento: '', ruaNumero: '' });
   const [checkoutErrors, setCheckoutErrors] = useState({});
-  const [checkoutStage, setCheckoutStage] = useState('dados'); // dados | pagamento | sucesso
+  const [checkoutStage, setCheckoutStage] = useState('dados'); // dados | revisao | preparando | pagamento | sucesso
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
   const [stripeCheckout, setStripeCheckout] = useState(null);
   const [pixData, setPixData] = useState(null);
+  const [pixExpireAt, setPixExpireAt] = useState(null);
+  const [pixNow, setPixNow] = useState(Date.now());
   const [pixCopiado, setPixCopiado] = useState(false);
   const [pixVerificando, setPixVerificando] = useState(false);
   const [pedidoEmAcompanhamento, setPedidoEmAcompanhamento] = useState(null); // { pedido_id, numero }
@@ -3218,6 +3400,12 @@ function App() {
     return () => { ativo = false; clearInterval(id); };
   }, [checkoutStage, pixData?.payment_id, sacolaOpen]);
 
+  useEffect(() => {
+    if (checkoutStage !== 'pagamento' || !pixExpireAt) return;
+    const id = setInterval(() => setPixNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [checkoutStage, pixExpireAt]);
+
   // Acompanhamento do pedido apos o pagamento: status ao vivo + Marco avisa cada etapa.
   useEffect(() => {
     const pid = pedidoEmAcompanhamento?.pedido_id;
@@ -3444,6 +3632,8 @@ function App() {
     stripeElementsRef.current = null;
     setStripeCheckout(null);
     setPixData(null);
+    setPixExpireAt(null);
+    setPixNow(Date.now());
     setPixCopiado(false);
     setPixVerificando(false);
     setCheckoutStage('dados');
@@ -4011,12 +4201,37 @@ function App() {
     }
   };
 
+  const revisarPedidoCheckout = async () => {
+    const erro = validarCheckoutDados();
+    if (erro) {
+      setCheckoutError(erro);
+      vibrate(35);
+      return;
+    }
+    setCheckoutError('');
+    if (!entregaEstimativa && !entregaLoading) {
+      calcularEntregaCheckout();
+    }
+    setCheckoutStage('revisao');
+    falarMarco('Quase la. Confere esse resumo rapidinho e eu ja aviso o chef.', 4300);
+    vibrate(12);
+  };
+
+  const fazerPedidoRevisado = () => {
+    setCheckoutError('');
+    setCheckoutStage('preparando');
+    falarMarco('Vou avisar o chef e separar seu Pix. Segura um tiquinho.', 3600);
+    vibrate([12, 28, 12]);
+    setTimeout(() => gerarPixMercadoPago({ voltarParaRevisao: true }), 2800);
+  };
+
   // ===== Pix (Mercado Pago) — gera QR + copia e cola dentro do cardapio =====
-  const gerarPixMercadoPago = async () => {
+  const gerarPixMercadoPago = async (opts = {}) => {
     if (!carrinho.length) return;
     const erro = validarCheckoutDados();
     if (erro) {
       setCheckoutError(erro);
+      if (opts.voltarParaRevisao) setCheckoutStage('dados');
       vibrate(35);
       return;
     }
@@ -4080,6 +4295,8 @@ function App() {
         pedido: data?.pedido || null,
         total: totalComEntrega,
       });
+      setPixExpireAt(Date.now() + 7 * 60 * 1000);
+      setPixNow(Date.now());
       // Memoria pos-venda: lembra do cliente e do pedido (sobrevive a recarregar).
       salvarClienteLocal({ nome: checkoutDados.nome.trim(), whatsapp });
       salvarPedidoLocal(data?.pedido);
@@ -4090,6 +4307,7 @@ function App() {
       vibrate([15, 30, 15]);
     } catch (err) {
       setCheckoutError(err.message || 'Nao consegui gerar o Pix agora.');
+      if (opts.voltarParaRevisao) setCheckoutStage('revisao');
     } finally {
       setCheckoutLoading(false);
     }
@@ -4122,6 +4340,7 @@ function App() {
 
   const confirmarPixAprovado = () => {
     setCheckoutStage('sucesso');
+    setPixExpireAt(null);
     // Inicia o acompanhamento do pedido (status ao vivo + Marco por etapa).
     const pedidoId = pixData?.pedido?.pedido_id || null;
     const numero = pixData?.pedido?.numero_pedido || null;
@@ -4183,6 +4402,22 @@ function App() {
     .slice(0, 9);
   const pratosDestaque = destaques.length ? destaques : pratos.slice(0, 6);
   const destaquesLoop = pratosDestaque.length > 1 ? [...pratosDestaque, ...pratosDestaque] : pratosDestaque;
+  const carrinhoIds = new Set(carrinho.map(item => String(item.prato_id || '')));
+  const sugestoesSacola = pratos
+    .filter(p => !carrinhoIds.has(String(p.id)))
+    .sort((a, b) => {
+      const aa = `${a.nome || ''} ${a.categoria_nome || ''} ${a.badge || ''}`.toLowerCase();
+      const bb = `${b.nome || ''} ${b.categoria_nome || ''} ${b.badge || ''}`.toLowerCase();
+      const score = (t) => (/(sobrem|doce|bebida|refri|coca|agua|água|tiramisu|panna|pudim)/.test(t) ? 0 : 1);
+      return score(aa) - score(bb);
+    })
+    .slice(0, 10);
+  const pixTotalMs = 7 * 60 * 1000;
+  const pixRestanteMs = pixExpireAt ? Math.max(0, pixExpireAt - pixNow) : pixTotalMs;
+  const pixExpirado = checkoutStage === 'pagamento' && !!pixExpireAt && pixRestanteMs <= 0;
+  const pixMin = Math.floor(pixRestanteMs / 60000);
+  const pixSeg = String(Math.floor((pixRestanteMs % 60000) / 1000)).padStart(2, '0');
+  const pixPercent = Math.max(0, Math.min(100, (pixRestanteMs / pixTotalMs) * 100));
   const maisPedidos = (pratos.filter(p => {
     const texto = `${p.badge || ''} ${p.badge_destaque || ''} ${p.selo_experiencia || ''}`.toLowerCase();
     return texto.includes('mais pedido') || texto.includes('pedido') || texto.includes('favorito');
@@ -5219,6 +5454,34 @@ function App() {
             </div>
           ))}
 
+          {!whatsEnderecoOpen && sugestoesSacola.length > 0 && (
+            <div className="bag-cross-sell">
+              <div className="bag-cross-head">
+                <h3>Peça também</h3>
+                <span>combina com a sua sacola</span>
+              </div>
+              <div className="bag-cross-list">
+                {sugestoesSacola.map(p => (
+                  <button
+                    key={`bag-cross-${p.id}`}
+                    className="bag-cross-card"
+                    onClick={() => {
+                      setSacolaOpen(false);
+                      setTimeout(() => abrirDetalhe(p), 80);
+                    }}
+                  >
+                    <img src={p.foto || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22264%22 height=%22184%22%3E%3Crect width=%22100%25%22 height=%22100%25%22 fill=%22%23120d08%22/%3E%3Ctext x=%2250%25%22 y=%2252%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23d4af37%22 font-size=%2220%22 font-family=%22Georgia%22%3EDom Leonardo%3C/text%3E%3C/svg%3E'} alt="" loading="lazy" />
+                    <div className="bag-cross-info">
+                      <strong>{p.nome}</strong>
+                      <span>{fmtBRL(p.preco)}</span>
+                      <div className="bag-cross-add">Adicionar</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {whatsEnderecoOpen && checkoutStage === 'dados' && (
             <div className="bag-values">
               <div className="checkout-card">
@@ -5369,6 +5632,57 @@ function App() {
             </div>
           )}
 
+          {whatsEnderecoOpen && checkoutStage === 'revisao' && (() => {
+            const endereco = enderecoCheckout();
+            const itensResumo = carrinho.slice(0, 4).map(item => `${item.qtd}x ${item.nome}`).join(', ');
+            return (
+              <div className="bag-values">
+                <div className="checkout-card review-card">
+                  <h3>Revise o seu pedido</h3>
+                  <p>Se estiver tudo certo, eu aviso o chef e gero o Pix para confirmar.</p>
+                  <div className="review-list">
+                    <div className="review-line">
+                      <span className="review-icon">🍝</span>
+                      <div><b>Itens</b><br />{itensResumo}{carrinho.length > 4 ? ` e mais ${carrinho.length - 4}` : ''}</div>
+                    </div>
+                    <div className="review-line">
+                      <span className="review-icon">📍</span>
+                      <div><b>Entrega</b><br />{[endereco.ruaNumero, endereco.bairro].filter(Boolean).join(' · ')}{endereco.complemento ? ` · ${endereco.complemento}` : ''}</div>
+                    </div>
+                    <div className="review-line">
+                      <span className="review-icon">👤</span>
+                      <div><b>Contato</b><br />{checkoutDados.nome.trim()} · {checkoutDados.whatsapp}</div>
+                    </div>
+                    <div className="review-line">
+                      <span className="review-icon">💳</span>
+                      <div><b>Pagamento</b><br />Pix Mercado Pago dentro do cardápio</div>
+                    </div>
+                  </div>
+                  <div className="value-row"><span>Subtotal</span><strong>{fmtBRL(carrinhoTotal)}</strong></div>
+                  <div className="value-row"><span>Taxa de entrega</span><strong>{cupomResumo.ok && cupomResumo.freteGratis ? 'Gratis' : fmtBRL(taxaEntregaFinal)}</strong></div>
+                  {descontoCupom > 0 && <div className="value-row discount"><span>Desconto</span><strong>- {fmtBRL(descontoCupom)}</strong></div>}
+                  <div className="value-row total"><span>Total</span><strong>{fmtBRL(totalComEntrega)}</strong></div>
+                  {checkoutError && <div className="checkout-error">{checkoutError}</div>}
+                </div>
+              </div>
+            );
+          })()}
+
+          {whatsEnderecoOpen && checkoutStage === 'preparando' && (
+            <div className="bag-values">
+              <div className="chef-loading">
+                <div>
+                  <div className="chef-loading-figure"><span>🍳</span></div>
+                  <div className="pix-seal"><strong>Marco</strong><span>avisando o chef</span></div>
+                  <h3>Revisando os itens na velocidade da luz...</h3>
+                  <p>Estou mandando o pedido para a cozinha e preparando o Pix. É rapidinho.</p>
+                  <span className="chef-dots"><i></i><i></i><i></i></span>
+                  {checkoutError && <div className="checkout-error">{checkoutError}</div>}
+                </div>
+              </div>
+            </div>
+          )}
+
           {whatsEnderecoOpen && checkoutStage === 'pagamento' && (
             <div className="bag-values">
               <div className="checkout-card pix-card">
@@ -5394,7 +5708,14 @@ function App() {
                 </div>
                 <div className="pix-status">
                   <span className="pix-status-dot"></span>
-                  Aguardando o pagamento… confirmo aqui sozinho assim que o Pix cair.
+                  {pixExpirado ? 'Esse Pix venceu. Volte e gere um novo para confirmar.' : 'Aguardando o pagamento… confirmo aqui sozinho assim que o Pix cair.'}
+                </div>
+                <div className="pix-countdown">
+                  <div className="pix-countdown-row">
+                    <span>Tempo para pagar</span>
+                    <strong>{pixMin}:{pixSeg}</strong>
+                  </div>
+                  <div className="pix-countdown-bar" style={{'--pix-left': `${pixPercent}%`}}><span></span></div>
                 </div>
                 <div className="pix-total">
                   <span>Total</span>
@@ -5484,17 +5805,32 @@ function App() {
             </button>
           ) : checkoutStage === 'dados' ? (
             <div className="checkout-actions">
-              <button className="checkout-primary" disabled={checkoutLoading} onClick={gerarPixMercadoPago}>
-                {checkoutLoading ? 'Gerando Pix...' : `Pagar · ${fmtBRL(totalComEntrega)}`}
+              <button className="checkout-primary" disabled={checkoutLoading} onClick={revisarPedidoCheckout}>
+                Revisar pedido · {fmtBRL(totalComEntrega)}
+              </button>
+            </div>
+          ) : checkoutStage === 'revisao' ? (
+            <div className="checkout-actions">
+              <button className="checkout-primary" disabled={checkoutLoading} onClick={fazerPedidoRevisado}>
+                Fazer pedido · {fmtBRL(totalComEntrega)}
+              </button>
+              <button className="checkout-secondary" disabled={checkoutLoading} onClick={() => setCheckoutStage('dados')}>
+                Alterar dados
+              </button>
+            </div>
+          ) : checkoutStage === 'preparando' ? (
+            <div className="checkout-actions">
+              <button className="checkout-primary" disabled>
+                Avisando o chef...
               </button>
             </div>
           ) : checkoutStage === 'pagamento' ? (
             <div className="checkout-actions">
-              <button className="checkout-primary" disabled={pixVerificando} onClick={verificarPagamentoPix}>
-                {pixVerificando ? 'Verificando...' : 'Já paguei'}
+              <button className="checkout-primary" disabled={pixVerificando || pixExpirado} onClick={verificarPagamentoPix}>
+                {pixExpirado ? 'Pix expirado' : (pixVerificando ? 'Verificando...' : 'Já paguei')}
               </button>
               <button className="checkout-secondary" disabled={pixVerificando} onClick={resetStripeCheckout}>
-                Voltar e editar dados
+                {pixExpirado ? 'Gerar novo Pix' : 'Voltar e editar dados'}
               </button>
             </div>
           ) : (
@@ -5587,7 +5923,7 @@ function App() {
 
       {/* Marco sticker */}
       <button
-        className={`marco-sticker ${garcomState} ${(pratoAberto || fotoAberta) ? 'top-mode' : ''} ${sacolaOpen ? 'marco-oculto' : ''}`}
+        className={`marco-sticker ${garcomState} ${(pratoAberto || fotoAberta || sacolaOpen) ? 'top-mode' : ''}`}
         onClick={tapMarco}
         onTouchStart={onPressStart}
         onTouchEnd={onPressEnd}
