@@ -796,6 +796,12 @@
   }
   .dish-sheet.open,
   .bag-sheet.open { transform: translateY(0); }
+  /* ===== Checkout em painel full-screen (estilo iFood) ===== */
+  .bag-sheet.checkout-full { height: 100dvh; max-height: 100dvh; border-radius: 0; border: 0; }
+  .bag-sheet.checkout-full .bag-store,
+  .bag-sheet.checkout-full .bag-item { display: none; }
+  .bag-sheet.checkout-full .bag-values { animation: cpSlide .34s cubic-bezier(.25,.8,.25,1); }
+  @keyframes cpSlide { from { transform: translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
   .dish-sheet {
     left: 50%;
     right: auto;
@@ -5169,7 +5175,7 @@ function App() {
           if (!whatsEnderecoOpen) setSacolaOpen(false);
         }}
       ></div>
-      <section className={`bag-sheet ${sacolaOpen ? 'open' : ''}`} aria-hidden={!sacolaOpen}>
+      <section className={`bag-sheet ${sacolaOpen ? 'open' : ''} ${whatsEnderecoOpen ? 'checkout-full' : ''}`} aria-hidden={!sacolaOpen}>
         <div className="bag-head">
           <button className="bag-close" onClick={() => {
             if (whatsEnderecoOpen) {
@@ -5476,10 +5482,7 @@ function App() {
           ) : checkoutStage === 'dados' ? (
             <div className="checkout-actions">
               <button className="checkout-primary" disabled={checkoutLoading} onClick={gerarPixMercadoPago}>
-                {checkoutLoading ? 'Gerando Pix...' : `Gerar Pix · ${fmtBRL(totalComEntrega)}`}
-              </button>
-              <button className="checkout-secondary" disabled={checkoutLoading} onClick={() => finalizarPedidoDireto()}>
-                Finalizar pelo WhatsApp
+                {checkoutLoading ? 'Gerando Pix...' : `Pagar · ${fmtBRL(totalComEntrega)}`}
               </button>
             </div>
           ) : checkoutStage === 'pagamento' ? (
@@ -5501,15 +5504,7 @@ function App() {
         </div>
       </section>
 
-      {pedidoStatus && !sacolaOpen && !chatOpen && !pratoAberto && !acompanhamentoOpen && (() => {
-        const et = etapaDoPedido(pedidoStatus);
-        return (
-          <button className={`pedido-pill ${et.key === 'recusado' ? 'recusado' : ''}`} onClick={() => setAcompanhamentoOpen(true)}>
-            <span className="pedido-pill-dot"></span>
-            <span>📦 Pedido{pedidoStatus.numero_pedido ? ` #${pedidoStatus.numero_pedido}` : ''} · {ETAPA_LABEL[et.key] || 'acompanhar'}</span>
-          </button>
-        );
-      })()}
+      {/* pílula do topo removida: o acompanhamento do pedido vive no Marco (Fase 2) */}
 
       {acompanhamentoOpen && (() => {
         const et = etapaDoPedido(pedidoStatus);
