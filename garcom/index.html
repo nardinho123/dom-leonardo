@@ -243,6 +243,7 @@
     will-change: transform, opacity;
   }
   .marco-sticker.hidden { transform: translateY(120px); opacity: 0; }
+  .marco-sticker.marco-oculto { opacity: 0; pointer-events: none; transform: translateY(120px); }
   .marco-sticker.peek { transform: translateY(0); opacity: 1; }
   .marco-sticker.attention { animation: balanca 1.6s ease-in-out infinite; }
   @keyframes balanca {
@@ -849,11 +850,13 @@
     position: absolute;
     top: 12px;
     left: 14px;
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     border-radius: 999px;
-    background: rgba(0,0,0,0.56);
-    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(0,0,0,0.72);
+    border: 1px solid rgba(212,175,55,0.55);
+    color: var(--gold);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
     display: grid;
     place-items: center;
     z-index: 2;
@@ -5584,7 +5587,7 @@ function App() {
 
       {/* Marco sticker */}
       <button
-        className={`marco-sticker ${garcomState} ${(pratoAberto || sacolaOpen || fotoAberta) ? 'top-mode' : ''}`}
+        className={`marco-sticker ${garcomState} ${(pratoAberto || fotoAberta) ? 'top-mode' : ''} ${sacolaOpen ? 'marco-oculto' : ''}`}
         onClick={tapMarco}
         onTouchStart={onPressStart}
         onTouchEnd={onPressEnd}

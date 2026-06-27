@@ -335,7 +335,18 @@ async function aceitarPedido(supabase: ReturnType<typeof createClient>, pedidoId
     .single();
   if (updateError) throw updateError;
 
-  return data;
+  // Auto-despacho: ao aceitar, ja chama o motoboy (best-effort; nao quebra o aceite).
+  let pedidoFinal = data;
+  let motoboy: Record<string, unknown> = { ok: false };
+  try {
+    const r = await chamarMotoboy(supabase, pedidoId);
+    if (r?.ok) { motoboy = { ok: true }; pedidoFinal = r.pedido || data; }
+    else motoboy = { ok: false, erro: r?.erro };
+  } catch (err) {
+    motoboy = { ok: false, erro: String((err as Error)?.message || err) };
+  }
+
+  return { ...pedidoFinal, motoboy };
 }
 
 async function recusarPedido(supabase: ReturnType<typeof createClient>, pedidoId: string, motivo: string) {
