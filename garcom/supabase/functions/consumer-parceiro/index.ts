@@ -147,6 +147,26 @@ function normalizeKey(value: unknown): string {
     .replace(/\s+/g, " ");
 }
 
+// Geocodifica o endereco (forward) com a chave do Maps -> coordenada real (best-effort).
+async function geocodeAddress(query: string): Promise<{ latitude: number; longitude: number } | null> {
+  const key = Deno.env.get("MAPS_API_KEY_CONSUMER") || Deno.env.get("DOM_LEONARDO_MAPS_SERVER") || "";
+  if (!key || !query) return null;
+  try {
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&region=br&key=${key}`;
+    const r = await fetch(url);
+    const d = await r.json().catch(() => ({})) as Record<string, unknown>;
+    const results = (d.results as Array<Record<string, unknown>>) || [];
+    const geometry = results[0]?.geometry as Record<string, unknown> | undefined;
+    const loc = geometry?.location as Record<string, unknown> | undefined;
+    const lat = Number(loc?.lat);
+    const lng = Number(loc?.lng);
+    if (Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)) {
+      return { latitude: lat, longitude: lng };
+    }
+  } catch (_err) { /* best-effort: cai no fallback */ }
+  return null;
+}
+
 async function montarDetalhes(supabase: ReturnType<typeof createClient>, pedido: Record<string, unknown>) {
   const { data: itens } = await supabase
     .from("pedido_itens")
@@ -157,16 +177,22 @@ async function montarDetalhes(supabase: ReturnType<typeof createClient>, pedido:
   const itensPedido = Array.isArray(itens) ? itens as Array<Record<string, unknown>> : [];
   const codigosPdv = new Map<string, string>();
   const codigosPdvPorNome = new Map<string, string>();
+  const fotosPorId = new Map<string, string>();
+  const fotosPorNome = new Map<string, string>();
   if (itensPedido.length) {
     const { data: pratos } = await supabase
       .from("pratos")
-      .select("id,nome,codigo_pdv");
+      .select("id,nome,codigo_pdv,foto_url");
     for (const prato of pratos ?? []) {
-      const id = cleanText((prato as Record<string, unknown>).id);
-      const codigo = cleanText((prato as Record<string, unknown>).codigo_pdv);
+      const p = prato as Record<string, unknown>;
+      const id = cleanText(p.id);
+      const codigo = cleanText(p.codigo_pdv);
+      const foto = cleanText(p.foto_url);
+      const nomeKey = normalizeKey(p.nome);
       if (id && codigo) codigosPdv.set(id, codigo);
-      const nomeKey = normalizeKey((prato as Record<string, unknown>).nome);
       if (nomeKey && codigo) codigosPdvPorNome.set(nomeKey, codigo);
+      if (id && foto) fotosPorId.set(id, foto);
+      if (nomeKey && foto) fotosPorNome.set(nomeKey, foto);
     }
   }
 
@@ -195,6 +221,7 @@ async function montarDetalhes(supabase: ReturnType<typeof createClient>, pedido:
 
       return {
         id: cleanText(pedidoItem.id) || `${cleanText(pedido.id)}-${index + 1}`,
+        uniqueId: cleanText(pedidoItem.id) || `${cleanText(pedido.id)}-${index + 1}`,
         externalCode: codigosPdv.get(pratoId) || codigosPdvPorNome.get(normalizeKey(pedidoItem.prato_nome)) || PRODUTO_PADRAO,
         name: cleanText(pedidoItem.prato_nome) || `Pedido Dom Leonardo #${numero}`,
         quantity: qtd,
@@ -205,14 +232,17 @@ async function montarDetalhes(supabase: ReturnType<typeof createClient>, pedido:
         totalPrice,
         optionsPrice: 0,
         addition: 0,
-        observations: itemObs || null,
-        options: null,
+        observations: itemObs || "",
+        imageUrl: fotosPorId.get(pratoId) || fotosPorNome.get(normalizeKey(pedidoItem.prato_nome)) || "",
+        options: [],
         scalePrices: null,
         index: index + 1,
+        type: "DEFAULT",
       };
     })
     : [{
       id: cleanText(pedido.id),
+      uniqueId: cleanText(pedido.id),
       externalCode: PRODUTO_PADRAO,
       name: `Pedido Dom Leonardo #${numero}`,
       quantity: 1,
@@ -224,14 +254,24 @@ async function montarDetalhes(supabase: ReturnType<typeof createClient>, pedido:
       optionsPrice: 0,
       addition: 0,
       observations: obs,
-      options: null,
+      imageUrl: "",
+      options: [],
       scalePrices: null,
       index: 1,
+      type: "DEFAULT",
     }];
 
   const agora = Date.now();
   const previsaoEntrega = new Date(agora + 45 * 60 * 1000).toISOString();
   const localizerExp = new Date(agora + 2 * 60 * 60 * 1000).toISOString();
+  const localizerCode = cleanText(pedido.cliente_whatsapp).replace(/\D/g, "").slice(-8) || numero.padStart(8, "0");
+
+  // Endereco com coordenada REAL (geocodifica se o snapshot nao tiver lat/lng).
+  const endereco = enderecoConsumer(snapshot) as Record<string, unknown>;
+  if (!endereco.coordinates) {
+    const geo = await geocodeAddress(String(endereco.formattedAddress || ""));
+    if (geo) endereco.coordinates = geo;
+  }
 
   return {
     item: {
@@ -239,10 +279,12 @@ async function montarDetalhes(supabase: ReturnType<typeof createClient>, pedido:
       displayId: numero,
       orderType: "DELIVERY",
       salesChannel: "PARTNER",
+      category: "FOOD",
       orderTiming: "IMMEDIATE",
       createdAt: criado,
       preparationStartDateTime: criado,
       merchant: { id: MERCHANT_ID, name: MERCHANT_NOME },
+      picking: { picker: "DEFAULT", replacementOptions: [] },
       total: {
         subTotal,
         deliveryFee: taxa,
@@ -258,8 +300,9 @@ async function montarDetalhes(supabase: ReturnType<typeof createClient>, pedido:
           value: total,
           prepaid: true,
           cash: null,
-          card: { brand: "PIX" },
+          card: null,
           wallet: null,
+          transaction: { authorizationCode: cleanText(pedido.mp_payment_id) || "PIX", acquirerDocument: "" },
         }],
         pending: 0,
         prepaid: total,
@@ -267,23 +310,36 @@ async function montarDetalhes(supabase: ReturnType<typeof createClient>, pedido:
       customer: {
         id: cleanText(pedido.cliente_id) || cleanText(pedido.id),
         name: cleanText(pedido.cliente_nome) || "Cliente Dom Leonardo",
+        documentType: null,
         documentNumber: null,
+        ordersCountOnMerchant: 0,
+        segmentation: "Cliente",
         phone: {
           number: cleanText(pedido.cliente_whatsapp) || "",
-          localizer: numero,
+          localizer: localizerCode,
           localizerExpiration: localizerExp,
         },
       },
       delivery: {
         mode: "DEFAULT",
         deliveredBy: "Partner",
+        description: "Padrão",
         pickupCode: numero,
         deliveryDateTime: previsaoEntrega,
-        deliveryAddress: enderecoConsumer(snapshot),
-        observations: cleanText(snapshot.complemento) || null,
+        deliveryAddress: endereco,
+        observations: cleanText(snapshot.complemento) || "",
       },
       items,
-      benefits: null,
+      benefits: [],
+      additionalFees: [],
+      extraInfo: obs,
+      schedule: null,
+      indoor: null,
+      dineIn: null,
+      takeout: null,
+      additionalInfometadata: null,
+      isTest: false,
+      error: null,
     },
     statusCode: 0,
     reasonPhrase: null,
