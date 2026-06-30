@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>Dom Leonardo — Garçom Digital (laboratório)</title>
+
+<!--
+  ============================================================================
+  GARÇOM DIGITAL — "cérebro" do Dom Leonardo  (PROTÓTIPO / OFFLINE)
+  ============================================================================
+  Arquivo NOVO e ISOLADO. Não toca no Supabase, nem no garcom/ nem no admin.
+  - Puxa o cardápio REAL via garcom-responder (somente LEITURA). Se falhar,
+    cai num cardápio-semente com o "tom do Léo" (funciona 100% offline).
+  - A "inteligência" da v1 é um MOTOR DE PERSONA (modos de humor, curiosidades,
+    gatilhos proativos, banter entre personagens). O ponto onde um LLM de
+    verdade entra no futuro está marcado em BRAIN.responder() — hoje é regra,
+    amanhã vira chamada a uma Edge Function. A interface não muda.
+
+  Camadas (procure pelos comentários ====):
+    CONFIG · MENU · MEMORIA · PERSONA · BRAIN · ELENCO · CARRINHO · UI · PALCO
+  ============================================================================
+-->
+
+<style>
+  :root{
+    --bg:#0a0908; --bg2:#13110d; --panel:#1c1813; --line:#2c2519;
+    --gold:#d4af37; --gold-dim:#8a6f1f; --cream:#f4ead2; --muted:#a99a78;
+    --ok:#6fbf8b; --warn:#e0b04a; --shadow:0 18px 50px rgba(0,0,0,.55);
+    --serif:Georgia,"Times New Roman",serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(1200px 600px at 50% -10%, #1a160f 0%, var(--bg) 60%);
+    color:var(--cream); font-family:var(--serif);
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  }
+  a{color:var(--gold)}
+  .wrap{max-width:760px;margin:0 auto;padding:22px 16px 160px}
+
+  /* ---- topo / palco dos personagens ---- */
+  .marquee{
+    border:1px solid var(--line); background:linear-gradient(180deg,var(--bg2),transparent);
+    border-radius:16px; padding:10px 14px; display:flex; gap:10px; align-items:center;
+    min-height:46px; overflow:hidden;
+  }
+  .marquee .who{font-size:12px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;flex:0 0 auto}
+  .marquee .line{font-style:italic;color:var(--muted);font-size:14px;opacity:0;transition:opacity .5s}
+  .marquee .line.on{opacity:1}
+
+  .brand{display:flex;align-items:center;gap:12px;margin:18px 2px 6px}
+  .brand .logo{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;
+    background:linear-gradient(180deg,var(--gold),var(--gold-dim));color:#1a1305;font-weight:700;font-size:20px}
+  .brand h1{font-size:22px;margin:0;letter-spacing:.02em}
+  .brand small{display:block;color:var(--muted);font-size:12px;letter-spacing:.18em;text-transform:uppercase}
+
+  .kicker{color:var(--muted);font-size:13px;margin:2px 2px 18px;font-style:italic}
+
+  /* ---- grade de pratos ---- */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:560px){.grid{grid-template-columns:1fr}}
+  .dish{
+    border:1px solid var(--line);border-radius:16px;background:var(--panel);
+    padding:14px;cursor:pointer;transition:transform .15s,border-color .15s;position:relative;overflow:hidden
+  }
+  .dish:hover{transform:translateY(-2px);border-color:var(--gold-dim)}
+  .dish h3{margin:0 0 4px;font-size:17px}
+  .dish p{margin:0;color:var(--muted);font-size:13px;line-height:1.45;min-height:36px}
+  .dish .row{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+  .dish .preco{color:var(--gold);font-weight:700}
+  .dish .add{border:1px solid var(--gold-dim);background:transparent;color:var(--gold);
+    border-radius:10px;padding:6px 12px;font-family:var(--serif);cursor:pointer}
+  .dish .add:active{transform:scale(.96)}
+  .dish .selo{position:absolute;top:10px;right:10px;background:rgba(212,175,55,.14);color:var(--gold);
+    border:1px solid var(--gold-dim);font-size:10px;padding:3px 8px;border-radius:999px;letter-spacing:.08em}
+
+  /* ---- sacola flutuante ---- */
+  .bag{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:40;
+    background:linear-gradient(180deg,#221c12,#16120b);border:1px solid var(--gold-dim);
+    border-radius:16px;box-shadow:var(--shadow);padding:12px 16px;display:none;gap:14px;align-items:center;min-width:280px}
+  .bag.on{display:flex}
+  .bag .info b{color:var(--gold)}
+  .bag .info small{display:block;color:var(--muted);font-size:11px}
+  .bag .go{margin-left:auto;background:linear-gradient(180deg,var(--gold),var(--gold-dim));color:#1a1305;
+    border:0;border-radius:11px;padding:10px 16px;font-weight:700;font-family:var(--serif);cursor:pointer}
+  .bag.pulse{animation:pulse .5s}
+  @keyframes pulse{0%{transform:translateX(-50%) scale(1)}40%{transform:translateX(-50%) scale(1.06)}100%{transform:translateX(-50%) scale(1)}}
+
+  /* ---- Marco (garçom flutuante) ---- */
+  .marco{position:fixed;right:16px;bottom:18px;z-index:45;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  .balao{max-width:240px;background:#fbf3df;color:#241a06;border-radius:14px 14px 4px 14px;
+    padding:10px 12px;font-size:14px;line-height:1.4;box-shadow:var(--shadow);opacity:0;transform:translateY(8px) scale(.96);
+    transition:.25s;pointer-events:none}
+  .balao.on{opacity:1;transform:none;pointer-events:auto}
+  .balao .mini{display:block;font-size:10px;color:#9a7d2a;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+  .avatar{width:62px;height:62px;border-radius:50%;border:2px solid var(--gold);cursor:pointer;
+    background:radial-gradient(circle at 50% 35%,#3a2f1c,#15110a);display:grid;place-items:center;
+    font-size:30px;box-shadow:var(--shadow);transition:transform .2s}
+  .avatar:hover{transform:scale(1.05)}
+  .avatar.peek{animation:peek 2.6s ease}
+  .avatar.jump{animation:jump .5s}
+  @keyframes peek{0%{transform:translateY(70px)}20%{transform:translateY(0)}80%{transform:translateY(0)}100%{transform:translateY(70px)}}
+  @keyframes jump{0%{transform:translateY(0)}30%{transform:translateY(-12px) rotate(-6deg)}100%{transform:translateY(0)}}
+  .sino{position:absolute;right:-4px;top:-4px;width:24px;height:24px;border-radius:50%;background:var(--gold);
+    color:#1a1305;display:grid;place-items:center;font-size:13px;cursor:pointer;border:2px solid var(--bg);animation:ring 2s infinite}
+  @keyframes ring{0%,100%{transform:rotate(0)}10%{transform:rotate(18deg)}20%{transform:rotate(-14deg)}30%{transform:rotate(8deg)}40%{transform:rotate(0)}}
+
+  /* ---- chat / bloco do garçom ---- */
+  .scrim{position:fixed;inset:0;background:rgba(6,5,3,.6);backdrop-filter:blur(4px);z-index:50;display:none}
+  .scrim.on{display:block}
+  .chat{position:fixed;right:14px;left:14px;bottom:14px;max-width:520px;margin:0 auto;z-index:55;
+    background:linear-gradient(180deg,#1d1810,#120e08);border:1px solid var(--gold-dim);border-radius:20px;
+    box-shadow:var(--shadow);display:none;flex-direction:column;max-height:84vh;overflow:hidden}
+  .chat.on{display:flex}
+  .chat header{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .chat header .av{width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#3a2f1c,#15110a);
+    border:2px solid var(--gold);display:grid;place-items:center;font-size:20px}
+  .chat header h4{margin:0;font-size:16px}
+  .chat header small{color:var(--muted);font-size:11px}
+  .chat header .x{margin-left:auto;background:transparent;border:0;color:var(--muted);font-size:22px;cursor:pointer}
+  .msgs{padding:14px 14px 6px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+  .msg{max-width:82%;padding:9px 12px;border-radius:14px;font-size:14px;line-height:1.45;animation:rise .25s}
+  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .msg.marco{align-self:flex-start;background:#fbf3df;color:#241a06;border-bottom-left-radius:4px}
+  .msg.chef{align-self:flex-start;background:#2a2113;color:var(--cream);border:1px dashed var(--gold-dim);font-style:italic}
+  .msg.caixa{align-self:flex-start;background:#101a14;color:#cfe8d8;border:1px solid #2c4636}
+  .msg.cliente{align-self:flex-end;background:linear-gradient(180deg,var(--gold),var(--gold-dim));color:#1a1305}
+  .msg .nome{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin-bottom:2px}
+  .typing{align-self:flex-start;background:#fbf3df;border-radius:14px;padding:11px 14px;display:none}
+  .typing.on{display:flex;gap:4px}
+  .typing i{width:7px;height:7px;border-radius:50%;background:#9a7d2a;animation:blink 1s infinite}
+  .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,100%{opacity:.3}50%{opacity:1}}
+  .chat footer{padding:10px 12px;border-top:1px solid var(--line);display:flex;gap:8px}
+  .chat footer input{flex:1;background:#0e0b06;border:1px solid var(--line);border-radius:12px;
+    color:var(--cream);padding:11px 12px;font-family:var(--serif);font-size:14px}
+  .chat footer button{background:linear-gradient(180deg,var(--gold),var(--gold-dim));color:#1a1305;border:0;
+    border-radius:12px;padding:0 16px;font-weight:700;cursor:pointer;font-family:var(--serif)}
+  .quick{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 12px}
+  .quick button{background:transparent;border:1px solid var(--gold-dim);color:var(--gold);border-radius:999px;
+    padding:6px 12px;font-size:12px;cursor:pointer;font-family:var(--serif)}
+
+  /* ---- estado "ocupado" + assobio ---- */
+  .busy{padding:14px 16px;border-top:1px solid var(--line);display:none;align-items:center;gap:12px}
+  .busy.on{display:flex}
+  .busy .bar{flex:1;height:8px;background:#0e0b06;border-radius:999px;overflow:hidden}
+  .busy .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--gold-dim))}
+  .busy .whistle{background:#0e0b06;border:1px solid var(--gold-dim);color:var(--gold);border-radius:12px;
+    padding:9px 12px;cursor:pointer;font-family:var(--serif);white-space:nowrap}
+
+  /* ---- checkout / PIX ---- */
+  .pix{display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px 0}
+  .pix .qr{width:170px;height:170px;border-radius:14px;background:
+    repeating-conic-gradient(#1a1305 0% 25%, #f4ead2 0% 50%) 0 / 18px 18px;border:8px solid #f4ead2;position:relative}
+  .pix .qr::after{content:"DOM";position:absolute;inset:0;margin:auto;width:46px;height:46px;background:#f4ead2;
+    color:#1a1305;display:grid;place-items:center;border-radius:8px;font-weight:700;font-size:12px}
+  .pix small{color:var(--muted);font-size:11px}
+  .demo{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:80;background:rgba(212,175,55,.14);
+    border:1px solid var(--gold-dim);color:var(--gold);font-size:11px;padding:5px 12px;border-radius:999px;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<div class="demo">⚙️ Laboratório do Garçom — protótipo offline (não mexe no banco)</div>
+
+<div class="wrap">
+  <!-- palco: personagens trocam frases entre si -->
+  <div class="marquee" id="marquee">
+    <span class="who" id="mqWho">cozinha</span>
+    <span class="line" id="mqLine">—</span>
+  </div>
+
+  <div class="brand">
+    <div class="logo">D</div>
+    <div><h1>Dom Leonardo</h1><small>Trattoria · delivery</small></div>
+  </div>
+  <div class="kicker" id="kicker">Massa quente, risoto cremoso e o Marco por perto pra qualquer dúvida.</div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<!-- sacola -->
+<div class="bag" id="bag">
+  <div class="info"><b id="bagQtd">0 itens</b><small id="bagTotal">R$ 0,00</small></div>
+  <button class="go" id="bagGo">Chamar o Marco pra fechar</button>
+</div>
+
+<!-- Marco flutuante -->
+<div class="marco">
+  <div class="balao" id="balao"><span class="mini" id="balaoWho">Marco</span><span id="balaoTxt"></span></div>
+  <div style="position:relative">
+    <div class="avatar" id="avatar" title="Chamar o garçom">🤵</div>
+    <div class="sino" id="sino" title="Tocar a campainha">🔔</div>
+  </div>
+</div>
+
+<!-- chat -->
+<div class="scrim" id="scrim"></div>
+<div class="chat" id="chat">
+  <header>
+    <div class="av">🤵</div>
+    <div><h4 id="chatNome">Marco</h4><small id="chatSub">garçom do Dom Leonardo</small></div>
+    <button class="x" id="chatX">×</button>
+  </header>
+  <div class="msgs" id="msgs"></div>
+  <div class="typing" id="typing"><i></i><i></i><i></i></div>
+  <div class="busy" id="busy">
+    <small style="color:var(--muted)" id="busyTxt">Marco tá atendendo a mesa 4…</small>
+    <div class="bar"><i id="busyBar"></i></div>
+    <button class="whistle" id="whistle">😙 Assobiar</button>
+  </div>
+  <div class="quick" id="quick"></div>
+  <footer>
+    <input id="input" placeholder="Fala com o Marco…" autocomplete="off" />
+    <button id="send">Enviar</button>
+  </footer>
+</div>
+
+<script>
+/* ===================== CONFIG ===================== */
+const CONFIG = {
+  SUPABASE_URL: 'https://jewamqbdonudiapxbzay.supabase.co',
+  ANON: 'sb_publishable_VeJTrMvtl5PAEvvc6R0CKA_nzjxQiAY', // chave pública (leitura)
+  WHATSAPP: '5541987044064',
+  get RESPONDER(){ return this.SUPABASE_URL + '/functions/v1/garcom-responder'; },
+  USAR_CARDAPIO_REAL: true,   // tenta puxar o menu real; se falhar, usa a semente
+};
+
+/* ===================== MEMORIA (localStorage) ===================== */
+const MEMORIA = {
+  k:'dom_garcom_v1',
+  data:{ nome:null, visitas:0, piadasContadas:[], ultimoPedido:null, fatos:[] },
+  carregar(){ try{ const r=localStorage.getItem(this.k); if(r) this.data={...this.data,...JSON.parse(r)}; }catch(_){ } this.data.visitas++; this.salvar(); },
+  salvar(){ try{ localStorage.setItem(this.k, JSON.stringify(this.data)); }catch(_){ } },
+  jaContou(id){ return this.data.piadasContadas.includes(id); },
+  marcarPiada(id){ if(!this.jaContou(id)){ this.data.piadasContadas.push(id); this.salvar(); } },
+  retornante(){ return this.data.visitas>1; },
+};
+
+/* ===================== MENU (real via leitura, ou semente) ===================== */
+const CURIOSIDADES = {
+  costela:{ id:'cur_costela', txt:'O Léo brinca que se banhasse um mignon a ouro e jogasse em cima de uma picanha, ainda não dava o preço de uma costela bem preparada depois que ela reduz. É joia rara. 😂' },
+  risoto:{ id:'cur_risoto', txt:'Esse risoto a gente solta o amido em três etapas, mexendo com calma. É o xodó da casa — cremoso de verdade, nada empapado.' },
+  tiramisu:{ id:'cur_tira', txt:'O Tiramisù leva Mascarpone legítimo, aveludado. Nada de textura de chantilly industrial, sabe? Montado na hora.' },
+  lasanha:{ id:'cur_lasanha', txt:'A carne da bolonhesa cozinha 6 horas em fogo baixo. Quando chega na sua casa já passou a tarde toda apurando.' },
+  nhoque:{ id:'cur_nhoque', txt:'Nhoque da mamma, feito com batata de verdade. Dia 29 então… o pessoal pede até com a notinha embaixo do prato pra dar sorte.' },
+};
+function curiosidadeDe(nome){
+  const n=(nome||'').toLowerCase();
+  if(n.includes('costela'))return CURIOSIDADES.costela;
+  if(n.includes('risoto')||n.includes('risotto')||n.includes('funghi'))return CURIOSIDADES.risoto;
+  if(n.includes('tiramis'))return CURIOSIDADES.tiramisu;
+  if(n.includes('lasanha')||n.includes('bolonhesa'))return CURIOSIDADES.lasanha;
+  if(n.includes('nhoque')||n.includes('gnocchi'))return CURIOSIDADES.nhoque;
+  return null;
+}
+const SEMENTE = [
+  {id:'s1',nome:'Risoto de Funghi',preco:58,descricao:'Arbóreo cremoso, funghi fresco e um toque de manteiga boa.',selo:'xodó do chef'},
+  {id:'s2',nome:'Nhoque da Mamma',preco:49,descricao:'Batata de verdade, molho à escolha. Conforto puro.'},
+  {id:'s3',nome:'Lasanha à Bolonhesa',preco:54,descricao:'Carne apurada por 6h, massa fresca, queijo derretendo.'},
+  {id:'s4',nome:'Tagliatelle al Limone',preco:47,descricao:'Leve, cítrica, perfumada. Pra quem quer algo mais suave.'},
+  {id:'s5',nome:'Costela do Dom',preco:72,descricao:'Reduzida no tempo certo até desmanchar. A rainha da casa.',selo:'edição especial'},
+  {id:'s6',nome:'Tiramisù',preco:29,descricao:'Mascarpone legítimo, café e cacau. Montado na hora.',selo:'sobremesa'},
+];
+const MENU = {
+  pratos:[],
+  async carregar(){
+    if(CONFIG.USAR_CARDAPIO_REAL){
+      try{
+        const r=await fetch(CONFIG.RESPONDER,{method:'POST',
+          headers:{'Content-Type':'application/json','apikey':CONFIG.ANON,'Authorization':'Bearer '+CONFIG.ANON},
+          body:JSON.stringify({acao:'listar_pratos'})});
+        const d=await r.json();
+        if(Array.isArray(d.pratos)&&d.pratos.length){
+          this.pratos=d.pratos.map(p=>({id:p.id,nome:p.nome,
+            preco:Number(p.preco||p.preco_base||0),
+            descricao:p.descricao||p.descricao_curta||'',
+            selo:p.badge||p.badge_destaque||p.selo_experiencia||''}));
+          return 'real';
+        }
+      }catch(_){ /* offline → semente */ }
+    }
+    this.pratos=SEMENTE.slice();
+    return 'semente';
+  },
+  acharPorTexto(t){
+    const n=(t||'').toLowerCase();
+    return this.pratos.find(p=>{
+      const nm=p.nome.toLowerCase();
+      return nm.split(/\s+/).some(w=>w.length>3 && n.includes(w)) || n.includes(nm);
+    })||null;
+  }
+};
+
+/* ===================== PERSONA (modos de humor + voz do Léo) ===================== */
+const PERSONA = {
+  // sorteio de humor com pesos: anfitrião domina, o resto tempera.
+  sortearModo(){
+    const r=Math.random()*100;
+    if(r<60)return'anfitriao'; if(r<74)return'conselheiro';
+    if(r<86)return'poetico'; if(r<95)return'sarcastico'; return'apressado';
+  },
+  saudacao(){
+    const base=['Ciao! Que bom te ver por aqui.','Buonasera! Fica à vontade, sem pressa.','Opa, cheguei. Bom apetite desde já!','Salve! Hoje o cardápio tá bonito demais.'];
+    if(MEMORIA.retornante() && MEMORIA.data.nome) return `Bentornato, ${MEMORIA.data.nome}! De volta pra mais uma? 🍝`;
+    if(MEMORIA.retornante()) return 'Bentornato! Que bom te ver de novo por aqui.';
+    return sortear(base);
+  },
+  // aplica o "tempero" do modo em cima de uma frase-base
+  temperar(txt, modo){
+    switch(modo){
+      case'sarcastico': return txt+' '+sortear(['kkk','rs','(é, eu sei, sou bom nisso)','— pode confiar, viu.']);
+      case'apressado': { const erro=txt.replace('Mascarpone','Mascraponi').replace('minutos','minitos');
+        return erro+' …opa, digitei rápido, o movimento aqui tá louco! 😅'; }
+      case'poetico': return txt+' '+sortear(['Fecha o olho e já dá pra sentir o cheiro.','É manteiga boa chegando na tampa.','Comida que abraça, sabe?']);
+      case'conselheiro': return txt+' '+sortear(['Se quiser minha opinião sincera, vai sem medo.','Eu iria nesse sem pensar duas vezes.']);
+      default: return txt;
+    }
+  }
+};
+
+/* ===================== BRAIN (intenção → resposta) =====================
+   v1 = regras + persona. No futuro, troque BRAIN.responder por uma chamada
+   a uma Edge Function (LLM) — o resto do app não precisa mudar.
+   Retorno: { fala:[{quem,texto}], acao?:{tipo,...} }
+=========================================================================== */
+const BRAIN = {
+  intencao(t){
+    const n=(t||'').toLowerCase();
+    if(/\b(oi|ol[áa]|opa|salve|bom dia|boa (tarde|noite)|ciao)\b/.test(n))return'saudacao';
+    if(/(recomend|sugest|indica|o que.*(bom|pe[çc]o)|melhor prato)/.test(n))return'recomendar';
+    if(/(quero|me v[êe]|adiciona|coloca|p[õo]e|manda).*(no carrinho)?/.test(n)&&MENU.acharPorTexto(n))return'add';
+    if(/(sacola|carrinho|meu pedido|o que.*pedi)/.test(n))return'ver_sacola';
+    if(/(fechar|finaliz|pagar|pix|checkout|conta)/.test(n))return'fechar';
+    if(/(quanto tempo|demora|entrega|chega|frete)/.test(n))return'entrega';
+    if(/(ingrediente|tem (cebola|gl[úu]ten|lactose)|al[ée]rg|vegetarian|carne|queijo)/.test(n))return'ingrediente';
+    if(/(costela|risoto|risotto|funghi|tiramis|lasanha|nhoque|prato)/.test(n))return'curiosidade';
+    if(MENU.acharPorTexto(n))return'add';
+    return'conversa';
+  },
+  responder(texto){
+    const modo=PERSONA.sortearModo();
+    const it=this.intencao(texto);
+    const prato=MENU.acharPorTexto(texto);
+    switch(it){
+      case'saudacao':
+        return{ fala:[{quem:'marco',texto:PERSONA.temperar(PERSONA.saudacao(),modo)}] };
+      case'recomendar':{
+        const p=MENU.pratos.find(x=>curiosidadeDe(x.nome))||MENU.pratos[0];
+        return{ fala:[{quem:'marco',texto:PERSONA.temperar(`Hoje? Vai de ${p.nome}. Tá saindo num capricho.`,'conselheiro')}],
+          acao:{tipo:'sugerir',prato:p} };
+      }
+      case'add':{
+        if(!prato)return{ fala:[{quem:'marco',texto:'Esse eu não achei no cardápio de hoje — me fala o nome certinho?'}] };
+        return{ fala:[{quem:'marco',texto:PERSONA.temperar(`Anotado: ${prato.nome}. ✍️`,modo)}], acao:{tipo:'add',prato} };
+      }
+      case'ver_sacola':
+        return{ acao:{tipo:'mostrar_sacola'} };
+      case'fechar':
+        return{ acao:{tipo:'checkout'} };
+      case'entrega':
+        return{ fala:[{quem:'marco',texto:'A entrega varia pelo endereço — uns 25 a 40 min em média. Quando você fechar, o motoboy já sai quentinho. 🛵'}] };
+      case'ingrediente':
+        return{ fala:[{quem:'marco',texto:PERSONA.temperar('Me diz o prato que eu te falo tudo que vai nele — e dá pra tirar o que você não curtir, é só pedir.',modo)}] };
+      case'curiosidade':{
+        const cur = prato? curiosidadeDe(prato.nome) : null;
+        if(cur){ MEMORIA.marcarPiada(cur.id);
+          return{ fala:[{quem:'marco',texto:cur.txt}], acao: prato?{tipo:'sugerir',prato}:null }; }
+        return{ fala:[{quem:'marco',texto:'Esse prato é um clássico nosso — quer que eu te conte o segredo dele?'}] };
+      }
+      default:
+        // conversa "humana": às vezes o Chef dá um pitaco da cozinha
+        const f=[{quem:'marco',texto:PERSONA.temperar(sortear([
+          'Tô aqui pra isso — pode mandar a dúvida.',
+          'Boa! Deixa eu ver aqui… me conta um pouco mais?',
+          'Entendi. Quer que eu te ajude a escolher ou já manda ver?'
+        ]),modo)}];
+        if(Math.random()<0.25) f.push({quem:'chef',texto:sortear(['(da cozinha) Fala pro cliente que a panela tá no ponto! 🔥','(lá de dentro) Tem risoto saindo agora, hein Marco!'])});
+        return{ fala:f };
+    }
+  }
+};
+
+/* ===================== ELENCO (personagens) ===================== */
+const ELENCO = {
+  marco:{nome:'Marco',sub:'garçom do Dom Leonardo',av:'🤵'},
+  chef:{nome:'Chef Leonardo',sub:'cozinha',av:'👨‍🍳'},
+  caixa:{nome:'Dona Caixa',sub:'fechamento',av:'🧾'},
+};
+// banter no topo (marquee) — personagens conversando entre si
+const BANTER=[
+  ['cozinha','Saiu um risoto pra viagem — capricha no parmesão!'],
+  ['salão','Marco, mesa nova chegando no cardápio 👀'],
+  ['cozinha','A costela de hoje tá desmanchando, hein.'],
+  ['caixa','Quem fechar agora pega o motoboy livre.'],
+  ['cozinha','Léo quase derrubou um prato… não conta pra ninguém kkk'],
+];
+
+/* ===================== CARRINHO ===================== */
+const CARRINHO = {
+  itens:[],
+  add(prato){ const ex=this.itens.find(i=>i.id===prato.id);
+    if(ex)ex.qtd++; else this.itens.push({id:prato.id,nome:prato.nome,preco:prato.preco,qtd:1});
+    this.render(); UI.pulseBag(); },
+  total(){ return this.itens.reduce((s,i)=>s+i.preco*i.qtd,0); },
+  qtd(){ return this.itens.reduce((s,i)=>s+i.qtd,0); },
+  render(){
+    const q=this.qtd();
+    document.getElementById('bag').classList.toggle('on',q>0);
+    document.getElementById('bagQtd').textContent=q+(q===1?' item':' itens');
+    document.getElementById('bagTotal').textContent=fmt(this.total());
+  }
+};
+
+/* ===================== UI / animações ===================== */
+const UI = {
+  el(id){ return document.getElementById(id); },
+  pulseBag(){ const b=this.el('bag'); b.classList.add('pulse'); setTimeout(()=>b.classList.remove('pulse'),520); },
+  renderMenu(){
+    const g=this.el('grid'); g.innerHTML='';
+    MENU.pratos.forEach(p=>{
+      const d=document.createElement('div'); d.className='dish';
+      d.innerHTML=`${p.selo?`<span class="selo">${esc(p.selo)}</span>`:''}
+        <h3>${esc(p.nome)}</h3><p>${esc(p.descricao||'')}</p>
+        <div class="row"><span class="preco">${fmt(p.preco)}</span>
+        <button class="add">adicionar</button></div>`;
+      d.querySelector('.add').onclick=(e)=>{ e.stopPropagation(); CARRINHO.add(p);
+        PALCO.balao('marco',PERSONA.temperar(`${p.nome} na sacola. ✍️`,'anfitriao')); };
+      d.onclick=()=>{ const cur=curiosidadeDe(p.nome);
+        PALCO.abrirChat(); PALCO.fala([{quem:'marco',texto:cur?cur.txt:`${p.nome}: ${p.descricao||'um clássico da casa'}. Quer que eu coloque na sacola?`}]); PALCO.contexto=p; };
+      g.appendChild(d);
+    });
+  },
+  addMsg(quem,texto){
+    const m=document.createElement('div'); m.className='msg '+quem;
+    const nome=ELENCO[quem]?ELENCO[quem].nome:'';
+    m.innerHTML=(quem!=='cliente'?`<span class="nome">${esc(nome)}</span>`:'')+esc(texto);
+    this.el('msgs').appendChild(m); this.el('msgs').scrollTop=1e9;
+  },
+  async typing(ms){ const t=this.el('typing'); t.classList.add('on'); this.el('msgs').scrollTop=1e9;
+    await wait(ms); t.classList.remove('on'); }
+};
+
+/* ===================== PALCO (máquina de estados + fluxo) ===================== */
+const PALCO = {
+  estado:'oculto', contexto:null, rondaTimer:null, inatividade:null,
+  init(){
+    UI.el('avatar').onclick=()=>this.chamar();
+    UI.el('sino').onclick=(e)=>{ e.stopPropagation(); this.chamar(); };
+    UI.el('chatX').onclick=()=>this.fecharChat();
+    UI.el('scrim').onclick=()=>this.fecharChat();
+    UI.el('bagGo').onclick=()=>{ this.abrirChat(); this.checkout(); };
+    UI.el('send').onclick=()=>this.enviar();
+    UI.el('input').addEventListener('keydown',e=>{ if(e.key==='Enter')this.enviar(); });
+    UI.el('whistle').onclick=()=>this.assobiar();
+    this.agendarRonda(); this.armarInatividade(); this.banter();
+  },
+  /* --- topo: personagens conversando --- */
+  banter(){ const tick=()=>{ const [who,line]=sortear(BANTER);
+      UI.el('mqWho').textContent=who; const l=UI.el('mqLine'); l.classList.remove('on');
+      setTimeout(()=>{ l.textContent=line; l.classList.add('on'); },300);
+      setTimeout(tick, 6000+Math.random()*5000); }; tick(); },
+  /* --- ronda: Marco espia de vez em quando --- */
+  agendarRonda(){ clearTimeout(this.rondaTimer);
+    this.rondaTimer=setTimeout(()=>{ if(this.estado==='oculto'){ this.espiar(); } this.agendarRonda(); },
+      40000+Math.random()*50000); },
+  espiar(){ const a=UI.el('avatar'); a.classList.add('peek'); setTimeout(()=>a.classList.remove('peek'),2600);
+    this.balao('marco', sortear(['Tô por aqui se precisar 👀','Passando… achou alguma coisa boa?','Qualquer dúvida, é só assobiar.'])); },
+  /* --- proativo: se ninguém interagiu, Marco puxa conversa --- */
+  armarInatividade(){ clearTimeout(this.inatividade);
+    this.inatividade=setTimeout(()=>{ if(this.estado==='oculto'){
+      this.balao('marco', sortear(['Gostou de alguma coisa ou quer dar mais uma olhada?','Dúvida cruel entre dois pratos? Posso te ajudar a decidir.','Tá com fome de quê hoje — massa, risoto ou algo doce?'])); }
+    }, 75000); },
+  balao(quem,txt){ UI.el('balaoWho').textContent=ELENCO[quem].nome; UI.el('balaoTxt').textContent=txt;
+    const b=UI.el('balao'); b.classList.add('on'); clearTimeout(this._bt);
+    this._bt=setTimeout(()=>b.classList.remove('on'),5600); },
+  /* --- chamar: às vezes Marco está "ocupado" (sino) → assobio acelera --- */
+  chamar(){
+    if(this.estado==='ocupado'){ UI.el('whistle').focus(); return; }
+    this.abrirChat();
+    if(UI.el('msgs').childElementCount>0){ UI.el('input').focus(); return; }
+    if(Math.random()<0.5){ this.ocupado(); } else { this.entrar(); }
+  },
+  ocupado(){ this.estado='ocupado';
+    UI.el('busy').classList.add('on'); UI.el('busyTxt').textContent=sortear(['Marco tá anotando a mesa 4…','Só terminando de servir um vinho ali…','Saindo da cozinha com uma travessa…']);
+    const bar=UI.el('busyBar'); bar.style.width='0%'; let p=0; clearInterval(this._bi);
+    this._bi=setInterval(()=>{ p+=2; bar.style.width=Math.min(100,p)+'%'; if(p>=100){ clearInterval(this._bi); this.entrar(); } },100);
+  },
+  assobiar(){ if(this.estado!=='ocupado')return; this._spam=(this._spam||0)+1;
+    clearInterval(this._bi); UI.el('busyBar').style.width='100%';
+    const a=UI.el('avatar'); a.classList.add('jump'); setTimeout(()=>a.classList.remove('jump'),500);
+    const r = this._spam>2 ? 'Calma, calma! Cheguei! O salão tá cheio hoje 😅'
+            : sortear(['Ouvido aguçado! kkk Já cheguei.','Epa, o assobio funcionou! Larguei a bandeja e vim.','Opa! Quase derrubei a taça com esse assobio 😄']);
+    this.entrar(r);
+  },
+  entrar(primeira){ UI.el('busy').classList.remove('on'); this.estado='ativo_msgs';
+    if(!UI.el('msgs').childElementCount){ this.fala([{quem:'marco',texto: primeira || PERSONA.saudacao()}]); }
+    else if(primeira){ this.fala([{quem:'marco',texto:primeira}]); }
+    UI.el('input').focus();
+  },
+  abrirChat(){ clearTimeout(this.inatividade); UI.el('balao').classList.remove('on');
+    UI.el('scrim').classList.add('on'); UI.el('chat').classList.add('on');
+    this.montarQuick();
+  },
+  fecharChat(){ UI.el('scrim').classList.remove('on'); UI.el('chat').classList.remove('on');
+    UI.el('busy').classList.remove('on'); this.estado='oculto'; this.armarInatividade(); },
+  montarQuick(){ const q=UI.el('quick'); q.innerHTML='';
+    ['O que você recomenda?','Quanto tempo de entrega?','Quero ver minha sacola','Fechar pedido'].forEach(t=>{
+      const b=document.createElement('button'); b.textContent=t; b.onclick=()=>{ UI.el('input').value=t; this.enviar(); }; q.appendChild(b);
+    }); },
+  /* --- fala dos personagens, com "digitando" proporcional --- */
+  async fala(linhas){
+    for(const l of linhas){
+      const dur=Math.min(2200, 500+(l.texto.length*22));
+      await UI.typing(dur); UI.addMsg(l.quem,l.texto);
+    }
+  },
+  /* --- cliente envia → BRAIN responde → executa ação --- */
+  async enviar(){
+    const inp=UI.el('input'); const t=inp.value.trim(); if(!t)return; inp.value='';
+    UI.addMsg('cliente',t);
+    // memória boba: captura nome ("meu nome é X")
+    const mn=t.match(/meu nome (é|eh) (\w+)/i); if(mn){ MEMORIA.data.nome=cap(mn[2]); MEMORIA.salvar(); }
+    const r=BRAIN.responder(t);
+    if(r.fala&&r.fala.length) await this.fala(r.fala);
+    if(r.acao) await this.executar(r.acao);
+  },
+  async executar(a){
+    if(a.tipo==='add'){ CARRINHO.add(a.prato); }
+    if(a.tipo==='sugerir'){ this.contexto=a.prato;
+      await this.fala([{quem:'marco',texto:`Quer que eu já coloque o ${a.prato.nome} (${fmt(a.prato.preco)}) na sacola?`}]); }
+    if(a.tipo==='mostrar_sacola'){
+      if(!CARRINHO.itens.length){ await this.fala([{quem:'marco',texto:'Sua sacola tá vazia ainda — bora escolher? 😋'}]); return; }
+      const linhas=CARRINHO.itens.map(i=>`• ${i.qtd}x ${i.nome} — ${fmt(i.preco*i.qtd)}`).join('\n');
+      await this.fala([{quem:'marco',texto:`Tá assim:\n${linhas}\n\nTotal: ${fmt(CARRINHO.total())}. Quer fechar?`}]); }
+    if(a.tipo==='checkout'){ await this.checkout(); }
+  },
+  /* --- checkout: Caixa entra, PIX (demonstração) --- */
+  async checkout(){
+    if(!CARRINHO.itens.length){ await this.fala([{quem:'marco',texto:'Coloca alguma coisa na sacola primeiro que eu já chamo a Dona Caixa. 😉'}]); return; }
+    MEMORIA.data.ultimoPedido=CARRINHO.itens.map(i=>i.nome); MEMORIA.salvar();
+    await this.fala([
+      {quem:'marco',texto:'Fechou! Vou passar pra Dona Caixa cuidar do pagamento.'},
+      {quem:'caixa',texto:`O Marco já te encheu de papo, né? 🧾 Total ${fmt(CARRINHO.total())}. Bora de PIX — é só apontar a câmera.`}
+    ]);
+    const m=document.createElement('div'); m.className='msg caixa';
+    m.innerHTML=`<span class="nome">Dona Caixa</span>
+      <div class="pix"><div class="qr"></div><small>QR PIX de demonstração — pagamento real entra quando o Stripe/PIX liberar.</small></div>`;
+    UI.el('msgs').appendChild(m); UI.el('msgs').scrollTop=1e9;
+    // pós-venda: Marco volta, cria conexão e reduz a ansiedade da espera
+    await wait(900);
+    await this.fala([{quem:'chef',texto:'(da cozinha) Pode mandar! Já tô com a panela no fogo. 🔥'}]);
+    await this.fala([{quem:'marco',texto:sortear([
+      'Pedido a caminho! Agora respira fundo e deixa o cheiro chegar. Você merece. 🍝',
+      'Enquanto o motoboy não chega… me conta, dia corrido hoje? Aqui a chapa tá quente!',
+      'Tá feito! Qualquer coisa eu fico de olho por aqui até chegar na sua porta.'
+    ])}]);
+  }
+};
+
+/* ===================== utils ===================== */
+function fmt(v){ return 'R$ '+Number(v||0).toFixed(2).replace('.',','); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function sortear(a){ return a[Math.floor(Math.random()*a.length)]; }
+function wait(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+
+/* ===================== boot ===================== */
+(async function(){
+  MEMORIA.carregar();
+  const origem=await MENU.carregar();
+  UI.renderMenu();
+  if(origem==='semente'){ document.querySelector('.demo').textContent='⚙️ Laboratório do Garçom — cardápio-semente (offline). Não mexe no banco.'; }
+  PALCO.init();
+  // primeira aparição suave do Marco
+  setTimeout(()=>PALCO.espiar(), 1800);
+})();
+</script>
+</body>
+</html>

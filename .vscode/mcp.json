@@ -4,6 +4,10 @@
       "type": "http",
       "url": "https://mcp.stripe.com"
     },
+    "mercadopago": {
+      "type": "http",
+      "url": "https://mcp.mercadopago.com/mcp"
+    },
     "google-cloud-gcloud": {
       "command": "C:\\Users\\leona\\dom-leonardo\\scripts\\mcp\\google-cloud-gcloud.cmd",
       "args": [],

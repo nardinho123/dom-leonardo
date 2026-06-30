@@ -1,64 +1,88 @@
 # Contexto do Projeto — Dom Leonardo
 
-> Mapa compacto do que já está pronto. Gerado em 2026-06-24 por leitura read-only do código + MCPs.
-> Restaurante italiano (trattoria/delivery) em Curitiba-PR. Stack: 1 arquivo HTML por app (React via Babel no navegador) + Supabase + Edge Functions, servido por Nginx (EasyPanel).
+> Mapa compacto + auditoria. Atualizado em 2026-06-25 por leitura read-only do código + MCP Supabase (logs/SQL/advisors).
+> Trattoria/delivery italiano, Curitiba-PR. Stack: **1 HTML por app** (React via Babel no navegador) + Supabase + Edge Functions, servido por **Nginx no EasyPanel**. Deploy = push no `main` → ~1-2 min no ar. Cada `.html` = sua própria URL (sem fallback de SPA).
 
-## 1. Visão geral
+## 1. Apps e bancos
 
-Três apps independentes (cada um é **um HTML único**), dois projetos Supabase distintos:
+| App | Arquivo | Banco | URL viva |
+|-----|---------|-------|----------|
+| **ERP** (interno) | `index.html` (~8k linhas) | Supabase **ERP** `ippeiearkgnqdeiquiuy` | (interno) — **NÃO TOCAR** |
+| **Cardápio/Garçom** (público) | `garcom/index.html` (4945 linhas) | Supabase **Cardápio** `jewamqbdonudiapxbzay` | `…/garcom/` |
+| **Admin do cardápio** | `admin-dom-leonardo.html` (3145 linhas) | Supabase **Cardápio** | `…/admin-dom-leonardo.html` |
+| **Protótipo de design** | `prototipo-codex/index.html` (1326 linhas, OFFLINE) | — (lê `cardapio-data.js`) | `…/prototipo-codex/index.html` |
 
-| App | Arquivo | Banco | Papel |
-|-----|---------|-------|-------|
-| **ERP** | `index.html` (~8k linhas) | **Supabase ERP** (`ippeiearkgnqdeiquiuy`) | Gestão interna: compras, produção, vendas, estoque, CMV, caixa/DRE |
-| **Cardápio / Garçom** | `garcom/index.html` (PWA) | **Supabase Cardápio** (`jewamqbdonudiapxbzay`) | Cardápio público, carrinho, checkout, chat, gamificação |
-| **Admin do cardápio** | `admin-dom-leonardo.html` | **Supabase Cardápio** | Painel para gerenciar pratos/cupons/config/pedidos |
+Host: `https://domleonardo-erp.be3jfe.easypanel.host/` e domínio `https://cardapio.domleonardo.com.br/` (raiz ainda serve HTML antigo; cardápio novo só em `/garcom/`).
 
-Infra: `Dockerfile` (nginx:alpine, copia workspace p/ `/usr/share/nginx/html`, porta 80) → deploy via GitHub no EasyPanel. Host conhecido: `https://domleonardo-erp.be3jfe.easypanel.host/garcom/`.
+## 2. Supabase Cardápio — 20 tabelas (RLS em todas), contagens REAIS
 
-## 2. Supabase Cardápio (`jewamqbdonudiapxbzay`) — 16 tabelas, RLS em todas
+> ⚠️ `list_tables` mostra contagem ESTIMADA (mentia: dizia pratos=0/categorias=1). Valores reais por `count(*)`:
 
-**Cardápio:** `categorias` · `pratos` (preço base/promo, badges, textos de venda: frase_fome, como_chega, porcao, melhor_para, evitar_se, selo_experiencia, urgencia; `exclusivo_clube`) · `pratos_tamanhos` (peso_g, preço_delta) · `grupos_opcionais` (tipo: unico/multiplo/obrigatorio) · `opcionais` (preço_delta)
-**Cupons:** `cupons` (percentual/valor_fixo/frete_gratis) · `prato_cupons`
-**Clientes:** `clientes` (chave = whatsapp) · `enderecos_cliente`
-**Pedidos:** `pedidos` · `pedido_itens` (snapshots de prato/tamanho/opcionais; `preco_total` gerado)
-**Atendimento (chat):** `atendimentos` (por `device_id`) · `atendimento_mensagens` (autor: cliente/admin/sistema)
-**Gamificação:** `minigame_cozinha_config` · `minigame_cozinha_scores` (recompensa = cupom)
-**Config:** `configuracoes` (singleton `id=1`) — nome/logo/capa, entrega, horários, tema, microcopy do garçom, chaves públicas e textos de checkout, `topo_config` (jsonb)
+**Cardápio (núcleo):** `categorias` (7) · `cardapio_secoes` (7) ⟵ NOVA · `pratos` (21) · `pratos_tamanhos` (39) · `grupos_opcionais` (56) · `opcionais` (247).
+**Cupons:** `cupons` (1) · `prato_cupons` (0).
+**Clientes/Pedidos:** `clientes` (2) · `enderecos_cliente` (9) · `pedidos` (29) · `pedido_itens` (9).
+**Chat:** `atendimentos` (0) · `atendimento_mensagens` (0).
+**Gamificação:** `minigame_cozinha_config` (0) · `minigame_cozinha_scores` (0).
+**Entrega (Google Maps):** `entrega_faixas` (30) · `entrega_estimativas_cache` (8, TTL) · `entrega_rate_limits` (6).
+**Config:** `configuracoes` (singleton id=1) — topo/capa, entrega, horários, tema, microcopy, chaves públicas, `topo_config` jsonb.
 
-`pedidos` (campos-chave): `numero_pedido` (seq), `endereco_snapshot` (jsonb), `subtotal/taxa_entrega/desconto/total`, `forma_pagamento` (enum: dinheiro, cartao_entrega, pix_manual, mercado_pago, **stripe**), `status` (novo→em_preparo→pronto→saiu_entrega→entregue / cancelado) com timestamp por etapa, e bloco Stripe: `stripe_payment_intent_id`, `stripe_payment_status`, `stripe_payment_method`, `pago_em`.
+**RPCs (SECURITY DEFINER):** `criar_pedido`, `atualizar_status_pedido`, `aplicar_cupom`, `calcular_preco_item`, `get_cardapio_publico`, `pedidos_admin`, `salvar_prato_completo`, `validar_grupos_obrigatorios`.
 
-**RPCs usadas:** `criar_pedido`, `atualizar_status_pedido`.
+**Edge Functions (8, ACTIVE, verify_jwt=false):**
+- `garcom-responder` **v49** — núcleo público. Ações: `listar_pratos/listar_cardapio` (agora devolve **secoes**), `mensagens_chat`, `registrar_atendimento`, `listar_atendimento`, `buscar_cliente`, `maps_public_config`, `calcular_entrega_google`, `criar_checkout` (MP), `processar_pagamento_brick` (MP Pix/cartão), `criar_pagamento_stripe`. Fonte local em sync.
+- `stripe-webhook` v8 — confirma PaymentIntent → atualiza `pedidos`.
+- `meta-conversions` v8 — Meta CAPI server-side.
+- `reverse-geocode` v3 — geolocalização→rua/bairro (server key, sem referrer).
+- `uber-entrega` v3 — Uber Direct (quote/create/status/cancel). **Credenciais de TESTE embutidas; webhook = TODO; NÃO chamado por nenhum HTML.**
+- `garcom-bot` v16 e `cardapio-bind-visitor` v13 — **sem fonte local e sem chamador em HTML** (provável código morto/legado).
 
-**Edge Functions (5, todas ACTIVE, `verify_jwt=false`):**
-- `garcom-responder` (v41) — **núcleo público**. Ações: `listar_pratos/listar_cardapio`, `mensagens_chat`, `registrar_atendimento`, `listar_atendimento`, `buscar_cliente`, `criar_checkout` (MP), `processar_pagamento_brick` (MP), `criar_pagamento_stripe`. Código em `garcom/supabase/functions/garcom-responder/index.ts`.
-- `stripe-webhook` (v4) — valida assinatura HMAC manual; em `payment_intent.*` atualiza `pedidos` por `stripe_payment_intent_id`. Código local presente.
-- `meta-conversions` (v4) — Meta Conversions API server-side (Pixel `2687533954980204`), eventos padrão + custom (CartOpen, ChatOpen, CouponApply, GameStart…), hash SHA-256 de external_id. Código local presente.
-- `garcom-bot` (v12) — **deployada, sem código no repo local.**
-- `cardapio-bind-visitor` (v9) — **deployada, sem código no repo local.**
+## 3. Fluxo do cardápio novo (secoes → tipo_visual → render)
 
-## 3. Supabase ERP (`ippeiearkgnqdeiquiuy`) — inferido do `index.html` (MCP estava offline)
+`garcom-responder` devolve `categorias`, `secoes`, `pratos` separados. No `garcom/index.html`:
+- `montarSecao` (≈3680): cada seção (de `cardapio_secoes`) tem `categoria_id` + `tipo_visual`; puxa `pratos` por `categoria_id`.
+- `secoesCardapio` (≈3694): em "Todos" prepende carrossel "Mais pedidos", depois mapeia as seções; filtra seção sem prato.
+- `renderSecaoCardapio` (≈4236) despacha por `tipo_visual`: `carrossel_horizontal`→posterCard · `feature_foto_grande`→featureCard · `nhoque_molhos`→nhoque (abas de molho) · `sobremesas`→doceCard · `risotos`→pratoCard(risoto-list) · default→pratoCard.
+- CSS das seções (poster/feature+glow+steam/sauce-tabs/doce+wedge/dish-list) **existe** (≈2046-2460). Admin gerencia seções em `cardapio_secoes` (tipo_visual, ordem, ativo) — direto via supabase-js (NÃO pelo garcom-responder).
 
-> Schema não lido via MCP (server caiu no reload). Mapa abaixo é do código.
+## 4. Integrações — estado
 
-**Tabelas/views:** `produtos`, `fornecedores`, `unidades`, `categorias`, `categorias_caixa`, `compras_itens`, `producoes`, `producao_insumos`, `vendas_itens`, `vendas_custos_extras`, `vendas_descontos`, `estoque_movimentacoes`, `ajustes_estoque`, `fluxo_caixa`, `receitas_ficha_tecnica`, `receita_itens`, `precos_venda` · views `v_estoque_atual`, `v_cmv_pratos`
-**RPCs (tudo via server-side):** compras (`rpc_lancar_compra_lista`, `rpc_adicionar_compra_itens`, `rpc_editar_compra_item`, `rpc_excluir_compra`), produção (`rpc_lancar_producao`, `rpc_adicionar_producao_insumos`, `rpc_editar_producao`, `rpc_excluir_producao`), vendas (`rpc_lancar_venda`, `rpc_adicionar_venda_itens`, `rpc_*_venda_*`, `rpc_cancelar_venda_item`), perdas/uso (`rpc_lancar_perda`, `rpc_lancar_uso`, `rpc_editar_perda`), despesas (`rpc_lancar_despesa_fixa`…), fichas (`rpc_criar_ficha_tecnica`, `rpc_duplicar_ficha_tecnica`), estoque (`rpc_zerar_estoque`, `rpc_excluir_produto_estoque`), cadastros (`rpc_criar_produto_seguro`), relatórios (`rpc_lucro_por_prato_periodo`).
-**Telas prontas:** dashboard, lançar compra/produção/venda/perda/despesa, fichas técnicas, estoque in natura + preparado, CMV, fluxo de caixa/DRE, auditoria. Login Supabase configurável na UI.
+- **Stripe (LIVE):** `criar_pagamento_stripe` cria PaymentIntent (BRL, automatic_payment_methods) → `stripe-webhook` confirma. ⚠️ `STRIPE_PUBLISHABLE_KEY` tem **fallback `pk_live_…` hardcoded** no código (publishable, mas devia vir só de env). Secret em env OK.
+- **Mercado Pago:** Checkout Pro (`criar_checkout`) + Brick transparente (`processar_pagamento_brick`, Pix/cartão). Token em env; public key na `configuracoes`.
+- **Google Maps (server key):** `calcularEntregaGoogle` (geocode + distance matrix), `reverse-geocode`. Tem cache (`entrega_estimativas_cache`) + rate limit (`entrega_rate_limits`, 25/h device, 500/dia global). Browser key via `maps_public_config`.
+- **Uber Direct:** function pronta porém **em TESTE e desconectada** (sem chamada no front, webhook não atualiza pedido, creds sandbox).
 
-## 4. Pagamentos
+## 5. ⚠️ Homologação (PagBank / Uber) — realidade
 
-- **Stripe** (cardápio): PaymentIntent criado em `garcom-responder` (`criar_pagamento_stripe`) via API REST direta (currency BRL, `automatic_payment_methods`), confirmação via `stripe-webhook`. Secret em env (`STRIPE_SECRET_KEY`); ⚠️ `STRIPE_PUBLISHABLE_KEY` tem **fallback `pk_live_…` hardcoded** no código (publishable, mas idealmente vir só de env).
-- **Mercado Pago** (cardápio): Checkout Pro (`criar_checkout`) e brick transparente (`processar_pagamento_brick`, suporta Pix/cartão). Token em env (`MERCADO_PAGO_ACCESS_TOKEN`); public key na tabela `configuracoes`.
+- Pagamento HOJE = **Stripe + Mercado Pago**. **NÃO existe integração PagBank** no código. "Homologar na PagBank" = ou trocar/adicionar gateway PagBank (trabalho novo), ou outra coisa. **CONFIRMAR COM O LÉO.**
+- Uber: integração existe mas em sandbox; produção exige creds reais + validação de assinatura no webhook + atualizar `pedidos`.
 
-Secrets esperados nas Edge Functions: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PUBLISHABLE_KEY`, `MERCADO_PAGO_ACCESS_TOKEN`, `META_CAPI_ACCESS_TOKEN`, `SUPABASE_SERVICE_ROLE_KEY`.
+## 6. Boas práticas Supabase — desvios (advisors)
 
-## 5. Ferramentas / MCPs (Claude Code)
+- **`cardapio_secoes` criada SEM migration versionada** (e demais mudanças). Banco diverge do Git → recriar do zero em outro ambiente quebra. Recomendado: versionar via `supabase/migrations`.
+- **RLS "always true"** (USING/WITH CHECK = true) em ALL para `authenticated`: categorias, clientes, configuracoes, cupons, enderecos_cliente, grupos_opcionais, opcionais, pedido_itens, pedidos, prato_cupons, pratos, pratos_tamanhos. Pra cliente público OK, mas pra homologação convém restringir escrita.
+- **SECURITY DEFINER executável por `authenticated`:** aplicar_cupom, atualizar_status_pedido, calcular_preco_item, criar_pedido, get_cardapio_publico, pedidos_admin, salvar_prato_completo, validar_grupos_obrigatorios. Revisar EXECUTE.
+- **`citext` no schema public** (mover de schema). **Leaked password protection desativado** (ligar no Auth).
 
-Ativos (lidos OK em modo leitura hoje): `supabase-cardapio`, `google-cloud-gcloud` (ADC=conta do Léo, projeto `cardapio-dom-leonardo`), `google-cloud-storage` (sem buckets), `n8n-mcp`.
-Caídos no último reload (reconectar via `/mcp`): **`supabase-erp`**, **`stripe`** (plugin). Não subiu: `google-cloud-observability`. Pendente de formato: `google-developer-knowledge` (config em sintaxe Gemini CLI no `.mcp.json`).
-Skills globais: Supabase (`supabase`, `supabase-postgres-best-practices`), Stripe (`stripe-best-practices` + comandos `/explain-error`, `/test-cards`).
+## 7. 🗑️ LIXO a deletar (precisa OK do Léo)
 
-## 6. Pendências conhecidas
+**Arquivos HTML/dados (raiz + garcom):**
+- `index.html.claude.backup` (backup), `garcom-ia.html`, `garcom/prototipo-premium-offline.html`, `garcom/_offline-cardapio-data.js`, `garcom/_offline-cardapio-data.json`.
+- Protótipos de exploração já superados: `garcom/prototipo-claude.html`, `prototipo-claude-2.html`, `prototipo-claude-3.html`. (Manter `prototipo-codex/index.html` = fonte de design.)
+**Supabase:**
+- Linha de teste em `cardapio_secoes`: `titulo="Test leo"` / `tipo_visual=risotos` / `ordem=0` (id `33357a25…`).
+- Edge Functions órfãs `garcom-bot` e `cardapio-bind-visitor` (confirmar que n8n/externo não usa antes de remover).
+**Código (no salvar_prato_completo / form de prato):** campos legados **frase_fome, como_chega_texto, porcao_texto, duvida_tamanho_texto, melhor_para, evitar_se, selo_experiencia, urgencia_texto** — Léo quer fora do cadastro de prato.
 
-**ERP (do `plano-de-execucao-codex.md`):** tela **Cadastros** ainda é placeholder; validar datas operacionais (`data_movimentacao` vs `created_at`), conferir se vendas/compras caem corretamente em `fluxo_caixa`, alertas de dashboard (preço +10%, item parado 15 dias, top 5 menos lucrativos). Regra firme: **não alterar Supabase sem aprovação**.
-**Cardápio:** recuperar/versionar código de `garcom-bot` e `cardapio-bind-visitor` (deployadas sem fonte local); mover `pk_live` para env.
-**Dados:** ambos os bancos com poucos dados de teste (cardápio: 4 pedidos, resto vazio).
+## 8. 🐛 BUGS a corrigir
+
+1. **Lançamento de prato falha:** `ERROR: duplicate key value violates unique constraint "pratos_slug_key"` (logs Postgres, 2x hoje). Admin gera slug = `slug || slugify(nome)`; duplicar/nomes iguais colidem. Fix front: slug único (sufixo) antes do `salvar_prato_completo`.
+2. **Design do `garcom/index.html` não bate com o protótipo:** pipeline e CSS existem e dados carregam (logs 200) — é mismatch visual/layout. Fix = alinhar seção a seção ao `prototipo-codex/index.html` (precisa ver na tela do iPhone p/ acertar fino).
+3. **Campos desnecessários no cadastro de prato** (item 7).
+
+## 9. Regras fixas (do Léo)
+
+- **Não tocar produção sem pedido:** ERP, cardápio público, admin = read-only por padrão.
+- **NÃO mexer no ERP** nesta etapa.
+- **Toda mudança de DESIGN vai no `prototipo-codex/index.html`** (fonte de verdade do visual); só replicar no `garcom/index.html` quando alinhado.
+- Client Secret/Access Token **nunca** no HTML/git.
+- Commitar de forma aditiva/reversível; **deletar só com OK explícito** (vai pra homologação).

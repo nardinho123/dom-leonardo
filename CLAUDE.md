@@ -55,11 +55,31 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <!-- cloude-code-toolbox:mcp-skills-awareness-begin -->
 
 ### MCP & Skills awareness (Cloude Code ToolBox)
 
-_Last synced: 2026-06-25T13:00:25.867Z._
+_Last synced: 2026-06-29T04:30:44.146Z._
 
 - **Full report:** `.claude/cloude-code-toolbox-mcp-skills-awareness.md` in this workspace (auto-overwritten on each scan). Use it as ground truth for configured servers and skill folders.
 - **MCP:** For **live tools** in Claude Code, enable the matching server via `/mcp`. Servers are configured in `~/.claude.json` (user) and `.mcp.json` (project).
@@ -78,6 +98,7 @@ _Last synced: 2026-06-25T13:00:25.867Z._
 | google-cloud-observability | stdio | C:\Users\leona\dom-leonardo\scripts\mcp\google-cloud-observability.cmd |
 | google-cloud-storage | stdio | C:\Users\leona\dom-leonardo\scripts\mcp\google-cloud-storage.cmd |
 | google-developer-knowledge | ? | {"httpUrl":"https://developerknowledge.googleapis.com/mcp","authProviderType":"g |
+| mercadopago | http | https://mcp.mercadopago.com/mcp |
 
 #### User MCP
 
@@ -100,3 +121,18 @@ _None found (or no workspace open)._
 - **uber-direct** — `C:\Users\leona\.agents\skills\uber-direct` — Integrar a Uber Direct (delivery-as-a-service da Uber) para despachar motoboy/courier sob demanda a partir do seu próprio app/cardápio. Use ao chamar entregador via API, pegar cotação/ETA de entrega, rastrear status por
 
 <!-- cloude-code-toolbox:mcp-skills-awareness-end -->
+<!-- cloude-code-toolbox:token-optimization-begin -->
+
+### Token Optimization (Claude Code ToolBox)
+
+_Active level: concise_
+
+- Respond concisely: 1-3 sentences max unless the user asks for detail.
+- Never restate the user's question or echo file contents back verbatim.
+- When showing code changes, show only modified lines with 2 lines of context.
+- Skip meta-commentary ("I'll now...", "Let me...", "Here's what I did...").
+- Before reading a file, check `.claude/project-map.md` for structural context.
+- If you already read a file this session and it hasn't changed, reference your memory instead of re-reading.
+- Do not read files matching `.claudeignore` patterns unless explicitly asked.
+
+<!-- cloude-code-toolbox:token-optimization-end -->

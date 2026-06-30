@@ -716,113 +716,6 @@
       color: var(--muted);
       font-size: 13px;
     }
-    .gestor-grid {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(240px, 1fr));
-      gap: 14px;
-      align-items: start;
-      overflow-x: auto;
-      padding-bottom: 10px;
-    }
-    .gestor-lane {
-      min-width: 240px;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      background: #fff;
-      box-shadow: 0 12px 28px rgba(17, 24, 39, .05);
-      overflow: hidden;
-    }
-    .gestor-lane header {
-      padding: 13px 14px;
-      border-bottom: 1px solid var(--line);
-      background: linear-gradient(180deg, #fff, #fafafa);
-    }
-    .gestor-lane h3 {
-      margin: 0;
-      font-size: 14px;
-      letter-spacing: -.01em;
-    }
-    .gestor-lane p {
-      margin: 4px 0 0;
-      color: var(--muted);
-      font-size: 12px;
-    }
-    .gestor-lane-body {
-      display: grid;
-      gap: 10px;
-      padding: 10px;
-      min-height: 120px;
-    }
-    .gestor-card {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 12px;
-      background: #fff;
-      box-shadow: 0 8px 18px rgba(17, 24, 39, .06);
-    }
-    .gestor-card.pago {
-      border-color: rgba(34, 197, 94, .38);
-      box-shadow: 0 10px 24px rgba(34, 197, 94, .10);
-    }
-    .gestor-card h4 {
-      margin: 0;
-      font-size: 14px;
-      line-height: 1.25;
-    }
-    .gestor-card-top,
-    .gestor-card-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items: flex-start;
-    }
-    .gestor-badge {
-      border-radius: 999px;
-      padding: 4px 8px;
-      background: #f3f4f6;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-    .gestor-badge.gold {
-      background: rgba(245, 183, 0, .15);
-      color: #8a6500;
-    }
-    .gestor-info {
-      display: grid;
-      gap: 5px;
-      margin: 10px 0;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.35;
-    }
-    .gestor-items {
-      display: grid;
-      gap: 5px;
-      margin: 10px 0;
-      padding: 9px;
-      border-radius: 10px;
-      background: #f9fafb;
-      color: var(--text);
-      font-size: 12px;
-    }
-    .gestor-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 7px;
-      margin-top: 10px;
-    }
-    .gestor-actions.single { grid-template-columns: 1fr; }
-    .gestor-empty {
-      padding: 18px 10px;
-      border: 1px dashed var(--line);
-      border-radius: 12px;
-      color: var(--muted);
-      text-align: center;
-      font-size: 12px;
-      background: #fafafa;
-    }
     .chat-list { display: grid; gap: 12px; }
     .chat-card {
       display: grid;
@@ -1156,111 +1049,7 @@
       .topo-fields,
       .topo-field-row { grid-template-columns: 1fr; }
     }
-  
-  /* ====== ESPELHO DO CARDAPIO (admin = visual identico ao cliente) ====== */
-  .cardapio-espelho { position: relative; }
-  .cardapio-espelho h2, .cardapio-espelho h3 { margin: 0; }
-  .cardapio-espelho .ic { width: 1em; height: 1em; display: inline-block; vertical-align: -.12em; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-  .cardapio-espelho .section-head { padding: 4px 6px 12px; }
-  .cardapio-espelho .section-head .number { font-family:'Jost',sans-serif; color:#d4af37; letter-spacing:.28em; text-transform:uppercase; font-size:10px; font-weight:600; margin-bottom:8px; }
-  .cardapio-espelho .section-head h2 { font-family:'Playfair Display',Georgia,serif; font-size:30px; line-height:.94; letter-spacing:-.05em; color:#fff7e7; }
-  .cardapio-espelho .section-head p { font-family:'Cormorant Garamond',Georgia,serif; color:#b3a587; font-size:15px; line-height:1.45; margin-top:8px; max-width:40ch; }
-
-  .cardapio-espelho .poster-row { display:grid; grid-auto-flow:column; grid-auto-columns:78%; gap:12px; overflow-x:auto; scrollbar-width:none; padding:4px 0 14px; scroll-snap-type:x mandatory; }
-  .cardapio-espelho .poster-row::-webkit-scrollbar { display:none; }
-  .cardapio-espelho .poster-card { min-height:380px; position:relative; overflow:hidden; border-radius:24px; border:1px solid rgba(214,176,66,.24); box-shadow:0 18px 44px rgba(0,0,0,.38); scroll-snap-align:start; background:#111; cursor:pointer; }
-  .cardapio-espelho .poster-card::before { content:""; position:absolute; inset:12px; z-index:2; border:1px solid rgba(242,217,120,.54); border-radius:18px; pointer-events:none; }
-  .cardapio-espelho .poster-card img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:saturate(1.05) contrast(1.04) brightness(.78); }
-  .cardapio-espelho .poster-card::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg, transparent 8%, rgba(0,0,0,.24) 42%, rgba(0,0,0,.92) 100%); }
-  .cardapio-espelho .poster-info { position:absolute; z-index:3; left:20px; right:20px; bottom:20px; }
-  .cardapio-espelho .poster-info h3 { font-family:'Playfair Display',Georgia,serif; font-size:26px; line-height:1.02; letter-spacing:-.035em; margin-bottom:9px; color:#fff7e7; }
-  .cardapio-espelho .poster-info p { font-family:'Cormorant Garamond',Georgia,serif; color:rgba(255,247,231,.78); font-size:15px; line-height:1.4; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
-  .cardapio-espelho .price { color:#e8d28f; font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:22px; margin-top:12px; }
-
-  .cardapio-espelho .dish-list { display:grid; gap:12px; }
-  .cardapio-espelho .dish-card { display:grid; grid-template-columns:126px 1fr; gap:13px; border-radius:22px; border:1px solid rgba(214,176,66,.18); background:linear-gradient(135deg, rgba(255,255,255,.045), rgba(255,255,255,.018)); box-shadow:0 14px 38px rgba(0,0,0,.28); overflow:hidden; min-height:150px; position:relative; cursor:pointer; }
-  .cardapio-espelho .dish-card::before { content:""; position:absolute; inset:7px; border:1px solid rgba(214,176,66,.12); border-radius:18px; pointer-events:none; }
-  .cardapio-espelho .dish-photo { width:126px; height:100%; min-height:150px; object-fit:cover; }
-  .cardapio-espelho .dish-body { min-width:0; padding:14px 13px 14px 0; }
-  .cardapio-espelho .dish-body h3 { font-family:'Playfair Display',Georgia,serif; font-size:19px; line-height:1.12; letter-spacing:-.015em; margin-bottom:7px; color:#fff7e7; }
-  .cardapio-espelho .dish-body p { font-family:'Cormorant Garamond',Georgia,serif; color:#b3a587; font-size:15px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
-  .cardapio-espelho .dish-bottom { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px; }
-  .cardapio-espelho .dish-bottom strong { color:#e8d28f; font-family:'Playfair Display',Georgia,serif; font-size:19px; white-space:nowrap; }
-  .cardapio-espelho .see-btn { font-family:'Jost',sans-serif; background:transparent; border:1px solid #d4af37; color:#e8d28f; text-transform:uppercase; letter-spacing:.16em; font-size:11px; padding:9px 14px; border-radius:2px; cursor:pointer; }
-  .cardapio-espelho .tag { display:none !important; }
-
-  .cardapio-espelho .dish { position:relative; }
-  .cardapio-espelho .dish .ph { position:relative; overflow:hidden; border-radius:18px; }
-  .cardapio-espelho .dish .ph img { width:100%; display:block; object-fit:cover; aspect-ratio:4/3; filter:saturate(1.06) contrast(1.04); }
-  .cardapio-espelho .dish .body { padding:14px 4px 6px; }
-  .cardapio-espelho .dish .body h3 { font-family:'Playfair Display',Georgia,serif; font-weight:600; font-size:24px; line-height:1.1; margin-bottom:8px; color:#efe7d6; }
-  .cardapio-espelho .dish .body p { font-family:'Cormorant Garamond',Georgia,serif; color:#b3a587; font-size:16px; line-height:1.45; margin-bottom:12px; }
-  .cardapio-espelho .priceline { display:flex; align-items:baseline; gap:11px; margin-bottom:14px; }
-  .cardapio-espelho .priceline .lead { font-family:'Jost',sans-serif; font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:#b3a587; }
-  .cardapio-espelho .priceline .dots { flex:1; border-bottom:1px dotted rgba(212,175,55,.4); transform:translateY(-5px); }
-  .cardapio-espelho .priceline .val { font-family:'Playfair Display',Georgia,serif; font-size:23px; color:#e8d28f; font-weight:600; }
-  .cardapio-espelho .btn-order { display:inline-flex; align-items:center; justify-content:center; gap:10px; font-family:'Jost',sans-serif; font-size:12px; letter-spacing:.22em; text-transform:uppercase; color:#e8d28f; background:transparent; border:1px solid #d4af37; padding:13px 18px; cursor:pointer; border-radius:2px; }
-
-  .cardapio-espelho .feature { position:relative; min-height:300px; display:flex; align-items:flex-end; overflow:hidden; border-radius:16px; cursor:pointer; }
-  .cardapio-espelho .feature > img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
-  .cardapio-espelho .feature .glow { position:absolute; inset:0; z-index:1; background:radial-gradient(60% 40% at 50% 42%, rgba(234,165,59,.32), transparent 70%); mix-blend-mode:screen; animation:pulseGlow 4.5s ease-in-out infinite; }
-  .cardapio-espelho .feature::after { content:""; position:absolute; inset:0; z-index:2; background:linear-gradient(180deg, rgba(8,6,4,.08) 0%, rgba(8,6,4,.2) 38%, rgba(8,6,4,.95) 100%); }
-  .cardapio-espelho .feature .steam { position:absolute; z-index:3; left:0; right:0; top:18%; height:46%; pointer-events:none; }
-  .cardapio-espelho .feature .steam span { position:absolute; bottom:0; width:2px; height:60%; background:linear-gradient(180deg, rgba(255,240,210,.5), transparent); filter:blur(2px); opacity:0; animation:rise 4s ease-in infinite; }
-  .cardapio-espelho .feature .steam span:nth-child(2) { left:50%; height:75%; animation-delay:1.2s; }
-  .cardapio-espelho .feature .steam span:nth-child(3) { left:58%; animation-delay:2.1s; }
-  .cardapio-espelho .feature .steam span:nth-child(1) { left:42%; }
-  .cardapio-espelho .feature .fc { position:relative; z-index:4; padding:22px 20px 24px; width:100%; }
-  .cardapio-espelho .feature .kicker { font-family:'Jost',sans-serif; font-size:10px; letter-spacing:.3em; text-transform:uppercase; color:#e8d28f; margin-bottom:10px; }
-  .cardapio-espelho .feature .fc h3 { font-family:'Playfair Display',Georgia,serif; font-weight:800; font-size:34px; line-height:1.02; margin-bottom:10px; color:#fff; }
-  .cardapio-espelho .feature .fc p { font-family:'Cormorant Garamond',Georgia,serif; color:#f0e2c8; font-size:17px; max-width:40ch; margin-bottom:14px; }
-
-  .cardapio-espelho .nhoque-intro { padding:4px 8px 6px; text-align:center; color:#b3a587; font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-size:17px; }
-  .cardapio-espelho .sauce-tabs { display:flex; gap:8px; padding:12px 4px 4px; flex-wrap:wrap; }
-  .cardapio-espelho .sauce-tabs button { flex:1; min-width:90px; font-family:'Jost',sans-serif; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:#b3a587; background:transparent; border:1px solid rgba(212,175,55,.25); border-radius:999px; padding:10px 6px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; }
-  .cardapio-espelho .sauce-tabs button .dot { width:11px; height:11px; border-radius:50%; box-shadow:0 0 0 2px rgba(0,0,0,.3) inset; }
-  .cardapio-espelho .sauce-tabs button.on { color:#1a1206; background:#e8d28f; border-color:#e8d28f; }
-  .cardapio-espelho .sauce-stage { display:grid; gap:12px; margin-top:8px; }
-
-  .cardapio-espelho .doce-grid { display:grid; gap:12px; }
-  .cardapio-espelho .doce-card { position:relative; min-height:280px; display:flex; align-items:flex-end; overflow:hidden; border:1px solid rgba(202,168,106,.18); border-radius:16px; cursor:pointer; }
-  .cardapio-espelho .doce-card > img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; filter:brightness(.93) contrast(1.1) saturate(1.06) sepia(.1); }
-  .cardapio-espelho .doce-card .wedge { position:absolute; inset:0; z-index:1; background:linear-gradient(108deg, rgba(8,5,4,.94) 0%, rgba(8,5,4,.78) 36%, rgba(8,5,4,.12) 64%, transparent 80%); }
-  .cardapio-espelho .doce-card .vig { position:absolute; inset:0; z-index:1; box-shadow:inset 0 0 90px 30px rgba(0,0,0,.6); }
-  .cardapio-espelho .doce-card .fc { position:relative; z-index:2; padding:20px 18px 22px; max-width:80%; }
-  .cardapio-espelho .doce-card .k { font-family:'Jost',sans-serif; font-size:9.5px; letter-spacing:.24em; text-transform:uppercase; color:#caa86a; margin-bottom:9px; display:flex; align-items:center; gap:6px; }
-  .cardapio-espelho .doce-card h3 { font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-weight:600; font-size:28px; line-height:1.05; color:#fff; margin-bottom:8px; }
-  .cardapio-espelho .doce-card p { font-family:'Cormorant Garamond',Georgia,serif; color:#d8c6ab; font-size:16px; margin-bottom:10px; }
-  .cardapio-espelho .doce-card .price { color:#e7caa0; font-size:24px; font-family:'Bebas Neue',sans-serif; letter-spacing:.02em; margin-top:0; }
-  .cardapio-espelho .doce-card .btn-order { border:1px solid #caa86a; color:#e7caa0; margin-top:10px; padding:11px 20px; }
-
-  .cardapio-espelho.px-white { color:#241c12; background:#f4efe3; border-radius:16px; padding:10px 12px; }
-  .cardapio-espelho.px-white .section-head .number { color:#9c7c1e; }
-  .cardapio-espelho.px-white .section-head h2 { color:#241c12; }
-  .cardapio-espelho.px-white .section-head p { color:#6b5a3a; }
-  .cardapio-espelho.px-white .dish-card { background:#fffdf7; border-color:rgba(120,95,30,.18); box-shadow:0 12px 30px rgba(60,40,10,.12); }
-  .cardapio-espelho.px-white .dish-card::before { border-color:rgba(120,95,30,.12); }
-  .cardapio-espelho.px-white .dish-body h3 { color:#241c12; }
-  .cardapio-espelho.px-white .dish-body p { color:#6b5a3a; }
-  .cardapio-espelho.px-white .dish-bottom strong { color:#7a5f1e; }
-  .cardapio-espelho.px-white .see-btn { background:#d4af37; color:#241200; border-color:transparent; }
-  .cardapio-espelho.px-wine { background:radial-gradient(120% 70% at 50% 0%, #2a0810, transparent 62%), #0c0306; border-radius:16px; padding:10px 12px; }
-  .cardapio-espelho.px-espresso { background:radial-gradient(120% 60% at 50% 0%, #1f1109, transparent 60%), #0a0706; border-radius:16px; padding:10px 12px; }
-
-  /* barra de acoes por card (editar/duplicar/mover/excluir) */
-  .cardapio-espelho .card-fab { position:absolute; top:8px; right:8px; z-index:7; display:flex; flex-wrap:wrap; gap:4px; justify-content:flex-end; max-width:78%; }
-  .cardapio-espelho .card-fab button { font-family:'Jost',sans-serif; font-size:11px; font-weight:500; line-height:1; padding:7px 9px; border-radius:9px; border:1px solid rgba(0,0,0,.28); background:rgba(8,7,5,.84); color:#ffe7a0; backdrop-filter:blur(6px); cursor:pointer; }
-  .cardapio-espelho .card-fab button:disabled { opacity:.4; }
-  .cardapio-espelho .card-fab button.danger { color:#ff9a8a; }
-  .cardapio-espelho.px-white .card-fab button, .cardapio-espelho .doce-card .card-fab button { background:rgba(255,255,255,.92); color:#3a2c12; border-color:rgba(0,0,0,.15); }
-  .cardapio-espelho.px-white .card-fab button.danger, .cardapio-espelho .doce-card .card-fab button.danger { color:#b3402b; }
-  .cardapio-espelho .paused { opacity:.5; filter:grayscale(.4); }
-  .cardapio-espelho .espelho-add { width:100%; border:1px dashed rgba(212,175,55,.5); background:transparent; color:#e8d28f; font-family:'Jost',sans-serif; letter-spacing:.1em; text-transform:uppercase; font-size:12px; padding:14px; border-radius:12px; cursor:pointer; margin-top:8px; }
-
-</style>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500;1,600&family=Bebas+Neue&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  </style>
 </head>
 <body>
   <div id="root"></div>
@@ -1275,10 +1064,7 @@
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const NAV = [
-      { id: 'gestor', icon: '🧾', label: 'Gestor de Pedidos' },
-      { id: 'atendimento', icon: '💬', label: 'Chat' },
       { id: 'cardapio', icon: '🍝', label: 'Cardápio' },
-      { id: 'crm', icon: '📈', label: 'CRM' },
     ];
 
     const SECTION_TYPES = [
@@ -1333,12 +1119,6 @@
       chip_3_valor: 'endereco',
       faixa_titulo: 'Frete do chef:',
       faixa_texto: 'acima de R$ 60,00, ate R$ 10,00 da entrega fica por nossa conta.',
-      endereco: '',
-      telefone: '',
-      maps_url: '',
-      horario_texto: '',
-      area_entrega: 'Curitiba e região',
-      como_funciona: 'Chega quentinho na sua casa em 20 a 30 min. Pediu, preparamos na hora e mandamos pra você.',
       logo_url: '',
       capa_url: '',
       capa_tipo: 'imagem',
@@ -1353,22 +1133,6 @@
     const textToList = (value) => String(value || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean);
     const listToText = (value) => Array.isArray(value) ? value.join('\n') : String(value || '');
     const cleanText = (value) => String(value ?? '').trim();
-    const normalizePhone = (value) => cleanText(value).replace(/\D/g, '');
-    const isPaidPending = (pedido) => pedido?.pagamento_status === 'pago' && pedido?.aceite_status === 'pendente' && pedido?.status !== 'cancelado';
-    const orderLabel = (pedido) => pedido?.numero_pedido ? `#${pedido.numero_pedido}` : `#${String(pedido?.id || '').slice(0, 8)}`;
-    const formatAddress = (snapshot = {}) => {
-      const endereco = snapshot && typeof snapshot === 'object' ? snapshot : {};
-      const rua = cleanText(endereco.rua || endereco.logradouro || endereco.endereco || endereco.address);
-      const numero = cleanText(endereco.numero || endereco.number);
-      const bairro = cleanText(endereco.bairro || endereco.neighborhood);
-      const complemento = cleanText(endereco.complemento || endereco.complement);
-      const cidade = cleanText(endereco.cidade || endereco.city);
-      const uf = cleanText(endereco.uf || endereco.estado || endereco.state);
-      const cep = cleanText(endereco.cep || endereco.zipcode || endereco.postal_code);
-      const linha1 = [rua, numero].filter(Boolean).join(', ');
-      const linha2 = [bairro, cidade && uf ? `${cidade}/${uf}` : cidade || uf, cep].filter(Boolean).join(' · ');
-      return [linha1, complemento, linha2].filter(Boolean).join(' · ') || 'Endereco nao informado';
-    };
     const mergeTopoConfig = (config = {}) => {
       const topo = config.topo_config && typeof config.topo_config === 'object' && !Array.isArray(config.topo_config)
         ? config.topo_config
@@ -1620,7 +1384,6 @@
       const soundInputRef = useRef(null);
       const ringIntervalRef = useRef(null);
       const chatDetailRef = useRef(null);
-      const paidPendingNotifiedRef = useRef(new Set());
 
       const toast = (message, type = 'ok') => setToastState({ message, type });
 
@@ -1745,19 +1508,14 @@
 
       useEffect(() => {
         if (!session) return;
-        const handlePedidoChange = (pedido) => {
-          if (isPaidPending(pedido)) {
-            const key = pedido.id || pedido.mp_payment_id || pedido.numero_pedido;
-            if (key && !paidPendingNotifiedRef.current.has(key)) {
-              paidPendingNotifiedRef.current.add(key);
-              toast(`Pedido pago aguardando aceite: ${orderLabel(pedido)}.`);
+        const channel = sb.channel('admin-pedidos')
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos' }, payload => {
+            if (payload?.new?.status === 'novo') {
+              toast(`Novo pedido chegou${payload.new.numero_pedido ? `: #${payload.new.numero_pedido}` : ''}.`);
               startSoundLoop();
             }
-          }
-          loadPedidos();
-        };
-        const channel = sb.channel('admin-pedidos')
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos' }, payload => handlePedidoChange(payload?.new))
+            loadPedidos();
+          })
           .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'atendimento_mensagens' }, payload => {
             if (payload?.new?.autor === 'cliente') {
               const aberto = chatDetailRef.current?.atendimento?.id === payload.new.atendimento_id;
@@ -1774,7 +1532,7 @@
             }
           })
           .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'atendimentos' }, () => loadAtendimentos())
-          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pedidos' }, payload => handlePedidoChange(payload?.new))
+          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pedidos' }, () => loadPedidos())
           .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'pedidos' }, () => loadPedidos())
           .subscribe();
         return () => { sb.removeChannel(channel); };
@@ -1852,11 +1610,10 @@
 
       async function loadPedidos() {
         try {
-          const { data: result, error } = await sb.functions.invoke('admin-pedidos', {
-            body: { acao: 'listar' },
-          });
-          if (error) throw error;
-          const pedidos = result?.pedidos || [];
+          const pedidos = await run('pedidos', sb.rpc('pedidos_admin', {
+            p_status: statusFilter || null,
+            p_limite: 100,
+          }));
           setData(prev => ({ ...prev, pedidos }));
         } catch (error) {
           toast(error.message, 'error');
@@ -2132,17 +1889,8 @@
             p_selo_experiencia: form.selo_experiencia || null,
             p_urgencia_texto: form.urgencia_texto || null,
           };
-          let { error } = await sb.rpc('salvar_prato_completo', payload);
-          if (error && /slug/i.test(error.message || '')) {
-            payload.p_slug = `${form.slug || slugify(form.nome) || 'prato'}-${Date.now().toString(36).slice(-4)}`;
-            ({ error } = await sb.rpc('salvar_prato_completo', payload));
-          }
+          const { error } = await sb.rpc('salvar_prato_completo', payload);
           if (error) throw error;
-          const { error: pdvError } = await sb
-            .from('pratos')
-            .update({ codigo_pdv: (form.codigo_pdv || '').trim() || null })
-            .eq('id', pratoId);
-          if (pdvError) throw pdvError;
           setModal(null);
           toast('Item salvo no cardápio.');
           await loadAll();
@@ -2257,82 +2005,16 @@
         }
       }
 
-      async function saveTopoRapido(form) {
-        try {
-          const cur = (data.config && data.config.topo_config && typeof data.config.topo_config === 'object') ? data.config.topo_config : {};
-          let logo = cur.logo_url || null;
-          if (form.logoFile) logo = await uploadImage(form.logoFile, 'logo', 'marca/logo', 'dom');
-          const topo_config = {
-            ...TOPO_DEFAULTS, ...cur,
-            logo_url: logo,
-            descricao: form.descricao ?? cur.descricao ?? '',
-            endereco: form.endereco ?? cur.endereco ?? '',
-            telefone: form.telefone ?? cur.telefone ?? '',
-            horario_texto: form.horario_texto ?? cur.horario_texto ?? '',
-            area_entrega: form.area_entrega ?? cur.area_entrega ?? '',
-            maps_url: form.maps_url ?? cur.maps_url ?? '',
-            chip_1_label: form.chip_1_label ?? cur.chip_1_label,
-            chip_1_valor: form.chip_1_valor ?? cur.chip_1_valor,
-            chip_2_label: form.chip_2_label ?? cur.chip_2_label,
-            chip_2_valor: form.chip_2_valor ?? cur.chip_2_valor,
-            chip_3_label: form.chip_3_label ?? cur.chip_3_label,
-            chip_3_valor: form.chip_3_valor ?? cur.chip_3_valor,
-          };
-          const payload = {
-            topo_config,
-            restaurante_logo_url: logo,
-            restaurante_descricao: topo_config.descricao || null,
-            loja_aberta_manual: form.lojaAberta !== false,
-          };
-          const { error } = await sb.from('configuracoes').update(payload).eq('id', 1);
-          if (error) throw error;
-          toast('Topo salvo.');
-          await loadAll();
-        } catch (error) {
-          toast(error.message, 'error');
-        }
-      }
-
-      async function callAdminPedidos(body) {
-        const { data: result, error } = await sb.functions.invoke('admin-pedidos', { body });
-        if (error) throw error;
-        if (result?.error) {
-          const detalhe = result?.detalhe ? ` ${JSON.stringify(result.detalhe)}` : '';
-          throw new Error(`${result.error}${detalhe}`);
-        }
-        return result;
-      }
-
-      async function aceitarPedido(pedido) {
-        if (!confirm(`Aceitar o pedido ${orderLabel(pedido)} e mandar para preparo?`)) return;
-        try {
-          await callAdminPedidos({ acao: 'aceitar', pedido_id: pedido.id });
-          toast(`Pedido ${orderLabel(pedido)} aceito.`);
-          stopSoundLoop();
-          await loadPedidos();
-        } catch (error) {
-          toast(error.message, 'error');
-        }
-      }
-
-      async function recusarPedido(pedido) {
-        const motivo = prompt(`Motivo para recusar ${orderLabel(pedido)}:`, 'Nao conseguimos preparar esse pedido agora.');
-        if (motivo === null) return;
-        if (!confirm(`Recusar ${orderLabel(pedido)} e estornar o PIX no Mercado Pago?`)) return;
-        try {
-          await callAdminPedidos({ acao: 'recusar', pedido_id: pedido.id, motivo });
-          toast(`Pedido ${orderLabel(pedido)} recusado e estornado.`);
-          stopSoundLoop();
-          await loadPedidos();
-        } catch (error) {
-          toast(error.message, 'error');
-        }
-      }
-
       async function updateStatus(pedido, status) {
         try {
-          await callAdminPedidos({ acao: 'alterar_status', pedido_id: pedido.id, status });
-          toast(`Pedido ${orderLabel(pedido)} atualizado.`);
+          const motivo = status === 'cancelado' ? prompt('Motivo do cancelamento:') || null : null;
+          const { error } = await sb.rpc('atualizar_status_pedido', {
+            p_pedido_id: pedido.id,
+            p_novo_status: status,
+            p_motivo: motivo,
+          });
+          if (error) throw error;
+          toast(`Pedido #${pedido.numero_pedido} atualizado.`);
           await loadPedidos();
         } catch (error) {
           toast(error.message, 'error');
@@ -2377,32 +2059,6 @@
             status: 'em_atendimento',
           }).eq('id', atendimentoId);
           if (updateError) throw updateError;
-          await refreshChatDetail(atendimentoId, false);
-        } catch (error) {
-          toast(error.message, 'error');
-        }
-      }
-
-      async function sendAtendimentoMidia(blob, tipo, contentType, ext) {
-        if (!chatDetail?.atendimento?.id || !blob) return;
-        try {
-          const atendimentoId = chatDetail.atendimento.id;
-          const path = `chat/loja/${atendimentoId}-${Date.now()}.${ext}`;
-          const { error: upErr } = await sb.storage.from(BUCKET).upload(path, blob, { contentType, upsert: false });
-          if (upErr) throw upErr;
-          const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(path);
-          const { error: insErr } = await sb.from('atendimento_mensagens').insert({
-            atendimento_id: atendimentoId,
-            autor: 'admin',
-            texto: '',
-            contexto: { origem: 'painel_admin', midia_url: pub.publicUrl, midia_tipo: tipo },
-          });
-          if (insErr) throw insErr;
-          await sb.from('atendimentos').update({
-            ultimo_texto: tipo === 'audio' ? '🎤 Áudio' : '📷 Foto',
-            ultima_mensagem_em: new Date().toISOString(),
-            status: 'em_atendimento',
-          }).eq('id', atendimentoId);
           await refreshChatDetail(atendimentoId, false);
         } catch (error) {
           toast(error.message, 'error');
@@ -2465,7 +2121,7 @@
             <div className="topbar">
               <div>
                 <h2>{title}</h2>
-                <p>{active === 'gestor' ? 'Pedidos pagos aparecem aqui para aceitar, preparar e acompanhar.' : 'Monte o cardápio na mesma ordem que o cliente vê.'}</p>
+                <p>Monte o cardápio na mesma ordem que o cliente vê.</p>
               </div>
               <div className="actions">
                 <a className="btn" href="/garcom/" target="_blank">Abrir Garçom</a>
@@ -2486,19 +2142,7 @@
             </div>
 
             {active === 'painel' && <Painel stats={stats} data={data} setActive={setActive} />}
-            {active === 'gestor' && (
-              <GestorPedidos
-                pedidos={data.pedidos}
-                reload={loadPedidos}
-                openOrder={openOrder}
-                aceitarPedido={aceitarPedido}
-                recusarPedido={recusarPedido}
-                updateStatus={updateStatus}
-              />
-            )}
             {active === 'cardapio' && (
-              <>
-              <TopoEditor config={data.config} onSave={saveTopoRapido} />
               <CardapioBuilder
                 nested={nested}
                 data={data}
@@ -2514,12 +2158,10 @@
                 onToggleDish={toggleDish}
                 onMoveDish={moveDish}
               />
-              </>
             )}
             {active === 'pedidos' && <Pedidos pedidos={data.pedidos} statusFilter={statusFilter} setStatusFilter={setStatusFilter} reload={loadPedidos} openOrder={openOrder} updateStatus={updateStatus} />}
             {active === 'atendimento' && <Atendimento atendimentos={data.atendimentos} reload={loadAtendimentos} openAtendimento={openAtendimento} ringing={ringing} stopSoundLoop={stopSoundLoop} />}
             {active === 'clientes' && <Clientes clientes={data.clientes} />}
-            {active === 'crm' && <CRM clientes={data.clientes} pedidos={data.pedidos} />}
             {active === 'cupons' && <Cupons cupons={data.cupons} onNew={() => setModal({ type: 'cupom', item: null })} onEdit={item => setModal({ type: 'cupom', item })} onSave={saveCupom} reload={loadAll} toast={toast} />}
             {active === 'config' && <ConfigScreen config={data.config} onSave={saveConfig} />}
           </main>
@@ -2529,7 +2171,7 @@
           {modal?.type === 'prato' && <DishModal item={modal.item} categorias={data.categorias} cupons={data.cupons} onClose={() => setModal(null)} onSave={saveDish} />}
           {modal?.type === 'cupom' && <CupomModal item={modal.item} onClose={() => setModal(null)} onSave={saveCupom} />}
           {orderDetail && <OrderModal detail={orderDetail} onClose={() => setOrderDetail(null)} />}
-          {chatDetail && <AtendimentoModal detail={chatDetail} onClose={() => setChatDetail(null)} onSend={sendAtendimentoReply} onSendMidia={sendAtendimentoMidia} onResolve={closeAtendimento} />}
+          {chatDetail && <AtendimentoModal detail={chatDetail} onClose={() => setChatDetail(null)} onSend={sendAtendimentoReply} onResolve={closeAtendimento} />}
           <Toast toast={toastState} onClose={() => setToastState(null)} />
         </div>
       );
@@ -2603,7 +2245,6 @@
         selo_experiencia: '',
         urgencia_texto: '',
         preco_base: 0,
-        codigo_pdv: '',
         foto_url: '',
         fotoFile: null,
         badge_destaque: '',
@@ -2644,7 +2285,6 @@
         id: null,
         nome: `${clone.nome || 'Item'} (copia)`,
         slug: '',
-        codigo_pdv: '',
         fotoFile: null,
         ordem,
         ativo: true,
@@ -2735,8 +2375,9 @@
                 <div className="section-identity">
                   <span className="badge purple">{cat.icone || '🍝'}</span>
                   <div>
-                    <span className="eyebrow">{SECTION_TYPES.find(t => t.id === cat.tipo_visual)?.label || 'Seção'} · edição</span>
-                    <h3 style={{fontSize:14, opacity:.65}}>{cat.titulo || cat.nome}</h3>
+                    <span className="eyebrow">{SECTION_TYPES.find(t => t.id === cat.tipo_visual)?.label || 'Seção'}</span>
+                    <h3>{cat.titulo || cat.nome}</h3>
+                    {cat.descricao && <p>{cat.descricao}</p>}
                   </div>
                 </div>
                 <div className="actions">
@@ -2747,64 +2388,29 @@
                   <button className="btn btn-small btn-danger" onClick={() => onDeleteSection(cat)}>Excluir</button>
                 </div>
               </div>
-              <div className={`editor-preview cardapio-espelho ${cat.tipo_visual === 'lista_editorial' ? 'px-white' : cat.tipo_visual === 'risotos' ? 'px-wine' : cat.tipo_visual === 'sobremesas' ? 'px-espresso' : ''}`.trim()}>
-                <header className="section-head">
-                  <div className="number">Capítulo {String(index + 1).padStart(2, '0')}</div>
-                  <h2>{cat.titulo || cat.nome}</h2>
-                  {cat.descricao && <p>{cat.descricao}</p>}
-                </header>
+              <div className="editor-preview">
                 {cat.tipo_visual === 'carrossel_horizontal' && (
-                  <div className="poster-row">
+                  <div className="editor-poster-row">
                     {cat.pratos.map((prato, dishIndex) => (
                       <DishPosterAdmin key={prato.id} prato={prato} dishIndex={dishIndex} total={cat.pratos.length} onEditDish={onEditDish} onDuplicateDish={onDuplicateDish} onDeleteDish={onDeleteDish} onToggleDish={onToggleDish} onMoveDish={onMoveDish} />
                     ))}
                   </div>
                 )}
                 {cat.tipo_visual === 'feature_foto_grande' && (
-                  <div className="feature-stack">
-                    {cat.pratos[0] && <DishFeatureAdmin key={cat.pratos[0].id} prato={cat.pratos[0]} dishIndex={0} total={cat.pratos.length} onEditDish={onEditDish} onDuplicateDish={onDuplicateDish} onDeleteDish={onDeleteDish} onToggleDish={onToggleDish} onMoveDish={onMoveDish} />}
-                    {cat.pratos.length > 1 && (
-                      <div className="dish-list">
-                        {cat.pratos.slice(1).map((prato, i) => (
-                          <DishListAdmin key={prato.id} prato={prato} dishIndex={i + 1} total={cat.pratos.length} onEditDish={onEditDish} onDuplicateDish={onDuplicateDish} onDeleteDish={onDeleteDish} onToggleDish={onToggleDish} onMoveDish={onMoveDish} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {cat.tipo_visual === 'nhoque_molhos' && (
-                  <>
-                    <div className="nhoque-intro">O nhoque é da casa. Você escolhe o molho:</div>
-                    <div className="sauce-tabs">
-                      {cat.pratos.map((p, i) => (
-                        <button key={`tab-${p.id}`} className={i === 0 ? 'on' : ''} type="button">
-                          <span className="dot" style={{ background: sauceColorAdmin(p.nome) }}></span>
-                          {String(p.nome).replace(/nhoque|molho/gi, '').trim() || p.nome}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="sauce-stage">
-                      {cat.pratos.map((prato, dishIndex) => (
-                        <DishClaudeAdmin key={prato.id} prato={prato} dishIndex={dishIndex} total={cat.pratos.length} onEditDish={onEditDish} onDuplicateDish={onDuplicateDish} onDeleteDish={onDeleteDish} onToggleDish={onToggleDish} onMoveDish={onMoveDish} />
-                      ))}
-                    </div>
-                  </>
-                )}
-                {cat.tipo_visual === 'sobremesas' && (
-                  <div className="doce-grid">
+                  <div className="editor-feature-stack">
                     {cat.pratos.map((prato, dishIndex) => (
-                      <DishDoceAdmin key={prato.id} prato={prato} dishIndex={dishIndex} total={cat.pratos.length} onEditDish={onEditDish} onDuplicateDish={onDuplicateDish} onDeleteDish={onDeleteDish} onToggleDish={onToggleDish} onMoveDish={onMoveDish} />
+                      <DishFeatureAdmin key={prato.id} prato={prato} dishIndex={dishIndex} total={cat.pratos.length} onEditDish={onEditDish} onDuplicateDish={onDuplicateDish} onDeleteDish={onDeleteDish} onToggleDish={onToggleDish} onMoveDish={onMoveDish} />
                     ))}
                   </div>
                 )}
-                {!['carrossel_horizontal','feature_foto_grande','nhoque_molhos','sobremesas'].includes(cat.tipo_visual || 'lista_editorial') && (
-                  <div className="dish-list">
+                {['nhoque_molhos', 'sobremesas', 'risotos', 'lista_editorial'].includes(cat.tipo_visual || 'lista_editorial') && (
+                  <div className={`editor-dish-grid ${cat.tipo_visual || 'lista_editorial'}`}>
                     {cat.pratos.map((prato, dishIndex) => (
                       <DishListAdmin key={prato.id} prato={prato} dishIndex={dishIndex} total={cat.pratos.length} onEditDish={onEditDish} onDuplicateDish={onDuplicateDish} onDeleteDish={onDeleteDish} onToggleDish={onToggleDish} onMoveDish={onMoveDish} />
                     ))}
                   </div>
                 )}
-                {!cat.pratos.length && <button className="espelho-add" onClick={() => onAddDish(cat)}>+ Adicionar primeiro item em {cat.titulo || cat.nome}</button>}
+                {!cat.pratos.length && <button className="category-add editor-add-empty" onClick={() => onAddDish(cat)}>+ Adicionar primeiro item em {cat.titulo || cat.nome}</button>}
               </div>
               <div className="editor-section-foot">
                 <button className="btn btn-primary" onClick={() => onAddDish(cat)}>+ Adicionar prato nessa seção</button>
@@ -2817,28 +2423,15 @@
       );
     }
 
-    function precoEspelho(p) { return Number(p.preco_promocional || p.preco_base || 0); }
-    function textoEspelho(p, n) { return compactText(p.descricao_curta || p.frase_fome || '', n); }
-    function sauceColorAdmin(nome = '') {
-      const t = String(nome).toLowerCase();
-      if (t.includes('bolonh') || t.includes('tomate') || t.includes('vermelh')) return '#b63a2b';
-      if (t.includes('pesto')) return '#6d9a4a';
-      if (t.includes('rose') || t.includes('rosé') || t.includes('rosa')) return '#d98b73';
-      if (t.includes('alfredo') || t.includes('branco')) return '#ecd9a7';
-      return '#c9a23a';
-    }
-
-    function CardFab(props) {
-      const { prato, dishIndex, total, onEditDish, onDuplicateDish, onDeleteDish, onToggleDish, onMoveDish } = props;
-      const stop = (fn) => (e) => { e.stopPropagation(); fn(); };
+    function DishAdminActions({ prato, dishIndex, total, onEditDish, onDuplicateDish, onDeleteDish, onToggleDish, onMoveDish }) {
       return (
-        <div className="card-fab" onClick={e => e.stopPropagation()}>
-          <button disabled={dishIndex === 0} onClick={stop(() => onMoveDish(prato, -1))}>↑</button>
-          <button disabled={dishIndex === total - 1} onClick={stop(() => onMoveDish(prato, 1))}>↓</button>
-          <button onClick={stop(() => onEditDish(prato))}>Editar</button>
-          <button onClick={stop(() => onDuplicateDish(prato))}>Dup</button>
-          <button onClick={stop(() => onToggleDish(prato))}>{prato.ativo ? 'Pausar' : 'Ativar'}</button>
-          <button className="danger" onClick={stop(() => onDeleteDish(prato))}>Excluir</button>
+        <div className="dish-admin-actions">
+          <button className="btn btn-small" disabled={dishIndex === 0} onClick={() => onMoveDish(prato, -1)}>↑</button>
+          <button className="btn btn-small" disabled={dishIndex === total - 1} onClick={() => onMoveDish(prato, 1)}>↓</button>
+          <button className="btn btn-small" onClick={() => onEditDish(prato)}>Editar</button>
+          <button className="btn btn-small" onClick={() => onDuplicateDish(prato)}>Duplicar</button>
+          <button className="btn btn-small" onClick={() => onToggleDish(prato)}>{prato.ativo ? 'Pausar' : 'Ativar'}</button>
+          <button className="btn btn-small btn-danger" onClick={() => onDeleteDish(prato)}>Excluir</button>
         </div>
       );
     }
@@ -2846,14 +2439,15 @@
     function DishPosterAdmin(props) {
       const { prato } = props;
       return (
-        <article className={`poster-card ${prato.ativo ? '' : 'paused'}`} onClick={() => props.onEditDish(prato)}>
-          {prato.foto_url && <img src={prato.foto_url} alt={prato.nome} loading="lazy" />}
-          <CardFab {...props} />
-          <div className="poster-info">
-            <h3>{prato.nome}</h3>
-            <p>{textoEspelho(prato, 130)}</p>
-            <div className="price">{fmtMoney(precoEspelho(prato))}</div>
+        <article className={`editor-poster-card ${prato.ativo ? '' : 'paused'}`}>
+          <div className="poster-thumb">{prato.foto_url ? <img src={prato.foto_url} alt="" /> : 'DL'}</div>
+          <div className="poster-copy">
+            <span className="badge">{prato.badge_destaque || 'Prato'}</span>
+            <h4>{prato.nome}</h4>
+            <p>{compactText(prato.descricao_curta || prato.frase_fome || '', 98)}</p>
+            <strong>{fmtMoney(prato.preco_base)}</strong>
           </div>
+          <DishAdminActions {...props} />
         </article>
       );
     }
@@ -2861,73 +2455,37 @@
     function DishFeatureAdmin(props) {
       const { prato } = props;
       return (
-        <section className={`feature ${prato.ativo ? '' : 'paused'}`} onClick={() => props.onEditDish(prato)}>
-          {prato.foto_url && <img src={prato.foto_url} alt={prato.nome} loading="lazy" />}
-          <div className="glow"></div>
-          <div className="steam"><span></span><span></span><span></span></div>
-          <CardFab {...props} />
-          <div className="fc">
-            <div className="kicker">Para dividir · rasga e puxa o queijo</div>
-            <h3>{prato.nome}</h3>
-            {textoEspelho(prato, 150) && <p>{textoEspelho(prato, 150)}</p>}
-            <div className="priceline"><span className="lead">Valor</span><span className="dots"></span><span className="val">{fmtMoney(precoEspelho(prato))}</span></div>
-            <span className="btn-order">Pedir agora →</span>
+        <article className={`editor-feature-card ${prato.ativo ? '' : 'paused'}`}>
+          <div className="feature-img">{prato.foto_url ? <img src={prato.foto_url} alt="" /> : 'DL'}</div>
+          <div>
+            <span className="eyebrow">{prato.badge_destaque || 'Capítulo do Dom'}</span>
+            <h4>{prato.nome}</h4>
+            <p>{compactText(prato.descricao_curta || '', 150)}</p>
+            <strong>{fmtMoney(prato.preco_base)}</strong>
+            <DishAdminActions {...props} />
           </div>
-        </section>
+        </article>
       );
     }
 
     function DishListAdmin(props) {
       const { prato } = props;
       return (
-        <article className={`dish-card ${prato.ativo ? '' : 'paused'}`} onClick={() => props.onEditDish(prato)}>
-          {prato.foto_url && <img className="dish-photo" src={prato.foto_url} alt={prato.nome} loading="lazy" />}
-          <CardFab {...props} />
-          <div className="dish-body">
-            <h3>{prato.nome}</h3>
-            {textoEspelho(prato, 118) && <p>{textoEspelho(prato, 118)}</p>}
-            <div className="dish-bottom">
-              <strong>{fmtMoney(precoEspelho(prato))}</strong>
-              <span className="see-btn">Ver</span>
+        <article className={`editor-list-card ${prato.ativo ? '' : 'paused'}`}>
+          <div className="thumb">{prato.foto_url ? <img src={prato.foto_url} alt="" /> : 'DL'}</div>
+          <div className="editor-list-copy">
+            <h4>{prato.nome}</h4>
+            <p>{compactText(prato.descricao_curta || 'Sem descrição', 120)}</p>
+            <div className="dish-meta">
+              <span className="money">{fmtMoney(prato.preco_base)}</span>
+              <span className={`badge ${prato.ativo ? 'on' : 'off'}`}>{prato.ativo ? 'Ativo' : 'Inativo'}</span>
+              <span className="badge">{prato.tamanhos.length} tamanhos</span>
+              <span className="badge">{prato.grupos.length} grupos</span>
+              {!!prato.cupons.length && <span className="badge purple">{prato.cupons.length} cupons</span>}
             </div>
+            <DishAdminActions {...props} />
           </div>
         </article>
-      );
-    }
-
-    function DishClaudeAdmin(props) {
-      const { prato } = props;
-      return (
-        <article className={`dish v-large ${prato.ativo ? '' : 'paused'}`} onClick={() => props.onEditDish(prato)}>
-          <div className="ph">{prato.foto_url && <img src={prato.foto_url} alt={prato.nome} loading="lazy" />}</div>
-          <CardFab {...props} />
-          <div className="body">
-            <h3>{prato.nome}</h3>
-            {textoEspelho(prato, 120) && <p>{textoEspelho(prato, 120)}</p>}
-            <div className="priceline"><span className="lead">Valor</span><span className="dots"></span><span className="val">{fmtMoney(precoEspelho(prato))}</span></div>
-            <span className="btn-order">Pedir agora →</span>
-          </div>
-        </article>
-      );
-    }
-
-    function DishDoceAdmin(props) {
-      const { prato } = props;
-      return (
-        <div className={`doce-card ${prato.ativo ? '' : 'paused'}`} onClick={() => props.onEditDish(prato)}>
-          {prato.foto_url && <img src={prato.foto_url} alt={prato.nome} loading="lazy" />}
-          <div className="wedge"></div>
-          <div className="vig"></div>
-          <CardFab {...props} />
-          <div className="fc">
-            <div className="k">Doce final</div>
-            <h3>{prato.nome}</h3>
-            {textoEspelho(prato, 110) && <p>{textoEspelho(prato, 110)}</p>}
-            <span className="price">{fmtMoney(precoEspelho(prato))}</span>
-            <br />
-            <span className="btn-order">Pedir →</span>
-          </div>
-        </div>
       );
     }
 
@@ -3097,7 +2655,6 @@
                   {categorias.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
                 </SelectField>
                 <TextField label="Nome do prato" value={form.nome} onChange={v => set('nome', v)} />
-                <TextField label="Código PDV / Consumer" value={form.codigo_pdv || ''} onChange={v => set('codigo_pdv', v)} placeholder="Ex.: 001, 1050, RISOTO_ALCATRA" />
                 <div className="field full"><TextField label="Descrição do prato" value={form.descricao_curta} onChange={v => set('descricao_curta', v)} textarea /></div>
                 <div style={{display:'none'}}><TextField label="Slug" value={form.slug} onChange={v => set('slug', v)} /></div>
                 <TextField label="Preço base" type="number" value={form.preco_base} onChange={v => set('preco_base', v)} />
@@ -3319,13 +2876,9 @@
       );
     }
 
-    function AtendimentoModal({ detail, onClose, onSend, onSendMidia, onResolve }) {
+    function AtendimentoModal({ detail, onClose, onSend, onResolve }) {
       const [reply, setReply] = useState('');
-      const [gravando, setGravando] = useState(false);
-      const [enviandoMidia, setEnviandoMidia] = useState(false);
       const scrollRef = useRef(null);
-      const recorderRef = useRef(null);
-      const chunksRef = useRef([]);
       const { atendimento, mensagens } = detail;
 
       useEffect(() => {
@@ -3341,58 +2894,6 @@
         await onSend(texto);
       };
 
-      const enviarFoto = async (e) => {
-        const file = e.target.files && e.target.files[0];
-        e.target.value = '';
-        if (!file) return;
-        setEnviandoMidia(true);
-        try {
-          const blob = await resizeImage(file, IMAGE_PRESETS.prato);
-          await onSendMidia(blob, 'imagem', 'image/webp', 'webp');
-        } catch (err) {
-          toast(err.message, 'error');
-        } finally {
-          setEnviandoMidia(false);
-        }
-      };
-
-      const toggleAudio = async () => {
-        if (gravando) {
-          try { recorderRef.current && recorderRef.current.stop(); } catch (_) {}
-          return;
-        }
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
-          toast('Navegador nao permite gravar audio.', 'error');
-          return;
-        }
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          const mimePref = (typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported('audio/webm')) ? 'audio/webm' : '';
-          const rec = new MediaRecorder(stream, mimePref ? { mimeType: mimePref } : undefined);
-          chunksRef.current = [];
-          rec.ondataavailable = ev => { if (ev.data && ev.data.size) chunksRef.current.push(ev.data); };
-          rec.onstop = async () => {
-            stream.getTracks().forEach(t => t.stop());
-            setGravando(false);
-            const tipoBlob = (rec.mimeType || 'audio/webm').split(';')[0];
-            const blob = new Blob(chunksRef.current, { type: tipoBlob });
-            if (blob.size < 800) return;
-            const ext = tipoBlob.includes('ogg') ? 'ogg' : 'webm';
-            setEnviandoMidia(true);
-            try {
-              await onSendMidia(blob, 'audio', tipoBlob, ext);
-            } finally {
-              setEnviandoMidia(false);
-            }
-          };
-          recorderRef.current = rec;
-          rec.start();
-          setGravando(true);
-        } catch (err) {
-          toast('Preciso da permissao do microfone.', 'error');
-        }
-      };
-
       return (
         <div className="modal-backdrop">
           <div className="modal">
@@ -3405,23 +2906,13 @@
             </div>
             <div className="modal-body">
               <div className="chat-thread" ref={scrollRef}>
-                {mensagens.map(msg => {
-                  const midiaUrl = msg.contexto && msg.contexto.midia_url;
-                  const midiaTipo = msg.contexto && msg.contexto.midia_tipo;
-                  return (
-                    <div key={msg.id} className={`chat-bubble ${msg.autor}`}>
-                      <strong>{msg.autor === 'admin' ? 'Você' : msg.autor === 'cliente' ? 'Cliente' : 'Sistema'}</strong>
-                      {midiaTipo === 'imagem' && midiaUrl && (
-                        <a href={midiaUrl} target="_blank" rel="noreferrer"><img src={midiaUrl} alt="foto" style={{ display:'block', maxWidth:'220px', maxHeight:'240px', borderRadius:'10px', margin:'4px 0' }} /></a>
-                      )}
-                      {midiaTipo === 'audio' && midiaUrl && (
-                        <audio src={midiaUrl} controls preload="none" style={{ display:'block', width:'230px', maxWidth:'100%', margin:'4px 0' }}></audio>
-                      )}
-                      {msg.texto && <span>{msg.texto}</span>}
-                      <small>{fmtDate(msg.criado_em)}</small>
-                    </div>
-                  );
-                })}
+                {mensagens.map(msg => (
+                  <div key={msg.id} className={`chat-bubble ${msg.autor}`}>
+                    <strong>{msg.autor === 'admin' ? 'Você' : msg.autor === 'cliente' ? 'Cliente' : 'Sistema'}</strong>
+                    <span>{msg.texto}</span>
+                    <small>{fmtDate(msg.criado_em)}</small>
+                  </div>
+                ))}
                 {!mensagens.length && <div className="empty">Ainda não tem mensagem nesta conversa.</div>}
               </div>
               <div className="reply-box">
@@ -3434,13 +2925,6 @@
                   placeholder="Responda como Marco. Ctrl+Enter envia."
                 />
                 <div className="actions">
-                  <label className="btn" style={{ cursor:'pointer', opacity: enviandoMidia ? .5 : 1 }}>
-                    📷 Foto
-                    <input type="file" accept="image/*" style={{ display:'none' }} onChange={enviarFoto} disabled={enviandoMidia || gravando} />
-                  </label>
-                  <button className={`btn ${gravando ? 'btn-danger' : ''}`} onClick={toggleAudio} disabled={enviandoMidia}>
-                    {gravando ? '■ Parar' : '🎤 Áudio'}
-                  </button>
                   <button className="btn" onClick={onResolve}>Resolver</button>
                   <button className="btn btn-primary" onClick={send} disabled={!reply.trim()}>Enviar</button>
                 </div>
@@ -3448,156 +2932,6 @@
             </div>
           </div>
         </div>
-      );
-    }
-
-    function GestorPedidos({ pedidos, reload, openOrder, aceitarPedido, recusarPedido, updateStatus }) {
-      const lanes = [
-        {
-          id: 'em_preparo',
-          title: 'Em preparo',
-          hint: 'Pagos entram aqui. Aceite e acompanhe a cozinha.',
-          filter: p => p.pagamento_status === 'pago' && p.status !== 'cancelado' && (
-            isPaidPending(p) || (p.aceite_status === 'aceito' && ['novo', 'em_preparo'].includes(p.status))
-          ),
-        },
-        {
-          id: 'pronto',
-          title: 'Pronto',
-          hint: 'Aguardando coleta ou conferência do motoboy.',
-          filter: p => p.pagamento_status === 'pago' && p.aceite_status === 'aceito' && p.status === 'pronto',
-        },
-        {
-          id: 'em_rota',
-          title: 'Em rota',
-          hint: 'Motoboy saiu para entregar.',
-          filter: p => p.pagamento_status === 'pago' && p.aceite_status === 'aceito' && p.status === 'saiu_entrega',
-        },
-        {
-          id: 'finalizados',
-          title: 'Finalizados',
-          hint: 'Pedidos concluídos.',
-          filter: p => p.pagamento_status === 'pago' && p.status === 'entregue',
-        },
-        {
-          id: 'recusados',
-          title: 'Recusados',
-          hint: 'Cancelados ou estornados.',
-          filter: p => p.aceite_status === 'recusado' || p.pagamento_status === 'estornado',
-        },
-      ];
-
-      return (
-        <section className="panel">
-          <div className="section-title">
-            <div>
-              <h2>Gestor de Pedidos</h2>
-              <p>O pagamento caiu, o pedido aparece aqui. Aceite, recuse com estorno ou avance o status.</p>
-            </div>
-            <button className="btn" onClick={reload}>Atualizar</button>
-          </div>
-          <div className="gestor-grid">
-            {lanes.map(lane => {
-              const lanePedidos = pedidos.filter(lane.filter);
-              return (
-                <div className="gestor-lane" key={lane.id}>
-                  <header>
-                    <div className="gestor-card-row">
-                      <div>
-                        <h3>{lane.title}</h3>
-                        <p>{lane.hint}</p>
-                      </div>
-                    <span className={`gestor-badge ${lane.id === 'em_preparo' ? 'gold' : ''}`}>{lanePedidos.length}</span>
-                    </div>
-                  </header>
-                  <div className="gestor-lane-body">
-                    {lanePedidos.length === 0 && <div className="gestor-empty">Nada por aqui agora.</div>}
-                    {lanePedidos.map(pedido => (
-                      <PedidoGestorCard
-                        key={pedido.id}
-                        pedido={pedido}
-                        laneId={lane.id}
-                        openOrder={openOrder}
-                        aceitarPedido={aceitarPedido}
-                        recusarPedido={recusarPedido}
-                        updateStatus={updateStatus}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      );
-    }
-
-    function PedidoGestorCard({ pedido, laneId, openOrder, aceitarPedido, recusarPedido, updateStatus }) {
-      const itens = pedido.itens || [];
-      const whatsapp = cleanText(pedido.cliente_whatsapp);
-      const totalPedidos = Number(pedido.cliente_total_pedidos || 1);
-      const endereco = formatAddress(pedido.endereco_snapshot);
-      const pago = pedido.pagamento_status === 'pago';
-
-      return (
-        <article className={`gestor-card ${pago ? 'pago' : ''}`}>
-          <div className="gestor-card-top">
-            <div>
-              <h4>{orderLabel(pedido)} · {pedido.cliente_nome || 'Cliente'}</h4>
-              <div className="order-meta">
-                <span>{fmtDate(pedido.criado_em)}</span>
-                <span>{pago ? 'Pago' : 'Pendente'}</span>
-              </div>
-            </div>
-            <span className="gestor-badge gold">{fmtMoney(pedido.total)}</span>
-          </div>
-
-          <div className="gestor-info">
-            <span>📍 {endereco}</span>
-            <span>📱 {whatsapp || 'WhatsApp nao informado'}</span>
-            <span>👤 {totalPedidos} pedido{totalPedidos === 1 ? '' : 's'} deste cliente</span>
-          </div>
-
-          <div className="gestor-items">
-            {itens.length === 0 && <span>Itens ainda nao carregados.</span>}
-            {itens.slice(0, 4).map(item => (
-              <span key={item.id}>{item.quantidade || 1}x {item.prato_nome}{item.tamanho_nome ? ` · ${item.tamanho_nome}` : ''}</span>
-            ))}
-            {itens.length > 4 && <span>+ {itens.length - 4} item(ns)</span>}
-          </div>
-
-          <div className="gestor-card-row">
-            <button className="btn btn-small" onClick={() => openOrder(pedido)}>Ver detalhes</button>
-            {whatsapp && (
-              <a className="btn btn-small" target="_blank" href={`https://wa.me/55${normalizePhone(whatsapp).replace(/^55/, '')}`}>WhatsApp</a>
-            )}
-          </div>
-
-          {laneId === 'em_preparo' && isPaidPending(pedido) && (
-            <div className="gestor-actions">
-              <button className="btn btn-primary" onClick={() => aceitarPedido(pedido)}>Aceitar</button>
-              <button className="btn btn-danger" onClick={() => recusarPedido(pedido)}>Recusar</button>
-            </div>
-          )}
-
-          {laneId === 'em_preparo' && !isPaidPending(pedido) && (
-            <div className="gestor-actions">
-              <button className="btn" onClick={() => updateStatus(pedido, 'pronto')}>Pronto</button>
-            </div>
-          )}
-
-          {laneId === 'pronto' && (
-            <div className="gestor-actions">
-              <button className="btn btn-primary" onClick={() => updateStatus(pedido, 'saiu_entrega')}>Saiu para entrega</button>
-            </div>
-          )}
-
-          {laneId === 'em_rota' && (
-            <div className="gestor-actions">
-              <button className="btn btn-primary" onClick={() => updateStatus(pedido, 'entregue')}>Marcar entregue</button>
-            </div>
-          )}
-        </article>
       );
     }
 
@@ -3676,155 +3010,6 @@
       );
     }
 
-    const CRM_SEG = {
-      ativo: { label: 'Ativos', cor: '#2faa6a', hint: 'Pediram nos últimos 30 dias' },
-      risco: { label: 'Em risco', cor: '#c98a1e', hint: '30 a 60 dias sem pedir' },
-      inativo: { label: 'Inativos', cor: '#c0392b', hint: 'Mais de 60 dias sem pedir' },
-      sem_pedido: { label: 'Sem pedido', cor: '#888', hint: 'Cadastrados, ainda não compraram' },
-    };
-
-    function CRM({ clientes, pedidos }) {
-      const [filtro, setFiltro] = useState('todos');
-      const [busca, setBusca] = useState('');
-      const DIA = 86400000;
-      const now = Date.now();
-
-      const enriquecidos = useMemo(() => {
-        const diasDesde = d => d ? Math.floor((now - new Date(d).getTime()) / DIA) : null;
-        const seg = c => {
-          const dias = diasDesde(c.ultimo_pedido_em);
-          if (!Number(c.total_pedidos) || dias === null) return 'sem_pedido';
-          if (dias <= 30) return 'ativo';
-          if (dias <= 60) return 'risco';
-          return 'inativo';
-        };
-        return clientes
-          .map(c => ({ ...c, dias: diasDesde(c.ultimo_pedido_em), segmento: seg(c) }))
-          .sort((a, b) => Number(b.total_gasto || 0) - Number(a.total_gasto || 0));
-      }, [clientes]);
-
-      const kpi = useMemo(() => {
-        const total = clientes.length;
-        const receita = clientes.reduce((s, c) => s + Number(c.total_gasto || 0), 0);
-        const somaPedidos = clientes.reduce((s, c) => s + Number(c.total_pedidos || 0), 0);
-        const cont = { ativo: 0, risco: 0, inativo: 0, sem_pedido: 0 };
-        enriquecidos.forEach(c => { cont[c.segmento] = (cont[c.segmento] || 0) + 1; });
-        return {
-          total, receita, somaPedidos,
-          ticket: somaPedidos ? receita / somaPedidos : 0,
-          ltv: total ? receita / total : 0,
-          cont,
-          churn: total ? Math.round(((cont.risco + cont.inativo) / total) * 100) : 0,
-        };
-      }, [clientes, enriquecidos]);
-
-      const funil = useMemo(() => {
-        const t = pedidos.length;
-        const pagos = pedidos.filter(p => p.pagamento_status === 'pago' || p.pago_em).length;
-        const aceitos = pedidos.filter(p => p.aceite_status === 'aceito').length;
-        const entregues = pedidos.filter(p => p.status === 'entregue').length;
-        const recusados = pedidos.filter(p => p.aceite_status === 'recusado').length;
-        return { t, pagos, aceitos, entregues, recusados };
-      }, [pedidos]);
-
-      const lista = enriquecidos.filter(c =>
-        (filtro === 'todos' || c.segmento === filtro) &&
-        (!busca || (c.nome || '').toLowerCase().includes(busca.toLowerCase()) || String(c.whatsapp || '').includes(busca)));
-
-      const card = (titulo, valor, sub) => (
-        <div style={{ background: 'var(--surface,#fff)', border: '1px solid rgba(0,0,0,.08)', borderRadius: 14, padding: '14px 16px' }}>
-          <div className="muted" style={{ fontSize: 12 }}>{titulo}</div>
-          <div style={{ fontSize: 22, fontWeight: 800, marginTop: 4 }}>{valor}</div>
-          {sub && <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>{sub}</div>}
-        </div>
-      );
-
-      const barra = (label, valor, base, cor) => {
-        const pct = base ? Math.round((valor / base) * 100) : 0;
-        return (
-          <div style={{ marginBottom: 8 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
-              <span>{label}</span><strong>{valor} <span className="muted">({pct}%)</span></strong>
-            </div>
-            <div style={{ height: 8, borderRadius: 6, background: 'rgba(0,0,0,.08)' }}>
-              <div style={{ width: pct + '%', height: '100%', borderRadius: 6, background: cor }}></div>
-            </div>
-          </div>
-        );
-      };
-
-      return (
-        <section className="card panel">
-          <div className="panel-head">
-            <h3>CRM · Clientes</h3>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 16 }}>
-            {card('Clientes', kpi.total, `${kpi.cont.ativo} ativos`)}
-            {card('Receita total', fmtMoney(kpi.receita), `${kpi.somaPedidos} pedidos`)}
-            {card('Ticket médio', fmtMoney(kpi.ticket), 'por pedido')}
-            {card('LTV médio', fmtMoney(kpi.ltv), 'por cliente')}
-            {card('Churn', kpi.churn + '%', 'sem pedir há 30+ dias')}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }} className="crm-cols">
-            <div style={{ border: '1px solid rgba(0,0,0,.08)', borderRadius: 14, padding: 16 }}>
-              <h4 style={{ margin: '0 0 12px' }}>Funil de pedidos</h4>
-              {barra('Pedidos criados', funil.t, funil.t, '#8a8a8a')}
-              {barra('Pagos', funil.pagos, funil.t, '#3a7bd5')}
-              {barra('Aceitos', funil.aceitos, funil.t, '#2faa6a')}
-              {barra('Entregues', funil.entregues, funil.t, '#1f8a52')}
-              {barra('Recusados (estorno)', funil.recusados, funil.t, '#c0392b')}
-            </div>
-            <div style={{ border: '1px solid rgba(0,0,0,.08)', borderRadius: 14, padding: 16 }}>
-              <h4 style={{ margin: '0 0 12px' }}>Segmentos</h4>
-              {Object.keys(CRM_SEG).map(k => (
-                <div key={k} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid rgba(0,0,0,.05)' }}>
-                  <div>
-                    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, background: CRM_SEG[k].cor, marginRight: 8 }}></span>
-                    <strong>{CRM_SEG[k].label}</strong>
-                    <div className="muted" style={{ fontSize: 11, marginLeft: 18 }}>{CRM_SEG[k].hint}</div>
-                  </div>
-                  <button className="btn btn-small" onClick={() => setFiltro(k)}>{kpi.cont[k] || 0}</button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="panel-head" style={{ gap: 8, flexWrap: 'wrap' }}>
-            <div className="actions" style={{ flexWrap: 'wrap' }}>
-              {['todos', 'ativo', 'risco', 'inativo', 'sem_pedido'].map(k => (
-                <button key={k} className={`btn btn-small ${filtro === k ? 'btn-primary' : ''}`} onClick={() => setFiltro(k)}>
-                  {k === 'todos' ? 'Todos' : CRM_SEG[k].label}
-                </button>
-              ))}
-            </div>
-            <input className="input" placeholder="Buscar nome ou WhatsApp" value={busca} onChange={e => setBusca(e.target.value)} style={{ maxWidth: 240 }} />
-          </div>
-
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>Cliente</th><th>WhatsApp</th><th>Segmento</th><th>Pedidos</th><th>LTV</th><th>Último pedido</th><th></th></tr></thead>
-              <tbody>
-                {lista.map(c => (
-                  <tr key={c.id}>
-                    <td><strong>{c.nome || 'Sem nome'}</strong></td>
-                    <td>{c.whatsapp}</td>
-                    <td><span style={{ background: CRM_SEG[c.segmento].cor, color: '#fff', borderRadius: 999, padding: '2px 9px', fontSize: 11, fontWeight: 700 }}>{CRM_SEG[c.segmento].label}</span></td>
-                    <td>{c.total_pedidos || 0}</td>
-                    <td className="money">{fmtMoney(c.total_gasto)}</td>
-                    <td>{c.ultimo_pedido_em ? `${fmtDate(c.ultimo_pedido_em)} · ${c.dias}d` : '—'}</td>
-                    <td>{c.whatsapp && <a className="btn btn-small" target="_blank" rel="noreferrer" href={`https://wa.me/55${String(c.whatsapp).replace(/\D/g, '').replace(/^55/, '')}`}>WhatsApp</a>}</td>
-                  </tr>
-                ))}
-                {!lista.length && <tr><td colSpan="7" className="empty">Nenhum cliente neste filtro.</td></tr>}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      );
-    }
-
     function Clientes({ clientes }) {
       return (
         <section className="card panel">
@@ -3842,97 +3027,35 @@
       );
     }
 
-    function TopoPreview({ topo, aberta = true }) {
-      const nome = String(topo.nome || 'Dom Leonardo').trim();
-      const parts = nome.split(/\s+/);
-      const w1 = parts.shift() || nome;
-      const w2 = parts.join(' ');
-      const chips = [[topo.chip_2_valor, topo.chip_2_label], [topo.chip_1_valor, topo.chip_1_label], [topo.chip_3_valor, topo.chip_3_label]];
+    function TopoPreview({ topo }) {
+      const mediaUrl = topo.capa_tipo === 'video' ? (topo.capa_video_url || topo.capa_url) : topo.capa_url;
+      const isVideo = topo.capa_tipo === 'video' && mediaUrl;
       return (
-        <div style={{ background: '#f7f3ea', borderRadius: 16, padding: '22px 16px', textAlign: 'center', border: '1px solid rgba(160,120,20,.18)' }}>
-          <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 9, letterSpacing: '.3em', textTransform: 'uppercase', color: '#9c7c1e', fontWeight: 600 }}>{topo.kicker}</div>
-          <div style={{ position: 'relative', display: 'inline-flex', margin: '14px 0 2px' }}>
-            <div style={{ width: 78, height: 78, borderRadius: '50%', overflow: 'hidden', background: '#fff', border: '1px solid rgba(160,120,20,.45)', boxShadow: '0 10px 20px rgba(40,28,8,.16)' }}>
-              {topo.logo_url ? <img src={topo.logo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontFamily: "'Playfair Display',serif", color: '#c0972c', fontSize: 24 }}>DL</div>}
+        <div className="topo-preview-phone">
+          <div className="topo-preview-cover">
+            <div className="topo-preview-media">
+              {mediaUrl ? (
+                isVideo ? <video src={mediaUrl} muted loop autoPlay playsInline /> : <img src={mediaUrl} alt="" />
+              ) : <span className="muted">Capa opcional</span>}
             </div>
-            <span style={{ position: 'absolute', top: -8, right: -22, border: `2px solid ${aberta ? '#b8901f' : '#a8392b'}`, color: aberta ? '#1a1305' : '#a8392b', background: '#fffdf8', fontFamily: "'Bebas Neue',sans-serif", letterSpacing: '.12em', fontSize: 10, padding: '3px 7px', borderRadius: 4, boxShadow: '0 5px 12px rgba(40,28,8,.18)' }}>{aberta ? 'ABERTO' : 'FECHADO'}</span>
-          </div>
-          <div style={{ width: 96, height: 2, background: 'linear-gradient(90deg,transparent,#1a1305,transparent)', margin: '7px auto 12px' }}></div>
-          <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 10, letterSpacing: '.26em', textTransform: 'uppercase', color: '#1a1305', fontWeight: 600, marginBottom: 6 }}>Bem-vindo</div>
-          <div style={{ fontFamily: "'Playfair Display',Georgia,serif", color: '#c0972c', fontSize: 34, lineHeight: .92, letterSpacing: '-.03em' }}>{w1}{w2 && <em style={{ display: 'block', fontStyle: 'italic', fontWeight: 400 }}>{w2}</em>}</div>
-          <p style={{ fontFamily: "'Cormorant Garamond',Georgia,serif", fontStyle: 'italic', color: '#6b5a3a', fontSize: 15, lineHeight: 1.4, margin: '10px auto 0', maxWidth: '30ch' }}>{topo.descricao}</p>
-          <div style={{ display: 'flex', gap: 18, justifyContent: 'center', flexWrap: 'wrap', marginTop: 16 }}>
-            {chips.map((c, i) => (
-              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                <span style={{ fontFamily: "'Jost',sans-serif", fontWeight: 700, color: '#1a1305', fontSize: 13 }}>{c[0]}</span>
-                <span style={{ fontFamily: "'Jost',sans-serif", fontSize: 8.5, letterSpacing: '.18em', textTransform: 'uppercase', color: '#9c7c1e' }}>{c[1]}</span>
+            {topo.logo_url && (
+              <div className="topo-preview-logo">
+                <img src={topo.logo_url} alt={topo.nome || 'Dom Leonardo'} />
               </div>
-            ))}
+            )}
+          </div>
+          <div className="topo-preview-card">
+            <div className="topo-preview-kicker">{topo.kicker}</div>
+            <h3 className="topo-preview-title">{topo.nome}</h3>
+            <p className="topo-preview-copy">{topo.descricao}</p>
+            <div className="topo-preview-chips">
+              <div className="topo-preview-chip"><span>{topo.chip_1_label}</span><strong>{topo.chip_1_valor}</strong></div>
+              <div className="topo-preview-chip"><span>{topo.chip_2_label}</span><strong>{topo.chip_2_valor}</strong></div>
+              <div className="topo-preview-chip"><span>{topo.chip_3_label}</span><strong>{topo.chip_3_valor}</strong></div>
+            </div>
+            <div className="topo-preview-frete"><strong>{topo.faixa_titulo}</strong> {topo.faixa_texto}</div>
           </div>
         </div>
-      );
-    }
-
-    function TopoEditor({ config, onSave }) {
-      const cur = (config && config.topo_config && typeof config.topo_config === 'object' && !Array.isArray(config.topo_config)) ? config.topo_config : {};
-      const [form, setForm] = useState(null);
-      useEffect(() => {
-        const c = (config && config.topo_config && typeof config.topo_config === 'object') ? config.topo_config : {};
-        setForm({
-          logoFile: null,
-          descricao: c.descricao || '',
-          endereco: c.endereco || '',
-          telefone: c.telefone || '',
-          horario_texto: c.horario_texto || '',
-          area_entrega: c.area_entrega || 'Curitiba e região',
-          maps_url: c.maps_url || '',
-          chip_1_label: c.chip_1_label || 'Preparo',
-          chip_1_valor: c.chip_1_valor || '5 min',
-          chip_2_label: c.chip_2_label || 'Entrega',
-          chip_2_valor: c.chip_2_valor || '12 a 30 min',
-          chip_3_label: c.chip_3_label || 'Varia pelo',
-          chip_3_valor: c.chip_3_valor || 'endereço',
-          lojaAberta: config ? config.loja_aberta_manual !== false : true,
-        });
-      }, [config]);
-      if (!form) return null;
-      const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-      return (
-        <section className="card panel">
-          <div className="panel-head">
-            <div><h3>Topo do cardápio</h3><p className="muted" style={{ margin: '4px 0 0' }}>O primeiro que o cliente vê. Edite e salve.</p></div>
-            <button className="btn btn-primary" onClick={() => onSave(form)}>Salvar topo</button>
-          </div>
-          <div className="topo-editor">
-            <TopoPreview aberta={form.lojaAberta} topo={{ ...TOPO_DEFAULTS, ...cur, descricao: form.descricao, chip_1_label: form.chip_1_label, chip_1_valor: form.chip_1_valor, chip_2_label: form.chip_2_label, chip_2_valor: form.chip_2_valor, chip_3_label: form.chip_3_label, chip_3_valor: form.chip_3_valor }} />
-            <div className="topo-fields">
-              <ImageInput label="Logo (centro do topo)" value={cur.logo_url} file={form.logoFile} onFile={f => set('logoFile', f)} kind="logo" empty="DL" />
-              <label className="field full" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, cursor: 'pointer' }}>
-                <span><strong>Loja {form.lojaAberta ? 'aberta' : 'fechada'}</strong><br /><span className="muted" style={{ fontSize: 12 }}>Muda a plaquinha ABERTO/FECHADO no topo</span></span>
-                <input type="checkbox" checked={form.lojaAberta} onChange={e => set('lojaAberta', e.target.checked)} />
-              </label>
-              <div className="field full"><TextField label="Texto abaixo do Dom Leonardo" value={form.descricao} onChange={v => set('descricao', v)} textarea /></div>
-              <div className="field full" style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', marginTop: 4 }}>Selos de entrega (os 3 chips do topo)</div>
-              <div className="topo-field-row">
-                <TextField label="Chip 1 - título" value={form.chip_1_label} onChange={v => set('chip_1_label', v)} />
-                <TextField label="Chip 1 - valor" value={form.chip_1_valor} onChange={v => set('chip_1_valor', v)} />
-              </div>
-              <div className="topo-field-row">
-                <TextField label="Chip 2 - título" value={form.chip_2_label} onChange={v => set('chip_2_label', v)} />
-                <TextField label="Chip 2 - valor" value={form.chip_2_valor} onChange={v => set('chip_2_valor', v)} />
-              </div>
-              <div className="topo-field-row">
-                <TextField label="Chip 3 - título" value={form.chip_3_label} onChange={v => set('chip_3_label', v)} />
-                <TextField label="Chip 3 - valor" value={form.chip_3_valor} onChange={v => set('chip_3_valor', v)} />
-              </div>
-              <TextField label="Horário de funcionamento" value={form.horario_texto} onChange={v => set('horario_texto', v)} placeholder="Ex.: Ter a Dom · 18h às 23h30" />
-              <TextField label="Área de entrega" value={form.area_entrega} onChange={v => set('area_entrega', v)} />
-              <div className="field full"><TextField label="Endereço" value={form.endereco} onChange={v => set('endereco', v)} /></div>
-              <TextField label="Telefone / WhatsApp" value={form.telefone} onChange={v => set('telefone', v)} placeholder="(41) 9 9999-9999" />
-              <TextField label="Link do Google Maps" value={form.maps_url} onChange={v => set('maps_url', v)} placeholder="https://maps.app.goo.gl/..." />
-            </div>
-          </div>
-        </section>
       );
     }
 
@@ -4002,15 +3125,6 @@
               </div>
               <TextField label="Faixa inferior - destaque" value={form.topo.faixa_titulo} onChange={v => setTopo('faixa_titulo', v)} />
               <TextField label="Faixa inferior - texto" value={form.topo.faixa_texto} onChange={v => setTopo('faixa_texto', v)} />
-              <div className="field full" style={{ borderTop: '1px solid rgba(0,0,0,.08)', paddingTop: 12, marginTop: 4 }}>
-                <strong style={{ fontSize: 13 }}>Informações de contato (painel "Informações")</strong>
-              </div>
-              <TextField label="Horário (texto livre)" value={form.topo.horario_texto} onChange={v => setTopo('horario_texto', v)} placeholder="Ex.: Ter a Dom · 18h às 23h30" />
-              <TextField label="Área de entrega" value={form.topo.area_entrega} onChange={v => setTopo('area_entrega', v)} />
-              <div className="field full"><TextField label="Endereço" value={form.topo.endereco} onChange={v => setTopo('endereco', v)} /></div>
-              <TextField label="Telefone / WhatsApp de contato" value={form.topo.telefone} onChange={v => setTopo('telefone', v)} placeholder="(41) 9 9999-9999" />
-              <TextField label="Link do Google Maps (como chegar)" value={form.topo.maps_url} onChange={v => setTopo('maps_url', v)} placeholder="https://maps.app.goo.gl/..." />
-              <div className="field full"><TextField label='Como funciona a entrega' value={form.topo.como_funciona} onChange={v => setTopo('como_funciona', v)} textarea /></div>
             </div>
           </div>
         </section>

@@ -1,6 +1,6 @@
 # Cloude Code ToolBox — MCP & Skills awareness
 
-_Generated: 2026-06-25T13:00:25.842Z_
+_Generated: 2026-06-29T04:30:44.132Z_
 
 ## How to use this report
 
@@ -25,6 +25,7 @@ Workspace `mcp.json` _(folder: dom-leonardo)_
 | google-cloud-observability | stdio | C:\Users\leona\dom-leonardo\scripts\mcp\google-cloud-observability.cmd |
 | google-cloud-storage | stdio | C:\Users\leona\dom-leonardo\scripts\mcp\google-cloud-storage.cmd |
 | google-developer-knowledge | ? | {"httpUrl":"https://developerknowledge.googleapis.com/mcp","authProviderType":"g |
+| mercadopago | http | https://mcp.mercadopago.com/mcp |
 
 ## MCP — user profile
 

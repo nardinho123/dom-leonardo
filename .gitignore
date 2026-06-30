@@ -2,3 +2,6 @@
 Thumbs.db
 *.log
 .env
+.mcp-login-*.out
+.mcp-login-*.err
+**/supabase/.temp/

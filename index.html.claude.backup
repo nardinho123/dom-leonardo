@@ -1,0 +1,3544 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERP Dom Leonardo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e17;--card:#151b2b;--card-2:#0d1220;--border:#1e2740;--text:#e2e8f0;--text-2:#cbd5e1;--muted:#64748b;
+  --green:#34d399;--green-bg:#064e3b;--red:#f87171;--red-bg:#7f1d1d;--blue:#4a90d9;--blue-bg:#1e3a5f;
+  --yellow:#fbbf24;--yellow-bg:#451a03;--purple:#a78bfa;--gray:#475569;
+  --sidebar-w:230px;--shadow:0 4px 20px rgba(0,0,0,.4);
+}
+[data-theme="light"]{
+  --bg:#f8fafc;--card:#ffffff;--card-2:#f1f5f9;--border:#e2e8f0;--text:#0f172a;--text-2:#334155;--muted:#64748b;
+  --green-bg:#d1fae5;--red-bg:#fee2e2;--blue-bg:#dbeafe;--yellow-bg:#fef3c7;
+  --shadow:0 4px 20px rgba(15,23,42,.08);
+}
+html,body{font-family:'Inter',system-ui,-apple-system,sans-serif;font-size:14px}
+body{background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+#root{display:flex;min-height:100vh}
+button{font-family:inherit}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);background:var(--card);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;
+  transition:transform .25s;overflow-y:auto}
+.sidebar.hidden{transform:translateX(-100%)}
+.sidebar-logo{padding:18px 16px;border-bottom:1px solid var(--border);font-size:15px;
+  font-weight:700;color:var(--green);display:flex;align-items:center;gap:8px}
+.sidebar-logo span{font-size:22px}
+.nav-section{padding:14px 12px 4px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;
+  border-radius:8px;margin:1px 8px;font-size:13px;color:var(--text-2);transition:all .15s;font-weight:500}
+.nav-item:hover{background:var(--card-2);color:var(--text)}
+.nav-item.active{background:var(--blue-bg);color:var(--blue)}
+.nav-icon{font-size:15px;width:22px;text-align:center}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99}
+.sidebar-overlay.show{display:block}
+.sidebar-footer{margin-top:auto;padding:12px;border-top:1px solid var(--border)}
+
+/* MAIN + TOPBAR */
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;
+  display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
+.hamburger{display:none;background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;padding:4px}
+.topbar-title{font-size:15px;font-weight:600;flex:1}
+.theme-toggle{background:var(--card-2);border:1px solid var(--border);border-radius:8px;
+  padding:6px 12px;cursor:pointer;color:var(--text);font-size:13px;display:flex;align-items:center;gap:6px}
+.theme-toggle:hover{border-color:var(--blue);color:var(--blue)}
+.content{padding:20px;flex:1;width:100%;max-width:1300px}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px}
+.card-title{font-size:13px;color:var(--muted);margin-bottom:10px;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.section-title{font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+.divider{height:1px;background:var(--border);margin:14px 0}
+
+/* STAT GRIDS */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative;overflow:hidden}
+.stat-card.tinted-green{border-left:3px solid var(--green)}
+.stat-card.tinted-red{border-left:3px solid var(--red)}
+.stat-card.tinted-blue{border-left:3px solid var(--blue)}
+.stat-card.tinted-yellow{border-left:3px solid var(--yellow)}
+.stat-value{font-size:22px;font-weight:700;margin-bottom:3px;line-height:1.1}
+.stat-label{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:500}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:4px}
+
+.green{color:var(--green)}.red{color:var(--red)}.blue{color:var(--blue)}.yellow{color:var(--yellow)}.purple{color:var(--purple)}.muted{color:var(--muted)}
+
+/* FORMS */
+.form-group{margin-bottom:13px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:.03em}
+input,select,textarea{width:100%;background:var(--card-2);border:1px solid var(--border);border-radius:8px;
+  padding:10px 12px;color:var(--text);font-size:14px;outline:none;transition:border-color .15s;font-family:inherit;min-height:42px}
+input:focus,select:focus,textarea:focus{border-color:var(--blue)}
+select option{background:var(--card)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row-3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
+.form-row-4{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px}
+input[type="checkbox"]{width:auto;min-height:auto}
+
+/* BUTTONS */
+.btn{padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13.5px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-success{background:var(--green);color:#0f172a}
+.btn-success:hover{filter:brightness(1.05)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger:hover{filter:brightness(.95)}
+.btn-warn{background:var(--yellow);color:#0f172a}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-outline:hover{border-color:var(--blue);color:var(--blue)}
+.btn-sm{padding:6px 12px;font-size:12px;min-height:32px}
+.btn-lg{padding:14px 28px;font-size:15px;font-weight:700}
+.btn-block{width:100%}
+.btn-icon{background:none;border:none;cursor:pointer;color:var(--muted);padding:6px 8px;border-radius:6px;font-size:15px}
+.btn-icon:hover{color:var(--red);background:var(--card-2)}
+.btn-icon.ok:hover{color:var(--blue)}
+button:disabled{opacity:.5;cursor:not-allowed}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--card-2);padding:10px 14px;text-align:left;color:var(--muted);font-weight:600;
+  border-bottom:1px solid var(--border);white-space:nowrap;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--text)}
+td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px}
+tr:last-child td{border-bottom:none}
+tr.clickable{cursor:pointer}
+tr.clickable:hover td{background:var(--card-2)}
+tr.row-red td{color:var(--red);background:rgba(248,113,113,.04)}
+tr.row-yellow td{color:var(--yellow);background:rgba(251,191,36,.04)}
+tr.expanded td{background:var(--card-2)}
+
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.02em}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-blue{background:var(--blue-bg);color:var(--blue)}
+.badge-yellow{background:var(--yellow-bg);color:var(--yellow)}
+.badge-gray{background:var(--card-2);color:var(--muted)}
+.badge-lg{padding:5px 12px;font-size:12px}
+
+/* CHIPS */
+.filter-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.chip{padding:7px 14px;border-radius:20px;font-size:12.5px;cursor:pointer;border:1px solid var(--border);
+  background:transparent;color:var(--muted);transition:all .15s;font-weight:500;font-family:inherit}
+.chip:hover{color:var(--text)}
+.chip.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.tabs{display:flex;gap:4px;background:var(--card-2);padding:4px;border-radius:10px;margin-bottom:16px;border:1px solid var(--border)}
+.tab{flex:1;padding:10px 16px;border-radius:7px;cursor:pointer;color:var(--muted);font-weight:600;font-size:13px;text-align:center;border:none;background:none;transition:all .15s;font-family:inherit}
+.tab.active{background:var(--blue);color:#fff}
+
+/* LIST ROWS */
+.row-list{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px;background:var(--card-2)}
+.row-list .row-item{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;align-items:center;
+  padding:8px 12px;border-bottom:1px solid var(--border)}
+.row-list .row-item:last-child{border-bottom:none}
+.row-list .row-item.cols-3{grid-template-columns:2fr 1fr 1fr auto}
+.row-list .row-item.cols-5{grid-template-columns:2fr 1fr .8fr 1fr 1fr auto}
+
+/* TOAST */
+.toast-container{position:fixed;top:20px;right:20px;z-index:1000;display:flex;flex-direction:column;gap:8px;max-width:calc(100vw - 40px)}
+.toast{padding:12px 16px;border-radius:10px;font-size:13px;max-width:420px;animation:slide-in .25s ease;
+  border-left:3px solid;box-shadow:var(--shadow);background:var(--card)}
+.toast-success{border-color:var(--green);color:var(--green)}
+.toast-error{border-color:var(--red);color:var(--red)}
+.toast-info{border-color:var(--blue);color:var(--blue)}
+.toast-warn{border-color:var(--yellow);color:var(--yellow)}
+@keyframes slide-in{from{transform:translateX(110%);opacity:0}to{transform:none;opacity:1}}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;animation:fade-in .15s ease}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow)}
+.modal-lg{max-width:900px}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{cursor:pointer;color:var(--muted);font-size:22px;background:none;border:none}
+.modal-close:hover{color:var(--text)}
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+
+/* SEARCHABLE DROPDOWN */
+.sd-wrap{position:relative}
+.sd-trigger{display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:var(--card-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;min-height:42px;font-size:14px}
+.sd-trigger:hover{border-color:var(--blue)}
+.sd-trigger.placeholder{color:var(--muted)}
+.sd-clear{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0 4px;line-height:1}
+.sd-clear:hover{color:var(--red)}
+.sd-panel{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);z-index:200;overflow:hidden}
+.sd-search{padding:8px;border-bottom:1px solid var(--border)}
+.sd-search input{margin:0;background:var(--card-2)}
+.sd-list{max-height:240px;overflow-y:auto}
+.sd-option{padding:9px 12px;cursor:pointer;font-size:13.5px;border-bottom:1px solid var(--border)}
+.sd-option:last-child{border-bottom:none}
+.sd-option:hover{background:var(--card-2)}
+.sd-empty{padding:20px;text-align:center;color:var(--muted);font-size:13px}
+.sd-create{padding:10px 12px;color:var(--green);cursor:pointer;border-top:1px solid var(--border);background:var(--card-2);font-size:13px;font-weight:600}
+.sd-create:hover{background:var(--green-bg)}
+
+/* CHARTS */
+.chart-wrap{position:relative;height:240px}
+.chart-wrap.lg{height:300px}
+.chart-wrap.sm{height:160px}
+
+/* HEATMAP */
+.heatmap{display:grid;gap:2px;font-size:12px}
+.heatmap-cell{padding:6px;text-align:center;border-radius:4px;color:var(--text)}
+
+/* PODIUM */
+.podium{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:14px}
+.podium-card{background:var(--card-2);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px}
+.podium-card .medal{font-size:30px;line-height:1}
+.podium-card .pname{font-weight:700;font-size:14px;margin-bottom:4px}
+.podium-card .pinfo{font-size:11.5px;color:var(--muted)}
+
+/* BCG */
+.bcg-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bcg-quad{background:var(--card-2);border:1px solid var(--border);border-radius:10px;padding:12px;min-height:100px}
+.bcg-quad-title{font-size:12px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.bcg-list{font-size:12px;color:var(--text-2);max-height:130px;overflow-y:auto}
+.bcg-list div{padding:4px 0;border-bottom:1px solid var(--border)}
+.bcg-list div:last-child{border:none}
+
+/* MISC */
+.loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--muted);font-size:14px}
+.empty{text-align:center;padding:40px;color:var(--muted);font-size:14px}
+.skeleton{background:linear-gradient(90deg,var(--card-2),var(--border),var(--card-2));background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px;height:18px;margin:6px 0}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.preview-line{padding:8px 12px;background:var(--card-2);border-radius:8px;font-size:12.5px;color:var(--muted);margin-bottom:12px}
+.help{font-size:11.5px;color:var(--muted);margin-top:4px}
+
+.alert-card{background:var(--card);border-left:4px solid;border-radius:10px;padding:12px 16px;margin-bottom:8px}
+.alert-card.alert-red{border-left-color:var(--red)}
+.alert-card.alert-yellow{border-left-color:var(--yellow)}
+.alert-card.alert-gray{border-left-color:var(--gray)}
+.alert-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.alert-items{display:flex;flex-wrap:wrap;gap:6px}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;width:100%}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;width:100%;max-width:420px;box-shadow:var(--shadow)}
+.login-title{font-size:24px;font-weight:800;margin-bottom:6px;color:var(--green);display:flex;align-items:center;gap:8px}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:24px}
+
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:none}
+  .main{margin-left:0}
+  .hamburger{display:block}
+  .form-row,.form-row-3,.form-row-4{grid-template-columns:1fr}
+  .row-list .row-item,.row-list .row-item.cols-3,.row-list .row-item.cols-5{grid-template-columns:1fr 1fr auto;gap:6px}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .bcg-grid{grid-template-columns:1fr}
+  .content{padding:14px}
+  .topbar{padding:10px 14px}
+  .modal{padding:16px}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useMemo, createContext, useContext, memo, Fragment } = React;
+
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+const DEFAULT_URL = 'https://ippeiearkgnqdeiquiuy.supabase.co';
+const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlwcGVpZWFya2ducWRlaXF1aXV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNTkyOTMsImV4cCI6MjA5MTgzNTI5M30.wL83lZlG9vet_rXHT91ZYk1ZmDucJHIMjr9mck9cwhI';
+
+let _client = null;
+function getClient() {
+  if (_client) return _client;
+  const url = localStorage.getItem('sb_url') || DEFAULT_URL;
+  const key = localStorage.getItem('sb_key') || DEFAULT_KEY;
+  _client = supabase.createClient(url, key);
+  return _client;
+}
+function resetClient() { _client = null; }
+
+// ── HELPERS ─────────────────────────────────────────────────────────────────
+const fmt = (v, dec=2) => Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+const fmtR$ = v => `R$ ${fmt(v)}`;
+const fmtG = g => { g = Number(g||0); return Math.abs(g) >= 1000 ? `${fmt(g/1000,3).replace(/,?0+$/,'')} kg` : `${fmt(g,0)} g`; };
+const fmtPct = (v,d=1) => `${fmt(v||0,d)}%`;
+const fmtDate = d => { if(!d) return '—'; const x=new Date(d); return x.toLocaleDateString('pt-BR'); };
+const fmtDateTime = d => { if(!d) return '—'; const x=new Date(d); return x.toLocaleDateString('pt-BR')+' '+x.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); };
+const todayISO = () => { const d=new Date(); d.setHours(12,0,0,0); return d.toISOString().slice(0,10); };
+const isoToDateInput = iso => iso ? iso.slice(0,10) : todayISO();
+const dateInputToIso = di => di ? new Date(di+'T12:00:00').toISOString() : null;
+const daysBetween = (a,b) => Math.round((new Date(a)-new Date(b))/86400000);
+const startOfDay = d => { const x=new Date(d); x.setHours(0,0,0,0); return x; };
+const endOfDay = d => { const x=new Date(d); x.setHours(23,59,59,999); return x; };
+const startOfMonth = d => { const x=new Date(d); x.setDate(1); x.setHours(0,0,0,0); return x; };
+const addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
+
+function periodToDates(periodo, custom) {
+  const now = new Date();
+  if (periodo === 'hoje')      return { from: startOfDay(now), to: endOfDay(now) };
+  if (periodo === 'semana')    return { from: startOfDay(addDays(now,-7)), to: endOfDay(now) };
+  if (periodo === 'mes')       return { from: startOfMonth(now), to: endOfDay(now) };
+  if (periodo === 'trimestre') return { from: startOfDay(addDays(now,-90)), to: endOfDay(now) };
+  if (periodo === 'custom' && custom?.from && custom?.to) {
+    return { from: startOfDay(new Date(custom.from)), to: endOfDay(new Date(custom.to)) };
+  }
+  return { from: startOfDay(addDays(now,-30)), to: endOfDay(now) };
+}
+
+const median = arr => {
+  if (!arr.length) return 0;
+  const s = [...arr].sort((a,b)=>a-b);
+  const m = Math.floor(s.length/2);
+  return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+};
+const sumBy = (arr,fn) => arr.reduce((s,x)=>s+(Number(fn(x))||0),0);
+const groupBy = (arr,fn) => arr.reduce((m,x)=>{ const k=fn(x); (m[k]=m[k]||[]).push(x); return m; },{});
+
+const CANAL_LABEL = { ifood:'iFood', balcao:'Balcão', rappi:'Rappi', delivery_proprio:'Delivery próprio', outros:'Outros' };
+const MOTIVO_PERDA = ['vencimento','preparo_errado','armazenamento','quebra','outros'];
+const MOTIVO_LABEL = { vencimento:'Vencimento', preparo_errado:'Preparo errado', armazenamento:'Armazenamento', quebra:'Quebra', outros:'Outros' };
+const TIPO_LABEL = { cru:'In Natura', preparado:'Preparado', embalagem:'Embalagem', insumo:'Insumo' };
+const FORMA_PGTO = [['pix','Pix'],['dinheiro','Dinheiro'],['cartao_credito','Cartão crédito'],['cartao_debito','Cartão débito'],['transferencia','Transferência']];
+
+function categorizar(produto, categoriaNome) {
+  const n = (produto?.nome || '').toLowerCase();
+  const c = (categoriaNome || '').toLowerCase();
+  if (c.includes('emb') || /embalag|caixa|saco|pote|marmit|filme/.test(n)) return 'embalagem';
+  if (c.includes('queij') || c.includes('latic') || /queij|mascarpone|requeij|leite|manteig|creme|nata|parmesa|gorgonz|provol|muçarel|mozzarell/.test(n)) return 'queijo';
+  if (c.includes('molho') || /molho|sugo|pesto|extrato|polpa|pomarol|tomate.pelado|passata/.test(n)) return 'molho';
+  if (c.includes('carne') || /frang|carne|bife|fil[eé]|alcatra|patinho|bacon|peito|coxa|linguic|salsicha|atum|salm[aã]o|cama[rã]o|peixe|panceta|presunto|presuntinho/.test(n)) return 'proteina';
+  if (c.includes('grão') || c.includes('grao') || c.includes('massa') || /massa|macarra|nhoque|spaghet|penne|fettuc|ravio|lasanh|farin|arroz|pao|p[ãa]o|tortelli/.test(n)) return 'carboidrato';
+  return 'extras';
+}
+const GRUPO_LABEL = { carboidrato:'Carboidrato', proteina:'Proteína', queijo:'Queijo / Laticínio', molho:'Molho', embalagem:'Embalagem', extras:'Extras' };
+const GRUPO_COR   = { carboidrato:'#fbbf24', proteina:'#f87171', queijo:'#a78bfa', molho:'#34d399', embalagem:'#94a3b8', extras:'#4a90d9' };
+
+// CSS color tokens (resolved at runtime so charts read correct theme)
+function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+// ── THEME ───────────────────────────────────────────────────────────────────
+const ThemeCtx = createContext({ theme:'dark', toggle:()=>{} });
+function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+  const toggle = useCallback(() => setTheme(t => t === 'dark' ? 'light' : 'dark'), []);
+  return <ThemeCtx.Provider value={{theme, toggle}}>{children}</ThemeCtx.Provider>;
+}
+const useTheme = () => useContext(ThemeCtx);
+
+// ── TOAST ───────────────────────────────────────────────────────────────────
+const ToastCtx = createContext(null);
+function ToastProvider({ children }) {
+  const [toasts, setToasts] = useState([]);
+  const add = useCallback((msg, type='success') => {
+    const id = Date.now() + Math.random();
+    setToasts(t => [...t, { id, msg, type }]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 5000);
+  }, []);
+  return (
+    <ToastCtx.Provider value={add}>
+      {children}
+      <div className="toast-container">
+        {toasts.map(t => <div key={t.id} className={`toast toast-${t.type}`}>{t.msg}</div>)}
+      </div>
+    </ToastCtx.Provider>
+  );
+}
+const useToast = () => useContext(ToastCtx);
+
+// ── SEARCHABLE DROPDOWN ─────────────────────────────────────────────────────
+function SearchableDropdown({ value, onChange, options, placeholder='Selecione...', getLabel=o=>o.nome, getValue=o=>o.id, renderOption, allowNew=false, onCreateNew, autoFocus=false, disabled=false }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const wrapRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (open && inputRef.current) inputRef.current.focus();
+  }, [open]);
+
+  useEffect(() => {
+    function h(e) { if (wrapRef.current && !wrapRef.current.contains(e.target)) { setOpen(false); setSearch(''); } }
+    if (open) document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [open]);
+
+  const selected = options.find(o => getValue(o) === value);
+  const filtered = search
+    ? options.filter(o => getLabel(o).toLowerCase().includes(search.toLowerCase()))
+    : options;
+
+  return (
+    <div className="sd-wrap" ref={wrapRef}>
+      <div className={`sd-trigger ${selected ? '' : 'placeholder'}`} onClick={() => !disabled && setOpen(!open)}>
+        <span style={{flex:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{selected ? getLabel(selected) : placeholder}</span>
+        {selected && !disabled && (
+          <button type="button" className="sd-clear" onClick={e => { e.stopPropagation(); onChange(''); setSearch(''); }}>×</button>
+        )}
+        <span style={{marginLeft:6,color:'var(--muted)'}}>▾</span>
+      </div>
+      {open && !disabled && (
+        <div className="sd-panel">
+          <div className="sd-search">
+            <input ref={inputRef} value={search} onChange={e=>setSearch(e.target.value)} placeholder="Digite para filtrar..." onClick={e=>e.stopPropagation()}/>
+          </div>
+          <div className="sd-list">
+            {filtered.length === 0 && <div className="sd-empty">Nenhum resultado</div>}
+            {filtered.map(o => (
+              <div key={getValue(o)} className="sd-option" onClick={() => { onChange(getValue(o)); setOpen(false); setSearch(''); }}>
+                {renderOption ? renderOption(o) : getLabel(o)}
+              </div>
+            ))}
+          </div>
+          {allowNew && search && !filtered.some(o => getLabel(o).toLowerCase() === search.toLowerCase()) && (
+            <div className="sd-create" onClick={() => { onCreateNew && onCreateNew(search); setOpen(false); setSearch(''); }}>+ Criar "{search}"</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── DATE PERIOD FILTER ──────────────────────────────────────────────────────
+function DatePeriodFilter({ value, onChange, custom, onCustomChange }) {
+  const opts = [['hoje','Hoje'],['semana','Semana'],['mes','Mês'],['trimestre','Trimestre'],['custom','Personalizado']];
+  return (
+    <div className="filter-bar">
+      {opts.map(([v,l]) => (
+        <button key={v} className={`chip${value===v?' active':''}`} onClick={()=>onChange(v)}>{l}</button>
+      ))}
+      {value === 'custom' && (
+        <div style={{display:'flex',gap:6,alignItems:'center',marginLeft:6}}>
+          <input type="date" value={custom?.from||''} onChange={e=>onCustomChange({...custom,from:e.target.value})} style={{minHeight:34,padding:'6px 10px',width:'auto'}}/>
+          <span style={{color:'var(--muted)',fontSize:12}}>até</span>
+          <input type="date" value={custom?.to||''} onChange={e=>onCustomChange({...custom,to:e.target.value})} style={{minHeight:34,padding:'6px 10px',width:'auto'}}/>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── MODAL ───────────────────────────────────────────────────────────────────
+function Modal({ open, onClose, title, children, size='md' }) {
+  useEffect(() => {
+    function h(e) { if (e.key === 'Escape') onClose(); }
+    if (open) document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className={`modal ${size==='lg'?'modal-lg':''}`} onClick={e=>e.stopPropagation()}>
+        <div className="modal-title">
+          <span>{title}</span>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ConfirmModal({ open, onClose, onConfirm, title='Confirmar', message='Tem certeza?', danger=false, requireText=null }) {
+  const [typed, setTyped] = useState('');
+  useEffect(() => { if (!open) setTyped(''); }, [open]);
+  const canConfirm = !requireText || typed === requireText;
+  return (
+    <Modal open={open} onClose={onClose} title={title}>
+      <div style={{fontSize:14,marginBottom:14,color:'var(--text-2)'}}>{message}</div>
+      {requireText && (
+        <div className="form-group">
+          <label>Digite "{requireText}" para confirmar</label>
+          <input value={typed} onChange={e=>setTyped(e.target.value)} placeholder={requireText}/>
+        </div>
+      )}
+      <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
+        <button className="btn btn-outline" onClick={onClose}>Cancelar</button>
+        <button className={`btn ${danger?'btn-danger':'btn-primary'}`} disabled={!canConfirm} onClick={()=>{ onConfirm(); onClose(); }}>Confirmar</button>
+      </div>
+    </Modal>
+  );
+}
+
+// ── SKELETON ────────────────────────────────────────────────────────────────
+function Skeleton({ rows=3, height=18 }) {
+  return <div>{Array.from({length:rows}).map((_,i)=><div key={i} className="skeleton" style={{height,width:`${70+Math.random()*30}%`}}/>)}</div>;
+}
+
+// ── CHART HOOK ──────────────────────────────────────────────────────────────
+function useChart(canvasRef, configFactory, deps) {
+  const chartRef = useRef(null);
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; }
+    const cfg = configFactory();
+    if (!cfg) return;
+    chartRef.current = new Chart(canvasRef.current, cfg);
+    return () => { if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; } };
+    // eslint-disable-next-line
+  }, deps);
+}
+
+// ── AUTO REFRESH ────────────────────────────────────────────────────────────
+function useAutoRefresh(fn, intervalMs=60000, enabled=true) {
+  const fnRef = useRef(fn);
+  fnRef.current = fn;
+  useEffect(() => {
+    if (!enabled) return;
+    const t = setInterval(() => fnRef.current(), intervalMs);
+    return () => clearInterval(t);
+  }, [intervalMs, enabled]);
+}
+
+// ── LOGIN ───────────────────────────────────────────────────────────────────
+function Login({ onLogin }) {
+  const [url, setUrl] = useState(localStorage.getItem('sb_url') || DEFAULT_URL);
+  const [key, setKey] = useState(localStorage.getItem('sb_key') || DEFAULT_KEY);
+  const [loading, setLoading] = useState(false);
+  const toast = useToast();
+
+  async function handle() {
+    setLoading(true);
+    try {
+      const client = supabase.createClient(url, key);
+      const { error } = await client.from('produtos').select('id').limit(1);
+      if (error) throw error;
+      localStorage.setItem('sb_url', url);
+      localStorage.setItem('sb_key', key);
+      resetClient();
+      onLogin();
+    } catch(e) {
+      toast('Erro ao conectar: ' + e.message, 'error');
+    }
+    setLoading(false);
+  }
+
+  return (
+    <div className="login-wrap">
+      <div className="login-card">
+        <div className="login-title"><span>🍝</span> Dom Leonardo</div>
+        <div className="login-sub">Configure a conexão com o Supabase</div>
+        <div className="form-group">
+          <label>URL do Projeto</label>
+          <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://xxx.supabase.co"/>
+        </div>
+        <div className="form-group">
+          <label>Anon Key</label>
+          <input value={key} onChange={e=>setKey(e.target.value)} placeholder="eyJ..."/>
+        </div>
+        <button className="btn btn-primary btn-block btn-lg" onClick={handle} disabled={loading}>
+          {loading ? 'Conectando...' : 'Entrar'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TELAS — placeholders. Implementadas nos próximos blocos.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── DASHBOARD ───────────────────────────────────────────────────────────────
+function TelaDashboard({ refreshKey }) {
+  const sb = getClient();
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState({
+    fcDia:[], fcMes:[], vendasItens:[], vendasItensMes:[], estoque:[], lucroPratos:[], categoriasCx:[],
+  });
+
+  async function load() {
+    setLoading(true);
+    const dia = periodToDates('hoje');
+    const mes = periodToDates('mes');
+    const [fcDia, fcMes, viDia, viMes, est, lucro, catCx] = await Promise.all([
+      sb.from('fluxo_caixa').select('tipo,valor,categoria_id,created_at').gte('created_at', dia.from.toISOString()).lte('created_at', dia.to.toISOString()),
+      sb.from('fluxo_caixa').select('tipo,valor,categoria_id,created_at').gte('created_at', mes.from.toISOString()).lte('created_at', mes.to.toISOString()),
+      sb.from('vendas_itens').select('cmv_total,valor_total,quantidade,receita_id,vendas!inner(movimentacoes!inner(data_movimentacao))').gte('vendas.movimentacoes.data_movimentacao', dia.from.toISOString()).lte('vendas.movimentacoes.data_movimentacao', dia.to.toISOString()),
+      sb.from('vendas_itens').select('cmv_total,valor_total,quantidade,receita_id,receitas_ficha_tecnica(nome),vendas!inner(movimentacoes!inner(data_movimentacao))').gte('vendas.movimentacoes.data_movimentacao', mes.from.toISOString()).lte('vendas.movimentacoes.data_movimentacao', mes.to.toISOString()),
+      sb.from('v_estoque_atual').select('*'),
+      sb.from('v_lucro_por_prato').select('*').order('lucro_total',{ascending:false}).limit(50),
+      sb.from('categorias_caixa').select('id,nome,tipo'),
+    ]);
+    setData({
+      fcDia: fcDia.data||[], fcMes: fcMes.data||[],
+      vendasItens: viDia.data||[], vendasItensMes: viMes.data||[],
+      estoque: est.data||[], lucroPratos: lucro.data||[], categoriasCx: catCx.data||[]
+    });
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, [refreshKey]);
+
+  const recDia  = sumBy(data.fcDia.filter(r=>r.tipo==='receita'),'valor');
+  const despDia = sumBy(data.fcDia.filter(r=>r.tipo==='despesa'),'valor');
+  const lucroDia = recDia - despDia;
+  const cmvDia  = sumBy(data.vendasItens,'cmv_total');
+  const fcDia_pct = recDia > 0 ? (cmvDia/recDia)*100 : 0;
+
+  const recMes  = sumBy(data.fcMes.filter(r=>r.tipo==='receita'),'valor');
+  const despMes = sumBy(data.fcMes.filter(r=>r.tipo==='despesa'),'valor');
+  const lucroMes = recMes - despMes;
+  const cmvMes  = sumBy(data.vendasItensMes,'cmv_total');
+  const fcMes_pct = recMes > 0 ? (cmvMes/recMes)*100 : 0;
+
+  // Break-even
+  const cxIdsCompra = data.categoriasCx.filter(c=>c.nome==='Compra de insumos'||c.nome==='Venda de pratos').map(c=>c.id);
+  const fixosMes = sumBy(data.fcMes.filter(r=>r.tipo==='despesa' && !cxIdsCompra.includes(r.categoria_id)),'valor');
+  const diaMes = new Date().getDate();
+  const metaDiariaPorDiaCorrido = fixosMes > 0 ? fixosMes/diaMes : 0;
+  const meta = metaDiariaPorDiaCorrido;
+  const faltaParaMeta = Math.max(0, meta - recDia);
+  const metaAtingida = recDia >= meta && meta > 0;
+
+  // Alerts
+  const semEstoque = data.estoque.filter(p => Number(p.estoque_gramas||0) <= 0 && p.tipo !== 'preparado');
+  const criticos = data.estoque.filter(p => {
+    const eg = Number(p.estoque_gramas||0);
+    return eg > 0 && eg < 1500;
+  }).slice(0,15);
+
+  // Top 5 lucrativos do mês
+  const top5 = [...data.lucroPratos].sort((a,b)=>Number(b.lucro_total||0)-Number(a.lucro_total||0)).slice(0,5);
+
+  // Matriz BCG
+  const bcgPratos = data.lucroPratos.filter(p => Number(p.quantidade_total_vendida||0) > 0);
+  const medianQtd = median(bcgPratos.map(p=>Number(p.quantidade_total_vendida)));
+  const medianMargem = median(bcgPratos.map(p=>Number(p.margem_percentual)));
+  const estrelas = bcgPratos.filter(p => Number(p.quantidade_total_vendida) >= medianQtd && Number(p.margem_percentual) >= medianMargem);
+  const burros   = bcgPratos.filter(p => Number(p.quantidade_total_vendida) >= medianQtd && Number(p.margem_percentual) <  medianMargem);
+  const quebra   = bcgPratos.filter(p => Number(p.quantidade_total_vendida) <  medianQtd && Number(p.margem_percentual) >= medianMargem);
+  const cachorros= bcgPratos.filter(p => Number(p.quantidade_total_vendida) <  medianQtd && Number(p.margem_percentual) <  medianMargem);
+
+  // Charts
+  const chartLineRef = useRef(null);
+  const chartBarsRef = useRef(null);
+  const [serie30, setSerie30] = useState(null);
+  const [serie14, setSerie14] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const from30 = startOfDay(addDays(new Date(),-30));
+      const { data:fc30 } = await sb.from('fluxo_caixa').select('tipo,valor,created_at').gte('created_at', from30.toISOString());
+      const days = []; for (let i=29;i>=0;i--) days.push(isoToDateInput(addDays(new Date(),-i).toISOString()));
+      const map = {}; days.forEach(d=>map[d]={r:0,d:0});
+      (fc30||[]).forEach(x => { const k = x.created_at?.slice(0,10); if (map[k]) (x.tipo==='receita'?map[k].r+=Number(x.valor||0):map[k].d+=Number(x.valor||0)); });
+      setSerie30({ labels:days, rec:days.map(d=>map[d].r), desp:days.map(d=>map[d].d) });
+      // 14 dias lucro
+      const days14 = days.slice(-14);
+      setSerie14({ labels:days14, lucro:days14.map(d=>map[d].r-map[d].d) });
+    })();
+  }, [refreshKey]);
+
+  useChart(chartLineRef, () => {
+    if (!serie30) return null;
+    const labels = serie30.labels.map(d => fmtDate(d).slice(0,5));
+    return {
+      type:'line',
+      data:{ labels, datasets:[
+        { label:'Receita', data:serie30.rec, borderColor:cssVar('--green'), backgroundColor:'rgba(52,211,153,.12)', fill:true, tension:.3 },
+        { label:'Despesa', data:serie30.desp, borderColor:cssVar('--red'),   backgroundColor:'rgba(248,113,113,.10)', fill:true, tension:.3 },
+      ]},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ labels:{color:cssVar('--text-2'),boxWidth:14} } },
+        scales:{
+          x:{ ticks:{color:cssVar('--muted'),font:{size:10}}, grid:{color:cssVar('--border')} },
+          y:{ ticks:{color:cssVar('--muted'),callback:v=>'R$ '+fmt(v,0)}, grid:{color:cssVar('--border')} }
+        }
+      }
+    };
+  }, [serie30]);
+
+  useChart(chartBarsRef, () => {
+    if (!serie14) return null;
+    const labels = serie14.labels.map(d => fmtDate(d).slice(0,5));
+    return {
+      type:'bar',
+      data:{ labels, datasets:[{
+        label:'Lucro/dia', data:serie14.lucro,
+        backgroundColor: serie14.lucro.map(v => v>=0 ? 'rgba(52,211,153,.7)' : 'rgba(248,113,113,.7)'),
+        borderRadius:6
+      }]},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{ ticks:{color:cssVar('--muted'),font:{size:10}}, grid:{display:false} },
+          y:{ ticks:{color:cssVar('--muted'),callback:v=>'R$ '+fmt(v,0)}, grid:{color:cssVar('--border')} }
+        }
+      }
+    };
+  }, [serie14]);
+
+  if (loading) return <div className="content"><Skeleton rows={8}/></div>;
+
+  const fcDayColor = fcDia_pct < 32 ? 'green' : fcDia_pct < 38 ? 'yellow' : 'red';
+  const fcMonthColor = fcMes_pct < 32 ? 'green' : fcMes_pct < 38 ? 'yellow' : 'red';
+
+  return (
+    <div className="content">
+      <div className="section-header">
+        <div className="section-title">📊 Painel de Comando</div>
+        <button className="btn btn-outline btn-sm" onClick={load}>↻ Atualizar</button>
+      </div>
+
+      <div style={{fontSize:11.5,color:'var(--muted)',marginBottom:6,textTransform:'uppercase',letterSpacing:.04+'em',fontWeight:600}}>Hoje</div>
+      <div className="stat-grid">
+        <div className="stat-card tinted-green"><div className="stat-value green">{fmtR$(recDia)}</div><div className="stat-label">Receita do dia</div></div>
+        <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(despDia)}</div><div className="stat-label">Despesa do dia</div></div>
+        <div className="stat-card tinted-blue"><div className={`stat-value ${lucroDia>=0?'green':'red'}`}>{fmtR$(lucroDia)}</div><div className="stat-label">Lucro do dia</div></div>
+        <div className={`stat-card tinted-${fcDayColor==='green'?'green':fcDayColor==='yellow'?'yellow':'red'}`}><div className={`stat-value ${fcDayColor}`}>{recDia>0?fmtPct(fcDia_pct):'—'}</div><div className="stat-label">Food Cost dia</div></div>
+      </div>
+
+      <div style={{fontSize:11.5,color:'var(--muted)',marginBottom:6,marginTop:14,textTransform:'uppercase',letterSpacing:.04+'em',fontWeight:600}}>Mês ({new Date().toLocaleDateString('pt-BR',{month:'long'})})</div>
+      <div className="stat-grid">
+        <div className="stat-card tinted-green"><div className="stat-value green">{fmtR$(recMes)}</div><div className="stat-label">Receita do mês</div></div>
+        <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(despMes)}</div><div className="stat-label">Despesa do mês</div></div>
+        <div className="stat-card tinted-blue"><div className={`stat-value ${lucroMes>=0?'green':'red'}`}>{fmtR$(lucroMes)}</div><div className="stat-label">Lucro do mês</div></div>
+        <div className={`stat-card tinted-${fcMonthColor==='green'?'green':fcMonthColor==='yellow'?'yellow':'red'}`}><div className={`stat-value ${fcMonthColor}`}>{recMes>0?fmtPct(fcMes_pct):'—'}</div><div className="stat-label">Food Cost mês</div></div>
+      </div>
+
+      {/* Break-even */}
+      <div className="card" style={{borderLeft:`4px solid ${metaAtingida?'var(--green)':'var(--yellow)'}`}}>
+        <div className="card-title">🎯 Meta diária (break-even)</div>
+        {meta > 0 ? (
+          metaAtingida ? (
+            <div style={{fontSize:15,fontWeight:600,color:'var(--green)'}}>✅ META ATINGIDA — você já cobriu as despesas fixas do dia ({fmtR$(meta)}). Cada venda a partir de agora é lucro líquido.</div>
+          ) : (
+            <div>
+              <div style={{fontSize:15,fontWeight:600,color:'var(--yellow)'}}>Falta {fmtR$(faltaParaMeta)} para empatar hoje</div>
+              <div style={{fontSize:12,color:'var(--muted)',marginTop:6}}>Meta diária: {fmtR$(meta)} (despesas fixas do mês ÷ {diaMes} dias) · Receita atual: {fmtR$(recDia)}</div>
+            </div>
+          )
+        ) : (
+          <div className="muted" style={{fontSize:13}}>Cadastre despesas fixas do mês para calcular o break-even diário.</div>
+        )}
+      </div>
+
+      {/* Alertas */}
+      {(semEstoque.length > 0 || criticos.length > 0) && (
+        <div className="card">
+          <div className="card-title">⚠️ Central de Alertas</div>
+          {semEstoque.length > 0 && (
+            <div className="alert-card alert-red">
+              <div className="alert-title red">🟥 Sem estoque ({semEstoque.length})</div>
+              <div className="alert-items">{semEstoque.slice(0,20).map(p=><span key={p.produto_id} className="badge badge-red">{p.nome}</span>)}</div>
+            </div>
+          )}
+          {criticos.length > 0 && (
+            <div className="alert-card alert-yellow">
+              <div className="alert-title yellow">🟨 Estoque crítico (próximo de zerar)</div>
+              <div className="alert-items">{criticos.slice(0,20).map(p=><span key={p.produto_id} className="badge badge-yellow">{p.nome} · {fmtG(p.estoque_gramas)}</span>)}</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Charts */}
+      <div className="card">
+        <div className="card-title">📈 Receita vs Despesa — últimos 30 dias</div>
+        <div className="chart-wrap"><canvas ref={chartLineRef}/></div>
+      </div>
+      <div className="card">
+        <div className="card-title">📊 Lucro diário — últimos 14 dias</div>
+        <div className="chart-wrap sm"><canvas ref={chartBarsRef}/></div>
+      </div>
+
+      {/* Pódio */}
+      {top5.length > 0 && (
+        <div className="card">
+          <div className="card-title">🏆 Top 5 pratos mais lucrativos do mês</div>
+          <div className="podium">
+            {top5.map((p,i) => (
+              <div key={p.receita_id} className="podium-card">
+                <div className="medal">{['🥇','🥈','🥉','4️⃣','5️⃣'][i]}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div className="pname" style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nome}</div>
+                  <div className="pinfo">Margem {fmtPct(p.margem_percentual)} · Lucro {fmtR$(p.lucro_total)} · {fmt(p.quantidade_total_vendida,0)}× vendido</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* BCG */}
+      {bcgPratos.length >= 4 && (
+        <div className="card">
+          <div className="card-title">🧩 Matriz BCG do cardápio</div>
+          <div style={{fontSize:11.5,color:'var(--muted)',marginBottom:10}}>Divisor: mediana de vendas ({fmt(medianQtd,1)}) × mediana de margem ({fmtPct(medianMargem)})</div>
+          <div className="bcg-grid">
+            <div className="bcg-quad" style={{borderColor:'var(--green)'}}>
+              <div className="bcg-quad-title green">🌟 Estrelas <span className="badge badge-green">{estrelas.length}</span></div>
+              <div className="bcg-list">{estrelas.map(p=><div key={p.receita_id}>{p.nome} · {fmtPct(p.margem_percentual)}</div>)}</div>
+            </div>
+            <div className="bcg-quad" style={{borderColor:'var(--blue)'}}>
+              <div className="bcg-quad-title blue">🐴 Burros de carga <span className="badge badge-blue">{burros.length}</span></div>
+              <div className="bcg-list">{burros.map(p=><div key={p.receita_id}>{p.nome} · {fmtPct(p.margem_percentual)}</div>)}</div>
+            </div>
+            <div className="bcg-quad" style={{borderColor:'var(--yellow)'}}>
+              <div className="bcg-quad-title yellow">🤔 Quebra-cabeças <span className="badge badge-yellow">{quebra.length}</span></div>
+              <div className="bcg-list">{quebra.map(p=><div key={p.receita_id}>{p.nome} · {fmtPct(p.margem_percentual)}</div>)}</div>
+            </div>
+            <div className="bcg-quad" style={{borderColor:'var(--red)'}}>
+              <div className="bcg-quad-title red">🐶 Cachorros <span className="badge badge-red">{cachorros.length}</span></div>
+              <div className="bcg-list">{cachorros.map(p=><div key={p.receita_id}>{p.nome} · {fmtPct(p.margem_percentual)}</div>)}</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+// ── LANÇAR COMPRA ───────────────────────────────────────────────────────────
+function TelaCompra() {
+  const sb = getClient();
+  const toast = useToast();
+  const [tab, setTab] = useState('unica');
+  const [produtos, setProdutos] = useState([]);
+  const [fornecedores, setFornecedores] = useState([]);
+  const [unidades, setUnidades] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+
+  async function reloadLookups() {
+    const [p, f, u, c] = await Promise.all([
+      sb.from('produtos').select('id,nome,tipo,categoria_id,unidade_id,ativo').eq('ativo',true).order('nome'),
+      sb.from('fornecedores').select('id,nome,ativo').eq('ativo',true).order('nome'),
+      sb.from('unidades').select('id,codigo,nome,fator_gramas').order('nome'),
+      sb.from('categorias').select('id,nome').order('nome'),
+    ]);
+    setProdutos(p.data||[]); setFornecedores(f.data||[]); setUnidades(u.data||[]); setCategorias(c.data||[]);
+  }
+  useEffect(() => { reloadLookups(); }, []);
+
+  return (
+    <div className="content">
+      <div className="section-header"><div className="section-title">🛒 Lançar Compra</div></div>
+      <div className="tabs">
+        <button className={`tab${tab==='unica'?' active':''}`} onClick={()=>setTab('unica')}>Compra Única</button>
+        <button className={`tab${tab==='lista'?' active':''}`} onClick={()=>setTab('lista')}>Lista de Compras</button>
+      </div>
+
+      {tab === 'unica' && <CompraUnica produtos={produtos} fornecedores={fornecedores} unidades={unidades} categorias={categorias} onProductsChanged={reloadLookups} onSupplierChanged={reloadLookups} toast={toast} sb={sb}/>}
+      {tab === 'lista' && <CompraLista  produtos={produtos} fornecedores={fornecedores} unidades={unidades} categorias={categorias} onProductsChanged={reloadLookups} onSupplierChanged={reloadLookups} toast={toast} sb={sb}/>}
+
+      <CompraExtrato produtos={produtos} fornecedores={fornecedores} sb={sb}/>
+    </div>
+  );
+}
+
+function CompraUnica({ produtos, fornecedores, unidades, categorias, onProductsChanged, onSupplierChanged, toast, sb }) {
+  const [data, setData] = useState(todayISO());
+  const [f, setF] = useState({ produto_id:'', quantidade:'', unidade_id:'', valor_total:'', fornecedor_id:'' });
+  const [loading, setLoading] = useState(false);
+  const [showNovoProd, setShowNovoProd] = useState(false);
+  const [showNovoForn, setShowNovoForn] = useState(false);
+
+  const u = unidades.find(x=>x.id===f.unidade_id);
+  const qtd = parseFloat(f.quantidade)||0;
+  const total = parseFloat(f.valor_total)||0;
+  const gramas = qtd * (u?.fator_gramas||0);
+  const custoG = gramas > 0 ? total/gramas : 0;
+  const custoUn = qtd > 0 ? total/qtd : 0;
+
+  async function lancar() {
+    if (!f.produto_id || !f.quantidade || !f.unidade_id || !f.valor_total || !f.fornecedor_id)
+      return toast('Preencha todos os campos','error');
+    setLoading(true);
+    try {
+      const prod = produtos.find(p=>p.id===f.produto_id);
+      const forn = fornecedores.find(p=>p.id===f.fornecedor_id);
+      const { data: mov, error: e1 } = await sb.from('movimentacoes').insert({ tipo:'compra', descricao:`Compra: ${prod?.nome}`, data_movimentacao: dateInputToIso(data) }).select('id').single();
+      if (e1) throw e1;
+      const { data: compra, error: e2 } = await sb.from('compras').insert({ movimentacao_id: mov.id, fornecedor_id: f.fornecedor_id }).select('id').single();
+      if (e2) throw e2;
+      const { error: e3 } = await sb.from('compras_itens').insert({
+        compra_id: compra.id, produto_id: f.produto_id,
+        quantidade: qtd, unidade_id: f.unidade_id, preco_unitario: custoUn
+      });
+      if (e3) throw e3;
+      toast(`✅ Compra: ${fmtG(gramas)} de ${prod?.nome} — ${fmtR$(total)} (${forn?.nome})`,'success');
+      setF({ produto_id:'', quantidade:'', unidade_id:'', valor_total:'', fornecedor_id:'' });
+    } catch(e) { toast('Erro: '+e.message,'error'); }
+    setLoading(false);
+  }
+
+  return (
+    <div className="card">
+      <div className="form-row">
+        <div className="form-group">
+          <label>Data</label>
+          <input type="date" value={data} onChange={e=>setData(e.target.value)}/>
+        </div>
+        <div className="form-group">
+          <label>Fornecedor</label>
+          <div style={{display:'flex',gap:6}}>
+            <div style={{flex:1}}>
+              <SearchableDropdown value={f.fornecedor_id} onChange={v=>setF({...f,fornecedor_id:v})} options={fornecedores} placeholder="Buscar fornecedor..."/>
+            </div>
+            <button className="btn btn-outline btn-sm" onClick={()=>setShowNovoForn(true)} style={{padding:'0 12px'}}>+</button>
+          </div>
+        </div>
+      </div>
+      <div className="form-group">
+        <label>Produto</label>
+        <div style={{display:'flex',gap:6}}>
+          <div style={{flex:1}}>
+            <SearchableDropdown value={f.produto_id} onChange={v=>setF({...f,produto_id:v})} options={produtos} placeholder="Buscar produto..." renderOption={p=><div>{p.nome} <span className="muted">({TIPO_LABEL[p.tipo]||p.tipo})</span></div>}/>
+          </div>
+          <button className="btn btn-outline btn-sm" onClick={()=>setShowNovoProd(true)} style={{padding:'0 12px'}}>+</button>
+        </div>
+      </div>
+      <div className="form-row-3">
+        <div className="form-group">
+          <label>Quantidade</label>
+          <input type="number" step="0.001" value={f.quantidade} onChange={e=>setF({...f,quantidade:e.target.value})} placeholder="Ex: 5"/>
+        </div>
+        <div className="form-group">
+          <label>Unidade</label>
+          <SearchableDropdown value={f.unidade_id} onChange={v=>setF({...f,unidade_id:v})} options={unidades} placeholder="Un..." getLabel={u=>u.nome}/>
+        </div>
+        <div className="form-group">
+          <label>Valor total (R$)</label>
+          <input type="number" step="0.01" value={f.valor_total} onChange={e=>setF({...f,valor_total:e.target.value})} placeholder="0.00"/>
+        </div>
+      </div>
+      {gramas > 0 && total > 0 && (
+        <div className="preview-line">
+          💰 Custo unitário: <b>{fmtR$(custoUn)}/{u?.codigo||'un'}</b> · <b>R$ {fmt(custoG,4)}/g</b> · Total em gramas: <b>{fmtG(gramas)}</b>
+        </div>
+      )}
+      <button className="btn btn-success btn-lg btn-block" onClick={lancar} disabled={loading}>{loading?'Registrando...':'Lançar Compra'}</button>
+
+      <NovoProdutoModal open={showNovoProd} onClose={()=>setShowNovoProd(false)} categorias={categorias} unidades={unidades} sb={sb} toast={toast} onCreated={p=>{ onProductsChanged(); setF(prev=>({...prev,produto_id:p.id})); }}/>
+      <NovoFornecedorModal open={showNovoForn} onClose={()=>setShowNovoForn(false)} sb={sb} toast={toast} onCreated={fr=>{ onSupplierChanged(); setF(prev=>({...prev,fornecedor_id:fr.id})); }}/>
+    </div>
+  );
+}
+
+function CompraLista({ produtos, fornecedores, unidades, categorias, onProductsChanged, onSupplierChanged, toast, sb }) {
+  const [data, setData] = useState(todayISO());
+  const [fornecedor_id, setFornecedor] = useState('');
+  const [itens, setItens] = useState([{ produto_id:'', quantidade:'', unidade_id:'', valor_total:'' }]);
+  const [loading, setLoading] = useState(false);
+  const [showNovoProd, setShowNovoProd] = useState(false);
+  const [showNovoForn, setShowNovoForn] = useState(false);
+  const [novoIndex, setNovoIndex] = useState(null);
+
+  function addItem() { setItens([...itens, { produto_id:'', quantidade:'', unidade_id:'', valor_total:'' }]); }
+  function removeItem(i) { setItens(itens.filter((_,idx)=>idx!==i)); }
+  function updItem(i, k, v) { setItens(itens.map((it,idx)=>idx===i?{...it,[k]:v}:it)); }
+
+  const validos = itens.filter(it => it.produto_id && it.quantidade && it.unidade_id && it.valor_total);
+  const totalGeral = sumBy(validos, it => parseFloat(it.valor_total)||0);
+
+  async function lancarLista() {
+    if (!fornecedor_id) return toast('Selecione um fornecedor','error');
+    if (validos.length === 0) return toast('Adicione ao menos um item válido','error');
+    setLoading(true);
+    try {
+      const forn = fornecedores.find(p=>p.id===fornecedor_id);
+      const { data: mov, error: e1 } = await sb.from('movimentacoes').insert({ tipo:'compra', descricao:`Compra (lista) — ${forn?.nome} — ${validos.length} itens`, data_movimentacao: dateInputToIso(data) }).select('id').single();
+      if (e1) throw e1;
+      const { data: compra, error: e2 } = await sb.from('compras').insert({ movimentacao_id: mov.id, fornecedor_id }).select('id').single();
+      if (e2) throw e2;
+      for (const it of validos) {
+        const qtd = parseFloat(it.quantidade);
+        const total = parseFloat(it.valor_total);
+        await sb.from('compras_itens').insert({
+          compra_id: compra.id, produto_id: it.produto_id,
+          quantidade: qtd, unidade_id: it.unidade_id, preco_unitario: total/qtd
+        });
+      }
+      toast(`✅ ${validos.length} itens lançados — total ${fmtR$(totalGeral)}`,'success');
+      setItens([{ produto_id:'', quantidade:'', unidade_id:'', valor_total:'' }]);
+    } catch(e) { toast('Erro: '+e.message,'error'); }
+    setLoading(false);
+  }
+
+  return (
+    <div className="card">
+      <div className="form-row">
+        <div className="form-group">
+          <label>Data</label>
+          <input type="date" value={data} onChange={e=>setData(e.target.value)}/>
+        </div>
+        <div className="form-group">
+          <label>Fornecedor (vale para todos)</label>
+          <div style={{display:'flex',gap:6}}>
+            <div style={{flex:1}}>
+              <SearchableDropdown value={fornecedor_id} onChange={setFornecedor} options={fornecedores} placeholder="Buscar fornecedor..."/>
+            </div>
+            <button className="btn btn-outline btn-sm" onClick={()=>setShowNovoForn(true)} style={{padding:'0 12px'}}>+</button>
+          </div>
+        </div>
+      </div>
+      <div className="divider"/>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+        <div className="card-title" style={{margin:0}}>Itens da nota</div>
+        <button className="btn btn-outline btn-sm" onClick={addItem}>+ Adicionar item</button>
+      </div>
+      <div className="row-list">
+        {itens.map((it,i) => {
+          const u = unidades.find(x=>x.id===it.unidade_id);
+          const qtd = parseFloat(it.quantidade)||0;
+          const total = parseFloat(it.valor_total)||0;
+          const gramas = qtd * (u?.fator_gramas||0);
+          const cg = gramas > 0 ? total/gramas : 0;
+          return (
+            <div className="row-item cols-5" key={i} style={{flexWrap:'wrap'}}>
+              <SearchableDropdown value={it.produto_id} onChange={v=>updItem(i,'produto_id',v)} options={produtos} placeholder="Produto..." renderOption={p=><div>{p.nome} <span className="muted">({TIPO_LABEL[p.tipo]||p.tipo})</span></div>}/>
+              <input type="number" step="0.001" value={it.quantidade} onChange={e=>updItem(i,'quantidade',e.target.value)} placeholder="Qtd"/>
+              <SearchableDropdown value={it.unidade_id} onChange={v=>updItem(i,'unidade_id',v)} options={unidades} placeholder="Un" getLabel={u=>u.nome}/>
+              <input type="number" step="0.01" value={it.valor_total} onChange={e=>updItem(i,'valor_total',e.target.value)} placeholder="R$ total"/>
+              <span style={{fontSize:11,color:'var(--muted)',whiteSpace:'nowrap'}}>{cg>0?`R$ ${fmt(cg,4)}/g`:'—'}</span>
+              <button className="btn-icon" onClick={()=>removeItem(i)}>✕</button>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14,padding:'10px 14px',background:'var(--card-2)',borderRadius:8}}>
+        <span style={{fontSize:13}}><b>{validos.length}</b> itens válidos</span>
+        <span style={{fontSize:15,fontWeight:700}}>Total: <span className="green">{fmtR$(totalGeral)}</span></span>
+      </div>
+      <button className="btn btn-success btn-lg btn-block" onClick={lancarLista} disabled={loading || validos.length===0}>{loading?'Registrando...':`Lançar ${validos.length} itens`}</button>
+
+      <NovoProdutoModal open={showNovoProd} onClose={()=>setShowNovoProd(false)} categorias={categorias} unidades={unidades} sb={sb} toast={toast} onCreated={p=>{ onProductsChanged(); if(novoIndex!=null) updItem(novoIndex,'produto_id',p.id); }}/>
+      <NovoFornecedorModal open={showNovoForn} onClose={()=>setShowNovoForn(false)} sb={sb} toast={toast} onCreated={fr=>{ onSupplierChanged(); setFornecedor(fr.id); }}/>
+    </div>
+  );
+}
+
+function NovoProdutoModal({ open, onClose, categorias, unidades, sb, toast, onCreated, defaultName }) {
+  const [f, setF] = useState({ nome:'', tipo:'cru', categoria_id:'', unidade_id:'' });
+  useEffect(() => { if (open) setF({ nome: defaultName||'', tipo:'cru', categoria_id:'', unidade_id:'' }); }, [open, defaultName]);
+  async function salvar() {
+    if (!f.nome || !f.tipo || !f.unidade_id) return toast('Nome, tipo e unidade são obrigatórios','error');
+    try {
+      const { data, error } = await sb.from('produtos').insert({
+        nome: f.nome.toLowerCase(), tipo: f.tipo,
+        categoria_id: f.categoria_id||null, unidade_id: f.unidade_id
+      }).select('*').single();
+      if (error) throw error;
+      toast(`✅ "${data.nome}" criado`,'success');
+      onCreated && onCreated(data);
+      onClose();
+    } catch(e) { toast('Erro: '+e.message,'error'); }
+  }
+  return (
+    <Modal open={open} onClose={onClose} title="Novo produto">
+      <div className="form-group"><label>Nome</label><input value={f.nome} onChange={e=>setF({...f,nome:e.target.value})} placeholder="Ex: alcatra"/></div>
+      <div className="form-row">
+        <div className="form-group">
+          <label>Tipo</label>
+          <select value={f.tipo} onChange={e=>setF({...f,tipo:e.target.value})}>
+            <option value="cru">In Natura (cru)</option>
+            <option value="preparado">Preparado</option>
+            <option value="embalagem">Embalagem</option>
+            <option value="insumo">Insumo</option>
+          </select>
+        </div>
+        <div className="form-group">
+          <label>Unidade padrão</label>
+          <SearchableDropdown value={f.unidade_id} onChange={v=>setF({...f,unidade_id:v})} options={unidades} placeholder="Un..." getLabel={u=>u.nome}/>
+        </div>
+      </div>
+      <div className="form-group">
+        <label>Categoria (opcional)</label>
+        <SearchableDropdown value={f.categoria_id} onChange={v=>setF({...f,categoria_id:v})} options={categorias} placeholder="Categoria..."/>
+      </div>
+      <button className="btn btn-success btn-block" onClick={salvar}>Criar produto</button>
+    </Modal>
+  );
+}
+
+function NovoFornecedorModal({ open, onClose, sb, toast, onCreated }) {
+  const [f, setF] = useState({ nome:'', telefone:'', cnpj:'' });
+  useEffect(() => { if (open) setF({ nome:'', telefone:'', cnpj:'' }); }, [open]);
+  async function salvar() {
+    if (!f.nome) return toast('Nome obrigatório','error');
+    try {
+      const { data, error } = await sb.from('fornecedores').insert({ nome: f.nome, telefone: f.telefone||null, cnpj: f.cnpj||null }).select('*').single();
+      if (error) throw error;
+      toast(`✅ Fornecedor "${data.nome}" criado`,'success');
+      onCreated && onCreated(data);
+      onClose();
+    } catch(e) { toast('Erro: '+e.message,'error'); }
+  }
+  return (
+    <Modal open={open} onClose={onClose} title="Novo fornecedor">
+      <div className="form-group"><label>Nome</label><input value={f.nome} onChange={e=>setF({...f,nome:e.target.value})}/></div>
+      <div className="form-row">
+        <div className="form-group"><label>Telefone</label><input value={f.telefone} onChange={e=>setF({...f,telefone:e.target.value})}/></div>
+        <div className="form-group"><label>CNPJ (opcional)</label><input value={f.cnpj} onChange={e=>setF({...f,cnpj:e.target.value})}/></div>
+      </div>
+      <button className="btn btn-success btn-block" onClick={salvar}>Criar fornecedor</button>
+    </Modal>
+  );
+}
+
+function CompraExtrato({ produtos, fornecedores, sb }) {
+  const [periodo, setPeriodo] = useState('mes');
+  const [custom, setCustom] = useState({ from:'', to:'' });
+  const [filtroProd, setFiltroProd] = useState('');
+  const [filtroForn, setFiltroForn] = useState('');
+  const [evolucaoProd, setEvolucaoProd] = useState('');
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const chartBarRef = useRef(null);
+  const chartLineRef = useRef(null);
+
+  async function load() {
+    setLoading(true);
+    const { from, to } = periodToDates(periodo, custom);
+    let q = sb.from('compras_itens').select(`
+      id, quantidade, quantidade_gramas, preco_total,
+      produto_id, produtos(nome,tipo),
+      unidade_id, unidades(nome,codigo),
+      compra_id, compras!inner(fornecedor_id, fornecedores(nome), movimentacao_id, movimentacoes!inner(data_movimentacao))
+    `).gte('compras.movimentacoes.data_movimentacao', from.toISOString()).lte('compras.movimentacoes.data_movimentacao', to.toISOString());
+    if (filtroProd) q = q.eq('produto_id', filtroProd);
+    if (filtroForn) q = q.eq('compras.fornecedor_id', filtroForn);
+    const { data, error } = await q.order('compra_id',{ascending:false}).limit(500);
+    setRows(error ? [] : (data||[]));
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, [periodo, custom, filtroProd, filtroForn]);
+
+  const total = sumBy(rows,'preco_total');
+  const porProduto = useMemo(() => {
+    const m = {}; rows.forEach(r=>{ const n = r.produtos?.nome||'?'; m[n] = (m[n]||0) + Number(r.preco_total||0); });
+    return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,15);
+  }, [rows]);
+
+  useChart(chartBarRef, () => {
+    if (porProduto.length === 0) return null;
+    return {
+      type:'bar',
+      data:{ labels:porProduto.map(x=>x[0]), datasets:[{ data:porProduto.map(x=>x[1]), backgroundColor:'rgba(74,144,217,.7)', borderRadius:6 }] },
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false} },
+        scales:{ x:{ ticks:{color:cssVar('--muted'),callback:v=>'R$ '+fmt(v,0)}, grid:{color:cssVar('--border')} }, y:{ ticks:{color:cssVar('--muted'),font:{size:11}}, grid:{display:false} } }
+      }
+    };
+  }, [porProduto]);
+
+  // Evolução de preço de um produto selecionado
+  const [serieEvolucao, setSerieEvolucao] = useState(null);
+  useEffect(() => {
+    if (!evolucaoProd) { setSerieEvolucao(null); return; }
+    (async () => {
+      const { data } = await sb.from('compras_itens').select(`
+        preco_total, quantidade_gramas, compras!inner(movimentacoes!inner(data_movimentacao))
+      `).eq('produto_id', evolucaoProd).order('compras.movimentacao_id');
+      const pts = (data||[]).map(x => ({
+        d: x.compras?.movimentacoes?.data_movimentacao,
+        p: x.quantidade_gramas > 0 ? Number(x.preco_total)/Number(x.quantidade_gramas) : 0
+      })).filter(x=>x.d).sort((a,b)=>new Date(a.d)-new Date(b.d));
+      setSerieEvolucao(pts);
+    })();
+  }, [evolucaoProd]);
+
+  useChart(chartLineRef, () => {
+    if (!serieEvolucao || serieEvolucao.length === 0) return null;
+    return {
+      type:'line',
+      data:{ labels: serieEvolucao.map(x=>fmtDate(x.d)), datasets:[{ label:'R$/g', data: serieEvolucao.map(x=>x.p), borderColor:cssVar('--blue'), backgroundColor:'rgba(74,144,217,.15)', fill:true, tension:.3 }] },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false} },
+        scales:{ x:{ ticks:{color:cssVar('--muted'),font:{size:10}}, grid:{color:cssVar('--border')} }, y:{ ticks:{color:cssVar('--muted'),callback:v=>'R$ '+fmt(v,4)}, grid:{color:cssVar('--border')} } }
+      }
+    };
+  }, [serieEvolucao]);
+
+  return (
+    <div className="card" style={{marginTop:18}}>
+      <div className="card-title">📜 Extrato de compras</div>
+      <DatePeriodFilter value={periodo} onChange={setPeriodo} custom={custom} onCustomChange={setCustom}/>
+      <div className="form-row">
+        <div className="form-group">
+          <label>Filtrar produto</label>
+          <SearchableDropdown value={filtroProd} onChange={setFiltroProd} options={produtos} placeholder="Todos os produtos" renderOption={p=><div>{p.nome}</div>}/>
+        </div>
+        <div className="form-group">
+          <label>Filtrar fornecedor</label>
+          <SearchableDropdown value={filtroForn} onChange={setFiltroForn} options={fornecedores} placeholder="Todos os fornecedores"/>
+        </div>
+      </div>
+      <div style={{padding:'10px 14px',background:'var(--card-2)',borderRadius:8,marginBottom:10,fontSize:14}}>
+        <b>{rows.length}</b> registros · Total no período: <b className="green">{fmtR$(total)}</b>
+      </div>
+      <div className="table-wrap" style={{marginBottom:14}}>
+        <table>
+          <thead><tr><th>Data</th><th>Produto</th><th>Qtd</th><th>Un</th><th>Valor</th><th>R$/g</th><th>Fornecedor</th></tr></thead>
+          <tbody>
+            {loading && <tr><td colSpan="7"><Skeleton rows={4}/></td></tr>}
+            {!loading && rows.length === 0 && <tr><td colSpan="7" className="empty">Nenhuma compra no período</td></tr>}
+            {!loading && rows.map(r => {
+              const cg = Number(r.quantidade_gramas)>0 ? Number(r.preco_total)/Number(r.quantidade_gramas) : 0;
+              return (
+                <tr key={r.id}>
+                  <td className="muted">{fmtDate(r.compras?.movimentacoes?.data_movimentacao)}</td>
+                  <td><b>{r.produtos?.nome}</b></td>
+                  <td>{fmt(r.quantidade,2)}</td>
+                  <td className="muted">{r.unidades?.nome}</td>
+                  <td className="green">{fmtR$(r.preco_total)}</td>
+                  <td>R$ {fmt(cg,4)}</td>
+                  <td className="muted">{r.compras?.fornecedores?.nome||'—'}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {porProduto.length > 0 && (
+        <div className="card" style={{background:'var(--card-2)'}}>
+          <div className="card-title">Top gastos por produto</div>
+          <div className="chart-wrap lg"><canvas ref={chartBarRef}/></div>
+        </div>
+      )}
+      <div className="card" style={{background:'var(--card-2)'}}>
+        <div className="card-title">📈 Evolução de preço por produto</div>
+        <div className="form-group">
+          <SearchableDropdown value={evolucaoProd} onChange={setEvolucaoProd} options={produtos} placeholder="Selecione um produto..." renderOption={p=><div>{p.nome}</div>}/>
+        </div>
+        {evolucaoProd && serieEvolucao && serieEvolucao.length > 0 && <div className="chart-wrap"><canvas ref={chartLineRef}/></div>}
+        {evolucaoProd && serieEvolucao && serieEvolucao.length === 0 && <div className="empty">Sem histórico desse produto</div>}
+      </div>
+    </div>
+  );
+}
+// ── LANÇAR PRODUÇÃO ─────────────────────────────────────────────────────────
+function TelaProducao() {
+  const sb = getClient();
+  const toast = useToast();
+  const [tab, setTab] = useState('unica');
+  const [preparados, setPreparados] = useState([]);
+  const [insumos, setInsumos] = useState([]);
+  const [unidades, setUnidades] = useState([]);
+  const [refreshHistKey, setRefreshHistKey] = useState(0);
+
+  async function reload() {
+    const [p, i, u] = await Promise.all([
+      sb.from('produtos').select('id,nome,tipo').eq('ativo',true).eq('tipo','preparado').order('nome'),
+      sb.from('produtos').select('id,nome,tipo').eq('ativo',true).in('tipo',['cru','insumo','embalagem']).order('nome'),
+      sb.from('unidades').select('id,codigo,nome,fator_gramas').order('nome'),
+    ]);
+    setPreparados(p.data||[]); setInsumos(i.data||[]); setUnidades(u.data||[]);
+  }
+  useEffect(() => { reload(); }, []);
+
+  return (
+    <div className="content">
+      <div className="section-header"><div className="section-title">🍳 Lançar Produção</div></div>
+      <div className="tabs">
+        <button className={`tab${tab==='unica'?' active':''}`} onClick={()=>setTab('unica')}>Produção Única</button>
+        <button className={`tab${tab==='lote'?' active':''}`} onClick={()=>setTab('lote')}>Produção em Lote</button>
+      </div>
+      {tab==='unica' && <ProducaoUnica preparados={preparados} insumos={insumos} unidades={unidades} sb={sb} toast={toast} onSuccess={()=>setRefreshHistKey(k=>k+1)}/>}
+      {tab==='lote' && <ProducaoLote preparados={preparados} insumos={insumos} unidades={unidades} sb={sb} toast={toast} onSuccess={()=>setRefreshHistKey(k=>k+1)}/>}
+      <ProducaoHistorico sb={sb} preparados={preparados} refreshKey={refreshHistKey}/>
+    </div>
+  );
+}
+
+async function lancarUmaProducao(sb, { data, produto_saida_id, quantidade, unidade_saida_id, insumos }) {
+  const { data: mov, error: e1 } = await sb.from('movimentacoes').insert({ tipo:'producao', descricao:'Produção', data_movimentacao: dateInputToIso(data) }).select('id').single();
+  if (e1) throw e1;
+  const { data: prod, error: e2 } = await sb.from('producoes').insert({
+    movimentacao_id: mov.id, produto_saida_id, quantidade_produzida: parseFloat(quantidade), unidade_saida_id
+  }).select('id').single();
+  if (e2) throw e2;
+  for (const it of insumos) {
+    if (!it.produto_id || !it.quantidade || !it.unidade_id) continue;
+    await sb.from('producao_insumos').insert({
+      producao_id: prod.id, produto_id: it.produto_id,
+      quantidade_usada: parseFloat(it.quantidade), unidade_id: it.unidade_id
+    });
+  }
+  const { data: result, error: e3 } = await sb.rpc('finalizar_producao', { p_producao_id: prod.id });
+  if (e3) throw e3;
+  return result;
+}
+
+function ProducaoUnica({ preparados, insumos, unidades, sb, toast, onSuccess }) {
+  const [data, setData] = useState(todayISO());
+  const [saida, setSaida] = useState({ produto_id:'', quantidade:'', unidade_id:'' });
+  const [itens, setItens] = useState([{ produto_id:'', quantidade:'', unidade_id:'' }]);
+  const [loading, setLoading] = useState(false);
+  const [resultado, setResultado] = useState(null);
+
+  function add() { setItens([...itens, { produto_id:'', quantidade:'', unidade_id:'' }]); }
+  function remove(i) { setItens(itens.filter((_,idx)=>idx!==i)); }
+  function upd(i,k,v) { setItens(itens.map((it,idx)=>idx===i?{...it,[k]:v}:it)); }
+
+  async function lancar() {
+    if (!saida.produto_id || !saida.quantidade || !saida.unidade_id) return toast('Preencha o produto de saída','error');
+    const validos = itens.filter(it => it.produto_id && it.quantidade && it.unidade_id);
+    if (validos.length === 0) return toast('Adicione ao menos um insumo','error');
+    setLoading(true);
+    try {
+      const r = await lancarUmaProducao(sb, { data, produto_saida_id: saida.produto_id, quantidade: saida.quantidade, unidade_saida_id: saida.unidade_id, insumos: validos });
+      const prod = preparados.find(p=>p.id===saida.produto_id);
+      setResultado({ prod: prod?.nome, ...r });
+      toast(`✅ ${prod?.nome} produzido — Custo ${fmtR$(r.custo_total)} · Rendimento ${r.rendimento_percentual!=null?fmtPct(r.rendimento_percentual):'—'}`,'success');
+      setSaida({ produto_id:'', quantidade:'', unidade_id:'' });
+      setItens([{ produto_id:'', quantidade:'', unidade_id:'' }]);
+      onSuccess && onSuccess();
+    } catch(e) { toast('Erro: '+e.message,'error'); }
+    setLoading(false);
+  }
+
+  return (
+    <div className="card">
+      <div className="form-row">
+        <div className="form-group"><label>Data</label><input type="date" value={data} onChange={e=>setData(e.target.value)}/></div>
+        <div></div>
+      </div>
+      <div className="card-title">Produto de saída (preparado)</div>
+      <div className="form-row-3">
+        <div className="form-group"><label>Produto</label><SearchableDropdown value={saida.produto_id} onChange={v=>setSaida({...saida,produto_id:v})} options={preparados} placeholder="Buscar preparado..."/></div>
+        <div className="form-group"><label>Quantidade</label><input type="number" step="0.01" value={saida.quantidade} onChange={e=>setSaida({...saida,quantidade:e.target.value})}/></div>
+        <div className="form-group"><label>Unidade</label><SearchableDropdown value={saida.unidade_id} onChange={v=>setSaida({...saida,unidade_id:v})} options={unidades.filter(u=>['kg','g','l','ml'].includes(u.codigo))} placeholder="Un..." getLabel={u=>u.nome}/></div>
+      </div>
+      <div className="divider"/>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+        <div className="card-title" style={{margin:0}}>Insumos utilizados</div>
+        <button className="btn btn-outline btn-sm" onClick={add}>+ Adicionar</button>
+      </div>
+      <div className="row-list">
+        {itens.map((it,i) => (
+          <div className="row-item cols-3" key={i}>
+            <SearchableDropdown value={it.produto_id} onChange={v=>upd(i,'produto_id',v)} options={insumos} placeholder="Insumo..." renderOption={p=><div>{p.nome} <span className="muted">({TIPO_LABEL[p.tipo]})</span></div>}/>
+            <input type="number" step="0.001" value={it.quantidade} onChange={e=>upd(i,'quantidade',e.target.value)} placeholder="Qtd"/>
+            <SearchableDropdown value={it.unidade_id} onChange={v=>upd(i,'unidade_id',v)} options={unidades} placeholder="Un" getLabel={u=>u.nome}/>
+            <button className="btn-icon" onClick={()=>remove(i)}>✕</button>
+          </div>
+        ))}
+      </div>
+      <button className="btn btn-success btn-lg btn-block" onClick={lancar} disabled={loading}>{loading?'Registrando...':'Lançar Produção'}</button>
+
+      {resultado && (
+        <div className="card" style={{marginTop:14,background:'var(--card-2)',borderLeft:'4px solid var(--green)'}}>
+          <div className="card-title green">✅ Produção registrada</div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:10}}>
+            <div><div className="muted" style={{fontSize:11}}>Produto</div><div style={{fontSize:14,fontWeight:600}}>{resultado.prod}</div></div>
+            <div><div className="muted" style={{fontSize:11}}>Custo total</div><div style={{fontSize:14,fontWeight:700}} className="red">{fmtR$(resultado.custo_total)}</div></div>
+            <div><div className="muted" style={{fontSize:11}}>Custo/g</div><div style={{fontSize:14,fontWeight:700}}>R$ {fmt(resultado.custo_unitario_grama,4)}</div></div>
+            <div><div className="muted" style={{fontSize:11}}>Rendimento</div><div style={{fontSize:14,fontWeight:700}} className={resultado.rendimento_percentual>=80?'green':resultado.rendimento_percentual>=60?'yellow':'red'}>{resultado.rendimento_percentual!=null?fmtPct(resultado.rendimento_percentual):'—'}</div></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProducaoLote({ preparados, insumos, unidades, sb, toast, onSuccess }) {
+  const [data, setData] = useState(todayISO());
+  const [cards, setCards] = useState([{ produto_id:'', quantidade:'', unidade_id:'', insumos:[{produto_id:'',quantidade:'',unidade_id:''}] }]);
+  const [loading, setLoading] = useState(false);
+
+  function addCard() { setCards([...cards, { produto_id:'', quantidade:'', unidade_id:'', insumos:[{produto_id:'',quantidade:'',unidade_id:''}] }]); }
+  function removeCard(i) { setCards(cards.filter((_,idx)=>idx!==i)); }
+  function updCard(i, patch) { setCards(cards.map((c,idx)=>idx===i?{...c,...patch}:c)); }
+  function addInsumo(i) { updCard(i, { insumos:[...cards[i].insumos, {produto_id:'',quantidade:'',unidade_id:''}] }); }
+  function removeInsumo(i, j) { updCard(i, { insumos: cards[i].insumos.filter((_,idx)=>idx!==j) }); }
+  function updInsumo(i, j, k, v) { updCard(i, { insumos: cards[i].insumos.map((it,idx)=>idx===j?{...it,[k]:v}:it) }); }
+
+  async function lancarTudo() {
+    const validos = cards.filter(c => c.produto_id && c.quantidade && c.unidade_id && c.insumos.some(it=>it.produto_id && it.quantidade && it.unidade_id));
+    if (validos.length === 0) return toast('Nenhuma produção válida','error');
+    setLoading(true);
+    let ok = 0, fail = 0;
+    for (const c of validos) {
+      try {
+        await lancarUmaProducao(sb, { data, produto_saida_id: c.produto_id, quantidade: c.quantidade, unidade_saida_id: c.unidade_id, insumos: c.insumos.filter(it=>it.produto_id&&it.quantidade&&it.unidade_id) });
+        ok++;
+      } catch(e) { console.error(e); fail++; }
+    }
+    toast(`✅ ${ok} produções lançadas${fail>0?` · ${fail} falharam`:''}`, fail>0?'warn':'success');
+    setCards([{ produto_id:'', quantidade:'', unidade_id:'', insumos:[{produto_id:'',quantidade:'',unidade_id:''}] }]);
+    onSuccess && onSuccess();
+    setLoading(false);
+  }
+
+  return (
+    <div className="card">
+      <div className="form-row">
+        <div className="form-group"><label>Data (vale para todas)</label><input type="date" value={data} onChange={e=>setData(e.target.value)}/></div>
+        <div></div>
+      </div>
+      {cards.map((c,i) => (
+        <div className="card" style={{background:'var(--card-2)',marginBottom:10}} key={i}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+            <div className="card-title" style={{margin:0}}>Produção #{i+1}</div>
+            {cards.length > 1 && <button className="btn-icon" onClick={()=>removeCard(i)}>✕ remover</button>}
+          </div>
+          <div className="form-row-3">
+            <div className="form-group"><label>Produto saída</label><SearchableDropdown value={c.produto_id} onChange={v=>updCard(i,{produto_id:v})} options={preparados} placeholder="Buscar..."/></div>
+            <div className="form-group"><label>Qtd</label><input type="number" step="0.01" value={c.quantidade} onChange={e=>updCard(i,{quantidade:e.target.value})}/></div>
+            <div className="form-group"><label>Un</label><SearchableDropdown value={c.unidade_id} onChange={v=>updCard(i,{unidade_id:v})} options={unidades.filter(u=>['kg','g','l','ml'].includes(u.codigo))} placeholder="Un..." getLabel={u=>u.nome}/></div>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
+            <div className="card-title" style={{margin:0,fontSize:11}}>Insumos</div>
+            <button className="btn btn-outline btn-sm" onClick={()=>addInsumo(i)}>+ insumo</button>
+          </div>
+          <div className="row-list">
+            {c.insumos.map((it,j) => (
+              <div className="row-item cols-3" key={j}>
+                <SearchableDropdown value={it.produto_id} onChange={v=>updInsumo(i,j,'produto_id',v)} options={insumos} placeholder="Insumo..."/>
+                <input type="number" step="0.001" value={it.quantidade} onChange={e=>updInsumo(i,j,'quantidade',e.target.value)} placeholder="Qtd"/>
+                <SearchableDropdown value={it.unidade_id} onChange={v=>updInsumo(i,j,'unidade_id',v)} options={unidades} placeholder="Un" getLabel={u=>u.nome}/>
+                <button className="btn-icon" onClick={()=>removeInsumo(i,j)}>✕</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+      <button className="btn btn-outline btn-block" onClick={addCard} style={{marginBottom:10}}>+ Adicionar produção</button>
+      <button className="btn btn-success btn-lg btn-block" onClick={lancarTudo} disabled={loading}>{loading?'Registrando...':`Lançar ${cards.length} produções`}</button>
+    </div>
+  );
+}
+
+function ProducaoHistorico({ sb, preparados, refreshKey }) {
+  const [periodo, setPeriodo] = useState('mes');
+  const [custom, setCustom] = useState({});
+  const [rows, setRows] = useState([]);
+  const [expanded, setExpanded] = useState(null);
+  const [insumos, setInsumos] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    const { from, to } = periodToDates(periodo, custom);
+    const { data } = await sb.from('producoes').select(`
+      id, quantidade_produzida, quantidade_produzida_gramas, custo_total_producao, custo_unitario_grama, rendimento_percentual,
+      produto_saida_id, produtos!producoes_produto_saida_id_fkey(nome),
+      unidade_saida_id, unidades!producoes_unidade_saida_id_fkey(nome,codigo),
+      movimentacao_id, movimentacoes!inner(data_movimentacao)
+    `).gte('movimentacoes.data_movimentacao', from.toISOString()).lte('movimentacoes.data_movimentacao', to.toISOString()).order('movimentacao_id',{ascending:false}).limit(200);
+    setRows(data||[]);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, [periodo, custom, refreshKey]);
+
+  // Rendimento médio histórico por produto
+  const rendMedio = useMemo(() => {
+    const m = {};
+    rows.forEach(r => { if (r.rendimento_percentual != null) { m[r.produto_saida_id] = m[r.produto_saida_id] || []; m[r.produto_saida_id].push(Number(r.rendimento_percentual)); } });
+    const out = {};
+    Object.entries(m).forEach(([k,arr]) => out[k] = arr.reduce((a,b)=>a+b,0)/arr.length);
+    return out;
+  }, [rows]);
+
+  async function expandirProducao(id) {
+    if (expanded === id) { setExpanded(null); return; }
+    setExpanded(id);
+    if (!insumos[id]) {
+      const { data } = await sb.from('producao_insumos').select('quantidade_usada,quantidade_gramas,custo_total,unidades(nome),produtos(nome)').eq('producao_id', id);
+      setInsumos(prev => ({...prev, [id]: data||[]}));
+    }
+  }
+
+  return (
+    <div className="card" style={{marginTop:18}}>
+      <div className="card-title">📜 Histórico de produções</div>
+      <DatePeriodFilter value={periodo} onChange={setPeriodo} custom={custom} onCustomChange={setCustom}/>
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>Data</th><th>Produto saída</th><th>Qtd</th><th>Custo total</th><th>Custo/g</th><th>Rend %</th><th>Rend médio</th><th></th></tr></thead>
+          <tbody>
+            {loading && <tr><td colSpan="8"><Skeleton rows={3}/></td></tr>}
+            {!loading && rows.length === 0 && <tr><td colSpan="8" className="empty">Nenhuma produção no período</td></tr>}
+            {!loading && rows.map(r => (
+              <Fragment key={r.id}>
+                <tr className="clickable" onClick={()=>expandirProducao(r.id)}>
+                  <td className="muted">{fmtDate(r.movimentacoes?.data_movimentacao)}</td>
+                  <td><b>{r.produtos?.nome}</b></td>
+                  <td>{fmt(r.quantidade_produzida,2)} {r.unidades?.codigo}</td>
+                  <td className="red">{fmtR$(r.custo_total_producao)}</td>
+                  <td>R$ {fmt(r.custo_unitario_grama,4)}</td>
+                  <td className={r.rendimento_percentual>=80?'green':r.rendimento_percentual>=60?'yellow':'red'}>{r.rendimento_percentual!=null?fmtPct(r.rendimento_percentual):'—'}</td>
+                  <td className="muted">{rendMedio[r.produto_saida_id]!=null?fmtPct(rendMedio[r.produto_saida_id]):'—'}</td>
+                  <td>{expanded===r.id?'▾':'▸'}</td>
+                </tr>
+                {expanded === r.id && insumos[r.id] && (
+                  <tr className="expanded"><td colSpan="8">
+                    <div style={{padding:'8px 0'}}>
+                      <div className="card-title" style={{fontSize:11}}>Insumos usados</div>
+                      <table style={{background:'transparent'}}>
+                        <thead><tr><th>Insumo</th><th>Qtd</th><th>Gramas</th><th>Custo</th></tr></thead>
+                        <tbody>
+                          {insumos[r.id].map((it,k) => (
+                            <tr key={k}><td>{it.produtos?.nome}</td><td>{fmt(it.quantidade_usada,2)} {it.unidades?.nome||''}</td><td>{fmtG(it.quantidade_gramas)}</td><td>{fmtR$(it.custo_total)}</td></tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </td></tr>
+                )}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+// ── LANÇAR VENDA ────────────────────────────────────────────────────────────
+function TelaVenda() {
+  const sb = getClient();
+  const toast = useToast();
+  const [receitas, setReceitas] = useState([]);
+  const [precos, setPrecos] = useState({});
+  const [refreshHistKey, setRefreshHistKey] = useState(0);
+
+  async function reload() {
+    const [r, p] = await Promise.all([
+      sb.from('receitas_ficha_tecnica').select('id,nome').eq('ativo',true).order('nome'),
+      sb.from('precos_venda').select('receita_id,canal,preco').eq('ativo',true),
+    ]);
+    setReceitas(r.data||[]);
+    const m = {}; (p.data||[]).forEach(x => { (m[x.receita_id]=m[x.receita_id]||{})[x.canal] = Number(x.preco); });
+    setPrecos(m);
+  }
+  useEffect(() => { reload(); }, []);
+
+  return (
+    <div className="content">
+      <div className="section-header"><div className="section-title">💰 Lançar Venda</div></div>
+      <VendaForm receitas={receitas} precos={precos} sb={sb} toast={toast} onSuccess={()=>setRefreshHistKey(k=>k+1)}/>
+      <VendaHistorico sb={sb} receitas={receitas} refreshKey={refreshHistKey}/>
+    </div>
+  );
+}
+
+function VendaForm({ receitas, precos, sb, toast, onSuccess }) {
+  const [data, setData] = useState(todayISO());
+  const [canal, setCanal] = useState('ifood');
+  const [desconto, setDesconto] = useState('0');
+  const [itens, setItens] = useState([{ receita_id:'', quantidade:'1', valor_unitario:'' }]);
+  const [loading, setLoading] = useState(false);
+
+  function add() { setItens([...itens, { receita_id:'', quantidade:'1', valor_unitario:'' }]); }
+  function remove(i) { setItens(itens.filter((_,idx)=>idx!==i)); }
+  function upd(i, k, v) {
+    setItens(itens.map((it,idx) => {
+      if (idx !== i) return it;
+      const next = {...it, [k]:v};
+      if (k === 'receita_id' && precos[v]) next.valor_unitario = String(precos[v][canal] || precos[v]['ifood'] || '');
+      return next;
+    }));
+  }
+  // Atualiza preços automaticamente quando muda canal
+  useEffect(() => {
+    setItens(prev => prev.map(it => {
+      if (!it.receita_id || !precos[it.receita_id]) return it;
+      return { ...it, valor_unitario: String(precos[it.receita_id][canal] || precos[it.receita_id]['ifood'] || it.valor_unitario || '') };
+    }));
+  }, [canal]);
+
+  const bruto = sumBy(itens, it => (parseFloat(it.valor_unitario)||0) * (parseFloat(it.quantidade)||0));
+  const liquido = bruto - (parseFloat(desconto)||0);
+
+  async function lancar() {
+    const validos = itens.filter(it => it.receita_id && it.quantidade && it.valor_unitario);
+    if (validos.length === 0) return toast('Adicione ao menos um prato','error');
+    setLoading(true);
+    try {
+      const { data: mov, error: e1 } = await sb.from('movimentacoes').insert({ tipo:'venda', descricao:`Venda ${CANAL_LABEL[canal]}`, data_movimentacao: dateInputToIso(data) }).select('id').single();
+      if (e1) throw e1;
+      const { data: venda, error: e2 } = await sb.from('vendas').insert({ movimentacao_id: mov.id, canal_venda: canal, desconto_plataforma: parseFloat(desconto)||0 }).select('id').single();
+      if (e2) throw e2;
+      let cmvTotal = 0;
+      for (const it of validos) {
+        const { data: vi, error: e3 } = await sb.from('vendas_itens').insert({
+          venda_id: venda.id, receita_id: it.receita_id,
+          quantidade: parseFloat(it.quantidade), valor_unitario: parseFloat(it.valor_unitario)
+        }).select('cmv_total').single();
+        if (e3) throw e3;
+        cmvTotal += Number(vi?.cmv_total||0);
+      }
+      const { error: e4 } = await sb.rpc('registrar_receita_venda', { p_venda_id: venda.id });
+      if (e4) console.warn('registrar_receita_venda:', e4.message);
+      toast(`✅ Venda ${CANAL_LABEL[canal]}: Bruto ${fmtR$(bruto)} · Líq ${fmtR$(liquido)} · CMV ${fmtR$(cmvTotal)}`,'success');
+      setItens([{ receita_id:'', quantidade:'1', valor_unitario:'' }]);
+      setDesconto('0');
+      onSuccess && onSuccess();
+    } catch(e) { toast('Erro: '+e.message,'error'); }
+    setLoading(false);
+  }
+
+  return (
+    <div className="card">
+      <div className="form-row-3">
+        <div className="form-group"><label>Data</label><input type="date" value={data} onChange={e=>setData(e.target.value)}/></div>
+        <div className="form-group">
+          <label>Canal</label>
+          <select value={canal} onChange={e=>setCanal(e.target.value)}>
+            {Object.entries(CANAL_LABEL).map(([v,l])=><option key={v} value={v}>{l}</option>)}
+          </select>
+        </div>
+        <div className="form-group"><label>Desconto plataforma (R$)</label><input type="number" step="0.01" value={desconto} onChange={e=>setDesconto(e.target.value)}/></div>
+      </div>
+      <div className="divider"/>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+        <div className="card-title" style={{margin:0}}>Pratos vendidos</div>
+        <button className="btn btn-outline btn-sm" onClick={add}>+ Adicionar prato</button>
+      </div>
+      <div className="row-list">
+        {itens.map((it,i) => (
+          <div className="row-item cols-3" key={i}>
+            <SearchableDropdown value={it.receita_id} onChange={v=>upd(i,'receita_id',v)} options={receitas} placeholder="Buscar prato..."/>
+            <input type="number" step="1" value={it.quantidade} onChange={e=>upd(i,'quantidade',e.target.value)} placeholder="Qtd"/>
+            <input type="number" step="0.01" value={it.valor_unitario} onChange={e=>upd(i,'valor_unitario',e.target.value)} placeholder="R$ unit."/>
+            <button className="btn-icon" onClick={()=>remove(i)}>✕</button>
+          </div>
+        ))}
+      </div>
+      <div className="preview-line" style={{display:'flex',justifyContent:'space-between',flexWrap:'wrap',gap:10}}>
+        <span>Bruto: <b className="green">{fmtR$(bruto)}</b></span>
+        <span>Desconto: <b className="red">{fmtR$(parseFloat(desconto)||0)}</b></span>
+        <span>Líquido: <b className="blue">{fmtR$(liquido)}</b></span>
+      </div>
+      <button className="btn btn-success btn-lg btn-block" onClick={lancar} disabled={loading}>{loading?'Registrando...':'Lançar Venda'}</button>
+    </div>
+  );
+}
+
+function VendaHistorico({ sb, receitas, refreshKey }) {
+  const [periodo, setPeriodo] = useState('mes');
+  const [custom, setCustom] = useState({});
+  const [filtroPrato, setFiltroPrato] = useState('');
+  const [filtroCanal, setFiltroCanal] = useState('');
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const chartLineRef = useRef(null);
+  const chartPieRef = useRef(null);
+
+  async function load() {
+    setLoading(true);
+    const { from, to } = periodToDates(periodo, custom);
+    let q = sb.from('vendas_itens').select(`
+      id, quantidade, valor_unitario, valor_total, cmv_total, lucro_bruto, receita_id,
+      receitas_ficha_tecnica(nome),
+      vendas!inner(canal_venda, desconto_plataforma, movimentacao_id, movimentacoes!inner(data_movimentacao))
+    `).gte('vendas.movimentacoes.data_movimentacao', from.toISOString()).lte('vendas.movimentacoes.data_movimentacao', to.toISOString());
+    if (filtroPrato) q = q.eq('receita_id', filtroPrato);
+    if (filtroCanal) q = q.eq('vendas.canal_venda', filtroCanal);
+    const { data } = await q.order('id',{ascending:false}).limit(500);
+    setRows(data||[]);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, [periodo, custom, filtroPrato, filtroCanal, refreshKey]);
+
+  const totalBruto = sumBy(rows,'valor_total');
+  const totalCMV   = sumBy(rows,'cmv_total');
+  const totalLucro = sumBy(rows,'lucro_bruto');
+
+  // Ranking por prato
+  const ranking = useMemo(() => {
+    const m = {};
+    rows.forEach(r => {
+      const k = r.receita_id;
+      if (!m[k]) m[k] = { receita_id:k, nome:r.receitas_ficha_tecnica?.nome||'?', qtd:0, receita:0, cmv:0, lucro:0 };
+      m[k].qtd += Number(r.quantidade);
+      m[k].receita += Number(r.valor_total);
+      m[k].cmv += Number(r.cmv_total);
+      m[k].lucro += Number(r.lucro_bruto);
+    });
+    return Object.values(m).map(x => ({
+      ...x,
+      margem_pct: x.receita > 0 ? (x.lucro/x.receita)*100 : 0,
+      food_cost: x.receita > 0 ? (x.cmv/x.receita)*100 : 0,
+    })).sort((a,b)=>b.lucro-a.lucro);
+  }, [rows]);
+
+  const { from, to } = periodToDates(periodo, custom);
+  const qtdDias = Math.max(1, Math.ceil((to-from)/86400000));
+
+  // Vendas por dia
+  const porDia = useMemo(() => {
+    const m = {}; rows.forEach(r => { const k = r.vendas?.movimentacoes?.data_movimentacao?.slice(0,10); if (k) m[k] = (m[k]||0) + Number(r.valor_total); });
+    return Object.entries(m).sort();
+  }, [rows]);
+
+  useChart(chartLineRef, () => {
+    if (porDia.length === 0) return null;
+    return {
+      type:'line',
+      data:{ labels:porDia.map(x=>fmtDate(x[0]).slice(0,5)), datasets:[{ data:porDia.map(x=>x[1]), borderColor:cssVar('--green'), backgroundColor:'rgba(52,211,153,.15)', fill:true, tension:.3 }] },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false} },
+        scales:{ x:{ ticks:{color:cssVar('--muted'),font:{size:10}}, grid:{display:false} }, y:{ ticks:{color:cssVar('--muted'),callback:v=>'R$ '+fmt(v,0)}, grid:{color:cssVar('--border')} } }
+      }
+    };
+  }, [porDia]);
+
+  useChart(chartPieRef, () => {
+    if (ranking.length === 0) return null;
+    const top = ranking.slice(0,8);
+    return {
+      type:'doughnut',
+      data:{ labels:top.map(x=>x.nome), datasets:[{ data:top.map(x=>x.receita), backgroundColor:['#34d399','#4a90d9','#fbbf24','#a78bfa','#f87171','#22d3ee','#fb923c','#94a3b8'] }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right', labels:{color:cssVar('--text-2'),font:{size:11},boxWidth:12} } } }
+    };
+  }, [ranking]);
+
+  return (
+    <div className="card" style={{marginTop:18}}>
+      <div className="card-title">📜 Histórico de vendas</div>
+      <DatePeriodFilter value={periodo} onChange={setPeriodo} custom={custom} onCustomChange={setCustom}/>
+      <div className="form-row">
+        <div className="form-group"><label>Filtrar prato</label><SearchableDropdown value={filtroPrato} onChange={setFiltroPrato} options={receitas} placeholder="Todos"/></div>
+        <div className="form-group">
+          <label>Filtrar canal</label>
+          <select value={filtroCanal} onChange={e=>setFiltroCanal(e.target.value)}>
+            <option value="">Todos</option>
+            {Object.entries(CANAL_LABEL).map(([v,l])=><option key={v} value={v}>{l}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="stat-grid">
+        <div className="stat-card tinted-green"><div className="stat-value green">{fmtR$(totalBruto)}</div><div className="stat-label">Receita do período</div></div>
+        <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(totalCMV)}</div><div className="stat-label">CMV total</div></div>
+        <div className="stat-card tinted-blue"><div className={`stat-value ${totalLucro>=0?'green':'red'}`}>{fmtR$(totalLucro)}</div><div className="stat-label">Lucro bruto</div></div>
+        <div className="stat-card"><div className="stat-value">{rows.length}</div><div className="stat-label">Itens vendidos</div></div>
+      </div>
+
+      {ranking.length > 0 && (
+        <div className="card" style={{background:'var(--card-2)'}}>
+          <div className="card-title">🏆 Ranking por prato</div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th></th><th>Prato</th><th>Qtd</th><th>Qtd/dia</th><th>Receita</th><th>CMV</th><th>Lucro</th><th>Margem</th><th>Food cost</th></tr></thead>
+              <tbody>
+                {ranking.map((r,i) => {
+                  const m = r.margem_pct, fc = r.food_cost;
+                  const corM = m>=40?'green':m>=25?'yellow':'red';
+                  const corFC = fc<32?'green':fc<38?'yellow':'red';
+                  return (
+                    <tr key={r.receita_id}>
+                      <td>{i<3?['🥇','🥈','🥉'][i]:i+1}</td>
+                      <td><b>{r.nome}</b></td>
+                      <td>{fmt(r.qtd,0)}</td>
+                      <td className="muted">{fmt(r.qtd/qtdDias,1)}</td>
+                      <td className="green">{fmtR$(r.receita)}</td>
+                      <td className="red">{fmtR$(r.cmv)}</td>
+                      <td className={r.lucro>=0?'green':'red'}>{fmtR$(r.lucro)}</td>
+                      <td className={corM}>{fmtPct(m)}</td>
+                      <td className={corFC}>{fmtPct(fc)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {porDia.length > 0 && (
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          <div className="card" style={{background:'var(--card-2)'}}>
+            <div className="card-title">Vendas por dia</div>
+            <div className="chart-wrap"><canvas ref={chartLineRef}/></div>
+          </div>
+          <div className="card" style={{background:'var(--card-2)'}}>
+            <div className="card-title">Receita por prato (top 8)</div>
+            <div className="chart-wrap"><canvas ref={chartPieRef}/></div>
+          </div>
+        </div>
+      )}
+
+      <div className="table-wrap" style={{marginTop:14}}>
+        <table>
+          <thead><tr><th>Data</th><th>Prato</th><th>Qtd</th><th>Preço</th><th>Total</th><th>Canal</th><th>CMV</th><th>Lucro</th></tr></thead>
+          <tbody>
+            {loading && <tr><td colSpan="8"><Skeleton rows={3}/></td></tr>}
+            {!loading && rows.length === 0 && <tr><td colSpan="8" className="empty">Nenhuma venda no período</td></tr>}
+            {!loading && rows.map(r => (
+              <tr key={r.id}>
+                <td className="muted">{fmtDate(r.vendas?.movimentacoes?.data_movimentacao)}</td>
+                <td>{r.receitas_ficha_tecnica?.nome}</td>
+                <td>{fmt(r.quantidade,0)}</td>
+                <td>{fmtR$(r.valor_unitario)}</td>
+                <td className="green">{fmtR$(r.valor_total)}</td>
+                <td><span className="badge badge-blue">{CANAL_LABEL[r.vendas?.canal_venda]||'—'}</span></td>
+                <td className="red">{fmtR$(r.cmv_total)}</td>
+                <td className={Number(r.lucro_bruto)>=0?'green':'red'}>{fmtR$(r.lucro_bruto)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+// ── LANÇAR PERDA ────────────────────────────────────────────────────────────
+function TelaPerda() {
+  const sb = getClient();
+  const toast = useToast();
+  const [produtos, setProdutos] = useState([]);
+  const [unidades, setUnidades] = useState([]);
+  const [refreshHistKey, setRefreshHistKey] = useState(0);
+  const [data, setData] = useState(todayISO());
+  const [f, setF] = useState({ produto_id:'', quantidade:'', unidade_id:'', motivo:'vencimento', obs:'' });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    sb.from('produtos').select('id,nome,tipo').eq('ativo',true).order('nome').then(r=>setProdutos(r.data||[]));
+    sb.from('unidades').select('id,codigo,nome,fator_gramas').order('nome').then(r=>setUnidades(r.data||[]));
+  }, []);
+
+  async function lancar() {
+    if (!f.produto_id || !f.quantidade || !f.unidade_id) return toast('Preencha produto, quantidade e unidade','error');
+    setLoading(true);
+    try {
+      const prod = produtos.find(p=>p.id===f.produto_id);
+      const { data: mov, error: e1 } = await sb.from('movimentacoes').insert({ tipo:'perda', descricao:`Perda: ${prod?.nome} — ${MOTIVO_LABEL[f.motivo]}`, data_movimentacao: dateInputToIso(data) }).select('id').single();
+      if (e1) throw e1;
+      const { error: e2 } = await sb.from('ajustes_estoque').insert({
+        movimentacao_id: mov.id, produto_id: f.produto_id, tipo:'perda',
+        quantidade: parseFloat(f.quantidade), unidade_id: f.unidade_id,
+        motivo_perda: f.motivo, observacoes: f.obs || null
+      });
+      if (e2) throw e2;
+      toast(`⚠️ Perda registrada: ${f.quantidade} ${unidades.find(u=>u.id===f.unidade_id)?.nome||''} de ${prod?.nome}`,'warn');
+      setF({ produto_id:'', quantidade:'', unidade_id:'', motivo:'vencimento', obs:'' });
+      setRefreshHistKey(k=>k+1);
+    } catch(e) { toast('Erro: '+e.message,'error'); }
+    setLoading(false);
+  }
+
+  return (
+    <div className="content">
+      <div className="section-header"><div className="section-title">⚠️ Lançar Perda</div></div>
+      <div className="card">
+        <div className="form-row">
+          <div className="form-group"><label>Data</label><input type="date" value={data} onChange={e=>setData(e.target.value)}/></div>
+          <div className="form-group">
+            <label>Motivo</label>
+            <select value={f.motivo} onChange={e=>setF({...f,motivo:e.target.value})}>
+              {MOTIVO_PERDA.map(m=><option key={m} value={m}>{MOTIVO_LABEL[m]}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="form-group">
+          <label>Produto</label>
+          <SearchableDropdown value={f.produto_id} onChange={v=>setF({...f,produto_id:v})} options={produtos} placeholder="Buscar produto..." renderOption={p=><div>{p.nome} <span className="muted">({TIPO_LABEL[p.tipo]||p.tipo})</span></div>}/>
+        </div>
+        <div className="form-row">
+          <div className="form-group"><label>Quantidade perdida</label><input type="number" step="0.001" value={f.quantidade} onChange={e=>setF({...f,quantidade:e.target.value})}/></div>
+          <div className="form-group"><label>Unidade</label><SearchableDropdown value={f.unidade_id} onChange={v=>setF({...f,unidade_id:v})} options={unidades} placeholder="Un..." getLabel={u=>u.nome}/></div>
+        </div>
+        <div className="form-group">
+          <label>Observação (opcional)</label>
+          <textarea rows="2" value={f.obs} onChange={e=>setF({...f,obs:e.target.value})} placeholder="Detalhes..."/>
+        </div>
+        <button className="btn btn-danger btn-lg btn-block" onClick={lancar} disabled={loading}>{loading?'Registrando...':'Registrar Perda'}</button>
+      </div>
+
+      <PerdaHistorico sb={sb} produtos={produtos} refreshKey={refreshHistKey}/>
+    </div>
+  );
+}
+
+function PerdaHistorico({ sb, produtos, refreshKey }) {
+  const [periodo, setPeriodo] = useState('mes');
+  const [custom, setCustom] = useState({});
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const chartPieRef = useRef(null);
+  const chartBarRef = useRef(null);
+
+  async function load() {
+    setLoading(true);
+    const { from, to } = periodToDates(periodo, custom);
+    const { data } = await sb.from('ajustes_estoque').select(`
+      id, quantidade, quantidade_gramas, motivo_perda, observacoes,
+      produto_id, produtos(nome),
+      unidade_id, unidades(nome,codigo),
+      movimentacao_id, movimentacoes!inner(data_movimentacao)
+    `).eq('tipo','perda').gte('movimentacoes.data_movimentacao', from.toISOString()).lte('movimentacoes.data_movimentacao', to.toISOString()).order('id',{ascending:false}).limit(500);
+    setRows(data||[]);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, [periodo, custom, refreshKey]);
+
+  // Estimar valor das perdas usando estoque_movimentacoes (custo registrado)
+  const [valorPorRegistro, setValorPorRegistro] = useState({});
+  useEffect(() => {
+    if (rows.length === 0) { setValorPorRegistro({}); return; }
+    const movIds = [...new Set(rows.map(r=>r.movimentacao_id))];
+    if (movIds.length === 0) return;
+    sb.from('estoque_movimentacoes').select('movimentacao_id,produto_id,custo_total').in('movimentacao_id', movIds).then(({ data }) => {
+      const m = {};
+      (data||[]).forEach(x => { const k = `${x.movimentacao_id}-${x.produto_id}`; m[k] = (m[k]||0) + Number(x.custo_total||0); });
+      setValorPorRegistro(m);
+    });
+  }, [rows]);
+
+  const totalPerdido = sumBy(rows, r => valorPorRegistro[`${r.movimentacao_id}-${r.produto_id}`] || 0);
+
+  const porMotivo = useMemo(() => {
+    const m = {};
+    rows.forEach(r => { const v = valorPorRegistro[`${r.movimentacao_id}-${r.produto_id}`] || 0; m[r.motivo_perda] = (m[r.motivo_perda]||0) + v; });
+    return Object.entries(m).filter(([_,v])=>v>0);
+  }, [rows, valorPorRegistro]);
+
+  const porProduto = useMemo(() => {
+    const m = {};
+    rows.forEach(r => { const v = valorPorRegistro[`${r.movimentacao_id}-${r.produto_id}`] || 0; const n = r.produtos?.nome||'?'; m[n] = (m[n]||0) + v; });
+    return Object.entries(m).filter(([_,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  }, [rows, valorPorRegistro]);
+
+  useChart(chartPieRef, () => {
+    if (porMotivo.length === 0) return null;
+    return {
+      type:'doughnut',
+      data:{ labels:porMotivo.map(x=>MOTIVO_LABEL[x[0]]||x[0]), datasets:[{ data:porMotivo.map(x=>x[1]), backgroundColor:['#f87171','#fbbf24','#a78bfa','#94a3b8','#4a90d9'] }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right', labels:{color:cssVar('--text-2'),font:{size:11}} } } }
+    };
+  }, [porMotivo]);
+
+  useChart(chartBarRef, () => {
+    if (porProduto.length === 0) return null;
+    return {
+      type:'bar',
+      data:{ labels:porProduto.map(x=>x[0]), datasets:[{ data:porProduto.map(x=>x[1]), backgroundColor:'rgba(248,113,113,.7)', borderRadius:6 }] },
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false} },
+        scales:{ x:{ ticks:{color:cssVar('--muted'),callback:v=>'R$ '+fmt(v,0)}, grid:{color:cssVar('--border')} }, y:{ ticks:{color:cssVar('--muted'),font:{size:11}}, grid:{display:false} } }
+      }
+    };
+  }, [porProduto]);
+
+  return (
+    <div className="card" style={{marginTop:18}}>
+      <div className="card-title">📜 Histórico de perdas</div>
+      <DatePeriodFilter value={periodo} onChange={setPeriodo} custom={custom} onCustomChange={setCustom}/>
+      <div className="stat-grid">
+        <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(totalPerdido)}</div><div className="stat-label">Valor perdido no período</div></div>
+        <div className="stat-card"><div className="stat-value">{rows.length}</div><div className="stat-label">Registros de perda</div></div>
+      </div>
+      {(porMotivo.length > 0 || porProduto.length > 0) && (
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          {porMotivo.length > 0 && <div className="card" style={{background:'var(--card-2)'}}><div className="card-title">Por motivo</div><div className="chart-wrap"><canvas ref={chartPieRef}/></div></div>}
+          {porProduto.length > 0 && <div className="card" style={{background:'var(--card-2)'}}><div className="card-title">Top 10 produtos perdidos</div><div className="chart-wrap"><canvas ref={chartBarRef}/></div></div>}
+        </div>
+      )}
+      <div className="table-wrap" style={{marginTop:14}}>
+        <table>
+          <thead><tr><th>Data</th><th>Produto</th><th>Qtd</th><th>Motivo</th><th>Valor estimado</th><th>Obs</th></tr></thead>
+          <tbody>
+            {loading && <tr><td colSpan="6"><Skeleton rows={3}/></td></tr>}
+            {!loading && rows.length === 0 && <tr><td colSpan="6" className="empty">Nenhuma perda no período</td></tr>}
+            {!loading && rows.map(r => (
+              <tr key={r.id}>
+                <td className="muted">{fmtDate(r.movimentacoes?.data_movimentacao)}</td>
+                <td><b>{r.produtos?.nome}</b></td>
+                <td>{fmt(r.quantidade,2)} {r.unidades?.codigo}</td>
+                <td><span className="badge badge-yellow">{MOTIVO_LABEL[r.motivo_perda]||r.motivo_perda}</span></td>
+                <td className="red">{fmtR$(valorPorRegistro[`${r.movimentacao_id}-${r.produto_id}`]||0)}</td>
+                <td className="muted" style={{fontSize:12}}>{r.observacoes||'—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+// ── DESPESA FIXA ────────────────────────────────────────────────────────────
+function TelaDespesa() {
+  const sb = getClient();
+  const toast = useToast();
+  const [categorias, setCategorias] = useState([]);
+  const [refreshHistKey, setRefreshHistKey] = useState(0);
+  const [data, setData] = useState(todayISO());
+  const [f, setF] = useState({ categoria_id:'', descricao:'', valor:'', pago:true, forma_pagamento:'pix' });
+  const [loading, setLoading] = useState(false);
+
+  async function reload() {
+    const { data: cats } = await sb.from('categorias_caixa').select('id,nome,tipo,descricao').eq('tipo','despesa').neq('nome','Compra de insumos').order('nome');
+    // Dedupe por nome (banco tem categorias duplicadas)
+    const seen = new Set(); const uniq = [];
+    (cats||[]).forEach(c => { if (!seen.has(c.nome)) { seen.add(c.nome); uniq.push(c); } });
+    setCategorias(uniq);
+  }
+  useEffect(() => { reload(); }, []);
+
+  async function lancar() {
+    if (!f.categoria_id || !f.descricao || !f.valor) return toast('Preencha categoria, descrição e valor','error');
+    setLoading(true);
+    try {
+      const cat = categorias.find(c=>c.id===f.categoria_id);
+      const { data: mov, error: e1 } = await sb.from('movimentacoes').insert({ tipo:'ajuste_estoque', descricao:`Despesa: ${cat?.nome} — ${f.descricao}`, data_movimentacao: dateInputToIso(data) }).select('id').single();
+      if (e1) throw e1;
+      const { error: e2 } = await sb.from('fluxo_caixa').insert({
+        movimentacao_id: mov.id, tipo:'despesa',
+        categoria_id: f.categoria_id, descricao: f.descricao,
+        valor: parseFloat(f.valor), pago: f.pago, forma_pagamento: f.forma_pagamento
+      });
+      if (e2) throw e2;
+      toast(`✅ Despesa ${cat?.nome}: ${fmtR$(parseFloat(f.valor))}`,'success');
+      setF({ categoria_id:'', descricao:'', valor:'', pago:true, forma_pagamento:'pix' });
+      setRefreshHistKey(k=>k+1);
+    } catch(e) { toast('Erro: '+e.message,'error'); }
+    setLoading(false);
+  }
+
+  return (
+    <div className="content">
+      <div className="section-header"><div className="section-title">💸 Lançar Despesa Fixa</div></div>
+      <div className="card">
+        <div className="form-row">
+          <div className="form-group"><label>Data</label><input type="date" value={data} onChange={e=>setData(e.target.value)}/></div>
+          <div className="form-group"><label>Valor (R$)</label><input type="number" step="0.01" value={f.valor} onChange={e=>setF({...f,valor:e.target.value})} placeholder="0.00"/></div>
+        </div>
+        <div className="form-group">
+          <label>Categoria</label>
+          <SearchableDropdown value={f.categoria_id} onChange={v=>setF({...f,categoria_id:v})} options={categorias} placeholder="Selecione..."/>
+        </div>
+        <div className="form-group">
+          <label>Descrição</label>
+          <input value={f.descricao} onChange={e=>setF({...f,descricao:e.target.value})} placeholder="Ex: Aluguel novembro"/>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label>Forma de pagamento</label>
+            <select value={f.forma_pagamento} onChange={e=>setF({...f,forma_pagamento:e.target.value})}>
+              {FORMA_PGTO.map(([v,l])=><option key={v} value={v}>{l}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Status</label>
+            <div style={{display:'flex',gap:14,alignItems:'center',padding:'10px 0'}}>
+              <label style={{display:'flex',alignItems:'center',gap:6,fontSize:13,textTransform:'none',letterSpacing:0,cursor:'pointer'}}>
+                <input type="checkbox" checked={f.pago} onChange={e=>setF({...f,pago:e.target.checked})}/> Pago
+              </label>
+            </div>
+          </div>
+        </div>
+        <button className="btn btn-success btn-lg btn-block" onClick={lancar} disabled={loading}>{loading?'Registrando...':'Lançar Despesa'}</button>
+      </div>
+      <DespesaHistorico sb={sb} categorias={categorias} refreshKey={refreshHistKey}/>
+    </div>
+  );
+}
+
+function DespesaHistorico({ sb, categorias, refreshKey }) {
+  const [periodo, setPeriodo] = useState('mes');
+  const [custom, setCustom] = useState({});
+  const [filtroCat, setFiltroCat] = useState('');
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    const { from, to } = periodToDates(periodo, custom);
+    let q = sb.from('fluxo_caixa').select('id,valor,descricao,pago,forma_pagamento,created_at,categoria_id,categorias_caixa(nome)').eq('tipo','despesa').gte('created_at', from.toISOString()).lte('created_at', to.toISOString());
+    if (filtroCat) q = q.eq('categoria_id', filtroCat);
+    const { data } = await q.order('created_at',{ascending:false}).limit(500);
+    setRows(data||[]);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, [periodo, custom, filtroCat, refreshKey]);
+
+  const total = sumBy(rows,'valor');
+  const fixas = sumBy(rows.filter(r => r.categorias_caixa?.nome !== 'Compra de insumos'),'valor');
+
+  return (
+    <div className="card" style={{marginTop:18}}>
+      <div className="card-title">📜 Histórico de despesas</div>
+      <DatePeriodFilter value={periodo} onChange={setPeriodo} custom={custom} onCustomChange={setCustom}/>
+      <div className="form-group">
+        <label>Filtrar por categoria</label>
+        <SearchableDropdown value={filtroCat} onChange={setFiltroCat} options={categorias} placeholder="Todas"/>
+      </div>
+      <div className="stat-grid">
+        <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(total)}</div><div className="stat-label">Total no período</div></div>
+        <div className="stat-card tinted-yellow"><div className="stat-value yellow">{fmtR$(fixas)}</div><div className="stat-label">Despesas fixas (sem insumos)</div></div>
+        <div className="stat-card"><div className="stat-value">{rows.length}</div><div className="stat-label">Lançamentos</div></div>
+      </div>
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Pgto</th><th>Pago</th></tr></thead>
+          <tbody>
+            {loading && <tr><td colSpan="6"><Skeleton rows={3}/></td></tr>}
+            {!loading && rows.length === 0 && <tr><td colSpan="6" className="empty">Nenhuma despesa no período</td></tr>}
+            {!loading && rows.map(r => (
+              <tr key={r.id}>
+                <td className="muted">{fmtDate(r.created_at)}</td>
+                <td><span className="badge badge-yellow">{r.categorias_caixa?.nome||'—'}</span></td>
+                <td>{r.descricao}</td>
+                <td className="red"><b>{fmtR$(r.valor)}</b></td>
+                <td className="muted" style={{fontSize:12}}>{r.forma_pagamento ? FORMA_PGTO.find(x=>x[0]===r.forma_pagamento)?.[1] : '—'}</td>
+                <td>{r.pago?'✅':'⏳'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+// ── FICHAS TÉCNICAS ─────────────────────────────────────────────────────────
+function TelaFichas() {
+  const sb = getClient();
+  const toast = useToast();
+  const [receitas, setReceitas] = useState([]);
+  const [cmvMap, setCmvMap] = useState({});
+  const [precosMap, setPrecosMap] = useState({});
+  const [produtos, setProdutos] = useState([]);
+  const [unidades, setUnidades] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState('');
+  const [showNova, setShowNova] = useState(false);
+
+  async function reload() {
+    const [r, cmv, p, u, c] = await Promise.all([
+      sb.from('receitas_ficha_tecnica').select('id,nome,ativo').order('nome'),
+      sb.from('v_cmv_pratos').select('receita_id,cmv_total'),
+      sb.from('produtos').select('id,nome,tipo,categoria_id,categorias(nome)').eq('ativo',true).order('nome'),
+      sb.from('unidades').select('id,codigo,nome,fator_gramas').order('nome'),
+      sb.from('categorias').select('id,nome'),
+    ]);
+    setReceitas(r.data||[]);
+    setProdutos(p.data||[]);
+    setUnidades(u.data||[]);
+    setCategorias(c.data||[]);
+    const cmvM = {}; (cmv.data||[]).forEach(x => cmvM[x.receita_id] = Number(x.cmv_total)||0);
+    setCmvMap(cmvM);
+    const { data: precos } = await sb.from('precos_venda').select('receita_id,canal,preco').eq('ativo',true);
+    const pm = {}; (precos||[]).forEach(x => { (pm[x.receita_id]=pm[x.receita_id]||{})[x.canal] = Number(x.preco); });
+    setPrecosMap(pm);
+  }
+  useEffect(() => { reload(); }, []);
+
+  const filtered = search ? receitas.filter(r => r.nome.toLowerCase().includes(search.toLowerCase())) : receitas;
+
+  return (
+    <div className="content">
+      <div className="section-header">
+        <div className="section-title">📋 Fichas Técnicas</div>
+        <button className="btn btn-success btn-sm" onClick={()=>setShowNova(true)}>+ Nova Ficha</button>
+      </div>
+      <div className="form-row" style={{gap:14,alignItems:'flex-start'}}>
+        <div className="card" style={{flex:'0 0 320px',maxHeight:'80vh',overflowY:'auto',padding:12}}>
+          <div className="form-group" style={{margin:0,marginBottom:10}}>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar prato..."/>
+          </div>
+          <div className="muted" style={{fontSize:11,marginBottom:6}}>{filtered.length} pratos</div>
+          {filtered.map(r => {
+            const cmv = cmvMap[r.id]||0;
+            const preco = precosMap[r.id]?.ifood || 0;
+            const fc = preco > 0 ? (cmv/preco)*100 : null;
+            const fcCor = fc==null?'muted':fc<32?'green':fc<38?'yellow':'red';
+            return (
+              <div key={r.id} onClick={()=>setSelected(r)} style={{
+                padding:10, borderRadius:8, cursor:'pointer', marginBottom:4,
+                background: selected?.id===r.id?'var(--blue-bg)':'var(--card-2)',
+                border: '1px solid '+(selected?.id===r.id?'var(--blue)':'transparent'),
+              }}>
+                <div style={{fontSize:13,fontWeight:600,display:'flex',justifyContent:'space-between',gap:6}}>
+                  <span style={{flex:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{r.nome}</span>
+                  {!r.ativo && <span className="badge badge-red">Inativo</span>}
+                </div>
+                <div style={{fontSize:11,marginTop:4,color:'var(--muted)',display:'flex',gap:10}}>
+                  <span>CMV {fmtR$(cmv)}</span>
+                  <span>{preco>0?`iFood ${fmtR$(preco)}`:'—'}</span>
+                  {fc!=null && <span className={fcCor}>FC {fmtPct(fc)}</span>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {selected ? (
+          <FichaDetalhe receita={selected} produtos={produtos} unidades={unidades} categorias={categorias} cmv={cmvMap[selected.id]||0} precos={precosMap[selected.id]||{}} sb={sb} toast={toast} onChanged={()=>{ reload(); }} onClosed={()=>setSelected(null)}/>
+        ) : (
+          <div className="card" style={{flex:1}}><div className="empty">Selecione uma ficha à esquerda para visualizar / editar</div></div>
+        )}
+      </div>
+
+      {showNova && <NovaFichaModal open={showNova} onClose={()=>setShowNova(false)} produtos={produtos} unidades={unidades} sb={sb} toast={toast} onCreated={()=>{ reload(); setShowNova(false); }}/>}
+    </div>
+  );
+}
+
+function FichaDetalhe({ receita, produtos, unidades, categorias, cmv, precos, sb, toast, onChanged, onClosed }) {
+  const [editandoNome, setEditandoNome] = useState(false);
+  const [nome, setNome] = useState(receita.nome);
+  const [itens, setItens] = useState([]);
+  const [itensLoading, setItensLoading] = useState(true);
+  const [confirmDel, setConfirmDel] = useState(false);
+  const [precoIfood, setPrecoIfood] = useState(precos?.ifood || '');
+  const [editandoPreco, setEditandoPreco] = useState(false);
+  const chartRef = useRef(null);
+
+  useEffect(() => { setNome(receita.nome); setPrecoIfood(precos?.ifood || ''); }, [receita.id]);
+  useEffect(() => { loadItens(); }, [receita.id]);
+
+  async function loadItens() {
+    setItensLoading(true);
+    const { data } = await sb.from('receita_itens').select(`
+      id, quantidade, quantidade_gramas, fator_rendimento, produto_id, unidade_id,
+      produtos(id,nome,tipo,categoria_id,categorias(nome)),
+      unidades(nome,codigo,fator_gramas)
+    `).eq('receita_id', receita.id);
+    setItens(data||[]);
+    setItensLoading(false);
+  }
+
+  async function salvarNome() {
+    if (!nome || nome === receita.nome) { setEditandoNome(false); return; }
+    try {
+      const { error } = await sb.from('receitas_ficha_tecnica').update({ nome }).eq('id', receita.id);
+      if (error) throw error;
+      toast('✅ Nome atualizado','success'); onChanged();
+    } catch(e) { toast('Erro: '+e.message,'error'); setNome(receita.nome); }
+    setEditandoNome(false);
+  }
+
+  async function salvarPreco() {
+    const p = parseFloat(precoIfood);
+    if (isNaN(p) || p < 0) { setEditandoPreco(false); return; }
+    try {
+      const { data: existente } = await sb.from('precos_venda').select('id').eq('receita_id', receita.id).eq('canal','ifood').eq('ativo',true).maybeSingle();
+      if (existente) {
+        await sb.from('precos_venda').update({ preco: p }).eq('id', existente.id);
+      } else {
+        await sb.from('precos_venda').insert({ receita_id: receita.id, canal: 'ifood', preco: p });
+      }
+      toast('✅ Preço atualizado','success'); onChanged();
+    } catch(e) { toast('Erro: '+e.message,'error'); }
+    setEditandoPreco(false);
+  }
+
+  async function removerIngrediente(id) {
+    try { await sb.from('receita_itens').delete().eq('id', id); toast('Ingrediente removido','info'); loadItens(); onChanged(); }
+    catch(e) { toast('Erro: '+e.message,'error'); }
+  }
+
+  async function adicionarIngrediente(produto_id, quantidade, unidade_id) {
+    try {
+      await sb.from('receita_itens').insert({ receita_id: receita.id, produto_id, quantidade: parseFloat(quantidade), unidade_id });
+      toast('✅ Ingrediente adicionado','success'); loadItens(); onChanged();
+    } catch(e) { toast('Erro: '+e.message,'error'); }
+  }
+
+  async function duplicarFicha() {
+    try {
+      const { data: nova, error } = await sb.from('receitas_ficha_tecnica').insert({ nome: receita.nome + ' (cópia)' }).select('id').single();
+      if (error) throw error;
+      for (const it of itens) {
+        await sb.from('receita_itens').insert({ receita_id: nova.id, produto_id: it.produto_id, quantidade: it.quantidade, unidade_id: it.unidade_id });
+      }
+      toast('✅ Ficha duplicada','success'); onChanged();
+    } catch(e) { toast('Erro: '+e.message,'error'); }
+  }
+
+  async function toggleAtivo() {
+    try { await sb.from('receitas_ficha_tecnica').update({ ativo: !receita.ativo }).eq('id', receita.id); onChanged(); }
+    catch(e) { toast('Erro: '+e.message,'error'); }
+  }
+
+  async function deletar() {
+    try {
+      await sb.from('receita_itens').delete().eq('receita_id', receita.id);
+      await sb.from('precos_venda').delete().eq('receita_id', receita.id);
+      await sb.from('receitas_ficha_tecnica').delete().eq('id', receita.id);
+      toast('Ficha deletada','info'); onClosed(); onChanged();
+    } catch(e) { toast('Erro ao deletar: '+e.message+' (verifique se há vendas associadas)','error'); }
+  }
+
+  // Custos por item (baseado em custo médio de v_estoque_atual)
+  const [custosItens, setCustosItens] = useState({});
+  useEffect(() => {
+    if (itens.length === 0) { setCustosItens({}); return; }
+    const ids = [...new Set(itens.map(it => it.produto_id))];
+    sb.from('v_estoque_atual').select('produto_id,custo_medio_grama').in('produto_id', ids).then(({ data }) => {
+      const m = {}; (data||[]).forEach(x => m[x.produto_id] = Number(x.custo_medio_grama)||0);
+      setCustosItens(m);
+    });
+  }, [itens]);
+
+  // Breakdown por grupo
+  const breakdown = useMemo(() => {
+    const groups = { carboidrato:0, proteina:0, queijo:0, molho:0, embalagem:0, extras:0 };
+    itens.forEach(it => {
+      const g = categorizar(it.produtos, it.produtos?.categorias?.nome);
+      const c = (Number(it.quantidade_gramas)||0) / (Number(it.fator_rendimento)||1) * (custosItens[it.produto_id]||0);
+      groups[g] += c;
+    });
+    return groups;
+  }, [itens, custosItens]);
+
+  const total = sumBy(Object.values(breakdown), v => v) || 0;
+  const maiorGrupo = Object.entries(breakdown).sort((a,b)=>b[1]-a[1])[0];
+
+  useChart(chartRef, () => {
+    const data = Object.entries(breakdown).filter(([_,v])=>v>0);
+    if (data.length === 0) return null;
+    return {
+      type:'doughnut',
+      data:{ labels:data.map(x=>GRUPO_LABEL[x[0]]), datasets:[{ data:data.map(x=>x[1]), backgroundColor:data.map(x=>GRUPO_COR[x[0]]) }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right', labels:{color:cssVar('--text-2'),font:{size:11}} } } }
+    };
+  }, [breakdown]);
+
+  const preco = Number(precoIfood)||0;
+  const margemR = preco - cmv;
+  const fc = preco > 0 ? (cmv/preco)*100 : null;
+  const margemPct = preco > 0 ? ((preco-cmv)/preco)*100 : null;
+
+  return (
+    <div className="card" style={{flex:1,minWidth:0}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10,marginBottom:14}}>
+        <div style={{flex:1}}>
+          {editandoNome ? (
+            <input autoFocus value={nome} onChange={e=>setNome(e.target.value)} onBlur={salvarNome} onKeyDown={e=>e.key==='Enter'&&salvarNome()} style={{fontSize:18,fontWeight:700}}/>
+          ) : (
+            <div style={{fontSize:18,fontWeight:700,cursor:'pointer'}} onClick={()=>setEditandoNome(true)}>{nome} <span style={{fontSize:12,color:'var(--muted)'}}>✎</span></div>
+          )}
+          <div style={{fontSize:12,color:'var(--muted)',marginTop:4}}>
+            Preço iFood: {editandoPreco ? (
+              <input autoFocus type="number" step="0.01" value={precoIfood} onChange={e=>setPrecoIfood(e.target.value)} onBlur={salvarPreco} onKeyDown={e=>e.key==='Enter'&&salvarPreco()} style={{display:'inline-block',width:120,padding:'4px 8px',minHeight:28,fontSize:12}}/>
+            ) : (
+              <b style={{cursor:'pointer'}} onClick={()=>setEditandoPreco(true)}>{preco>0?fmtR$(preco):'—'} ✎</b>
+            )}
+          </div>
+        </div>
+        <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+          <button className="btn btn-outline btn-sm" onClick={duplicarFicha}>Duplicar</button>
+          <button className="btn btn-outline btn-sm" onClick={toggleAtivo}>{receita.ativo?'Desativar':'Ativar'}</button>
+          <button className="btn btn-danger btn-sm" onClick={()=>setConfirmDel(true)}>Deletar</button>
+        </div>
+      </div>
+
+      <div className="stat-grid">
+        <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(cmv)}</div><div className="stat-label">CMV</div></div>
+        <div className="stat-card tinted-green"><div className={`stat-value ${margemR>=0?'green':'red'}`}>{fmtR$(margemR)}</div><div className="stat-label">Margem R$</div></div>
+        <div className="stat-card tinted-blue"><div className={`stat-value ${margemPct==null?'muted':margemPct>=40?'green':margemPct>=25?'yellow':'red'}`}>{margemPct!=null?fmtPct(margemPct):'—'}</div><div className="stat-label">Margem %</div></div>
+        <div className="stat-card tinted-yellow"><div className={`stat-value ${fc==null?'muted':fc<32?'green':fc<38?'yellow':'red'}`}>{fc!=null?fmtPct(fc):'—'}</div><div className="stat-label">Food Cost</div></div>
+      </div>
+
+      <div className="card-title">Ingredientes</div>
+      <IngredientesTable itens={itens} custosItens={custosItens} produtos={produtos} unidades={unidades} sb={sb} toast={toast} loading={itensLoading} onChanged={()=>{ loadItens(); onChanged(); }} onAdd={adicionarIngrediente} onRemove={removerIngrediente} receitaId={receita.id}/>
+
+      {total > 0 && (
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginTop:14}}>
+          <div className="card" style={{background:'var(--card-2)'}}>
+            <div className="card-title">Distribuição do custo</div>
+            <div className="chart-wrap"><canvas ref={chartRef}/></div>
+          </div>
+          <div className="card" style={{background:'var(--card-2)'}}>
+            <div className="card-title">Detalhamento por grupo</div>
+            {Object.entries(breakdown).filter(([_,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([g,v]) => (
+              <div key={g} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--border)',fontSize:13}}>
+                <span style={{display:'flex',alignItems:'center',gap:8}}><span style={{width:10,height:10,borderRadius:'50%',background:GRUPO_COR[g]}}/>{GRUPO_LABEL[g]}</span>
+                <span><b>{fmtR$(v)}</b> · <span className="muted">{fmtPct(v/total*100)}</span></span>
+              </div>
+            ))}
+            {maiorGrupo && maiorGrupo[1] > 0 && (
+              <div style={{marginTop:10,padding:10,background:'var(--card)',borderRadius:8,fontSize:12,color:'var(--text-2)'}}>
+                💡 O grupo <b>{GRUPO_LABEL[maiorGrupo[0]]}</b> representa {fmtPct(maiorGrupo[1]/total*100)} do CMV — onde mais vale negociar.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <ConfirmModal open={confirmDel} onClose={()=>setConfirmDel(false)} onConfirm={deletar} title="Deletar ficha técnica" message={`Tem certeza que deseja deletar "${receita.nome}"? Esta ação remove a ficha, ingredientes e preços. Vendas históricas mantêm o registro.`} danger requireText={null}/>
+    </div>
+  );
+}
+
+function IngredientesTable({ itens, custosItens, produtos, unidades, sb, toast, loading, onChanged, onAdd, onRemove }) {
+  const [novo, setNovo] = useState({ produto_id:'', quantidade:'', unidade_id:'' });
+
+  async function add() {
+    if (!novo.produto_id || !novo.quantidade || !novo.unidade_id) return toast('Preencha todos os campos','error');
+    await onAdd(novo.produto_id, novo.quantidade, novo.unidade_id);
+    setNovo({ produto_id:'', quantidade:'', unidade_id:'' });
+  }
+
+  if (loading) return <Skeleton rows={4}/>;
+
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead><tr><th>Ingrediente</th><th>Tipo</th><th>Qtd</th><th>Un</th><th>Gramas</th><th>R$/g</th><th>Custo</th><th></th></tr></thead>
+        <tbody>
+          {itens.map(it => {
+            const cg = custosItens[it.produto_id]||0;
+            const c = (Number(it.quantidade_gramas)||0) / (Number(it.fator_rendimento)||1) * cg;
+            return (
+              <tr key={it.id}>
+                <td><b>{it.produtos?.nome}</b></td>
+                <td><span className={`badge badge-${it.produtos?.tipo==='preparado'?'blue':it.produtos?.tipo==='embalagem'?'yellow':'green'}`}>{TIPO_LABEL[it.produtos?.tipo]||it.produtos?.tipo}</span></td>
+                <td>{fmt(it.quantidade,2)}</td>
+                <td className="muted">{it.unidades?.codigo}</td>
+                <td>{fmtG(it.quantidade_gramas)}</td>
+                <td>R$ {fmt(cg,4)}</td>
+                <td className="red">{fmtR$(c)}</td>
+                <td><button className="btn-icon" onClick={()=>onRemove(it.id)}>🗑</button></td>
+              </tr>
+            );
+          })}
+          <tr style={{background:'var(--card-2)'}}>
+            <td colSpan="2"><SearchableDropdown value={novo.produto_id} onChange={v=>setNovo({...novo,produto_id:v})} options={produtos} placeholder="+ Adicionar ingrediente..."/></td>
+            <td><input type="number" step="0.001" value={novo.quantidade} onChange={e=>setNovo({...novo,quantidade:e.target.value})} placeholder="Qtd"/></td>
+            <td colSpan="2"><SearchableDropdown value={novo.unidade_id} onChange={v=>setNovo({...novo,unidade_id:v})} options={unidades} placeholder="Un" getLabel={u=>u.nome}/></td>
+            <td colSpan="2"></td>
+            <td><button className="btn btn-success btn-sm" onClick={add}>+</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function NovaFichaModal({ open, onClose, produtos, unidades, sb, toast, onCreated }) {
+  const [nome, setNome] = useState('');
+  const [precoIfood, setPrecoIfood] = useState('');
+  const [itens, setItens] = useState([{ produto_id:'', quantidade:'', unidade_id:'' }]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => { if (open) { setNome(''); setPrecoIfood(''); setItens([{ produto_id:'', quantidade:'', unidade_id:'' }]); } }, [open]);
+
+  function add() { setItens([...itens, { produto_id:'', quantidade:'', unidade_id:'' }]); }
+  function remove(i) { setItens(itens.filter((_,idx)=>idx!==i)); }
+  function upd(i,k,v) { setItens(itens.map((it,idx)=>idx===i?{...it,[k]:v}:it)); }
+
+  async function salvar() {
+    if (!nome) return toast('Nome obrigatório','error');
+    setLoading(true);
+    try {
+      const { data: r, error } = await sb.from('receitas_ficha_tecnica').insert({ nome }).select('id').single();
+      if (error) throw error;
+      if (precoIfood) await sb.from('precos_venda').insert({ receita_id: r.id, canal:'ifood', preco: parseFloat(precoIfood) });
+      for (const it of itens.filter(x => x.produto_id && x.quantidade && x.unidade_id)) {
+        await sb.from('receita_itens').insert({ receita_id: r.id, produto_id: it.produto_id, quantidade: parseFloat(it.quantidade), unidade_id: it.unidade_id });
+      }
+      toast(`✅ Ficha "${nome}" criada`,'success');
+      onCreated && onCreated();
+    } catch(e) { toast('Erro: '+e.message,'error'); }
+    setLoading(false);
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Nova ficha técnica" size="lg">
+      <div className="form-row">
+        <div className="form-group"><label>Nome do prato</label><input value={nome} onChange={e=>setNome(e.target.value)} placeholder="Ex: penne bolonhesa 400g"/></div>
+        <div className="form-group"><label>Preço iFood (opcional)</label><input type="number" step="0.01" value={precoIfood} onChange={e=>setPrecoIfood(e.target.value)} placeholder="0.00"/></div>
+      </div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+        <div className="card-title" style={{margin:0}}>Ingredientes</div>
+        <button className="btn btn-outline btn-sm" onClick={add}>+ Adicionar</button>
+      </div>
+      <div className="row-list">
+        {itens.map((it,i) => (
+          <div className="row-item cols-3" key={i}>
+            <SearchableDropdown value={it.produto_id} onChange={v=>upd(i,'produto_id',v)} options={produtos} placeholder="Produto..."/>
+            <input type="number" step="0.001" value={it.quantidade} onChange={e=>upd(i,'quantidade',e.target.value)} placeholder="Qtd"/>
+            <SearchableDropdown value={it.unidade_id} onChange={v=>upd(i,'unidade_id',v)} options={unidades} placeholder="Un" getLabel={u=>u.nome}/>
+            <button className="btn-icon" onClick={()=>remove(i)}>✕</button>
+          </div>
+        ))}
+      </div>
+      <button className="btn btn-success btn-block btn-lg" onClick={salvar} disabled={loading}>{loading?'Salvando...':'Salvar Ficha'}</button>
+    </Modal>
+  );
+}
+// ── ESTOQUE (compartilhado) ─────────────────────────────────────────────────
+function EstoqueScreen({ tipos, title, icon, isPreparado=false }) {
+  const sb = getClient();
+  const toast = useToast();
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [filtroTipo, setFiltroTipo] = useState('todos');
+  const [sort, setSort] = useState({ col:'nome', asc:true });
+  const [showZero, setShowZero] = useState(false);
+  const [modalProd, setModalProd] = useState(null);
+  const [consumo7d, setConsumo7d] = useState({}); // produto_id -> consumo médio diário
+  const [ultimoUso, setUltimoUso] = useState({}); // produto_id -> data
+  const [rendMedio, setRendMedio] = useState({}); // produto_id -> rend médio
+  const [precoAnterior, setPrecoAnterior] = useState({}); // produto_id -> %change
+  const chartABCRef = useRef(null);
+  const chartTopUsoRef = useRef(null);
+  const chartInflRef = useRef(null);
+
+  async function load() {
+    setLoading(true);
+    const { data: est } = await sb.from('v_estoque_atual').select('*');
+    const filtered = (est||[]).filter(p => tipos.includes(p.tipo));
+    setData(filtered);
+    // 7d consumption
+    const since = startOfDay(addDays(new Date(),-7));
+    const { data: saidas } = await sb.from('estoque_movimentacoes').select('produto_id,quantidade_gramas,created_at').eq('tipo','saida').gte('created_at', since.toISOString());
+    const c7 = {}; (saidas||[]).forEach(x => { c7[x.produto_id] = (c7[x.produto_id]||0) + Number(x.quantidade_gramas); });
+    Object.keys(c7).forEach(k => c7[k] = c7[k]/7);
+    setConsumo7d(c7);
+    // último uso
+    const { data: usos } = await sb.from('estoque_movimentacoes').select('produto_id,created_at').eq('tipo','saida').order('created_at',{ascending:false}).limit(2000);
+    const lu = {}; (usos||[]).forEach(x => { if (!lu[x.produto_id]) lu[x.produto_id] = x.created_at; });
+    setUltimoUso(lu);
+    // rendimento médio (preparados)
+    if (isPreparado) {
+      const { data: prods } = await sb.from('producoes').select('produto_saida_id,rendimento_percentual');
+      const m = {}; (prods||[]).forEach(p => { if (p.rendimento_percentual!=null) { (m[p.produto_saida_id]=m[p.produto_saida_id]||[]).push(Number(p.rendimento_percentual)); } });
+      const rm = {}; Object.entries(m).forEach(([k,arr]) => rm[k] = arr.reduce((a,b)=>a+b,0)/arr.length);
+      setRendMedio(rm);
+    }
+    // preço subindo (top 5)
+    const sinceMonth = startOfDay(addDays(new Date(),-30));
+    const { data: comps } = await sb.from('compras_itens').select('produto_id,preco_total,quantidade_gramas,compras!inner(movimentacao_id, movimentacoes!inner(data_movimentacao))').gte('compras.movimentacoes.data_movimentacao', addDays(new Date(),-90).toISOString());
+    const semHoje = {}, antigo = {};
+    (comps||[]).forEach(x => {
+      const dt = new Date(x.compras?.movimentacoes?.data_movimentacao);
+      const cg = Number(x.quantidade_gramas)>0?Number(x.preco_total)/Number(x.quantidade_gramas):0;
+      if (cg <= 0) return;
+      if (dt >= sinceMonth) (semHoje[x.produto_id]=semHoje[x.produto_id]||[]).push(cg);
+      else (antigo[x.produto_id]=antigo[x.produto_id]||[]).push(cg);
+    });
+    const inf = {};
+    Object.keys(semHoje).forEach(k => {
+      if (!antigo[k] || antigo[k].length === 0) return;
+      const novo = semHoje[k].reduce((a,b)=>a+b,0)/semHoje[k].length;
+      const old = antigo[k].reduce((a,b)=>a+b,0)/antigo[k].length;
+      if (old > 0) inf[k] = (novo-old)/old*100;
+    });
+    setPrecoAnterior(inf);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  // Computações
+  const enriched = data.map(p => {
+    const eg = Number(p.estoque_gramas)||0;
+    const cd = consumo7d[p.produto_id]||0;
+    const dias = cd > 0 ? eg/cd : null;
+    return { ...p, dias, ultimo_uso: ultimoUso[p.produto_id], rend_medio: rendMedio[p.produto_id], inflacao: precoAnterior[p.produto_id] };
+  });
+
+  const filtrados = enriched
+    .filter(p => filtroTipo==='todos' || p.tipo===filtroTipo)
+    .filter(p => !showZero || Number(p.estoque_gramas||0) <= 0)
+    .filter(p => !search || p.nome.toLowerCase().includes(search.toLowerCase()))
+    .sort((a,b) => {
+      const va = a[sort.col] ?? 0, vb = b[sort.col] ?? 0;
+      const cmp = typeof va === 'string' ? va.localeCompare(vb) : (parseFloat(va)||0) - (parseFloat(vb)||0);
+      return sort.asc ? cmp : -cmp;
+    });
+
+  function sortBy(c) { setSort(s => s.col===c ? { col:c, asc:!s.asc } : { col:c, asc:true }); }
+
+  // Stats
+  const totalValor = sumBy(filtrados, 'valor_estoque');
+  const zerados = enriched.filter(p => Number(p.estoque_gramas||0) <= 0).length;
+  const criticos = enriched.filter(p => p.dias != null && p.dias < 3 && Number(p.estoque_gramas||0) > 0).length;
+
+  // Curva ABC
+  const abc = useMemo(() => {
+    const arr = enriched.map(p => ({...p, valor: Number(p.valor_estoque)||0})).filter(p=>p.valor>0).sort((a,b)=>b.valor-a.valor);
+    const total = sumBy(arr, 'valor');
+    let acc = 0;
+    return arr.map(p => {
+      acc += p.valor;
+      const pct = total > 0 ? acc/total*100 : 0;
+      return { ...p, pct, classe: pct <= 80 ? 'A' : pct <= 95 ? 'B' : 'C' };
+    });
+  }, [enriched]);
+  const a_count = abc.filter(x=>x.classe==='A').length;
+  const b_count = abc.filter(x=>x.classe==='B').length;
+  const c_count = abc.filter(x=>x.classe==='C').length;
+
+  // Top 10 mais usados (gramas)
+  const topUso = useMemo(() => {
+    const arr = Object.entries(consumo7d).map(([k,v]) => ({ produto_id:k, gramas: v*7 })).sort((a,b)=>b.gramas-a.gramas).slice(0,10);
+    return arr.map(x => ({ ...x, nome: data.find(d=>d.produto_id===x.produto_id)?.nome||'?' })).filter(x => data.some(d=>d.produto_id===x.produto_id));
+  }, [consumo7d, data]);
+
+  // Top 5 inflação
+  const topInfl = useMemo(() => {
+    return Object.entries(precoAnterior).map(([k,v]) => ({ produto_id:k, pct:v, nome: data.find(d=>d.produto_id===k)?.nome })).filter(x => x.nome).sort((a,b)=>b.pct-a.pct).slice(0,5);
+  }, [precoAnterior, data]);
+
+  useChart(chartABCRef, () => {
+    const labels = ['A (top valor)', 'B (médio)', 'C (cauda)'];
+    return {
+      type:'bar',
+      data:{ labels, datasets:[{ data:[a_count,b_count,c_count], backgroundColor:['#34d399','#fbbf24','#94a3b8'], borderRadius:6 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ x:{ ticks:{color:cssVar('--muted')}, grid:{display:false} }, y:{ ticks:{color:cssVar('--muted')}, grid:{color:cssVar('--border')} } } }
+    };
+  }, [a_count,b_count,c_count]);
+
+  useChart(chartTopUsoRef, () => {
+    if (topUso.length === 0) return null;
+    return {
+      type:'bar',
+      data:{ labels:topUso.map(x=>x.nome), datasets:[{ data:topUso.map(x=>x.gramas), backgroundColor:'rgba(74,144,217,.7)', borderRadius:6 }] },
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false} },
+        scales:{ x:{ ticks:{color:cssVar('--muted'),callback:v=>fmtG(v)}, grid:{color:cssVar('--border')} }, y:{ ticks:{color:cssVar('--muted'),font:{size:11}}, grid:{display:false} } }
+      }
+    };
+  }, [topUso]);
+
+  useChart(chartInflRef, () => {
+    if (topInfl.length === 0) return null;
+    return {
+      type:'bar',
+      data:{ labels:topInfl.map(x=>x.nome), datasets:[{ data:topInfl.map(x=>x.pct), backgroundColor:topInfl.map(x=>x.pct>=10?'#f87171':'#fbbf24'), borderRadius:6 }] },
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>`+${fmt(c.raw,1)}%` } } },
+        scales:{ x:{ ticks:{color:cssVar('--muted'),callback:v=>v+'%'}, grid:{color:cssVar('--border')} }, y:{ ticks:{color:cssVar('--muted'),font:{size:11}}, grid:{display:false} } }
+      }
+    };
+  }, [topInfl]);
+
+  const [confirmZerar, setConfirmZerar] = useState(false);
+  async function zerarTudo() {
+    const ativos = enriched.filter(p => Number(p.estoque_gramas)>0);
+    let ok = 0;
+    const { data: gUn } = await sb.from('unidades').select('id').eq('codigo','g').limit(1).single();
+    if (!gUn) return toast('Unidade "g" não encontrada','error');
+    for (const p of ativos) {
+      try {
+        const { data: mov } = await sb.from('movimentacoes').insert({ tipo:'ajuste_estoque', descricao:`Zerar estoque: ${p.nome}` }).select('id').single();
+        await sb.from('ajustes_estoque').insert({ movimentacao_id: mov.id, produto_id: p.produto_id, tipo:'ajuste_negativo', quantidade: Number(p.estoque_gramas), unidade_id: gUn.id, observacoes:'Zerar estoque manual' });
+        ok++;
+      } catch(e) { console.error(e); }
+    }
+    toast(`✅ ${ok} produtos zerados`,'success');
+    load();
+  }
+
+  return (
+    <div className="content">
+      <div className="section-header">
+        <div className="section-title">{icon} {title}</div>
+        <div style={{display:'flex',gap:6}}>
+          <button className="btn btn-outline btn-sm" onClick={load}>↻ Atualizar</button>
+          <button className="btn btn-danger btn-sm" onClick={()=>setConfirmZerar(true)}>Zerar todo estoque</button>
+        </div>
+      </div>
+
+      <div className="stat-grid">
+        <div className="stat-card tinted-blue"><div className="stat-value blue">{enriched.length}</div><div className="stat-label">Produtos</div></div>
+        <div className="stat-card tinted-green"><div className="stat-value green">{fmtR$(totalValor)}</div><div className="stat-label">Valor em estoque</div></div>
+        <div className="stat-card tinted-red"><div className="stat-value red">{zerados}</div><div className="stat-label">Zerados</div></div>
+        <div className="stat-card tinted-yellow"><div className="stat-value yellow">{criticos}</div><div className="stat-label">{'<'} 3 dias</div></div>
+      </div>
+
+      <div className="card">
+        <div className="form-row">
+          <div className="form-group"><label>Buscar produto</label><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Digite o nome..."/></div>
+          <div className="form-group">
+            <label>Filtro</label>
+            <div className="filter-bar" style={{margin:0}}>
+              <button className={`chip${filtroTipo==='todos'?' active':''}`} onClick={()=>setFiltroTipo('todos')}>Todos</button>
+              {tipos.map(t => <button key={t} className={`chip${filtroTipo===t?' active':''}`} onClick={()=>setFiltroTipo(t)}>{TIPO_LABEL[t]||t}</button>)}
+              <button className={`chip${showZero?' active':''}`} onClick={()=>setShowZero(s=>!s)}>Só zerados</button>
+            </div>
+          </div>
+        </div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th className="sortable" onClick={()=>sortBy('nome')}>Produto {sort.col==='nome'?(sort.asc?'↑':'↓'):''}</th>
+                <th className="sortable" onClick={()=>sortBy('tipo')}>Tipo</th>
+                <th className="sortable" onClick={()=>sortBy('estoque_gramas')}>Estoque</th>
+                <th className="sortable" onClick={()=>sortBy('custo_medio_grama')}>R$/g</th>
+                <th className="sortable" onClick={()=>sortBy('valor_estoque')}>Valor</th>
+                <th className="sortable" onClick={()=>sortBy('dias')}>Dias rest.</th>
+                <th>Último uso</th>
+                {isPreparado && <th>Rend médio</th>}
+                <th>Registros</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && <tr><td colSpan={isPreparado?9:8}><Skeleton rows={5}/></td></tr>}
+              {!loading && filtrados.length === 0 && <tr><td colSpan={isPreparado?9:8} className="empty">Sem produtos</td></tr>}
+              {!loading && filtrados.map(p => {
+                const eg = Number(p.estoque_gramas)||0;
+                const rowClass = eg<=0?'row-red':p.dias!=null && p.dias<3?'row-yellow':'';
+                return (
+                  <tr key={p.produto_id} className={rowClass}>
+                    <td><b>{p.nome}</b></td>
+                    <td><span className={`badge badge-${p.tipo==='preparado'?'blue':p.tipo==='embalagem'?'yellow':'green'}`}>{TIPO_LABEL[p.tipo]||p.tipo}</span></td>
+                    <td>{fmtG(eg)}</td>
+                    <td className="muted">{p.custo_medio_grama?`R$ ${fmt(p.custo_medio_grama,4)}`:'—'}</td>
+                    <td>{fmtR$(p.valor_estoque||0)}</td>
+                    <td>{p.dias!=null?`${fmt(p.dias,1)} d`:'—'}</td>
+                    <td className="muted">{p.ultimo_uso?fmtDate(p.ultimo_uso):'—'}</td>
+                    {isPreparado && <td className="muted">{p.rend_medio!=null?fmtPct(p.rend_medio):'—'}</td>}
+                    <td><button className="btn btn-outline btn-sm" onClick={()=>setModalProd(p)}>📂 Ver</button></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        <div className="card">
+          <div className="card-title">Curva ABC ({a_count}/{b_count}/{c_count})</div>
+          <div className="chart-wrap"><canvas ref={chartABCRef}/></div>
+          <div className="muted" style={{fontSize:11,marginTop:6}}>A: 80% do valor (foco em negociação) · B: 15% · C: 5%</div>
+        </div>
+        <div className="card">
+          <div className="card-title">Top 10 mais usados (7d)</div>
+          <div className="chart-wrap"><canvas ref={chartTopUsoRef}/></div>
+        </div>
+      </div>
+      {topInfl.length > 0 && (
+        <div className="card">
+          <div className="card-title">📈 Top 5 produtos com inflação (vs 60 dias atrás)</div>
+          <div className="chart-wrap sm"><canvas ref={chartInflRef}/></div>
+        </div>
+      )}
+
+      {modalProd && <RegistrosModal produto={modalProd} sb={sb} onClose={()=>setModalProd(null)} isPreparado={isPreparado}/>}
+      <ConfirmModal open={confirmZerar} onClose={()=>setConfirmZerar(false)} onConfirm={zerarTudo} title="Zerar estoque" message="Esta ação cria ajustes negativos para TODOS os produtos com estoque > 0. Use isso só para resetar o estoque antes de fazer um balanço completo." danger requireText="ZERAR"/>
+    </div>
+  );
+}
+
+function RegistrosModal({ produto, sb, onClose, isPreparado }) {
+  const [tab, setTab] = useState('compras');
+  const [compras, setCompras] = useState(null);
+  const [usos, setUsos] = useState(null);
+  const [perdas, setPerdas] = useState(null);
+  const [producoes, setProducoes] = useState(null);
+  const [vendas, setVendas] = useState(null);
+  const chartEstoqueRef = useRef(null);
+  const chartPrecoRef = useRef(null);
+  const [serieEstoque, setSerieEstoque] = useState(null);
+
+  useEffect(() => {
+    sb.from('compras_itens').select(`quantidade,quantidade_gramas,preco_total,unidades(codigo),compras!inner(fornecedores(nome),movimentacoes!inner(data_movimentacao))`).eq('produto_id', produto.produto_id).order('compra_id',{ascending:false}).limit(100).then(({data})=>setCompras(data||[]));
+    sb.from('producao_insumos').select(`quantidade_usada,quantidade_gramas,unidades(codigo),producoes!inner(produtos!producoes_produto_saida_id_fkey(nome),movimentacoes!inner(data_movimentacao))`).eq('produto_id', produto.produto_id).order('producao_id',{ascending:false}).limit(100).then(({data})=>setUsos(data||[]));
+    sb.from('ajustes_estoque').select(`quantidade,unidades(codigo),motivo_perda,observacoes,movimentacoes!inner(data_movimentacao)`).eq('produto_id', produto.produto_id).eq('tipo','perda').order('id',{ascending:false}).limit(100).then(({data})=>setPerdas(data||[]));
+    if (isPreparado) {
+      sb.from('producoes').select(`quantidade_produzida,custo_total_producao,custo_unitario_grama,rendimento_percentual,unidades!producoes_unidade_saida_id_fkey(codigo),movimentacoes!inner(data_movimentacao)`).eq('produto_saida_id', produto.produto_id).order('movimentacao_id',{ascending:false}).limit(100).then(({data})=>setProducoes(data||[]));
+      sb.from('venda_ficha_tecnica_itens').select(`quantidade_usada_gramas,custo_total,vendas_itens!inner(receitas_ficha_tecnica(nome),vendas!inner(movimentacao_id,movimentacoes!inner(data_movimentacao)))`).eq('produto_id', produto.produto_id).order('id',{ascending:false}).limit(100).then(({data})=>setVendas(data||[]));
+    }
+    // série de estoque
+    sb.from('estoque_movimentacoes').select('tipo,quantidade_gramas,custo_total,created_at').eq('produto_id', produto.produto_id).order('created_at').then(({data}) => {
+      let saldo = 0;
+      const pts = (data||[]).map(x => {
+        const sign = x.tipo === 'saida' ? -1 : 1;
+        saldo += sign * Number(x.quantidade_gramas);
+        return { d: x.created_at, saldo, custo: x.tipo==='entrada' && Number(x.quantidade_gramas)>0 ? Number(x.custo_total)/Number(x.quantidade_gramas) : null };
+      });
+      setSerieEstoque(pts);
+    });
+  }, [produto.produto_id]);
+
+  useChart(chartEstoqueRef, () => {
+    if (!serieEstoque || serieEstoque.length === 0) return null;
+    return {
+      type:'line',
+      data:{ labels: serieEstoque.map(x=>fmtDate(x.d).slice(0,5)), datasets:[{ label:'Saldo (g)', data:serieEstoque.map(x=>x.saldo), borderColor:cssVar('--green'), backgroundColor:'rgba(52,211,153,.1)', fill:true, tension:.2 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} },
+        scales:{ x:{ ticks:{color:cssVar('--muted'),font:{size:9}}, grid:{display:false} }, y:{ ticks:{color:cssVar('--muted'),callback:v=>fmtG(v)}, grid:{color:cssVar('--border')} } }
+      }
+    };
+  }, [serieEstoque]);
+
+  useChart(chartPrecoRef, () => {
+    if (!serieEstoque) return null;
+    const pts = serieEstoque.filter(x => x.custo != null);
+    if (pts.length === 0) return null;
+    return {
+      type:'line',
+      data:{ labels: pts.map(x=>fmtDate(x.d).slice(0,5)), datasets:[{ label:'R$/g', data:pts.map(x=>x.custo), borderColor:cssVar('--blue'), backgroundColor:'rgba(74,144,217,.1)', fill:true, tension:.2 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} },
+        scales:{ x:{ ticks:{color:cssVar('--muted'),font:{size:9}}, grid:{display:false} }, y:{ ticks:{color:cssVar('--muted'),callback:v=>'R$ '+fmt(v,4)}, grid:{color:cssVar('--border')} } }
+      }
+    };
+  }, [serieEstoque]);
+
+  return (
+    <Modal open={true} onClose={onClose} title={`📂 ${produto.nome}`} size="lg">
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:14}}>
+        <div className="card" style={{background:'var(--card-2)',padding:12}}>
+          <div className="card-title">Saldo ao longo do tempo</div>
+          <div className="chart-wrap sm"><canvas ref={chartEstoqueRef}/></div>
+        </div>
+        <div className="card" style={{background:'var(--card-2)',padding:12}}>
+          <div className="card-title">Evolução do preço</div>
+          <div className="chart-wrap sm"><canvas ref={chartPrecoRef}/></div>
+        </div>
+      </div>
+
+      <div className="tabs">
+        <button className={`tab${tab==='compras'?' active':''}`} onClick={()=>setTab('compras')}>Compras</button>
+        <button className={`tab${tab==='usos'?' active':''}`} onClick={()=>setTab('usos')}>{isPreparado?'Vendas':'Uso em produção'}</button>
+        <button className={`tab${tab==='perdas'?' active':''}`} onClick={()=>setTab('perdas')}>Perdas</button>
+        {isPreparado && <button className={`tab${tab==='prods'?' active':''}`} onClick={()=>setTab('prods')}>Produções</button>}
+      </div>
+
+      {tab==='compras' && (
+        <div className="table-wrap"><table><thead><tr><th>Data</th><th>Qtd</th><th>R$/g</th><th>Valor</th><th>Fornecedor</th></tr></thead><tbody>
+          {compras===null && <tr><td colSpan="5"><Skeleton rows={3}/></td></tr>}
+          {compras?.length === 0 && <tr><td colSpan="5" className="empty">Sem compras registradas</td></tr>}
+          {compras?.map((c,i) => {
+            const cg = Number(c.quantidade_gramas)>0?Number(c.preco_total)/Number(c.quantidade_gramas):0;
+            return <tr key={i}><td className="muted">{fmtDate(c.compras?.movimentacoes?.data_movimentacao)}</td><td>{fmt(c.quantidade,2)} {c.unidades?.codigo}</td><td>R$ {fmt(cg,4)}</td><td className="green">{fmtR$(c.preco_total)}</td><td className="muted">{c.compras?.fornecedores?.nome||'—'}</td></tr>;
+          })}
+        </tbody></table></div>
+      )}
+
+      {tab==='usos' && !isPreparado && (
+        <div className="table-wrap"><table><thead><tr><th>Data</th><th>Qtd usada</th><th>Produção</th></tr></thead><tbody>
+          {usos===null && <tr><td colSpan="3"><Skeleton rows={3}/></td></tr>}
+          {usos?.length === 0 && <tr><td colSpan="3" className="empty">Sem uso em produção</td></tr>}
+          {usos?.map((u,i) => <tr key={i}><td className="muted">{fmtDate(u.producoes?.movimentacoes?.data_movimentacao)}</td><td>{fmt(u.quantidade_usada,2)} {u.unidades?.codigo}</td><td>{u.producoes?.produtos?.nome}</td></tr>)}
+        </tbody></table></div>
+      )}
+
+      {tab==='usos' && isPreparado && (
+        <div className="table-wrap"><table><thead><tr><th>Data</th><th>Qtd usada</th><th>Custo</th><th>Em prato</th></tr></thead><tbody>
+          {vendas===null && <tr><td colSpan="4"><Skeleton rows={3}/></td></tr>}
+          {vendas?.length === 0 && <tr><td colSpan="4" className="empty">Sem uso em vendas</td></tr>}
+          {vendas?.map((v,i) => <tr key={i}><td className="muted">{fmtDate(v.vendas_itens?.vendas?.movimentacoes?.data_movimentacao)}</td><td>{fmtG(v.quantidade_usada_gramas)}</td><td className="red">{fmtR$(v.custo_total)}</td><td>{v.vendas_itens?.receitas_ficha_tecnica?.nome}</td></tr>)}
+        </tbody></table></div>
+      )}
+
+      {tab==='perdas' && (
+        <div className="table-wrap"><table><thead><tr><th>Data</th><th>Qtd</th><th>Motivo</th><th>Obs</th></tr></thead><tbody>
+          {perdas===null && <tr><td colSpan="4"><Skeleton rows={3}/></td></tr>}
+          {perdas?.length === 0 && <tr><td colSpan="4" className="empty">Sem perdas registradas</td></tr>}
+          {perdas?.map((p,i) => <tr key={i}><td className="muted">{fmtDate(p.movimentacoes?.data_movimentacao)}</td><td>{fmt(p.quantidade,2)} {p.unidades?.codigo}</td><td><span className="badge badge-yellow">{MOTIVO_LABEL[p.motivo_perda]||'—'}</span></td><td className="muted" style={{fontSize:12}}>{p.observacoes||'—'}</td></tr>)}
+        </tbody></table></div>
+      )}
+
+      {tab==='prods' && isPreparado && (
+        <div className="table-wrap"><table><thead><tr><th>Data</th><th>Produzido</th><th>Custo total</th><th>R$/g</th><th>Rendimento</th></tr></thead><tbody>
+          {producoes===null && <tr><td colSpan="5"><Skeleton rows={3}/></td></tr>}
+          {producoes?.length === 0 && <tr><td colSpan="5" className="empty">Sem produções</td></tr>}
+          {producoes?.map((p,i) => <tr key={i}><td className="muted">{fmtDate(p.movimentacoes?.data_movimentacao)}</td><td>{fmt(p.quantidade_produzida,2)} {p.unidades?.codigo}</td><td className="red">{fmtR$(p.custo_total_producao)}</td><td>R$ {fmt(p.custo_unitario_grama,4)}</td><td className={p.rendimento_percentual>=80?'green':'yellow'}>{p.rendimento_percentual!=null?fmtPct(p.rendimento_percentual):'—'}</td></tr>)}
+        </tbody></table></div>
+      )}
+    </Modal>
+  );
+}
+
+function TelaEstoqueInNatura() { return <EstoqueScreen tipos={['cru','insumo','embalagem']} title="Estoque In Natura" icon="📦" isPreparado={false}/>; }
+function TelaEstoquePreparado() { return <EstoqueScreen tipos={['preparado']} title="Estoque Preparado" icon="🥘" isPreparado={true}/>; }
+// ── CMV & ANÁLISE ───────────────────────────────────────────────────────────
+function TelaCMV() {
+  const sb = getClient();
+  const [periodo, setPeriodo] = useState('mes');
+  const [custom, setCustom] = useState({});
+  const [cmvData, setCmvData] = useState([]);
+  const [vendasItens, setVendasItens] = useState([]);
+  const [precos, setPrecos] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [sort, setSort] = useState({ col:'lucro_total', asc:false });
+  const [expanded, setExpanded] = useState(null);
+  const [ingredientesPrato, setIngredientesPrato] = useState({});
+
+  async function load() {
+    setLoading(true);
+    const { from, to } = periodToDates(periodo, custom);
+    const [cmv, vi, pc] = await Promise.all([
+      sb.from('v_cmv_pratos').select('receita_id,nome,cmv_total'),
+      sb.from('vendas_itens').select(`receita_id,quantidade,valor_total,cmv_total,lucro_bruto,vendas!inner(canal_venda,movimentacao_id,movimentacoes!inner(data_movimentacao))`).gte('vendas.movimentacoes.data_movimentacao', from.toISOString()).lte('vendas.movimentacoes.data_movimentacao', to.toISOString()),
+      sb.from('precos_venda').select('receita_id,canal,preco').eq('ativo',true),
+    ]);
+    setCmvData(cmv.data||[]);
+    setVendasItens(vi.data||[]);
+    const pm = {}; (pc.data||[]).forEach(x => { (pm[x.receita_id]=pm[x.receita_id]||{})[x.canal] = Number(x.preco); });
+    setPrecos(pm);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, [periodo, custom]);
+
+  // Linhas consolidadas
+  const linhas = useMemo(() => {
+    const m = {};
+    cmvData.forEach(c => { m[c.receita_id] = { receita_id:c.receita_id, nome:c.nome, cmv:Number(c.cmv_total)||0, qtd:0, receita:0, cmv_total:0, lucro:0 }; });
+    vendasItens.forEach(v => {
+      const r = m[v.receita_id]; if (!r) return;
+      r.qtd += Number(v.quantidade); r.receita += Number(v.valor_total);
+      r.cmv_total += Number(v.cmv_total); r.lucro += Number(v.lucro_bruto);
+    });
+    return Object.values(m).map(r => {
+      const preco = precos[r.receita_id]?.ifood || 0;
+      const margem_unit = preco - r.cmv;
+      const fc = preco > 0 ? (r.cmv/preco)*100 : null;
+      const margem_pct = preco > 0 ? ((preco-r.cmv)/preco)*100 : null;
+      return { ...r, preco, margem_unit, fc, margem_pct, lucro_total: r.lucro };
+    });
+  }, [cmvData, vendasItens, precos]);
+
+  const sorted = [...linhas].sort((a,b) => {
+    const va = a[sort.col] ?? 0, vb = b[sort.col] ?? 0;
+    const cmp = typeof va === 'string' ? va.localeCompare(vb) : (parseFloat(va)||0) - (parseFloat(vb)||0);
+    return sort.asc ? cmp : -cmp;
+  });
+  function sortBy(c) { setSort(s => s.col===c ? { col:c, asc:!s.asc } : { col:c, asc:false }); }
+
+  const campeao = sorted.length > 0 ? [...sorted].sort((a,b)=>b.lucro_total-a.lucro_total)[0] : null;
+
+  // Expand: ingredientes do prato
+  async function toggleExpand(receita_id) {
+    if (expanded === receita_id) { setExpanded(null); return; }
+    setExpanded(receita_id);
+    if (!ingredientesPrato[receita_id]) {
+      const { data } = await sb.from('receita_itens').select(`quantidade,quantidade_gramas,fator_rendimento,produto_id,produtos(nome,tipo,categorias(nome))`).eq('receita_id', receita_id);
+      const ids = (data||[]).map(x => x.produto_id);
+      let custos = {};
+      if (ids.length > 0) {
+        const { data: ce } = await sb.from('v_estoque_atual').select('produto_id,custo_medio_grama').in('produto_id', ids);
+        (ce||[]).forEach(x => custos[x.produto_id] = Number(x.custo_medio_grama)||0);
+      }
+      const enriched = (data||[]).map(it => {
+        const cg = custos[it.produto_id]||0;
+        const c = (Number(it.quantidade_gramas)||0)/(Number(it.fator_rendimento)||1) * cg;
+        return { ...it, custo: c, grupo: categorizar(it.produtos, it.produtos?.categorias?.nome) };
+      });
+      setIngredientesPrato(prev => ({...prev, [receita_id]: enriched }));
+    }
+  }
+
+  // Projeção
+  const dias7 = vendasItens.filter(v => new Date(v.vendas?.movimentacoes?.data_movimentacao) >= addDays(new Date(),-7));
+  const lucro7 = sumBy(dias7,'lucro_bruto');
+  const receita7 = sumBy(dias7,'valor_total');
+  const lucroProjMes = lucro7/7 * 30;
+  const receitaProjMes = receita7/7 * 30;
+
+  // Mapa de calor — top 8 pratos × dia da semana
+  const heatmap = useMemo(() => {
+    const top = sorted.slice(0,8);
+    const dias = ['dom','seg','ter','qua','qui','sex','sab'];
+    const m = {}; top.forEach(p => m[p.receita_id] = [0,0,0,0,0,0,0]);
+    vendasItens.forEach(v => {
+      const dt = new Date(v.vendas?.movimentacoes?.data_movimentacao);
+      if (m[v.receita_id]) m[v.receita_id][dt.getDay()] += Number(v.quantidade);
+    });
+    return { top, m, dias };
+  }, [sorted, vendasItens]);
+  const maxHeat = Math.max(1, ...Object.values(heatmap.m||{}).flatMap(arr=>arr));
+
+  return (
+    <div className="content">
+      <div className="section-header">
+        <div className="section-title">📊 CMV & Análise</div>
+        <button className="btn btn-outline btn-sm" onClick={load}>↻ Atualizar</button>
+      </div>
+      <DatePeriodFilter value={periodo} onChange={setPeriodo} custom={custom} onCustomChange={setCustom}/>
+
+      {(receita7 > 0 || lucro7 !== 0) && (
+        <div className="card" style={{borderLeft:'4px solid var(--blue)'}}>
+          <div className="card-title">🔮 Projeção mensal (baseada nos últimos 7 dias)</div>
+          <div className="stat-grid">
+            <div className="stat-card"><div className="stat-value green">{fmtR$(receitaProjMes)}</div><div className="stat-label">Receita estimada</div></div>
+            <div className="stat-card"><div className={`stat-value ${lucroProjMes>=0?'green':'red'}`}>{fmtR$(lucroProjMes)}</div><div className="stat-label">Lucro estimado</div></div>
+          </div>
+        </div>
+      )}
+
+      <div className="card">
+        <div className="card-title">Pratos · receita, CMV e lucro do período</div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th className="sortable" onClick={()=>sortBy('nome')}>Prato</th>
+                <th className="sortable" onClick={()=>sortBy('preco')}>Preço</th>
+                <th className="sortable" onClick={()=>sortBy('cmv')}>CMV unit</th>
+                <th className="sortable" onClick={()=>sortBy('margem_unit')}>Margem R$</th>
+                <th className="sortable" onClick={()=>sortBy('fc')}>Food cost</th>
+                <th className="sortable" onClick={()=>sortBy('qtd')}>Qtd</th>
+                <th className="sortable" onClick={()=>sortBy('receita')}>Receita</th>
+                <th className="sortable" onClick={()=>sortBy('lucro_total')}>Lucro</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && <tr><td colSpan="9"><Skeleton rows={4}/></td></tr>}
+              {!loading && sorted.length === 0 && <tr><td colSpan="9" className="empty">Sem dados</td></tr>}
+              {!loading && sorted.map(r => {
+                const fc = r.fc; const corFC = fc==null?'muted':fc<32?'green':fc<38?'yellow':'red';
+                const isCampeao = campeao && campeao.receita_id === r.receita_id && r.lucro_total > 0;
+                return (
+                  <Fragment key={r.receita_id}>
+                    <tr className="clickable" onClick={()=>toggleExpand(r.receita_id)}>
+                      <td>{expanded===r.receita_id?'▾':'▸'}</td>
+                      <td><b>{r.nome}</b> {isCampeao && <span className="badge badge-green">🏆 CAMPEÃO</span>}</td>
+                      <td>{r.preco>0?fmtR$(r.preco):'—'}</td>
+                      <td className="red">{fmtR$(r.cmv)}</td>
+                      <td className={r.margem_unit>=0?'green':'red'}>{r.preco>0?fmtR$(r.margem_unit):'—'}</td>
+                      <td className={corFC}>{fc!=null?fmtPct(fc):'—'}</td>
+                      <td>{fmt(r.qtd,0)}</td>
+                      <td className="green">{fmtR$(r.receita)}</td>
+                      <td className={r.lucro_total>=0?'green':'red'}><b>{fmtR$(r.lucro_total)}</b></td>
+                    </tr>
+                    {expanded === r.receita_id && ingredientesPrato[r.receita_id] && (
+                      <tr className="expanded"><td colSpan="9"><PratoExpand ingredientes={ingredientesPrato[r.receita_id]}/></td></tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {heatmap.top.length > 0 && (
+        <div className="card">
+          <div className="card-title">🔥 Mapa de calor — vendas por dia da semana</div>
+          <div style={{overflowX:'auto'}}>
+            <div className="heatmap" style={{gridTemplateColumns:'180px repeat(7, 1fr)',minWidth:600}}>
+              <div></div>
+              {['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(d=><div key={d} style={{textAlign:'center',color:'var(--muted)',fontSize:11,fontWeight:600}}>{d}</div>)}
+              {heatmap.top.map(p => (
+                <Fragment key={p.receita_id}>
+                  <div style={{padding:'8px',fontSize:12,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nome}</div>
+                  {(heatmap.m[p.receita_id]||[]).map((v,i) => {
+                    const intensity = v/maxHeat;
+                    return <div key={i} className="heatmap-cell" style={{background: v===0?'var(--card-2)':`rgba(52,211,153, ${0.2 + intensity*0.7})`}}>{v>0?fmt(v,0):''}</div>;
+                  })}
+                </Fragment>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PratoExpand({ ingredientes }) {
+  const chartRef = useRef(null);
+  const groups = { carboidrato:0, proteina:0, queijo:0, molho:0, embalagem:0, extras:0 };
+  ingredientes.forEach(it => groups[it.grupo] += it.custo);
+  const total = sumBy(Object.values(groups), v=>v);
+  useChart(chartRef, () => {
+    const data = Object.entries(groups).filter(([_,v])=>v>0);
+    if (data.length === 0) return null;
+    return {
+      type:'doughnut',
+      data:{ labels:data.map(x=>GRUPO_LABEL[x[0]]), datasets:[{ data:data.map(x=>x[1]), backgroundColor:data.map(x=>GRUPO_COR[x[0]]) }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right', labels:{color:cssVar('--text-2'),font:{size:10}} } } }
+    };
+  }, [ingredientes]);
+  const maior = Object.entries(groups).sort((a,b)=>b[1]-a[1])[0];
+  return (
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,padding:'10px 0'}}>
+      <div>
+        <div className="card-title">Ingredientes</div>
+        <div style={{maxHeight:200,overflowY:'auto'}}>
+          {ingredientes.map((it,i) => (
+            <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid var(--border)',fontSize:12}}>
+              <span>{it.produtos?.nome} <span className="muted">({fmtG(it.quantidade_gramas)})</span></span>
+              <span className="red">{fmtR$(it.custo)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div className="card-title">Distribuição</div>
+        {total > 0 ? <div className="chart-wrap sm"><canvas ref={chartRef}/></div> : <div className="empty">Sem custos</div>}
+        {maior && maior[1] > 0 && (
+          <div className="muted" style={{fontSize:12,marginTop:6}}>💡 Maior custo: <b style={{color:GRUPO_COR[maior[0]]}}>{GRUPO_LABEL[maior[0]]}</b> ({fmtPct(maior[1]/total*100)})</div>
+        )}
+      </div>
+    </div>
+  );
+}
+// ── FLUXO DE CAIXA ──────────────────────────────────────────────────────────
+function TelaCaixa() {
+  const sb = getClient();
+  const [periodo, setPeriodo] = useState('mes');
+  const [custom, setCustom] = useState({});
+  const [rows, setRows] = useState([]);
+  const [vendas, setVendas] = useState([]);
+  const [vendasItens, setVendasItens] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const chartBarRef = useRef(null);
+  const chartPieRef = useRef(null);
+  const chartLineRef = useRef(null);
+  const chartWeekRef = useRef(null);
+
+  async function load() {
+    setLoading(true);
+    const { from, to } = periodToDates(periodo, custom);
+    const [fc, vd, vi] = await Promise.all([
+      sb.from('fluxo_caixa').select('id,tipo,valor,descricao,pago,forma_pagamento,created_at,categoria_id,categorias_caixa(nome,tipo)').gte('created_at', from.toISOString()).lte('created_at', to.toISOString()).order('created_at',{ascending:false}),
+      sb.from('vendas').select('id,valor_bruto,valor_liquido,desconto_plataforma,canal_venda,movimentacao_id,movimentacoes!inner(data_movimentacao)').gte('movimentacoes.data_movimentacao', from.toISOString()).lte('movimentacoes.data_movimentacao', to.toISOString()),
+      sb.from('vendas_itens').select('cmv_total,vendas!inner(movimentacao_id,movimentacoes!inner(data_movimentacao))').gte('vendas.movimentacoes.data_movimentacao', from.toISOString()).lte('vendas.movimentacoes.data_movimentacao', to.toISOString()),
+    ]);
+    setRows(fc.data||[]); setVendas(vd.data||[]); setVendasItens(vi.data||[]);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, [periodo, custom]);
+
+  const receita = sumBy(rows.filter(r=>r.tipo==='receita'),'valor');
+  const despesa = sumBy(rows.filter(r=>r.tipo==='despesa'),'valor');
+  const saldo = receita - despesa;
+  const cmvVendas = sumBy(vendasItens,'cmv_total');
+  const fcPct = receita > 0 ? (cmvVendas/receita)*100 : 0;
+
+  // DRE
+  const dreReceitaBruta = sumBy(vendas,'valor_bruto');
+  const dreDescontos    = sumBy(vendas,'desconto_plataforma');
+  const dreReceitaLiq   = dreReceitaBruta - dreDescontos;
+  const dreCMV          = cmvVendas;
+  const dreLucroBruto   = dreReceitaLiq - dreCMV;
+  const dreFixas        = sumBy(rows.filter(r => r.tipo==='despesa' && (r.categorias_caixa?.nome||'') !== 'Compra de insumos'),'valor');
+  const dreLucroOp      = dreLucroBruto - dreFixas;
+  const dreMargemOp     = dreReceitaLiq > 0 ? (dreLucroOp/dreReceitaLiq)*100 : 0;
+
+  // Por dia para gráficos
+  const porDia = useMemo(() => {
+    const m = {}; rows.forEach(r => { const k = r.created_at?.slice(0,10); if (!m[k]) m[k] = { r:0, d:0 }; (r.tipo==='receita'?m[k].r+=Number(r.valor):m[k].d+=Number(r.valor)); });
+    return Object.entries(m).sort();
+  }, [rows]);
+
+  // Despesas por categoria (pie)
+  const despesasCat = useMemo(() => {
+    const m = {}; rows.filter(r=>r.tipo==='despesa').forEach(r => { const k = r.categorias_caixa?.nome||'Sem categoria'; m[k] = (m[k]||0)+Number(r.valor); });
+    return Object.entries(m).sort((a,b)=>b[1]-a[1]);
+  }, [rows]);
+
+  // Saldo acumulado
+  const acumulado = useMemo(() => {
+    let acc = 0;
+    return porDia.map(([k,v]) => { acc += v.r - v.d; return { d:k, saldo: acc }; });
+  }, [porDia]);
+
+  // Lucro por semana
+  const porSemana = useMemo(() => {
+    const m = {};
+    porDia.forEach(([k,v]) => {
+      const dt = new Date(k);
+      const sem = `${dt.getFullYear()}-W${Math.ceil(((dt-new Date(dt.getFullYear(),0,1))/86400000+new Date(dt.getFullYear(),0,1).getDay()+1)/7)}`;
+      m[sem] = (m[sem]||0) + (v.r - v.d);
+    });
+    return Object.entries(m);
+  }, [porDia]);
+
+  useChart(chartBarRef, () => {
+    if (porDia.length === 0) return null;
+    return {
+      type:'bar',
+      data:{ labels:porDia.map(x=>fmtDate(x[0]).slice(0,5)), datasets:[
+        { label:'Receita', data:porDia.map(x=>x[1].r), backgroundColor:'rgba(52,211,153,.7)', borderRadius:6 },
+        { label:'Despesa', data:porDia.map(x=>x[1].d), backgroundColor:'rgba(248,113,113,.7)', borderRadius:6 },
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{color:cssVar('--text-2'),boxWidth:12} } },
+        scales:{ x:{ ticks:{color:cssVar('--muted'),font:{size:10}}, grid:{display:false} }, y:{ ticks:{color:cssVar('--muted'),callback:v=>'R$ '+fmt(v,0)}, grid:{color:cssVar('--border')} } }
+      }
+    };
+  }, [porDia]);
+
+  useChart(chartPieRef, () => {
+    if (despesasCat.length === 0) return null;
+    return {
+      type:'doughnut',
+      data:{ labels:despesasCat.map(x=>x[0]), datasets:[{ data:despesasCat.map(x=>x[1]), backgroundColor:['#f87171','#fbbf24','#a78bfa','#94a3b8','#4a90d9','#22d3ee','#fb923c','#34d399'] }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right', labels:{color:cssVar('--text-2'),font:{size:11}} } } }
+    };
+  }, [despesasCat]);
+
+  useChart(chartLineRef, () => {
+    if (acumulado.length === 0) return null;
+    return {
+      type:'line',
+      data:{ labels:acumulado.map(x=>fmtDate(x.d).slice(0,5)), datasets:[{ label:'Saldo acumulado', data:acumulado.map(x=>x.saldo), borderColor:cssVar('--blue'), backgroundColor:'rgba(74,144,217,.15)', fill:true, tension:.2 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} },
+        scales:{ x:{ ticks:{color:cssVar('--muted'),font:{size:10}}, grid:{display:false} }, y:{ ticks:{color:cssVar('--muted'),callback:v=>'R$ '+fmt(v,0)}, grid:{color:cssVar('--border')} } }
+      }
+    };
+  }, [acumulado]);
+
+  useChart(chartWeekRef, () => {
+    if (porSemana.length === 0) return null;
+    return {
+      type:'bar',
+      data:{ labels:porSemana.map(x=>x[0]), datasets:[{ data:porSemana.map(x=>x[1]), backgroundColor:porSemana.map(x=>x[1]>=0?'rgba(52,211,153,.7)':'rgba(248,113,113,.7)'), borderRadius:6 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} },
+        scales:{ x:{ ticks:{color:cssVar('--muted'),font:{size:10}}, grid:{display:false} }, y:{ ticks:{color:cssVar('--muted'),callback:v=>'R$ '+fmt(v,0)}, grid:{color:cssVar('--border')} } }
+      }
+    };
+  }, [porSemana]);
+
+  return (
+    <div className="content">
+      <div className="section-header"><div className="section-title">💵 Fluxo de Caixa</div></div>
+      <DatePeriodFilter value={periodo} onChange={setPeriodo} custom={custom} onCustomChange={setCustom}/>
+
+      <div className="stat-grid">
+        <div className="stat-card tinted-green"><div className="stat-value green">{fmtR$(receita)}</div><div className="stat-label">Receita</div></div>
+        <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(despesa)}</div><div className="stat-label">Despesa</div></div>
+        <div className="stat-card tinted-blue"><div className={`stat-value ${saldo>=0?'green':'red'}`}>{fmtR$(saldo)}</div><div className="stat-label">Saldo</div></div>
+        <div className={`stat-card tinted-${fcPct<32?'green':fcPct<38?'yellow':'red'}`}><div className={`stat-value ${fcPct<32?'green':fcPct<38?'yellow':'red'}`}>{receita>0?fmtPct(fcPct):'—'}</div><div className="stat-label">Food cost</div></div>
+      </div>
+
+      {/* DRE */}
+      <div className="card" style={{borderLeft:'4px solid var(--blue)'}}>
+        <div className="card-title">📑 DRE Gerencial</div>
+        <div style={{fontSize:14}}>
+          <DreLine label="Receita Bruta (vendas)" valor={dreReceitaBruta} positive/>
+          <DreLine label="(−) Descontos plataformas" valor={-dreDescontos} negative indent/>
+          <DreLine label="(=) Receita Líquida" valor={dreReceitaLiq} bold/>
+          <DreLine label="(−) CMV" valor={-dreCMV} negative indent/>
+          <DreLine label="(=) Lucro Bruto" valor={dreLucroBruto} bold positive={dreLucroBruto>=0} negative={dreLucroBruto<0}/>
+          <DreLine label="(−) Despesas Fixas" valor={-dreFixas} negative indent/>
+          <DreLine label="(=) Lucro Operacional" valor={dreLucroOp} bold positive={dreLucroOp>=0} negative={dreLucroOp<0} big/>
+          <div style={{marginTop:14,padding:12,background:'var(--card-2)',borderRadius:8,fontSize:13}}>
+            <b>Margem operacional:</b> <span className={dreMargemOp>=0?'green':'red'}><b>{dreReceitaLiq>0?fmtPct(dreMargemOp):'—'}</b></span>
+          </div>
+        </div>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        <div className="card">
+          <div className="card-title">Receita vs Despesa por dia</div>
+          <div className="chart-wrap"><canvas ref={chartBarRef}/></div>
+        </div>
+        <div className="card">
+          <div className="card-title">Despesas por categoria</div>
+          <div className="chart-wrap"><canvas ref={chartPieRef}/></div>
+        </div>
+        <div className="card">
+          <div className="card-title">Saldo acumulado</div>
+          <div className="chart-wrap"><canvas ref={chartLineRef}/></div>
+        </div>
+        <div className="card">
+          <div className="card-title">Lucro por semana</div>
+          <div className="chart-wrap"><canvas ref={chartWeekRef}/></div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title">Lançamentos do período</div>
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Pgto</th><th>Pago</th></tr></thead>
+            <tbody>
+              {loading && <tr><td colSpan="7"><Skeleton rows={4}/></td></tr>}
+              {!loading && rows.length === 0 && <tr><td colSpan="7" className="empty">Nenhum lançamento</td></tr>}
+              {!loading && rows.map(r => (
+                <tr key={r.id}>
+                  <td className="muted">{fmtDate(r.created_at)}</td>
+                  <td><span className={`badge badge-${r.tipo==='receita'?'green':'red'}`}>{r.tipo}</span></td>
+                  <td className="muted" style={{fontSize:12}}>{r.categorias_caixa?.nome||'—'}</td>
+                  <td>{r.descricao}</td>
+                  <td className={r.tipo==='receita'?'green':'red'} style={{fontWeight:600}}>{fmtR$(r.valor)}</td>
+                  <td className="muted" style={{fontSize:12}}>{r.forma_pagamento ? FORMA_PGTO.find(x=>x[0]===r.forma_pagamento)?.[1] : '—'}</td>
+                  <td>{r.pago?'✅':'⏳'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DreLine({ label, valor, positive, negative, bold, indent, big }) {
+  const cor = positive ? 'green' : negative ? 'red' : '';
+  return (
+    <div style={{display:'flex',justifyContent:'space-between',padding:big?'14px 0':'8px 0',borderBottom:'1px solid var(--border)',paddingLeft: indent?20:0,fontSize:big?16:14,fontWeight:bold?700:500}}>
+      <span style={{color:indent?'var(--muted)':'var(--text)'}}>{label}</span>
+      <span className={cor}>{fmtR$(valor)}</span>
+    </div>
+  );
+}
+// ── AUDITORIA / BALANÇO ─────────────────────────────────────────────────────
+function TelaAuditoria() {
+  const sb = getClient();
+  const toast = useToast();
+  const [data, setData] = useState(todayISO());
+  const [estoque, setEstoque] = useState([]);
+  const [reais, setReais] = useState({}); // produto_id -> gramas (real)
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [resumo, setResumo] = useState(null);
+  const [historico, setHistorico] = useState([]);
+  const [unidades, setUnidades] = useState([]);
+  const [search, setSearch] = useState('');
+  const [filtroTipo, setFiltroTipo] = useState('todos');
+
+  async function load() {
+    setLoading(true);
+    const [e, h, u] = await Promise.all([
+      sb.from('v_estoque_atual').select('*').order('nome'),
+      sb.from('ajustes_estoque').select('id,quantidade_gramas,observacoes,tipo,produto_id,produtos(nome),movimentacoes(data_movimentacao)').like('observacoes','Balanço%').order('id',{ascending:false}).limit(200),
+      sb.from('unidades').select('id,codigo').eq('codigo','g').limit(1),
+    ]);
+    setEstoque(e.data||[]);
+    setHistorico(h.data||[]);
+    setUnidades(u.data||[]);
+    const init = {}; (e.data||[]).forEach(p => init[p.produto_id] = '');
+    setReais(init);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  const filtered = estoque
+    .filter(p => filtroTipo==='todos' || p.tipo===filtroTipo)
+    .filter(p => !search || p.nome.toLowerCase().includes(search.toLowerCase()));
+
+  const diffs = filtered.map(p => {
+    const sistema = Number(p.estoque_gramas)||0;
+    const realStr = reais[p.produto_id];
+    const real = realStr === '' ? null : Number(realStr);
+    const diff = real == null ? 0 : real - sistema;
+    return { ...p, sistema, real, diff };
+  });
+  const okCount = diffs.filter(d => d.real != null && d.diff === 0).length;
+  const comDiff = diffs.filter(d => d.real != null && d.diff !== 0);
+  const totalPerdas = sumBy(comDiff.filter(d=>d.diff<0), d => Math.abs(d.diff) * Number(d.custo_medio_grama||0));
+  const totalSobras = sumBy(comDiff.filter(d=>d.diff>0), d => d.diff * Number(d.custo_medio_grama||0));
+
+  async function salvar() {
+    if (!unidades[0]) return toast('Unidade "g" não encontrada','error');
+    const gId = unidades[0].id;
+    const lancar = diffs.filter(d => d.real != null && Math.abs(d.diff) > 0.01);
+    if (lancar.length === 0) return toast('Nada a registrar (sem diferenças)','info');
+    setSaving(true);
+    const dataDescr = `Balanço ${fmtDate(data)}`;
+    let ok = 0, fail = 0;
+    for (const d of lancar) {
+      try {
+        const tipo = d.diff < 0 ? 'perda' : 'ajuste_positivo';
+        const movTipo = d.diff < 0 ? 'perda' : 'ajuste_estoque';
+        const { data: mov, error: e1 } = await sb.from('movimentacoes').insert({ tipo: movTipo, descricao: `${dataDescr}: ${d.nome}`, data_movimentacao: dateInputToIso(data) }).select('id').single();
+        if (e1) throw e1;
+        await sb.from('ajustes_estoque').insert({
+          movimentacao_id: mov.id, produto_id: d.produto_id, tipo,
+          quantidade: Math.abs(d.diff), unidade_id: gId,
+          motivo_perda: tipo === 'perda' ? 'outros' : null,
+          observacoes: dataDescr
+        });
+        ok++;
+      } catch(e) { console.error(e); fail++; }
+    }
+    setSaving(false);
+    setResumo({ ok: okCount, lancados: ok, fail, perdas: totalPerdas, sobras: totalSobras });
+    toast(`✅ ${ok} ajustes lançados${fail>0?` · ${fail} falharam`:''}`,'success');
+    load();
+  }
+
+  return (
+    <div className="content">
+      <div className="section-header"><div className="section-title">🔍 Auditoria / Balanço</div></div>
+      <div className="card">
+        <div className="form-row">
+          <div className="form-group"><label>Data do balanço</label><input type="date" value={data} onChange={e=>setData(e.target.value)}/></div>
+          <div className="form-group"><label>Buscar</label><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Nome..."/></div>
+        </div>
+        <div className="filter-bar">
+          {['todos','cru','insumo','embalagem','preparado'].map(t => (
+            <button key={t} className={`chip${filtroTipo===t?' active':''}`} onClick={()=>setFiltroTipo(t)}>{t==='todos'?'Todos':TIPO_LABEL[t]||t}</button>
+          ))}
+        </div>
+
+        <div className="stat-grid">
+          <div className="stat-card"><div className="stat-value blue">{filtered.length}</div><div className="stat-label">Produtos a contar</div></div>
+          <div className="stat-card tinted-green"><div className="stat-value green">{okCount}</div><div className="stat-label">Conferidos sem diferença</div></div>
+          <div className="stat-card tinted-yellow"><div className="stat-value yellow">{comDiff.length}</div><div className="stat-label">Com diferença</div></div>
+          <div className="stat-card tinted-red"><div className="stat-value red">{fmtR$(totalPerdas)}</div><div className="stat-label">Perdas estimadas</div></div>
+        </div>
+
+        <div className="table-wrap" style={{maxHeight:'60vh',overflowY:'auto'}}>
+          <table>
+            <thead style={{position:'sticky',top:0}}>
+              <tr><th>Produto</th><th>Tipo</th><th>Sistema (g)</th><th>Contagem real (g)</th><th>Diferença</th><th>Valor</th></tr>
+            </thead>
+            <tbody>
+              {loading && <tr><td colSpan="6"><Skeleton rows={5}/></td></tr>}
+              {!loading && diffs.map(d => (
+                <tr key={d.produto_id}>
+                  <td><b>{d.nome}</b></td>
+                  <td><span className={`badge badge-${d.tipo==='preparado'?'blue':d.tipo==='embalagem'?'yellow':'green'}`}>{TIPO_LABEL[d.tipo]||d.tipo}</span></td>
+                  <td>{fmtG(d.sistema)}</td>
+                  <td><input type="number" step="0.001" value={reais[d.produto_id]||''} onChange={e=>setReais({...reais, [d.produto_id]: e.target.value})} placeholder="g real" style={{padding:'6px 10px',minHeight:32,maxWidth:140}}/></td>
+                  <td className={d.real==null?'muted':d.diff===0?'green':d.diff>0?'green':'red'}>{d.real==null?'—':d.diff===0?'OK':(d.diff>0?'+':'')+fmtG(d.diff)}</td>
+                  <td className={d.diff<0?'red':d.diff>0?'green':'muted'}>{d.real==null||d.diff===0?'—':fmtR$(Math.abs(d.diff)*Number(d.custo_medio_grama||0))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <button className="btn btn-success btn-lg btn-block" style={{marginTop:14}} onClick={salvar} disabled={saving || comDiff.length===0}>{saving?'Salvando...':`Salvar balanço (${comDiff.length} ajustes)`}</button>
+      </div>
+
+      {resumo && (
+        <div className="card" style={{borderLeft:'4px solid var(--blue)'}}>
+          <div className="card-title">Resumo do balanço</div>
+          <div style={{display:'flex',gap:16,flexWrap:'wrap',fontSize:14}}>
+            <span><b>{resumo.ok}</b> sem diferença</span>
+            <span><b>{resumo.lancados}</b> ajustes lançados</span>
+            {resumo.fail > 0 && <span className="red"><b>{resumo.fail}</b> falharam</span>}
+            <span className="red">Perdas: <b>{fmtR$(resumo.perdas)}</b></span>
+            <span className="green">Sobras: <b>{fmtR$(resumo.sobras)}</b></span>
+          </div>
+        </div>
+      )}
+
+      {historico.length > 0 && (
+        <div className="card">
+          <div className="card-title">📜 Histórico de balanços</div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Data</th><th>Produto</th><th>Tipo</th><th>Quantidade</th></tr></thead>
+              <tbody>
+                {historico.map(h => (
+                  <tr key={h.id}>
+                    <td className="muted">{fmtDate(h.movimentacoes?.data_movimentacao)}</td>
+                    <td>{h.produtos?.nome}</td>
+                    <td><span className={`badge badge-${h.tipo==='perda'?'red':'green'}`}>{h.tipo==='perda'?'Perda':'Sobra'}</span></td>
+                    <td>{fmtG(h.quantidade_gramas)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+const TelaCadastros       = () => <PlaceholderScreen name="Cadastros" />;
+
+function PlaceholderScreen({ name }) {
+  return (
+    <div className="content">
+      <div className="section-header"><div className="section-title">⏳ {name}</div></div>
+      <div className="card"><div className="empty">Em construção...</div></div>
+    </div>
+  );
+}
+
+// ── APP SHELL ───────────────────────────────────────────────────────────────
+const SCREENS = [
+  { id:'home',          label:'Dashboard',        icon:'🏠', group:'geral' },
+  { id:'compra',        label:'Lançar Compra',    icon:'🛒', group:'lancamentos' },
+  { id:'producao',      label:'Lançar Produção',  icon:'🍳', group:'lancamentos' },
+  { id:'venda',         label:'Lançar Venda',     icon:'💰', group:'lancamentos' },
+  { id:'perda',         label:'Lançar Perda',     icon:'⚠️', group:'lancamentos' },
+  { id:'despesa',       label:'Despesa Fixa',     icon:'💸', group:'lancamentos' },
+  { id:'fichas',        label:'Fichas Técnicas',  icon:'📋', group:'gestao' },
+  { id:'estoque-cru',   label:'Estoque In Natura',icon:'📦', group:'gestao' },
+  { id:'estoque-prep',  label:'Estoque Preparado',icon:'🥘', group:'gestao' },
+  { id:'cmv',           label:'CMV & Análise',    icon:'📊', group:'gestao' },
+  { id:'caixa',         label:'Fluxo de Caixa',   icon:'💵', group:'gestao' },
+  { id:'auditoria',     label:'Auditoria',        icon:'🔍', group:'gestao' },
+  { id:'cadastros',     label:'Cadastros',        icon:'⚙️', group:'gestao' },
+];
+
+const GROUP_LABEL = { geral:'', lancamentos:'Lançamentos', gestao:'Gestão' };
+
+function Sidebar({ open, onClose, screen, onNavigate }) {
+  const groups = [...new Set(SCREENS.map(s=>s.group))];
+  return (
+    <Fragment>
+      <div className={`sidebar-overlay${open?' show':''}`} onClick={onClose}/>
+      <nav className={`sidebar${open?' open':''}`}>
+        <div className="sidebar-logo"><span>🍝</span> Dom Leonardo</div>
+        {groups.map(g => (
+          <div key={g}>
+            {GROUP_LABEL[g] && <div className="nav-section">{GROUP_LABEL[g]}</div>}
+            {SCREENS.filter(s=>s.group===g).map(s => (
+              <div key={s.id} className={`nav-item${screen===s.id?' active':''}`} onClick={()=>onNavigate(s.id)}>
+                <span className="nav-icon">{s.icon}</span>{s.label}
+              </div>
+            ))}
+          </div>
+        ))}
+        <div className="sidebar-footer">
+          <button className="btn btn-outline btn-sm btn-block" onClick={()=>{
+            localStorage.removeItem('sb_url'); localStorage.removeItem('sb_key');
+            resetClient(); window.location.reload();
+          }}>Trocar conexão</button>
+        </div>
+      </nav>
+    </Fragment>
+  );
+}
+
+function Topbar({ onToggleSidebar, title }) {
+  const { theme, toggle } = useTheme();
+  return (
+    <div className="topbar">
+      <button className="hamburger" onClick={onToggleSidebar}>☰</button>
+      <div className="topbar-title">{title}</div>
+      <button className="theme-toggle" onClick={toggle} title="Alternar tema">
+        {theme === 'dark' ? '☀️ Claro' : '🌙 Escuro'}
+      </button>
+    </div>
+  );
+}
+
+function App() {
+  const [loggedIn, setLoggedIn] = useState(!!localStorage.getItem('sb_url'));
+  const [screen, setScreen] = useState('home');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useAutoRefresh(() => setRefreshKey(k => k+1), 60000, loggedIn);
+
+  function navigate(id) { setScreen(id); setSidebarOpen(false); }
+  const current = SCREENS.find(s=>s.id===screen);
+
+  if (!loggedIn) return <ToastProvider><Login onLogin={()=>setLoggedIn(true)}/></ToastProvider>;
+
+  return (
+    <ToastProvider>
+      <Sidebar open={sidebarOpen} onClose={()=>setSidebarOpen(false)} screen={screen} onNavigate={navigate}/>
+      <div className="main">
+        <Topbar onToggleSidebar={()=>setSidebarOpen(o=>!o)} title={`${current?.icon||''} ${current?.label||''}`}/>
+        {screen==='home'           && <TelaDashboard refreshKey={refreshKey}/>}
+        {screen==='compra'         && <TelaCompra/>}
+        {screen==='producao'       && <TelaProducao/>}
+        {screen==='venda'          && <TelaVenda/>}
+        {screen==='perda'          && <TelaPerda/>}
+        {screen==='despesa'        && <TelaDespesa/>}
+        {screen==='fichas'         && <TelaFichas/>}
+        {screen==='estoque-cru'    && <TelaEstoqueInNatura/>}
+        {screen==='estoque-prep'   && <TelaEstoquePreparado/>}
+        {screen==='cmv'            && <TelaCMV/>}
+        {screen==='caixa'          && <TelaCaixa/>}
+        {screen==='auditoria'      && <TelaAuditoria/>}
+        {screen==='cadastros'      && <TelaCadastros/>}
+      </div>
+    </ToastProvider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <ThemeProvider><App/></ThemeProvider>
+);
+</script>
+</body>
+</html>
