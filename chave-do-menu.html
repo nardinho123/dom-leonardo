@@ -102,7 +102,7 @@
       min-height: calc(100svh - 28px - var(--safe-top) - var(--safe-bottom));
       display: grid;
       align-content: center;
-      gap: 14px;
+      gap: 11px;
       padding: 18px 14px;
     }
 
@@ -286,7 +286,8 @@
       position: relative;
       display: grid;
       place-items: center;
-      height: 104px;
+      height: 98px;
+      margin-top: -3px;
       animation: fadeUp .72s .23s ease both;
     }
 
@@ -305,6 +306,12 @@
       z-index: 3;
       width: 154px;
       height: 86px;
+      padding: 0;
+      border: 0;
+      outline: 0;
+      appearance: none;
+      -webkit-appearance: none;
+      background: transparent;
       cursor: pointer;
       transform-origin: center;
       filter: drop-shadow(0 18px 28px rgba(0,0,0,.48)) drop-shadow(0 0 22px rgba(215,173,53,.22));
@@ -341,25 +348,27 @@
       position: relative;
       display: grid;
       justify-items: center;
+      margin-top: 3px;
       animation: fadeUp .75s .32s ease both;
     }
 
     .book {
       position: relative;
-      width: min(92%, 320px);
-      min-height: 265px;
+      width: min(82%, 286px);
+      min-height: 242px;
       display: grid;
       place-items: center;
-      padding: 28px 26px;
-      border-radius: 8px 20px 20px 8px;
-      border: 1px solid rgba(255, 232, 163, .28);
+      padding: 28px 24px 26px 34px;
+      border-radius: 10px 22px 22px 10px;
+      border: 1px solid rgba(255, 232, 163, .3);
       background:
-        linear-gradient(90deg, rgba(0,0,0,.48), transparent 18%),
-        radial-gradient(70% 60% at 56% 22%, rgba(255, 232, 163, .09), transparent 60%),
-        linear-gradient(145deg, #2a190c 0%, #160c06 58%, #0e0703 100%);
+        linear-gradient(90deg, rgba(0,0,0,.62) 0 15px, rgba(255,232,163,.09) 16px 18px, rgba(0,0,0,.24) 19px 28px, transparent 29px),
+        radial-gradient(85% 72% at 58% 18%, rgba(255, 232, 163, .11), transparent 58%),
+        linear-gradient(145deg, #301d0d 0%, #1a0f07 58%, #0c0502 100%);
       box-shadow:
-        0 34px 74px rgba(0,0,0,.54),
-        inset 9px 0 20px rgba(0,0,0,.44),
+        0 28px 62px rgba(0,0,0,.58),
+        0 8px 0 rgba(0,0,0,.16),
+        inset 15px 0 26px rgba(0,0,0,.5),
         inset 0 1px 0 rgba(255,255,255,.06);
       overflow: hidden;
     }
@@ -367,10 +376,12 @@
     .book::before {
       content: "";
       position: absolute;
-      inset: 12px;
+      inset: 13px 14px 13px 25px;
       border: 1px solid rgba(255, 232, 163, .34);
-      border-radius: 5px 15px 15px 5px;
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,.42);
+      border-radius: 6px 16px 16px 6px;
+      box-shadow:
+        inset 0 0 0 1px rgba(0,0,0,.42),
+        0 0 18px rgba(215,173,53,.06);
     }
 
     .book::after {
@@ -393,28 +404,28 @@
       width: 100%;
       display: grid;
       justify-items: center;
-      gap: 13px;
+      gap: 9px;
       text-align: center;
     }
 
     .book-kicker {
-      font: 700 9px/1 Cinzel, serif;
+      font: 700 8.5px/1 Cinzel, serif;
       text-transform: uppercase;
-      letter-spacing: .34em;
+      letter-spacing: .26em;
       color: rgba(255,232,163,.7);
     }
 
     .book-title {
       margin: 0;
-      font: 700 clamp(30px, 11vw, 47px)/.92 Cinzel, serif;
-      letter-spacing: .01em;
+      font: 700 clamp(31px, 10vw, 43px)/.9 Cinzel, serif;
+      letter-spacing: .04em;
       color: #f7dc8b;
       text-shadow: 0 14px 28px rgba(0,0,0,.5);
     }
 
     .book-sub {
       margin: -4px 0 0;
-      font: italic 600 17px/1.1 Cormorant Garamond, serif;
+      font: italic 600 15px/1.1 Cormorant Garamond, serif;
       color: rgba(245,231,198,.74);
     }
 
@@ -422,21 +433,47 @@
       position: relative;
       display: grid;
       place-items: center;
-      width: 78px;
-      height: 78px;
-      margin-top: 6px;
-      border-radius: 50%;
-      border: 1px solid rgba(255, 232, 163, .32);
-      background: radial-gradient(circle at 38% 28%, rgba(255,232,163,.16), rgba(0,0,0,.32) 60%);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 0 28px rgba(215,173,53,.12);
+      width: 88px;
+      height: 88px;
+      margin-top: 10px;
+      filter: drop-shadow(0 14px 18px rgba(0,0,0,.42)) drop-shadow(0 0 16px rgba(215,173,53,.18));
     }
 
     .lock-target svg {
-      width: 45px;
-      height: 45px;
-      color: #f5cf68;
-      filter: drop-shadow(0 0 10px rgba(215,173,53,.28));
+      width: 88px;
+      height: 88px;
+      overflow: visible;
     }
+
+    .book-band {
+      position: absolute;
+      z-index: 1;
+      left: 34px;
+      right: 24px;
+      top: 51%;
+      height: 24px;
+      transform: translateY(-50%);
+      border-block: 1px solid rgba(255,232,163,.24);
+      background:
+        linear-gradient(90deg, transparent, rgba(255,232,163,.1), transparent),
+        rgba(0,0,0,.23);
+      box-shadow: inset 0 1px rgba(255,255,255,.04), inset 0 -1px rgba(0,0,0,.35);
+    }
+
+    .book-rivet {
+      position: absolute;
+      z-index: 2;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #fff4b4, #b88320 72%);
+      box-shadow: 0 0 8px rgba(215,173,53,.32);
+    }
+
+    .book-rivet.r1 { left: 34px; top: 24px; }
+    .book-rivet.r2 { right: 24px; top: 24px; }
+    .book-rivet.r3 { left: 34px; bottom: 24px; }
+    .book-rivet.r4 { right: 24px; bottom: 24px; }
 
     .entry.ready .key-aura { animation-duration: 1.75s; }
     .entry.ready .key-real { filter: drop-shadow(0 18px 32px rgba(0,0,0,.52)) drop-shadow(0 0 30px rgba(255,232,163,.42)); }
@@ -444,8 +481,11 @@
     .cta-row {
       position: relative;
       z-index: 4;
-      width: min(92%, 320px);
-      margin-top: -15px;
+      justify-self: center;
+      width: min(82%, 300px);
+      margin-top: -9px;
+      margin-bottom: 2px;
+      animation: fadeUp .72s .27s ease both;
     }
 
     .btn {
@@ -554,9 +594,11 @@
       .field { min-height: 46px; margin-bottom: 8px; }
       .key-stage { height: 84px; }
       .key-real { width: 132px; height: 74px; }
-      .book { min-height: 218px; }
-      .book-title { font-size: 34px; }
-      .lock-target { width: 66px; height: 66px; }
+      .cta-row { margin-top: -7px; }
+      .book { width: min(78%, 260px); min-height: 204px; padding-top: 22px; padding-bottom: 20px; }
+      .book-title { font-size: 31px; }
+      .lock-target { width: 72px; height: 72px; margin-top: 6px; }
+      .lock-target svg { width: 72px; height: 72px; }
     }
   </style>
 </head>
@@ -637,23 +679,43 @@
         <span class="spark s3"></span>
       </div>
 
+      <div class="cta-row">
+        <button class="btn" id="btnNovo" form="formNovo" type="submit" disabled>Obter minha chave</button>
+      </div>
+
       <section class="book-wrap" aria-label="Cardapio Dom Leonardo">
         <div class="book" id="book">
+          <span class="book-band"></span>
+          <span class="book-rivet r1"></span>
+          <span class="book-rivet r2"></span>
+          <span class="book-rivet r3"></span>
+          <span class="book-rivet r4"></span>
           <div class="book-content">
-            <span class="book-kicker">Cardapio</span>
-            <h1 class="book-title">Dom<br />Leonardo</h1>
-            <p class="book-sub">autentica trattoria italiana</p>
+            <span class="book-kicker">Dom Leonardo</span>
+            <h1 class="book-title">Cardapio</h1>
+            <p class="book-sub">menu reservado</p>
             <div class="lock-target" id="seal">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                <rect x="5" y="10" width="14" height="10" rx="2.2" />
-                <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-                <path d="M12 14.2v2.8" stroke-linecap="round" />
+              <svg viewBox="0 0 96 96" aria-hidden="true">
+                <defs>
+                  <linearGradient id="lockBody" x1="19" y1="29" x2="77" y2="83" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stop-color="#ffeaa3" />
+                    <stop offset=".5" stop-color="#c3912c" />
+                    <stop offset="1" stop-color="#6c420c" />
+                  </linearGradient>
+                  <linearGradient id="lockEdge" x1="24" y1="12" x2="72" y2="70" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stop-color="#fff7ca" />
+                    <stop offset=".45" stop-color="#d7ad35" />
+                    <stop offset="1" stop-color="#7a4b0f" />
+                  </linearGradient>
+                </defs>
+                <path d="M30 43V30c0-11 7.6-19 18-19s18 8 18 19v13" fill="none" stroke="url(#lockEdge)" stroke-width="8" stroke-linecap="round" />
+                <path d="M23 42h50c5 0 8 3 8 8v29c0 5-3 8-8 8H23c-5 0-8-3-8-8V50c0-5 3-8 8-8Z" fill="url(#lockBody)" stroke="rgba(255,246,196,.75)" stroke-width="1.4" />
+                <path d="M23 45h50c3.2 0 5 1.8 5 5v5H18v-5c0-3.2 1.8-5 5-5Z" fill="rgba(255,255,255,.22)" />
+                <path d="M48 57c-4.2 0-7.5 3.2-7.5 7.1 0 2.4 1.2 4.4 3.2 5.7l-3.7 10.4h16l-3.7-10.4c2-1.3 3.2-3.3 3.2-5.7 0-3.9-3.3-7.1-7.5-7.1Z" fill="#170b04" stroke="rgba(255,232,163,.35)" stroke-width="1" />
+                <path d="M25 79h46" stroke="rgba(80,43,7,.45)" stroke-width="2" stroke-linecap="round" />
               </svg>
             </div>
           </div>
-        </div>
-        <div class="cta-row">
-          <button class="btn" id="btnNovo" form="formNovo" type="submit" disabled>Obter minha chave</button>
         </div>
       </section>
 
