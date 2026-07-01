@@ -2760,31 +2760,46 @@
   /* ===== Redesign checkout: sacola branca full-screen ===== */
   .bag-sheet.open{
     height:100dvh; max-height:100dvh; border-radius:0; border:0;
-    --bg:#ffffff; --bg-elev:#ffffff; --text:#191512; --text-dim:#7c766c; --line:#ededed;
-    background:#fff; color:#191512; box-shadow:none;
+    --bg:#ffffff; --bg-elev:#ffffff; --text:#111111; --text-dim:#6b6b6b; --line:#e8e8e8;
+    background:#fff; color:#111111; box-shadow:none;
   }
-  .bag-sheet.open .bag-head{ background:#fff; border-bottom:1px solid #f0f0f0; }
-  .bag-sheet.open .bag-head h2{ color:#191512; }
+  .bag-sheet.open .bag-head{ background:#fff; border-bottom:1px solid #eee; }
+  .bag-sheet.open .bag-head h2{ color:#111; }
   .bag-sheet.open .bag-store{ border-bottom:1px solid #f2f2f2; }
+  .bag-sheet.open .bag-store strong{ color:#111; }
   .bag-sheet.open .bag-item{ border-bottom:1px solid #f2f2f2; }
-  .bag-sheet.open .bag-item-title,
-  .bag-sheet.open .bag-item-price{ color:#191512; }
-  .bag-sheet.open .bag-remove{ color:#b23b3b; }
+  .bag-sheet.open .bag-item-title{ color:#111; }
+  .bag-sheet.open .bag-item-price{ color:#111; }
+  .bag-sheet.open .bag-item-meta{ color:#6b6b6b; }
+  .bag-sheet.open .bag-remove{ color:#8a8a8a; }
+  .bag-sheet.open .bag-link,
+  .bag-sheet.open .bag-clear{ color:#111; }
   .bag-sheet.open .bag-footer{ background:#fff; border-top:1px solid #eee; }
-  .bag-sheet.open .checkout-input{ background:#fff; border:1px solid #dcdcdc; color:#191512; }
-  .bag-sheet.open .checkout-input::placeholder{ color:#b3ada5; }
+  .bag-sheet.open .checkout-input{ background:#fff; border:1px solid #d8d8d8; color:#111; }
+  .bag-sheet.open .checkout-input::placeholder{ color:#adadad; }
   .bag-sheet.open .checkout-card{ background:#fff; border:1px solid #ececec; box-shadow:0 6px 20px rgba(0,0,0,.05); }
-  .bag-sheet.open .checkout-label{ color:#4a463f; }
-  .bag-sheet.open .review-line{ color:#191512; }
-  .bag-sheet.open .value-row{ color:#3a362f; }
-  .bag-sheet.open .value-row.total strong{ color:#191512; }
+  .bag-sheet.open .checkout-card h3{ color:#111; }
+  .bag-sheet.open .checkout-label{ color:#444; }
+  .bag-sheet.open .review-line{ color:#222; }
+  .bag-sheet.open .review-line b{ color:#111; }
+  .bag-sheet.open .value-row{ color:#555; }
+  .bag-sheet.open .value-row strong{ color:#333; }
+  .bag-sheet.open .value-row.total,
+  .bag-sheet.open .value-row.total strong{ color:#111; }
+  /* botoes sem dourado: preto/branco */
+  .bag-sheet.open .bag-primary-btn,
+  .bag-sheet.open .sacola-main-btn,
+  .bag-sheet.open .checkout-primary{ background:#111; color:#fff; box-shadow:none; }
+  .bag-sheet.open .checkout-secondary{ color:#111; }
+  /* Marco centralizado no topo em todas as etapas */
+  .marco-sticker.top-center{ left:50%!important; right:auto!important; transform:translateX(-50%) scale(.95)!important; }
   /* tela de endereço redesenhada */
   .co-addr{ display:flex; flex-direction:column; gap:14px; }
   .co-eta{ display:flex; gap:10px; }
-  .co-eta-card{ flex:1; background:#faf7ef; border:1px solid #f0e7cf; border-radius:14px; padding:12px 10px; text-align:center; }
-  .co-eta-card small{ display:block; color:#94897a; font-size:11px; margin-bottom:3px; text-transform:uppercase; letter-spacing:.04em; }
-  .co-eta-card strong{ font-size:16px; color:#191512; }
-  .co-loc-btn{ display:flex; align-items:center; justify-content:center; gap:10px; width:100%; min-height:52px; border-radius:14px; background:#191512; color:#fff; font-weight:800; font-size:15px; }
+  .co-eta-card{ flex:1; background:#f6f6f6; border:1px solid #ececec; border-radius:14px; padding:12px 10px; text-align:center; }
+  .co-eta-card small{ display:block; color:#6b6b6b; font-size:11px; margin-bottom:3px; text-transform:uppercase; letter-spacing:.04em; }
+  .co-eta-card strong{ font-size:16px; color:#111; }
+  .co-loc-btn{ display:flex; align-items:center; justify-content:center; gap:10px; width:100%; min-height:52px; border-radius:14px; background:#111; color:#fff; font-weight:800; font-size:15px; }
   .co-loc-btn:disabled{ opacity:.6; }
   .co-loc-pin{ font-size:20px; display:inline-block; animation:coBounce 1.1s ease-in-out infinite; }
   @keyframes coBounce{ 0%,100%{ transform:translateY(-3px);} 50%{ transform:translateY(4px);} }
@@ -2793,6 +2808,7 @@
   .co-map-canvas{ height:230px; border-radius:16px; overflow:hidden; border:1px solid #e6e6e6; }
   .co-map-pin-float{ position:absolute; top:34px; left:50%; transform:translateX(-50%); font-size:30px; z-index:2; pointer-events:none; animation:coBounce 1.1s ease-in-out infinite; filter:drop-shadow(0 5px 6px rgba(0,0,0,.28)); }
   .co-wa-btn{ display:flex; align-items:center; justify-content:center; gap:9px; width:100%; min-height:50px; border-radius:14px; background:#25D366; color:#fff; font-weight:800; font-size:15px; }
+  .co-wa-btn svg{ width:21px; height:21px; fill:#fff; flex:0 0 auto; }
 </style>
 </head>
 <body>
@@ -3599,6 +3615,24 @@ function App() {
   const preparoTexto = '5 minutos';
   const entregaTexto = '12 a 30 minutos, dependendo do endereco';
   const montarTextoWhatsApp = (origem = 'topo', opts = {}) => {
+    if (opts.checkout) {
+      const nome = String(checkoutDados.nome || '').trim();
+      const tel = String(checkoutDados.whatsapp || '').replace(/\D/g, '');
+      const end = enderecoCheckout();
+      // Cada dado em bloco separado (com linha em branco) pra facilitar copiar e colar.
+      const L = ['*Pedido - Dom Leonardo*', opts.pago ? 'Status: PAGO (Pix confirmado)' : 'Status: aguardando pagamento'];
+      L.push('', `WhatsApp: ${tel}`, `Nome: ${nome}`);
+      if (end.logradouro) L.push('', `Rua: ${end.logradouro}`);
+      if (end.numero) L.push('', `Numero: ${end.numero}`);
+      if (end.bairro) L.push('', `Bairro: ${end.bairro}`);
+      if (end.complemento) L.push('', `Complemento: ${end.complemento}`);
+      L.push('', 'Itens:');
+      carrinho.forEach((item) => {
+        L.push(`${item.qtd}x ${item.nome}${item.tamanho?.nome ? ` (${labelTamanho(item.tamanho)})` : ''}`);
+      });
+      L.push('', `Total: ${fmtBRL(totalComEntrega)}`);
+      return L.join('\n');
+    }
     const linhas = [
       'Ola, Dom Leonardo!',
       origem === 'sacola'
@@ -3643,18 +3677,6 @@ function App() {
       if (partesEndereco.numero) linhas.push(`Numero: ${partesEndereco.numero}`);
       if (bairro) linhas.push(`Bairro: ${bairro}`);
       if (complemento) linhas.push(`Complemento: ${complemento}`);
-    }
-
-    // Redirect do checkout: leva contato + status do pedido pro WhatsApp da loja.
-    if (opts.checkout) {
-      const nomeCliente = String(checkoutDados.nome || '').trim();
-      const telCliente = String(checkoutDados.whatsapp || '').replace(/\D/g, '');
-      linhas.push('', 'Meus dados:');
-      if (nomeCliente) linhas.push(`Nome: ${nomeCliente}`);
-      if (telCliente) linhas.push(`Telefone: ${telCliente}`);
-      const numeroPedido = opts.numeroPedido || pixData?.pedido?.numero_pedido;
-      if (numeroPedido) linhas.push(`Pedido: #${numeroPedido}`);
-      linhas.push(opts.pago ? 'Status: PAGO (Pix confirmado)' : 'Status: aguardando pagamento');
     }
 
     linhas.push('', `Link do cardapio: ${window.location.origin}${window.location.pathname}`);
@@ -5680,15 +5702,12 @@ function App() {
                   <h3 style={{ marginTop: '8px' }}>Revise o seu pedido</h3>
                   <div className="review-list">
                     <div className="review-line">
-                      <span className="review-icon">🍝</span>
                       <div><b>Itens</b><br />{itensResumo}{carrinho.length > 4 ? ` e mais ${carrinho.length - 4}` : ''}</div>
                     </div>
                     <div className="review-line">
-                      <span className="review-icon">📍</span>
                       <div><b>Entrega</b><br />{[endereco.ruaNumero, endereco.bairro].filter(Boolean).join(' · ')}{endereco.complemento ? ` · ${endereco.complemento}` : ''}</div>
                     </div>
                     <div className="review-line">
-                      <span className="review-icon">💳</span>
                       <div><b>Pagamento</b><br />Pix Mercado Pago dentro do cardápio</div>
                     </div>
                   </div>
@@ -5726,6 +5745,10 @@ function App() {
                 </div>
                 <h3>Pague com Pix para confirmar</h3>
                 <p>Abra o app do seu banco, escolha <strong>Pix</strong> e escaneie o QR Code — ou use o Pix copia e cola abaixo.</p>
+                <button className="co-wa-btn" style={{ marginBottom: '14px' }} onClick={() => finalizarNoWhatsApp(false)}>
+                  <svg viewBox="0 0 24 24"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.79 1.21h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m0 18.15h-.01c-1.53 0-3.03-.41-4.34-1.19l-.31-.18-3.23.85.86-3.15-.2-.32a8.2 8.2 0 0 1-1.26-4.36c0-4.54 3.7-8.23 8.24-8.23 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.82c0 4.54-3.69 8.24-8.23 8.24m4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.25-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43-.14-.01-.31-.01-.48-.01a.93.93 0 0 0-.67.31c-.23.25-.87.85-.87 2.07s.89 2.4 1.02 2.56c.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.22-.16-.47-.28"/></svg>
+                  Prefiro finalizar no WhatsApp
+                </button>
                 {pixData?.qr_code_base64 ? (
                   <div className="pix-qr">
                     <img src={`data:image/png;base64,${pixData.qr_code_base64}`} alt="QR Code do Pix" />
@@ -5755,9 +5778,6 @@ function App() {
                   <span>Total</span>
                   <strong>{fmtBRL(pixData?.total || totalComEntrega)}</strong>
                 </div>
-                <button className="co-wa-btn" style={{ marginTop: '12px' }} onClick={() => finalizarNoWhatsApp(false)}>
-                  <span>💬</span> Prefiro finalizar no WhatsApp
-                </button>
                 {checkoutError && <div className="checkout-error">{checkoutError}</div>}
               </div>
             </div>
@@ -5804,7 +5824,8 @@ function App() {
                       )}
                       <p className="pedido-track-hint">Pode fechar — o Marco te avisa aqui a cada novidade.</p>
                       <button className="co-wa-btn" style={{ marginTop: '14px' }} onClick={() => finalizarNoWhatsApp(true)}>
-                        <span>💬</span> Enviar meu pedido no WhatsApp
+                        <svg viewBox="0 0 24 24"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.79 1.21h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m0 18.15h-.01c-1.53 0-3.03-.41-4.34-1.19l-.31-.18-3.23.85.86-3.15-.2-.32a8.2 8.2 0 0 1-1.26-4.36c0-4.54 3.7-8.23 8.24-8.23 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.82c0 4.54-3.69 8.24-8.23 8.24m4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.25-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43-.14-.01-.31-.01-.48-.01a.93.93 0 0 0-.67.31c-.23.25-.87.85-.87 2.07s.89 2.4 1.02 2.56c.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.22-.16-.47-.28"/></svg>
+                        Enviar meu pedido no WhatsApp
                       </button>
                     </>
                   )}
@@ -5940,7 +5961,7 @@ function App() {
 
       {/* Marco sticker */}
       <button
-        className={`marco-sticker ${garcomState} ${(pratoAberto || fotoAberta || sacolaOpen) ? 'top-mode' : ''}`}
+        className={`marco-sticker ${garcomState} ${(pratoAberto || fotoAberta || sacolaOpen) ? 'top-mode' : ''} ${sacolaOpen ? 'top-center' : ''}`}
         onClick={tapMarco}
         onTouchStart={onPressStart}
         onTouchEnd={onPressEnd}
