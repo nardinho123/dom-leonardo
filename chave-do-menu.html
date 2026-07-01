@@ -165,9 +165,9 @@
       margin: 0 0 12px;
       text-align: center;
       font-family: Cormorant Garamond, serif;
-      font-size: 19px;
+      font-size: 18px;
       font-style: italic;
-      line-height: 1.14;
+      line-height: 1.18;
       color: rgba(245, 231, 198, .91);
     }
 
@@ -269,7 +269,7 @@
       max-width: 310px;
       text-align: center;
       color: rgba(245, 231, 198, .74);
-      font-size: 12.5px;
+      font-size: 12.2px;
       line-height: 1.35;
       letter-spacing: .02em;
     }
@@ -369,30 +369,32 @@
     .book {
       position: relative;
       z-index: 1;
-      width: min(80vw, 278px);
-      min-height: 278px;
+      width: min(78vw, 286px);
+      min-height: 292px;
       display: grid;
       place-items: center;
-      padding: 31px 25px 30px 39px;
-      border-radius: 11px 25px 25px 11px;
+      padding: 36px 28px 33px 44px;
+      border-radius: 12px 28px 28px 12px;
       border: 1px solid rgba(255, 232, 163, .26);
       background:
-        linear-gradient(90deg, rgba(0,0,0,.68) 0 18px, rgba(255,232,163,.14) 19px 21px, rgba(0,0,0,.33) 22px 33px, transparent 34px),
-        radial-gradient(110% 70% at 66% 0%, rgba(255, 232, 163, .13), transparent 46%),
-        radial-gradient(75% 80% at 18% 98%, rgba(123, 65, 23, .34), transparent 58%),
-        repeating-linear-gradient(102deg, rgba(255,255,255,.024) 0 1px, transparent 1px 7px),
-        repeating-linear-gradient(8deg, rgba(0,0,0,.1) 0 2px, transparent 2px 9px),
-        linear-gradient(145deg, #3b2616 0%, #23140a 50%, #0d0603 100%);
+        linear-gradient(90deg, rgba(0,0,0,.78) 0 16px, rgba(255,232,163,.16) 17px 19px, rgba(0,0,0,.42) 20px 38px, transparent 39px),
+        radial-gradient(92% 52% at 70% 4%, rgba(255, 232, 163, .17), transparent 45%),
+        radial-gradient(75% 78% at 14% 100%, rgba(124, 62, 22, .42), transparent 60%),
+        linear-gradient(105deg, rgba(255,255,255,.035), transparent 22% 70%, rgba(0,0,0,.26)),
+        repeating-linear-gradient(95deg, rgba(255,255,255,.025) 0 1px, transparent 1px 6px),
+        repeating-linear-gradient(13deg, rgba(0,0,0,.12) 0 2px, transparent 2px 10px),
+        linear-gradient(145deg, #352112 0%, #211209 49%, #0b0503 100%);
       box-shadow:
-        0 34px 70px rgba(0,0,0,.62),
-        10px 12px 0 rgba(96, 71, 46, .16),
-        14px 16px 0 rgba(0,0,0,.2),
-        inset 17px 0 28px rgba(0,0,0,.54),
+        0 35px 74px rgba(0,0,0,.65),
+        8px 10px 0 rgba(221, 204, 170, .16),
+        14px 16px 0 rgba(63, 45, 28, .18),
+        18px 21px 0 rgba(0,0,0,.18),
+        inset 20px 0 31px rgba(0,0,0,.58),
         inset -1px 0 0 rgba(255,255,255,.04),
         inset 0 1px 0 rgba(255,255,255,.07);
       transform: rotateX(7deg) rotateZ(-1.15deg);
       transform-style: preserve-3d;
-      overflow: hidden;
+      overflow: visible;
     }
 
     .book::before {
@@ -410,6 +412,7 @@
       content: "";
       position: absolute;
       inset: 0;
+      border-radius: inherit;
       opacity: .58;
       background-image:
         radial-gradient(rgba(0,0,0,.3) 1px, transparent 1.4px),
@@ -420,29 +423,101 @@
       pointer-events: none;
     }
 
+    .book-pages {
+      position: absolute;
+      z-index: 0;
+      right: -8px;
+      top: 19px;
+      bottom: 17px;
+      width: 21px;
+      border-radius: 0 20px 20px 0;
+      background:
+        repeating-linear-gradient(180deg, rgba(92,72,49,.5) 0 1px, rgba(246,226,184,.48) 1px 3px, rgba(82,59,38,.25) 3px 5px),
+        linear-gradient(90deg, #80623c, #f4dfaf 38%, #725232);
+      box-shadow: inset 7px 0 7px rgba(0,0,0,.28), 7px 11px 16px rgba(0,0,0,.28);
+    }
+
+    .book-spine {
+      position: absolute;
+      z-index: 2;
+      left: 18px;
+      top: 18px;
+      bottom: 18px;
+      width: 18px;
+      border-radius: 8px;
+      background:
+        linear-gradient(90deg, rgba(0,0,0,.55), rgba(255,232,163,.12), rgba(0,0,0,.28)),
+        repeating-linear-gradient(180deg, rgba(255,232,163,.1) 0 1px, transparent 1px 19px),
+        #140905;
+      box-shadow: inset -1px 0 rgba(255,232,163,.16), inset 1px 0 rgba(0,0,0,.7);
+    }
+
+    .book-corner {
+      position: absolute;
+      z-index: 4;
+      width: 34px;
+      height: 34px;
+      color: rgba(255, 232, 163, .42);
+      filter: drop-shadow(0 3px 7px rgba(0,0,0,.35));
+      pointer-events: none;
+    }
+
+    .book-corner.c1 { top: 16px; left: 31px; border-top: 1px solid; border-left: 1px solid; border-radius: 8px 0 0 0; }
+    .book-corner.c2 { top: 16px; right: 17px; border-top: 1px solid; border-right: 1px solid; border-radius: 0 14px 0 0; }
+    .book-corner.c3 { bottom: 16px; left: 31px; border-bottom: 1px solid; border-left: 1px solid; border-radius: 0 0 0 8px; }
+    .book-corner.c4 { bottom: 16px; right: 17px; border-bottom: 1px solid; border-right: 1px solid; border-radius: 0 0 14px 0; }
+
+    .book-ornament {
+      position: absolute;
+      z-index: 4;
+      left: 50%;
+      width: 78px;
+      height: 1px;
+      transform: translateX(-50%);
+      background: linear-gradient(90deg, transparent, rgba(255,232,163,.65), transparent);
+      opacity: .85;
+    }
+
+    .book-ornament::before,
+    .book-ornament::after {
+      content: "";
+      position: absolute;
+      top: -3px;
+      width: 7px;
+      height: 7px;
+      border: 1px solid rgba(255,232,163,.45);
+      transform: rotate(45deg);
+      background: rgba(24, 11, 5, .9);
+    }
+
+    .book-ornament::before { left: 28px; }
+    .book-ornament::after { right: 28px; }
+    .book-ornament.top { top: 57px; }
+    .book-ornament.bottom { bottom: 57px; }
+
     .book-content {
       position: relative;
-      z-index: 2;
+      z-index: 5;
       width: 100%;
       display: grid;
       justify-items: center;
       align-self: start;
       gap: 7px;
-      padding-top: 22px;
-      padding-right: 31px;
+      padding-top: 33px;
+      padding-right: 36px;
       text-align: center;
     }
 
     .book-kicker {
-      font: 700 8.5px/1 Cinzel, serif;
+      font: 700 8px/1 Cinzel, serif;
       text-transform: uppercase;
-      letter-spacing: .28em;
+      letter-spacing: .32em;
       color: rgba(255,232,163,.7);
     }
 
     .book-title {
       margin: 0;
-      font: 700 clamp(27px, 8.4vw, 36px)/.94 Cinzel, serif;
+      font: 700 clamp(28px, 8.2vw, 37px)/.94 Cinzel, serif;
       letter-spacing: .04em;
       color: #f7dc8b;
       text-shadow: 0 14px 28px rgba(0,0,0,.5);
@@ -464,8 +539,10 @@
       width: 58px;
       height: 68px;
       margin: 0;
-      transform: translate(15%, -27%) rotate(-2deg);
+      transform-origin: 50% 2px;
+      transform: translate(16%, -26%) rotate(-4deg);
       filter: drop-shadow(0 15px 15px rgba(0,0,0,.46)) drop-shadow(0 0 15px rgba(215,173,53,.18));
+      animation: lockSwing 3.6s ease-in-out infinite;
     }
 
     .lock-target::after {
@@ -487,10 +564,10 @@
     .book-band {
       position: absolute;
       z-index: 3;
-      left: 20px;
-      right: -10px;
+      left: 27px;
+      right: -13px;
       top: 58%;
-      height: 31px;
+      height: 34px;
       transform: translateY(-50%);
       border-block: 1px solid rgba(255,232,163,.23);
       background:
@@ -517,6 +594,19 @@
     .book-rivet.r2 { right: 26px; top: 27px; }
     .book-rivet.r3 { left: 37px; top: calc(58% - 2px); }
     .book-rivet.r4 { right: 69px; top: calc(58% - 2px); }
+
+    .lock-ring {
+      position: absolute;
+      z-index: 5;
+      right: 42px;
+      top: calc(58% - 17px);
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,232,163,.58);
+      background: radial-gradient(circle at 35% 28%, #fff2a8, #9f6b18 66%, #3b2108);
+      box-shadow: 0 3px 8px rgba(0,0,0,.45), 0 0 9px rgba(215,173,53,.2);
+    }
 
     .entry.ready .key-aura { animation-duration: 1.75s; }
     .entry.ready .key-real { filter: drop-shadow(0 18px 32px rgba(0,0,0,.52)) drop-shadow(0 0 30px rgba(255,232,163,.42)); }
@@ -605,6 +695,11 @@
       50% { transform: scale(1.08) rotate(2deg); }
     }
 
+    @keyframes lockSwing {
+      0%, 100% { transform: translate(16%, -26%) rotate(-4deg); }
+      50% { transform: translate(16%, -26%) rotate(5deg); }
+    }
+
     @keyframes spark {
       0%, 100% { opacity: 0; transform: translateY(7px) scale(.45); }
       34% { opacity: 1; transform: translateY(0) scale(1); }
@@ -623,9 +718,9 @@
     }
 
     @keyframes lockPop {
-      0% { transform: translate(15%, -27%) scale(1) rotate(-2deg); opacity: 1; }
-      55% { transform: translate(15%, -27%) scale(1.12) rotate(12deg); opacity: 1; }
-      100% { transform: translate(15%, -27%) scale(.68) rotate(28deg); opacity: .35; }
+      0% { transform: translate(16%, -26%) scale(1) rotate(-4deg); opacity: 1; }
+      55% { transform: translate(16%, -26%) scale(1.12) rotate(12deg); opacity: 1; }
+      100% { transform: translate(16%, -26%) scale(.68) rotate(28deg); opacity: .35; }
     }
 
     @media (max-height: 740px) {
@@ -633,18 +728,21 @@
       .brandmark { gap: 3px; }
       .monogram { width: 42px; height: 42px; }
       .credential-card { padding: 13px 13px 11px; }
-      .credential-title { font-size: 17px; margin-bottom: 9px; }
+      .credential-title { font-size: 16.2px; margin-bottom: 9px; line-height: 1.18; }
       .field { min-height: 46px; margin-bottom: 8px; }
       .key-stage { height: 60px; margin-top: -8px; }
       .key-real { width: 84px; height: 46px; }
       .key-aura { width: 104px; height: 38px; }
       .cta-row { margin-top: -5px; }
-      .book { width: min(76vw, 252px); min-height: 236px; padding: 25px 22px 24px 34px; }
-      .book-content { padding-top: 16px; padding-right: 25px; }
+      .book { width: min(78vw, 258px); min-height: 246px; padding: 28px 23px 26px 39px; }
+      .book-content { padding-top: 23px; padding-right: 29px; }
       .book-title { font-size: 29px; }
-      .book-band { height: 28px; }
+      .book-band { height: 29px; left: 24px; }
+      .book-ornament.top { top: 49px; }
+      .book-ornament.bottom { bottom: 48px; }
       .lock-target { width: 50px; height: 60px; right: 12px; }
       .lock-target svg { width: 50px; height: 60px; }
+      .lock-ring { right: 35px; }
     }
   </style>
 </head>
@@ -657,7 +755,7 @@
       </div>
 
       <section class="credential-card" aria-label="Identificacao do cliente">
-        <p class="credential-title">Obtenha sua chave informando nome e telefone.</p>
+        <p class="credential-title">No Dom Leonardo, cada cliente possui uma chave única para explorar nosso cardápio.</p>
 
         <form id="formNovo" autocomplete="on">
           <label class="field" id="fNome">
@@ -672,7 +770,7 @@
             </svg>
             <input id="whats" name="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="Seu WhatsApp" />
           </label>
-          <button class="already" id="toggleReturn" type="button">Ja sou cliente</button>
+          <button class="already" id="toggleReturn" type="button">Já tenho minha chave</button>
         </form>
 
         <div class="returning" id="returning">
@@ -691,7 +789,7 @@
       </section>
 
       <div class="arrow-zone" aria-hidden="true">
-        <p class="microcopy">A chave guarda sua entrada, seus pedidos e suas conversas com o Marco.</p>
+        <p class="microcopy">Escreva seu nome e WhatsApp para obter sua chave única do cardápio.</p>
         <svg class="arrow" viewBox="0 0 64 64" fill="none">
           <path d="M32 6v40" stroke="currentColor" stroke-width="5" stroke-linecap="round" />
           <path d="M16 32l16 18 16-18" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
@@ -727,19 +825,28 @@
       </div>
 
       <div class="cta-row">
-        <button class="btn" id="btnNovo" form="formNovo" type="submit" disabled>Obter minha chave</button>
+        <button class="btn" id="btnNovo" form="formNovo" type="submit" disabled>DESTRANCAR MENU</button>
       </div>
 
       <section class="book-wrap" aria-label="Cardapio Dom Leonardo">
         <div class="book" id="book">
+          <span class="book-pages"></span>
+          <span class="book-spine"></span>
+          <span class="book-corner c1"></span>
+          <span class="book-corner c2"></span>
+          <span class="book-corner c3"></span>
+          <span class="book-corner c4"></span>
+          <span class="book-ornament top"></span>
+          <span class="book-ornament bottom"></span>
           <span class="book-band"></span>
+          <span class="lock-ring"></span>
           <span class="book-rivet r1"></span>
           <span class="book-rivet r2"></span>
           <span class="book-rivet r3"></span>
           <span class="book-rivet r4"></span>
           <div class="book-content">
             <span class="book-kicker">Dom Leonardo</span>
-            <h1 class="book-title">Cardapio</h1>
+            <h1 class="book-title">Cardápio</h1>
             <p class="book-sub">menu reservado</p>
           </div>
           <div class="lock-target" id="seal">
@@ -1008,7 +1115,7 @@
       } catch (err) {
         btnNovo.classList.remove('busy');
         setReady(btnNovo, true);
-        btnNovo.textContent = 'Obter minha chave';
+        btnNovo.textContent = 'DESTRANCAR MENU';
         setStatus((err && err.message) || 'Nao consegui abrir agora. Tenta de novo.', 'bad');
       }
     });

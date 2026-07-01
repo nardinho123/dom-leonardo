@@ -1,0 +1,118 @@
+{
+  "item": {
+    "id": "29db6e5b-ecfd-4462-80e3-bc48c2350996",
+    "displayId": "1064",
+    "orderType": "DELIVERY",
+    "salesChannel": "PARTNER",
+    "category": "FOOD",
+    "orderTiming": "IMMEDIATE",
+    "createdAt": "2026-06-30T18:34:24.651925+00:00",
+    "preparationStartDateTime": "2026-06-30T18:34:24.651925+00:00",
+    "merchant": {
+      "id": "603749dc-7af2-45a0-b3a1-4c6ea7f5c479",
+      "name": "Dom Leonardo"
+    },
+    "picking": {
+      "picker": "DEFAULT",
+      "replacementOptions": []
+    },
+    "total": {
+      "subTotal": 9.9,
+      "deliveryFee": 6.99,
+      "orderAmount": 16.89,
+      "benefits": 0,
+      "additionalFees": 0
+    },
+    "payments": {
+      "methods": [
+        {
+          "method": "PIX",
+          "type": "ONLINE",
+          "currency": "BRL",
+          "value": 16.89,
+          "prepaid": true,
+          "cash": null,
+          "card": null,
+          "wallet": null,
+          "transaction": {
+            "authorizationCode": "165678323409",
+            "acquirerDocument": ""
+          }
+        }
+      ],
+      "pending": 0,
+      "prepaid": 16.89
+    },
+    "customer": {
+      "id": "d0e0291e-68d4-4787-affe-5cd553544327",
+      "name": "Leonardo",
+      "documentType": null,
+      "documentNumber": null,
+      "ordersCountOnMerchant": 0,
+      "segmentation": "Cliente",
+      "phone": {
+        "number": "5541987044064",
+        "localizer": "87044064",
+        "localizerExpiration": "2026-06-30T20:56:58.045Z"
+      }
+    },
+    "delivery": {
+      "mode": "DEFAULT",
+      "deliveredBy": "Partner",
+      "description": "Padrão",
+      "pickupCode": "1064",
+      "deliveryDateTime": "2026-06-30T19:41:58.045Z",
+      "deliveryAddress": {
+        "country": "BR",
+        "state": "PR",
+        "city": "Curitiba",
+        "postalCode": "",
+        "streetName": "Rua Francisco Dallalibera",
+        "streetNumber": "1811",
+        "neighborhood": "Santa Felicidade",
+        "complement": "Casa 15",
+        "reference": "",
+        "formattedAddress": "Rua Francisco Dallalibera, 1811 - Santa Felicidade - Curitiba - PR",
+        "coordinates": {
+          "latitude": -25.3927981,
+          "longitude": -49.3372233
+        }
+      },
+      "observations": "Casa 15"
+    },
+    "items": [
+      {
+        "id": "78fc2e4a-beae-4b4e-98b9-b10dd5ca1551",
+        "uniqueId": "78fc2e4a-beae-4b4e-98b9-b10dd5ca1551",
+        "externalCode": "17",
+        "name": "Panna Cotta com Geleia de Morango",
+        "quantity": 1,
+        "unit": "UN",
+        "ean": null,
+        "unitPrice": 9.9,
+        "price": 9.9,
+        "totalPrice": 9.9,
+        "optionsPrice": 0,
+        "addition": 0,
+        "observations": "Tamanho: Individual",
+        "imageUrl": "https://jewamqbdonudiapxbzay.supabase.co/storage/v1/object/public/cardapio/pratos/0905e737-7e59-404c-b668-7c3aaddb641b-1780770745328.webp",
+        "options": [],
+        "scalePrices": null,
+        "index": 1,
+        "type": "DEFAULT"
+      }
+    ],
+    "benefits": [],
+    "additionalFees": [],
+    "extraInfo": "1x Panna Cotta com Geleia de Morango (Individual)",
+    "schedule": null,
+    "indoor": null,
+    "dineIn": null,
+    "takeout": null,
+    "additionalInfometadata": null,
+    "isTest": false,
+    "error": null
+  },
+  "statusCode": 0,
+  "reasonPhrase": null
+}

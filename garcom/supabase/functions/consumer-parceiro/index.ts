@@ -87,7 +87,7 @@ function enderecoConsumer(snapshot: Record<string, unknown>) {
   const neighborhood = cleanText(snapshot.bairro);
   const city = cleanText(snapshot.cidade) || "Curitiba";
   const state = cleanText(snapshot.uf) || "PR";
-  const postalCode = cleanText(snapshot.cep);
+  const postalCode = cleanText(snapshot.cep).replace(/\D/g, "");
   const complement = cleanText(snapshot.complemento);
   const reference = cleanText(snapshot.ponto_referencia);
   const lat = num(snapshot.lat) || num(snapshot.latitude);
@@ -147,23 +147,50 @@ function normalizeKey(value: unknown): string {
     .replace(/\s+/g, " ");
 }
 
-// Geocodifica o endereco (forward) com a chave do Maps -> coordenada real (best-effort).
-async function geocodeAddress(query: string): Promise<{ latitude: number; longitude: number } | null> {
+// Extrai o CEP (postal_code) dos address_components do Google.
+function extrairCep(results: Array<Record<string, unknown>>): string {
+  for (const r of results) {
+    const comps = (r.address_components as Array<Record<string, unknown>>) || [];
+    for (const c of comps) {
+      const types = (c.types as string[]) || [];
+      if (types.includes("postal_code")) {
+        return cleanText(c.long_name).replace(/\D/g, "");
+      }
+    }
+  }
+  return "";
+}
+
+// Geocodifica (forward pelo endereco OU reverse por lat/lng) -> coordenada + CEP (best-effort).
+// O iFood Sob Demanda exige CEP; o cardapio guarda a coordenada mas nem sempre o CEP.
+async function geocodeInfo(opts: { query?: string; lat?: number; lng?: number }): Promise<{ latitude?: number; longitude?: number; postalCode?: string } | null> {
   const key = Deno.env.get("MAPS_API_KEY_CONSUMER") || Deno.env.get("DOM_LEONARDO_MAPS_SERVER") || "";
-  if (!key || !query) return null;
+  if (!key) return null;
+  let url = "";
+  if (opts.lat && opts.lng) {
+    url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${opts.lat},${opts.lng}&region=br&key=${key}`;
+  } else if (opts.query) {
+    url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(opts.query)}&region=br&key=${key}`;
+  } else {
+    return null;
+  }
   try {
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&region=br&key=${key}`;
     const r = await fetch(url);
     const d = await r.json().catch(() => ({})) as Record<string, unknown>;
     const results = (d.results as Array<Record<string, unknown>>) || [];
+    const out: { latitude?: number; longitude?: number; postalCode?: string } = {};
+    const cep = extrairCep(results);
+    if (cep) out.postalCode = cep;
     const geometry = results[0]?.geometry as Record<string, unknown> | undefined;
     const loc = geometry?.location as Record<string, unknown> | undefined;
     const lat = Number(loc?.lat);
     const lng = Number(loc?.lng);
     if (Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)) {
-      return { latitude: lat, longitude: lng };
+      out.latitude = lat;
+      out.longitude = lng;
     }
-  } catch (_err) { /* best-effort: cai no fallback */ }
+    return Object.keys(out).length ? out : null;
+  } catch (_err) { /* best-effort */ }
   return null;
 }
 
@@ -266,11 +293,21 @@ async function montarDetalhes(supabase: ReturnType<typeof createClient>, pedido:
   const localizerExp = new Date(agora + 2 * 60 * 60 * 1000).toISOString();
   const localizerCode = cleanText(pedido.cliente_whatsapp).replace(/\D/g, "").slice(-8) || numero.padStart(8, "0");
 
-  // Endereco com coordenada REAL (geocodifica se o snapshot nao tiver lat/lng).
+  // Endereco com coordenada REAL + CEP (o iFood Sob Demanda EXIGE CEP; o cardapio nem sempre salva).
   const endereco = enderecoConsumer(snapshot) as Record<string, unknown>;
-  if (!endereco.coordinates) {
-    const geo = await geocodeAddress(String(endereco.formattedAddress || ""));
-    if (geo) endereco.coordinates = geo;
+  const coordAtual = endereco.coordinates as { latitude: number; longitude: number } | undefined;
+  const temCep = !!cleanText(endereco.postalCode);
+  if (!coordAtual || !temCep) {
+    // Se ja tem coordenada, reverse-geocode (mais preciso pro CEP); senao forward pelo endereco.
+    const geo = coordAtual
+      ? await geocodeInfo({ lat: coordAtual.latitude, lng: coordAtual.longitude })
+      : await geocodeInfo({ query: String(endereco.formattedAddress || "") });
+    if (geo) {
+      if (!coordAtual && geo.latitude && geo.longitude) {
+        endereco.coordinates = { latitude: geo.latitude, longitude: geo.longitude };
+      }
+      if (!temCep && geo.postalCode) endereco.postalCode = geo.postalCode;
+    }
   }
 
   return {
@@ -284,7 +321,7 @@ async function montarDetalhes(supabase: ReturnType<typeof createClient>, pedido:
       createdAt: criado,
       preparationStartDateTime: criado,
       merchant: { id: MERCHANT_ID, name: MERCHANT_NOME },
-      picking: { picker: "DEFAULT", replacementOptions: [] },
+      picking: { picker: "DEFAULT", replacementOptions: null },
       total: {
         subTotal,
         deliveryFee: taxa,
@@ -300,7 +337,7 @@ async function montarDetalhes(supabase: ReturnType<typeof createClient>, pedido:
           value: total,
           prepaid: true,
           cash: null,
-          card: null,
+          card: { brand: "PIX" },
           wallet: null,
           transaction: { authorizationCode: cleanText(pedido.mp_payment_id) || "PIX", acquirerDocument: "" },
         }],
@@ -414,25 +451,29 @@ Deno.serve(async (req) => {
       return json(payload);
     }
 
-    // ===== STATUS: Consumer informa mudanca =====
+    // ===== STATUS: Consumer informa mudanca (SEMPRE responde 200 pra ele nao re-tentar/re-alertar) =====
     if (sub === "status") {
-      const status = cleanText(tail[1]) || cleanText(url.searchParams.get("status")) || cleanText(body.status);
-      const justification = cleanText(tail[2]) || cleanText(url.searchParams.get("justification")) || cleanText(body.justification);
-      console.log("consumer-status:", JSON.stringify({ orderId, status, justification }));
-      if (!orderId || !status) return json({ statusCode: 1, reasonPhrase: "orderId/status ausente" }, 400);
+      const oid = orderId || cleanText(body.Id) || cleanText(body.id);
+      const status = cleanText(tail[1]) || cleanText(url.searchParams.get("status"))
+        || cleanText(body.status) || cleanText(body.Status);
+      const justification = cleanText(tail[2]) || cleanText(url.searchParams.get("justification"))
+        || cleanText(body.justification) || cleanText(body.Justification);
+      console.log("consumer-status RAW:", JSON.stringify({ path: url.pathname, tail, query: Object.fromEntries(url.searchParams), body }).slice(0, 800));
 
-      const { data: pedido } = await supabase.from("pedidos").select("id, status").eq("id", orderId).maybeSingle();
-      if (pedido) {
-        await supabase.from("pedidos")
-          .update({ consumer_status: status.toUpperCase(), atualizado_em: new Date().toISOString() })
-          .eq("id", orderId);
-
-        const novo = mapStatusConsumer(status);
-        if (novo && cleanText(pedido.status) !== novo && !["entregue", "cancelado"].includes(cleanText(pedido.status))) {
-          await supabase.rpc("atualizar_status_pedido", { p_pedido_id: orderId, p_novo_status: novo, p_motivo: justification || null });
+      if (oid && status) {
+        const { data: pedido } = await supabase.from("pedidos").select("id, status").eq("id", oid).maybeSingle();
+        if (pedido) {
+          await supabase.from("pedidos")
+            .update({ consumer_status: status.toUpperCase(), atualizado_em: new Date().toISOString() })
+            .eq("id", oid);
+          const novo = mapStatusConsumer(status);
+          if (novo && cleanText(pedido.status) !== novo && !["entregue", "cancelado"].includes(cleanText(pedido.status))) {
+            await supabase.rpc("atualizar_status_pedido", { p_pedido_id: oid, p_novo_status: novo, p_motivo: justification || null });
+          }
         }
       }
-      return json({ statusCode: 0, reasonPhrase: `${orderId} -> ${status}` });
+      // Confirma SEMPRE (statusCode 0). Sem isso, o Consumer fica re-tentando o mesmo pedido.
+      return json({ statusCode: 0, reasonPhrase: oid ? `${oid} -> ${status}` : "ok" });
     }
 
     // ===== ENVIO de detalhes (Consumer -> nos): stub Fase 1 =====
