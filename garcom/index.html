@@ -2809,6 +2809,39 @@
   .co-map-pin-float{ position:absolute; top:34px; left:50%; transform:translateX(-50%); font-size:30px; z-index:2; pointer-events:none; animation:coBounce 1.1s ease-in-out infinite; filter:drop-shadow(0 5px 6px rgba(0,0,0,.28)); }
   .co-wa-btn{ display:flex; align-items:center; justify-content:center; gap:9px; width:100%; min-height:50px; border-radius:14px; background:#25D366; color:#fff; font-weight:800; font-size:15px; }
   .co-wa-btn svg{ width:21px; height:21px; fill:#fff; flex:0 0 auto; }
+  /* ===== Checkout: color grading padronizado (fundo branco) ===== */
+  .bag-sheet.open .bag-head{ justify-content:flex-start; gap:8px; }
+  .bag-sheet.open .bag-head h2{ margin-left:4px; }
+  .bag-sheet.open .checkout-card p,
+  .bag-sheet.open .pix-card p{ color:#666; }
+  /* Pix / pagamento */
+  .bag-sheet.open .pix-seal{ background:#e9f7ef; border:1px solid #bfe6cd; color:#15803d; }
+  .bag-sheet.open .pix-seal strong{ color:#15803d; }
+  .bag-sheet.open .pix-qr{ box-shadow:0 10px 26px rgba(0,0,0,.10); border:1px solid #eee; }
+  .bag-sheet.open .pix-qr-empty{ color:#9a9a9a; background:#f6f6f6; }
+  .bag-sheet.open .pix-copia-label{ color:#8a8a8a; }
+  .bag-sheet.open .pix-copia-code{ color:#333; background:#f7f7f7; border:1px solid #e6e6e6; }
+  .bag-sheet.open .pix-status{ color:#555; }
+  .bag-sheet.open .pix-total{ border-top:1px solid #eee; }
+  .bag-sheet.open .pix-total span{ color:#6b6b6b; }
+  .bag-sheet.open .pix-total strong{ color:#111; }
+  .bag-sheet.open .pix-countdown{ background:#f7f7f7; border:1px solid #ececec; }
+  .bag-sheet.open .pix-countdown-row{ color:#555; }
+  .bag-sheet.open .pix-countdown-row strong{ color:#111; }
+  .bag-sheet.open .pix-countdown-bar{ background:#e6e6e6; }
+  .bag-sheet.open .pix-countdown-bar span{ background:linear-gradient(90deg,#25D366,#16a34a); }
+  /* Resumo compacto (sem os icones, 1 coluna, frases preenchendo a linha) */
+  .bag-sheet.open .review-card{ border-color:#ececec; }
+  .bag-sheet.open .review-list{ gap:4px; margin:10px 0; }
+  .bag-sheet.open .review-line{ grid-template-columns:1fr; color:#333; font-size:14px; line-height:1.4; }
+  .bag-sheet.open .review-line b{ color:#111; }
+  /* Acompanhamento (sucesso) */
+  .bag-sheet.open .pedido-card h3{ color:#111; }
+  .bag-sheet.open .pedido-track-msg{ color:#333; }
+  .bag-sheet.open .pedido-track-hint{ color:#8a8a8a; }
+  .bag-sheet.open .pedido-step-label{ color:#555; }
+  /* Marco puxado pra cima quando ha item na sacola (menu, fora do checkout) */
+  .marco-sticker.raised{ bottom:calc(var(--safe-bottom) + 96px); }
 </style>
 </head>
 <body>
@@ -5702,13 +5735,13 @@ function App() {
                   <h3 style={{ marginTop: '8px' }}>Revise o seu pedido</h3>
                   <div className="review-list">
                     <div className="review-line">
-                      <div><b>Itens</b><br />{itensResumo}{carrinho.length > 4 ? ` e mais ${carrinho.length - 4}` : ''}</div>
+                      <div><b>Itens:</b> {itensResumo}{carrinho.length > 4 ? ` e mais ${carrinho.length - 4}` : ''}</div>
                     </div>
                     <div className="review-line">
-                      <div><b>Entrega</b><br />{[endereco.ruaNumero, endereco.bairro].filter(Boolean).join(' · ')}{endereco.complemento ? ` · ${endereco.complemento}` : ''}</div>
+                      <div><b>Entrega:</b> {[endereco.ruaNumero, endereco.bairro].filter(Boolean).join(' · ')}{endereco.complemento ? ` · ${endereco.complemento}` : ''}</div>
                     </div>
                     <div className="review-line">
-                      <div><b>Pagamento</b><br />Pix Mercado Pago dentro do cardápio</div>
+                      <div><b>Pagamento:</b> Pix Mercado Pago dentro do cardápio</div>
                     </div>
                   </div>
                   <div className="value-row"><span>Subtotal</span><strong>{fmtBRL(carrinhoTotal)}</strong></div>
@@ -5961,7 +5994,7 @@ function App() {
 
       {/* Marco sticker */}
       <button
-        className={`marco-sticker ${garcomState} ${(pratoAberto || fotoAberta || sacolaOpen) ? 'top-mode' : ''} ${sacolaOpen ? 'top-center' : ''}`}
+        className={`marco-sticker ${garcomState} ${(pratoAberto || fotoAberta || sacolaOpen) ? 'top-mode' : ''} ${sacolaOpen ? 'top-center' : ''} ${(carrinho.length > 0 && !sacolaOpen && !pratoAberto && !fotoAberta) ? 'raised' : ''}`}
         onClick={tapMarco}
         onTouchStart={onPressStart}
         onTouchEnd={onPressEnd}
