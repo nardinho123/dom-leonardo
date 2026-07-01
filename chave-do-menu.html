@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0704" />
+  <meta name="theme-color" content="#090502" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Sua chave do menu · Dom Leonardo</title>
+  <title>Chave do menu · Dom Leonardo</title>
   <script>
-    // Faxina de cache legado: evita "offline"/tela branca presa em Service Worker antigo do dominio.
+    // Evita tela branca causada por Service Worker antigo do dominio.
     (function limparCacheLegadoDomLeonardo() {
       if (!('serviceWorker' in navigator)) return;
       window.addEventListener('load', function() {
@@ -31,282 +31,633 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,600&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0b0704;
-      --gold: #d4af37;
-      --gold-2: #f6dd96;
-      --gold-deep: #9a7518;
-      --cream: #f3e6c8;
-      --muted: rgba(243, 230, 200, .58);
-      --line: rgba(212, 175, 55, .26);
-      --danger: #e7a892;
+      --bg: #090502;
+      --ink: #150c05;
+      --leather: #2b1a0d;
+      --leather-2: #170d06;
+      --gold: #d7ad35;
+      --gold-soft: #ffe8a3;
+      --gold-deep: #8e6515;
+      --cream: #f5e7c6;
+      --muted: rgba(245, 231, 198, .62);
+      --line: rgba(215, 173, 53, .24);
+      --danger: #f0a58f;
       --safe-bottom: env(safe-area-inset-bottom, 0px);
       --safe-top: env(safe-area-inset-top, 0px);
     }
+
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body { margin: 0; min-height: 100%; }
     body {
-      background:
-        radial-gradient(120% 60% at 50% -8%, rgba(214, 175, 55, .14), transparent 52%),
-        radial-gradient(90% 50% at 50% 116%, rgba(120, 64, 20, .22), transparent 60%),
-        linear-gradient(168deg, #110a05 0%, #0b0704 46%, #060402 100%);
       color: var(--cream);
       font-family: Jost, system-ui, sans-serif;
       overflow-x: hidden;
+      background:
+        radial-gradient(circle at 50% -8%, rgba(255, 218, 117, .16), transparent 34%),
+        radial-gradient(circle at 10% 92%, rgba(164, 93, 23, .22), transparent 34%),
+        radial-gradient(circle at 92% 84%, rgba(226, 174, 54, .11), transparent 32%),
+        linear-gradient(155deg, #130b05 0%, #090502 48%, #050302 100%);
     }
-    /* grão sutil */
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: .22;
+      background:
+        linear-gradient(100deg, transparent 0 18%, rgba(255,255,255,.045) 19%, transparent 21% 100%),
+        radial-gradient(circle at 18% 86%, rgba(255, 215, 119, .16), transparent 18%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0 1px, transparent 1px 52px);
+      mix-blend-mode: screen;
+    }
+
     body::after {
       content: "";
-      position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .05;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: .045;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     }
 
     .stage {
-      position: relative; z-index: 1;
-      min-height: 100svh;
-      display: grid; place-items: center;
-      padding: calc(20px + var(--safe-top)) 16px calc(20px + var(--safe-bottom));
-    }
-
-    /* ===== MENU DE COURO ===== */
-    .menu {
       position: relative;
-      width: min(100%, 420px);
+      z-index: 1;
+      min-height: 100svh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: calc(18px + var(--safe-top)) 14px calc(18px + var(--safe-bottom));
+    }
+
+    .entry {
+      position: relative;
+      width: min(100%, 430px);
+      min-height: calc(100svh - 28px - var(--safe-top) - var(--safe-bottom));
+      display: grid;
+      align-content: center;
+      gap: 14px;
+      padding: 18px 14px;
+    }
+
+    .brandmark {
+      display: grid;
+      justify-items: center;
+      gap: 5px;
+      margin-bottom: 2px;
+      animation: fadeUp .7s ease both;
+    }
+
+    .monogram {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      color: var(--gold-soft);
+      font-family: Cinzel, serif;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -.06em;
+      border: 1px solid rgba(255, 232, 163, .42);
+      background: radial-gradient(circle at 40% 22%, rgba(255,232,163,.28), rgba(131,77,20,.3) 42%, rgba(0,0,0,.35));
+      box-shadow: 0 12px 30px rgba(0,0,0,.36), 0 0 22px rgba(215,173,53,.16);
+    }
+
+    .monogram::after {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border: 1px solid rgba(255, 232, 163, .18);
+      border-radius: 50%;
+    }
+
+    .brand-kicker {
+      color: rgba(255, 232, 163, .74);
+      font-family: Cinzel, serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .28em;
+      text-transform: uppercase;
+    }
+
+    .credential-card {
+      position: relative;
+      padding: 16px 15px 14px;
       border-radius: 22px;
-      padding: 30px 22px 26px;
+      border: 1px solid rgba(255, 232, 163, .18);
       background:
-        radial-gradient(140% 80% at 50% 0%, rgba(214, 175, 55, .10), transparent 46%),
-        linear-gradient(150deg, #2a1a0d 0%, #1a1009 44%, #120b06 100%);
-      box-shadow:
-        0 40px 90px rgba(0, 0, 0, .62),
-        inset 0 1px 0 rgba(255, 233, 170, .07),
-        inset 0 0 60px rgba(0, 0, 0, .5);
-      border: 1px solid rgba(214, 175, 55, .22);
-      isolation: isolate;
-      overflow: hidden;
-    }
-    /* textura de couro (poros) */
-    .menu::before {
-      content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: .5;
-      background-image:
-        radial-gradient(rgba(0,0,0,.28) 1px, transparent 1.4px),
-        radial-gradient(rgba(255,230,170,.05) 1px, transparent 1.4px);
-      background-size: 11px 11px, 17px 17px;
-      background-position: 0 0, 5px 6px;
-      mix-blend-mode: overlay;
-    }
-    /* moldura dourada interna (debossed) */
-    .menu::after {
-      content: ""; position: absolute; inset: 11px; z-index: 1; pointer-events: none;
-      border: 1px solid rgba(246, 221, 150, .34);
-      border-radius: 15px;
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,.4), 0 0 22px rgba(214,175,55,.08);
+        linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.012)),
+        rgba(12, 7, 3, .68);
+      box-shadow: 0 22px 54px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.06);
+      backdrop-filter: blur(14px);
+      animation: fadeUp .75s .08s ease both;
     }
 
-    /* ===== 4 QUINAS DOURADAS ===== */
-    .corner {
-      position: absolute; width: 34px; height: 34px; z-index: 3; pointer-events: none;
-      border: 0 solid var(--gold);
+    .credential-title {
+      margin: 0 0 12px;
+      text-align: center;
+      font-family: Cormorant Garamond, serif;
+      font-size: 19px;
+      font-style: italic;
+      line-height: 1.14;
+      color: rgba(245, 231, 198, .91);
     }
-    .corner::after {
-      content: ""; position: absolute; width: 8px; height: 8px; border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, var(--gold-2), var(--gold-deep));
-      box-shadow: 0 0 8px rgba(246, 221, 150, .5);
-    }
-    .corner.tl { top: 6px; left: 6px; border-top-width: 2px; border-left-width: 2px; border-top-left-radius: 12px; }
-    .corner.tr { top: 6px; right: 6px; border-top-width: 2px; border-right-width: 2px; border-top-right-radius: 12px; }
-    .corner.bl { bottom: 6px; left: 6px; border-bottom-width: 2px; border-left-width: 2px; border-bottom-left-radius: 12px; }
-    .corner.br { bottom: 6px; right: 6px; border-bottom-width: 2px; border-right-width: 2px; border-bottom-right-radius: 12px; }
-    .corner.tl::after { top: -5px; left: -5px; }
-    .corner.tr::after { top: -5px; right: -5px; }
-    .corner.bl::after { bottom: -5px; left: -5px; }
-    .corner.br::after { bottom: -5px; right: -5px; }
 
-    .inner { position: relative; z-index: 4; display: flex; flex-direction: column; align-items: center; text-align: center; }
-
-    .brand { font-family: Jost, sans-serif; font-size: 9.5px; letter-spacing: .42em; text-transform: uppercase; color: rgba(246, 221, 150, .8); font-weight: 600; }
-
-    /* ===== CHAVE ===== */
-    .key-zone { position: relative; height: 96px; width: 100%; display: grid; place-items: center; margin: 14px 0 2px; }
-    .key-glow {
-      position: absolute; width: 150px; height: 64px; border-radius: 999px;
-      background: radial-gradient(circle, rgba(246, 221, 150, .42), rgba(214,175,55,.06) 55%, transparent 72%);
-      filter: blur(9px); animation: breathe 3s ease-in-out infinite;
-    }
-    .key {
-      position: relative; z-index: 3; width: 118px; height: 66px;
-      filter: drop-shadow(0 10px 22px rgba(214, 175, 55, .3));
-      animation: keyPulse 2.4s ease-in-out infinite;
-      transform-origin: center;
-    }
-    .key svg { width: 100%; height: 100%; overflow: visible; }
-    .key .stroke { stroke: url(#kg); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; fill: none; }
-    .menu.valid .key { filter: drop-shadow(0 8px 30px rgba(246, 221, 150, .72)); }
-    .menu.valid .key-glow { animation-duration: 1.9s; }
-    .spark { position: absolute; width: 4px; height: 4px; border-radius: 99px; background: #fff3bf; box-shadow: 0 0 10px #ffdf6e; opacity: 0; }
-    .menu.valid .spark { animation: spark 1.8s ease-in-out infinite; }
-    .spark.a { top: 14px; left: 60%; animation-delay: .1s; }
-    .spark.b { top: 52px; left: 38%; animation-delay: .7s; }
-    .spark.c { top: 28px; left: 70%; animation-delay: 1.2s; }
-
-    h1 { margin: 4px 0 0; font-family: "Playfair Display", serif; font-weight: 600; font-size: clamp(30px, 9vw, 40px); line-height: 1.0; color: #f7dd92; text-shadow: 0 10px 30px rgba(0,0,0,.6); }
-    h1 em { font-style: italic; font-weight: 600; }
-    .subtitle { margin: 10px auto 0; max-width: 300px; font-family: "Cormorant Garamond", serif; font-style: italic; font-size: 17px; line-height: 1.32; color: rgba(243, 230, 200, .78); }
-
-    .ornament { display: flex; align-items: center; gap: 11px; width: 64%; max-width: 230px; margin: 16px 0 4px; opacity: .9; }
-    .ornament i { width: 7px; height: 7px; transform: rotate(45deg); background: var(--gold); flex: none; }
-    .ornament span { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-deep), transparent); }
-
-    /* ===== FORM ===== */
-    form { width: 100%; margin-top: 14px; }
     .field {
-      display: flex; align-items: center; gap: 10px; height: 52px;
-      border: 1px solid rgba(214, 175, 55, .22); background: rgba(0, 0, 0, .3);
-      border-radius: 13px; padding: 0 14px; margin-bottom: 11px;
-      transition: border-color .2s, box-shadow .2s;
-    }
-    .field:focus-within { border-color: rgba(246, 221, 150, .7); box-shadow: 0 0 0 4px rgba(214, 175, 55, .1); }
-    .field.bad { border-color: rgba(231, 168, 146, .7); }
-    .field svg { width: 18px; height: 18px; color: var(--gold); flex: none; }
-    .field input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--cream); font: 500 15.5px/1 Jost, sans-serif; }
-    .field input::placeholder { color: rgba(243, 230, 200, .4); }
-
-    .btn {
-      position: relative; width: 100%; height: 54px; border: 1px solid rgba(214,175,55,.2);
-      border-radius: 13px; cursor: not-allowed;
-      font-family: Jost, sans-serif; font-weight: 700; font-size: 14px; letter-spacing: .14em; text-transform: uppercase;
-      color: rgba(243, 230, 200, .42);
-      background: linear-gradient(180deg, #38302520, #211a1140), #2a241c;
-      transition: color .25s, background .25s, box-shadow .25s, transform .15s, border-color .25s;
-    }
-    .btn.ready {
-      cursor: pointer; color: #20140433; color: #2a1804;
-      background: linear-gradient(180deg, #f8df7c, #c9911f);
-      border-color: transparent;
-      box-shadow: 0 14px 32px rgba(214, 175, 55, .3), inset 0 1px rgba(255,255,255,.4);
-      animation: btnGlow 2.4s ease-in-out infinite;
-    }
-    .btn.ready:active { transform: scale(.985); }
-    .btn.busy { animation: none; cursor: wait; }
-
-    .ghost-link {
-      margin-top: 16px; background: none; border: 0; cursor: pointer;
-      font-family: Jost, sans-serif; font-size: 12.5px; letter-spacing: .06em;
-      color: rgba(246, 221, 150, .82); text-decoration: underline; text-underline-offset: 3px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 50px;
+      margin-bottom: 10px;
+      padding: 0 13px;
+      border-radius: 15px;
+      border: 1px solid rgba(215, 173, 53, .22);
+      background: rgba(0, 0, 0, .32);
+      transition: border-color .2s, box-shadow .2s, transform .2s;
     }
 
-    .returning { width: 100%; margin-top: 4px; overflow: hidden; max-height: 0; opacity: 0; transition: max-height .42s ease, opacity .35s ease; }
-    .returning.open { max-height: 340px; opacity: 1; }
-    .returning-card { margin-top: 12px; padding: 16px 14px 14px; border-radius: 15px; border: 1px solid rgba(214,175,55,.2); background: linear-gradient(180deg, rgba(10,6,3,.5), rgba(30,18,9,.4)); }
-    .returning-title { font-family: "Playfair Display", serif; font-size: 19px; color: #f7dd92; }
-    .returning-sub { margin: 4px 0 12px; font-family: "Cormorant Garamond", serif; font-style: italic; font-size: 15px; color: var(--muted); }
-    .found { min-height: 16px; margin: 9px 2px 0; font-size: 12.5px; color: rgba(246, 221, 150, .9); text-align: center; }
+    .field:focus-within {
+      transform: translateY(-1px);
+      border-color: rgba(255, 232, 163, .72);
+      box-shadow: 0 0 0 4px rgba(215, 173, 53, .1);
+    }
+
+    .field.bad {
+      border-color: rgba(240, 165, 143, .76);
+      box-shadow: 0 0 0 3px rgba(240, 165, 143, .09);
+    }
+
+    .field svg {
+      width: 18px;
+      height: 18px;
+      flex: none;
+      color: var(--gold);
+      opacity: .92;
+    }
+
+    .field input {
+      width: 100%;
+      min-width: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--cream);
+      font: 600 15px/1 Jost, sans-serif;
+    }
+
+    .field input::placeholder { color: rgba(245,231,198,.44); font-weight: 500; }
+
+    .already {
+      display: block;
+      width: max-content;
+      margin: 2px auto 0;
+      border: 0;
+      background: none;
+      color: rgba(255, 232, 163, .88);
+      font: 700 12px/1 Jost, sans-serif;
+      letter-spacing: .08em;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      cursor: pointer;
+    }
+
+    .returning {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height .42s ease, opacity .32s ease, margin .32s ease;
+    }
+
+    .returning.open {
+      max-height: 190px;
+      opacity: 1;
+      margin-top: 8px;
+    }
+
+    .returning-card {
+      padding-top: 4px;
+    }
+
+    .found {
+      min-height: 17px;
+      margin: 7px 2px 0;
+      text-align: center;
+      font-size: 12px;
+      color: rgba(255, 232, 163, .88);
+    }
+
     .found.bad { color: var(--danger); }
 
-    .status { min-height: 18px; margin-top: 14px; font-size: 12px; color: var(--muted); text-align: center; }
-    .status.bad { color: var(--danger); }
-    .status.ok { color: rgba(246, 221, 150, .92); }
-
-    /* lacre / selo */
-    .seal {
-      position: absolute; right: 16px; bottom: 16px; z-index: 5; width: 48px; height: 48px;
-      display: grid; place-items: center; border-radius: 50%;
-      background: radial-gradient(circle at 32% 26%, #fff0b0, #c89127 44%, #5e360c);
-      box-shadow: 0 10px 24px rgba(0,0,0,.45), 0 0 18px rgba(214,175,55,.25);
-      border: 1px solid rgba(255, 238, 169, .5); color: #2a1604;
+    .arrow-zone {
+      display: grid;
+      justify-items: center;
+      gap: 4px;
+      margin: -1px 0 -2px;
+      animation: fadeUp .72s .16s ease both;
     }
-    .seal svg { width: 24px; height: 24px; }
 
-    /* desbloqueio */
-    .menu.opened { animation: menuOpen 1s ease forwards; }
-    .menu.opened .seal { animation: sealPop .7s ease forwards; }
+    .microcopy {
+      margin: 0;
+      max-width: 310px;
+      text-align: center;
+      color: rgba(245, 231, 198, .74);
+      font-size: 12.5px;
+      line-height: 1.35;
+      letter-spacing: .02em;
+    }
 
-    @keyframes breathe { 0%,100% { transform: scale(.9); opacity: .55; } 50% { transform: scale(1.12); opacity: .95; } }
-    @keyframes keyPulse { 0%,100% { transform: scale(.97) rotate(-6deg); } 50% { transform: scale(1.06) rotate(2deg); } }
-    @keyframes spark { 0%,100% { opacity: 0; transform: translateY(6px) scale(.4); } 35% { opacity: 1; transform: translateY(0) scale(1); } 70% { opacity: 0; transform: translateY(-9px) scale(.6); } }
-    @keyframes btnGlow { 0%,100% { box-shadow: 0 14px 30px rgba(214,175,55,.26), inset 0 1px rgba(255,255,255,.4); } 50% { box-shadow: 0 16px 40px rgba(246,221,150,.5), inset 0 1px rgba(255,255,255,.5); } }
-    @keyframes menuOpen { 0% { transform: scale(1); filter: brightness(1); } 45% { transform: scale(1.015); filter: brightness(1.14); } 100% { transform: perspective(900px) rotateY(-14deg) scale(.99); filter: brightness(1.22); } }
-    @keyframes sealPop { 0% { transform: rotate(0) scale(1); } 55% { transform: rotate(18deg) scale(1.14); } 100% { transform: rotate(36deg) scale(.6) translateY(-10px); opacity: 0; } }
+    .arrow {
+      width: 42px;
+      height: 42px;
+      color: rgba(255, 232, 163, .86);
+      filter: drop-shadow(0 0 12px rgba(215, 173, 53, .24));
+      animation: arrowNudge 1.5s ease-in-out infinite;
+    }
 
-    @media (max-height: 700px) {
-      .key-zone { height: 76px; margin-top: 8px; }
-      .key { width: 100px; height: 56px; }
-      h1 { font-size: 30px; }
-      .subtitle { font-size: 15px; }
+    .key-stage {
+      position: relative;
+      display: grid;
+      place-items: center;
+      height: 104px;
+      animation: fadeUp .72s .23s ease both;
+    }
+
+    .key-aura {
+      position: absolute;
+      width: 190px;
+      height: 82px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(255, 232, 163, .42), rgba(215, 173, 53, .08) 54%, transparent 72%);
+      filter: blur(13px);
+      animation: auraBreathe 2.5s ease-in-out infinite;
+    }
+
+    .key-real {
+      position: relative;
+      z-index: 3;
+      width: 154px;
+      height: 86px;
+      cursor: pointer;
+      transform-origin: center;
+      filter: drop-shadow(0 18px 28px rgba(0,0,0,.48)) drop-shadow(0 0 22px rgba(215,173,53,.22));
+      animation: keyBreath 2s ease-in-out infinite;
+    }
+
+    .key-real svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .key-real .key-fill { fill: url(#keyGold); stroke: rgba(255, 243, 188, .8); stroke-width: 1.1; }
+    .key-real .key-cut { fill: #160b04; stroke: rgba(255, 232, 163, .72); stroke-width: 1.2; }
+    .key-real .key-line { fill: none; stroke: rgba(103, 62, 14, .62); stroke-width: 1.1; stroke-linecap: round; }
+
+    .spark {
+      position: absolute;
+      z-index: 4;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #fff7cf;
+      box-shadow: 0 0 10px #ffe18b, 0 0 22px rgba(255,225,139,.6);
+      opacity: 0;
+      animation: spark 1.8s ease-in-out infinite;
+    }
+
+    .spark.s1 { top: 18px; left: 66%; animation-delay: .05s; }
+    .spark.s2 { top: 62px; left: 30%; animation-delay: .62s; }
+    .spark.s3 { top: 28px; left: 22%; animation-delay: 1.1s; }
+
+    .book-wrap {
+      position: relative;
+      display: grid;
+      justify-items: center;
+      animation: fadeUp .75s .32s ease both;
+    }
+
+    .book {
+      position: relative;
+      width: min(92%, 320px);
+      min-height: 265px;
+      display: grid;
+      place-items: center;
+      padding: 28px 26px;
+      border-radius: 8px 20px 20px 8px;
+      border: 1px solid rgba(255, 232, 163, .28);
+      background:
+        linear-gradient(90deg, rgba(0,0,0,.48), transparent 18%),
+        radial-gradient(70% 60% at 56% 22%, rgba(255, 232, 163, .09), transparent 60%),
+        linear-gradient(145deg, #2a190c 0%, #160c06 58%, #0e0703 100%);
+      box-shadow:
+        0 34px 74px rgba(0,0,0,.54),
+        inset 9px 0 20px rgba(0,0,0,.44),
+        inset 0 1px 0 rgba(255,255,255,.06);
+      overflow: hidden;
+    }
+
+    .book::before {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border: 1px solid rgba(255, 232, 163, .34);
+      border-radius: 5px 15px 15px 5px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.42);
+    }
+
+    .book::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: .58;
+      background-image:
+        radial-gradient(rgba(0,0,0,.3) 1px, transparent 1.4px),
+        radial-gradient(rgba(255,230,170,.045) 1px, transparent 1.4px);
+      background-size: 10px 10px, 17px 17px;
+      background-position: 0 0, 5px 4px;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+    }
+
+    .book-content {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      display: grid;
+      justify-items: center;
+      gap: 13px;
+      text-align: center;
+    }
+
+    .book-kicker {
+      font: 700 9px/1 Cinzel, serif;
+      text-transform: uppercase;
+      letter-spacing: .34em;
+      color: rgba(255,232,163,.7);
+    }
+
+    .book-title {
+      margin: 0;
+      font: 700 clamp(30px, 11vw, 47px)/.92 Cinzel, serif;
+      letter-spacing: .01em;
+      color: #f7dc8b;
+      text-shadow: 0 14px 28px rgba(0,0,0,.5);
+    }
+
+    .book-sub {
+      margin: -4px 0 0;
+      font: italic 600 17px/1.1 Cormorant Garamond, serif;
+      color: rgba(245,231,198,.74);
+    }
+
+    .lock-target {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 78px;
+      height: 78px;
+      margin-top: 6px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 232, 163, .32);
+      background: radial-gradient(circle at 38% 28%, rgba(255,232,163,.16), rgba(0,0,0,.32) 60%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 0 28px rgba(215,173,53,.12);
+    }
+
+    .lock-target svg {
+      width: 45px;
+      height: 45px;
+      color: #f5cf68;
+      filter: drop-shadow(0 0 10px rgba(215,173,53,.28));
+    }
+
+    .entry.ready .key-aura { animation-duration: 1.75s; }
+    .entry.ready .key-real { filter: drop-shadow(0 18px 32px rgba(0,0,0,.52)) drop-shadow(0 0 30px rgba(255,232,163,.42)); }
+
+    .cta-row {
+      position: relative;
+      z-index: 4;
+      width: min(92%, 320px);
+      margin-top: -15px;
+    }
+
+    .btn {
+      width: 100%;
+      min-height: 54px;
+      border: 1px solid rgba(215,173,53,.2);
+      border-radius: 15px;
+      cursor: not-allowed;
+      color: rgba(245, 231, 198, .38);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.24)), #2b241b;
+      font: 800 12px/1 Jost, sans-serif;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+      transition: transform .16s, color .22s, background .22s, box-shadow .22s, border-color .22s;
+    }
+
+    .btn.ready {
+      cursor: pointer;
+      color: #2a1704;
+      border-color: transparent;
+      background: linear-gradient(180deg, #ffe27c 0%, #d1a02d 58%, #a57316 100%);
+      box-shadow: 0 16px 34px rgba(215, 173, 53, .33), inset 0 1px 0 rgba(255,255,255,.46);
+      animation: btnGlow 2.25s ease-in-out infinite;
+    }
+
+    .btn.ready:active { transform: scale(.986); }
+    .btn.busy { cursor: wait; animation: none; }
+
+    .status {
+      min-height: 18px;
+      margin: 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      animation: fadeUp .7s .39s ease both;
+    }
+
+    .status.bad { color: var(--danger); }
+    .status.ok { color: rgba(255, 232, 163, .94); }
+
+    .entry.unlocking .key-real {
+      animation: none;
+      z-index: 10;
+    }
+
+    .entry.opened .book {
+      animation: bookOpen 1s cubic-bezier(.2,.78,.18,1) both;
+      transform-origin: left center;
+    }
+
+    .entry.opened .lock-target {
+      animation: lockPop .7s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes arrowNudge {
+      0%, 100% { transform: translateY(-2px); opacity: .62; }
+      50% { transform: translateY(5px); opacity: 1; }
+    }
+
+    @keyframes auraBreathe {
+      0%, 100% { opacity: .52; transform: scale(.92); }
+      50% { opacity: 1; transform: scale(1.12); }
+    }
+
+    @keyframes keyBreath {
+      0%, 100% { transform: scale(.95) rotate(-8deg); }
+      50% { transform: scale(1.08) rotate(3deg); }
+    }
+
+    @keyframes spark {
+      0%, 100% { opacity: 0; transform: translateY(7px) scale(.45); }
+      34% { opacity: 1; transform: translateY(0) scale(1); }
+      70% { opacity: 0; transform: translateY(-9px) scale(.62); }
+    }
+
+    @keyframes btnGlow {
+      0%, 100% { box-shadow: 0 16px 34px rgba(215,173,53,.3), inset 0 1px 0 rgba(255,255,255,.46); }
+      50% { box-shadow: 0 18px 44px rgba(255,232,163,.46), inset 0 1px 0 rgba(255,255,255,.55); }
+    }
+
+    @keyframes bookOpen {
+      0% { filter: brightness(1); transform: perspective(900px) rotateY(0) scale(1); }
+      45% { filter: brightness(1.18); transform: perspective(900px) rotateY(-9deg) scale(1.015); }
+      100% { filter: brightness(1.28); transform: perspective(900px) rotateY(-19deg) scale(.985); }
+    }
+
+    @keyframes lockPop {
+      0% { transform: scale(1) rotate(0); opacity: 1; }
+      55% { transform: scale(1.12) rotate(12deg); opacity: 1; }
+      100% { transform: scale(.68) rotate(28deg); opacity: .35; }
+    }
+
+    @media (max-height: 740px) {
+      .entry { gap: 9px; padding-block: 10px; }
+      .brandmark { gap: 3px; }
+      .monogram { width: 42px; height: 42px; }
+      .credential-card { padding: 13px 13px 11px; }
+      .credential-title { font-size: 17px; margin-bottom: 9px; }
+      .field { min-height: 46px; margin-bottom: 8px; }
+      .key-stage { height: 84px; }
+      .key-real { width: 132px; height: 74px; }
+      .book { min-height: 218px; }
+      .book-title { font-size: 34px; }
+      .lock-target { width: 66px; height: 66px; }
     }
   </style>
 </head>
 <body>
   <main class="stage">
-    <section class="menu" id="menu">
-      <span class="corner tl"></span><span class="corner tr"></span>
-      <span class="corner bl"></span><span class="corner br"></span>
-
-      <div class="seal" id="seal" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-          <rect x="5" y="10" width="14" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" />
-        </svg>
+    <section class="entry" id="entry">
+      <div class="brandmark">
+        <div class="monogram">DL</div>
+        <div class="brand-kicker">Dom Leonardo</div>
       </div>
 
-      <div class="inner">
-        <div class="brand">Dom Leonardo · Trattoria</div>
+      <section class="credential-card" aria-label="Identificacao do cliente">
+        <p class="credential-title">Obtenha sua chave informando nome e telefone.</p>
 
-        <div class="key-zone">
-          <div class="key-glow"></div>
-          <div class="key" id="key" title="Abrir o menu">
-            <svg viewBox="0 0 140 80" aria-hidden="true">
-              <defs>
-                <linearGradient id="kg" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stop-color="#fff3a8" /><stop offset="48%" stop-color="#d4af37" /><stop offset="100%" stop-color="#8a5b16" />
-                </linearGradient>
-              </defs>
-              <circle class="stroke" cx="34" cy="40" r="19" />
-              <path class="stroke" d="M53 40H125" />
-              <path class="stroke" d="M92 40V56M107 40V51M120 40V60" />
-              <circle cx="34" cy="40" r="6.5" fill="#160b04" stroke="#ffdf72" stroke-width="2" />
-            </svg>
-          </div>
-          <span class="spark a"></span><span class="spark b"></span><span class="spark c"></span>
-        </div>
-
-        <h1>Sua chave<br /><em>do menu</em></h1>
-        <p class="subtitle">Deixe seu nome e WhatsApp uma vez. Eu guardo sua entrada e abro o cardápio no seu próprio link.</p>
-        <div class="ornament"><span></span><i></i><span></span></div>
-
-        <!-- CLIENTE NOVO -->
         <form id="formNovo" autocomplete="on">
           <label class="field" id="fNome">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 21a8 8 0 0 0-16 0" /><circle cx="12" cy="7" r="4" /></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+              <path d="M20 21a8 8 0 0 0-16 0" /><circle cx="12" cy="7" r="4" />
+            </svg>
             <input id="nome" name="name" autocomplete="name" placeholder="Seu nome" />
           </label>
           <label class="field" id="fWhats">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.5 11.8a8.5 8.5 0 0 1-12.7 7.4L3 20.5l1.3-4.6A8.5 8.5 0 1 1 20.5 11.8Z" /></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+              <path d="M20.5 11.8a8.5 8.5 0 0 1-12.7 7.4L3 20.5l1.3-4.6A8.5 8.5 0 1 1 20.5 11.8Z" />
+            </svg>
             <input id="whats" name="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="Seu WhatsApp" />
           </label>
-          <button class="btn" id="btnNovo" type="submit" disabled>Abrir o menu</button>
+          <button class="already" id="toggleReturn" type="button">Ja sou cliente</button>
         </form>
 
-        <button class="ghost-link" id="toggleReturn" type="button">Já sou cliente</button>
-
-        <!-- CLIENTE ANTIGO -->
         <div class="returning" id="returning">
           <form class="returning-card" id="formAntigo" autocomplete="on">
-            <div class="returning-title">Seu telefone é sua chave</div>
-            <div class="returning-sub">Digite o número do seu último pedido.</div>
             <label class="field" id="fWhats2">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.5 11.8a8.5 8.5 0 0 1-12.7 7.4L3 20.5l1.3-4.6A8.5 8.5 0 1 1 20.5 11.8Z" /></svg>
-              <input id="whats2" name="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="Seu WhatsApp" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                <path d="M20.5 11.8a8.5 8.5 0 0 1-12.7 7.4L3 20.5l1.3-4.6A8.5 8.5 0 1 1 20.5 11.8Z" />
+              </svg>
+              <input id="whats2" name="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="Telefone da ultima chave" />
             </label>
-            <button class="btn" id="btnAntigo" type="submit" disabled>Abrir o menu</button>
+            <button class="btn" id="btnAntigo" type="submit" disabled style="min-height:46px;">Recuperar chave</button>
             <div class="found" id="found"></div>
-            <button class="ghost-link" id="toggleNew" type="button" style="display:block;margin:10px auto 0;">Criar nova chave</button>
+            <button class="already" id="toggleNew" type="button" style="margin-top:8px;">Criar nova chave</button>
           </form>
         </div>
+      </section>
 
-        <div class="status" id="status">O menu abre no fim da animação.</div>
+      <div class="arrow-zone" aria-hidden="true">
+        <p class="microcopy">A chave guarda sua entrada, seus pedidos e suas conversas com o Marco.</p>
+        <svg class="arrow" viewBox="0 0 64 64" fill="none">
+          <path d="M32 6v40" stroke="currentColor" stroke-width="5" stroke-linecap="round" />
+          <path d="M16 32l16 18 16-18" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
       </div>
+
+      <div class="key-stage">
+        <div class="key-aura"></div>
+        <button class="key-real" id="key" type="button" title="Obter chave" aria-label="Obter chave do menu">
+          <svg viewBox="0 0 180 100" aria-hidden="true">
+            <defs>
+              <linearGradient id="keyGold" x1="18" y1="14" x2="145" y2="82" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#fff6bd" />
+                <stop offset=".28" stop-color="#f3ca55" />
+                <stop offset=".58" stop-color="#c89024" />
+                <stop offset="1" stop-color="#74480d" />
+              </linearGradient>
+              <linearGradient id="keyShine" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="rgba(255,255,255,.85)" />
+                <stop offset="1" stop-color="rgba(255,255,255,0)" />
+              </linearGradient>
+            </defs>
+            <path class="key-fill" d="M47 16c-19.3 0-35 15.7-35 35s15.7 35 35 35c15.2 0 28.2-9.7 33-23.2h37.2l10.8 12.5 12.2-12.5h10.1l8.8 10 10.9-10.9-14-16.1H80.5C76.1 28.9 62.9 16 47 16Zm0 19.5A15.5 15.5 0 1 1 47 66.5 15.5 15.5 0 0 1 47 35.5Z" />
+            <circle class="key-cut" cx="47" cy="51" r="8.2" />
+            <path class="key-line" d="M84 50h64" />
+            <path class="key-line" d="M31 31c6-5 17-6 26 0" />
+          </svg>
+        </button>
+        <span class="spark s1"></span>
+        <span class="spark s2"></span>
+        <span class="spark s3"></span>
+      </div>
+
+      <section class="book-wrap" aria-label="Cardapio Dom Leonardo">
+        <div class="book" id="book">
+          <div class="book-content">
+            <span class="book-kicker">Cardapio</span>
+            <h1 class="book-title">Dom<br />Leonardo</h1>
+            <p class="book-sub">autentica trattoria italiana</p>
+            <div class="lock-target" id="seal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                <rect x="5" y="10" width="14" height="10" rx="2.2" />
+                <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                <path d="M12 14.2v2.8" stroke-linecap="round" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div class="cta-row">
+          <button class="btn" id="btnNovo" form="formNovo" type="submit" disabled>Obter minha chave</button>
+        </div>
+      </section>
+
+      <p class="status" id="status">Toque na chave ou no botao dourado para abrir.</p>
     </section>
   </main>
 
@@ -318,7 +669,7 @@
     const TOKEN_KEY = 'dom_leonardo_cliente_token';
     const DEVICE_KEY = 'dom_marco_device_id';
 
-    const menu = document.getElementById('menu');
+    const entry = document.getElementById('entry');
     const key = document.getElementById('key');
     const seal = document.getElementById('seal');
     const statusEl = document.getElementById('status');
@@ -338,7 +689,11 @@
     let nomeAntigo = '';
 
     function digits(v) { return String(v || '').replace(/\D/g, ''); }
-    function normalizePhone(v) { let d = digits(v); if (d.length === 10 || d.length === 11) d = '55' + d; return d; }
+    function normalizePhone(v) {
+      let d = digits(v);
+      if (d.length === 10 || d.length === 11) d = '55' + d;
+      return d;
+    }
     function prettyPhone(v) {
       const d = digits(v).replace(/^55/, '').slice(0, 11);
       if (d.length <= 2) return d;
@@ -346,22 +701,41 @@
       return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
     }
     function maskOn(el) {
-      el.addEventListener('input', () => { el.value = prettyPhone(el.value); try { el.setSelectionRange(el.value.length, el.value.length); } catch (_) {} });
+      el.addEventListener('input', () => {
+        el.value = prettyPhone(el.value);
+        try { el.setSelectionRange(el.value.length, el.value.length); } catch (_) {}
+      });
     }
-    maskOn(whats); maskOn(whats2);
+    maskOn(whats);
+    maskOn(whats2);
 
     function getDeviceId() {
       try {
         let id = localStorage.getItem(DEVICE_KEY);
-        if (!id) { id = (crypto.randomUUID ? crypto.randomUUID() : 'dev_' + Date.now().toString(36)); localStorage.setItem(DEVICE_KEY, id); }
+        if (!id) {
+          id = (crypto.randomUUID ? crypto.randomUUID() : 'dev_' + Date.now().toString(36));
+          localStorage.setItem(DEVICE_KEY, id);
+        }
         return id;
-      } catch (_) { return 'dev_' + Date.now().toString(36); }
+      } catch (_) {
+        return 'dev_' + Date.now().toString(36);
+      }
     }
-    function setStatus(t, cls) { statusEl.textContent = t; statusEl.className = 'status' + (cls ? ' ' + cls : ''); }
-    function setReady(btn, on) { btn.classList.toggle('ready', on); btn.disabled = !on; }
-    function setValidGlow() { menu.classList.toggle('valid', btnNovo.classList.contains('ready') || btnAntigo.classList.contains('ready')); }
 
-    // ===== validação cliente novo (cinza -> dourado) =====
+    function setStatus(t, cls) {
+      statusEl.textContent = t;
+      statusEl.className = 'status' + (cls ? ' ' + cls : '');
+    }
+
+    function setReady(btn, on) {
+      btn.classList.toggle('ready', on);
+      btn.disabled = !on;
+    }
+
+    function setValidGlow() {
+      entry.classList.toggle('ready', btnNovo.classList.contains('ready') || btnAntigo.classList.contains('ready'));
+    }
+
     function validateNovo() {
       const n = nome.value.trim();
       const w = normalizePhone(whats.value);
@@ -373,24 +747,34 @@
       setValidGlow();
       return okN && okW;
     }
+
     nome.addEventListener('input', validateNovo);
     whats.addEventListener('input', validateNovo);
 
-    // ===== já sou cliente: debounce buscar =====
     document.getElementById('toggleReturn').addEventListener('click', () => {
       returning.classList.add('open');
-      setTimeout(() => whats2.focus(), 250);
+      setStatus('Digite seu telefone para recuperar a chave.', 'ok');
+      setTimeout(() => whats2.focus(), 220);
     });
+
     document.getElementById('toggleNew').addEventListener('click', () => {
       returning.classList.remove('open');
-      setTimeout(() => nome.focus(), 200);
+      tokenAntigo = '';
+      setReady(btnAntigo, false);
+      setValidGlow();
+      found.textContent = '';
+      setStatus('Toque na chave ou no botao dourado para abrir.');
+      setTimeout(() => nome.focus(), 180);
     });
 
     let buscaTimer = null;
     whats2.addEventListener('input', () => {
-      tokenAntigo = ''; setReady(btnAntigo, false); setValidGlow();
+      tokenAntigo = '';
+      setReady(btnAntigo, false);
+      setValidGlow();
       const w = normalizePhone(whats2.value);
-      found.textContent = ''; found.className = 'found';
+      found.textContent = '';
+      found.className = 'found';
       if (buscaTimer) clearTimeout(buscaTimer);
       if (w.length < 12 || w.length > 14) return;
       found.textContent = 'Procurando sua chave...';
@@ -402,49 +786,51 @@
             body: JSON.stringify({ acao: 'buscar', whatsapp: w })
           });
           const d = await r.json().catch(() => ({}));
-          if (normalizePhone(whats2.value) !== w) return; // mudou enquanto buscava
+          if (normalizePhone(whats2.value) !== w) return;
           if (d.existe && d.link_token) {
-            tokenAntigo = d.link_token; nomeAntigo = d.primeiro_nome || '';
-            found.textContent = nomeAntigo ? ('Chave encontrada para ' + nomeAntigo + ' 🔑') : 'Chave encontrada 🔑';
-            found.className = 'found';
-            setReady(btnAntigo, true); setValidGlow();
+            tokenAntigo = d.link_token;
+            nomeAntigo = d.primeiro_nome || '';
+            found.textContent = nomeAntigo ? ('Chave encontrada para ' + nomeAntigo) : 'Chave encontrada';
+            setReady(btnAntigo, true);
+            setValidGlow();
           } else {
-            found.textContent = 'Não encontramos uma chave para esse número.';
+            found.textContent = 'Nao encontramos uma chave para esse numero.';
             found.className = 'found bad';
           }
         } catch (_) {
-          found.textContent = 'Não consegui verificar agora. Tenta de novo.';
+          found.textContent = 'Nao consegui verificar agora. Tenta de novo.';
           found.className = 'found bad';
         }
-      }, 520);
+      }, 480);
     });
 
-    // ===== animação de desbloqueio =====
     async function animateUnlock() {
+      entry.classList.add('unlocking');
       const kr = key.getBoundingClientRect();
       const sr = seal.getBoundingClientRect();
       const dx = (sr.left + sr.width / 2) - (kr.left + kr.width / 2);
       const dy = (sr.top + sr.height / 2) - (kr.top + kr.height / 2);
       try {
         await key.animate([
-          { transform: 'scale(1.04) rotate(-6deg)', filter: 'drop-shadow(0 8px 26px rgba(246,221,150,.7))' },
-          { transform: 'translate(' + (dx * .58) + 'px,' + (dy * .62) + 'px) scale(1.06) rotate(20deg)', offset: .6 },
-          { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(.62) rotate(104deg)', filter: 'drop-shadow(0 0 40px rgba(246,221,150,.95))' }
-        ], { duration: 1100, easing: 'cubic-bezier(.2,.76,.16,1)', fill: 'forwards' }).finished;
+          { transform: 'scale(1.08) rotate(-8deg)', filter: 'drop-shadow(0 18px 34px rgba(0,0,0,.5)) drop-shadow(0 0 30px rgba(255,232,163,.58))' },
+          { transform: 'translate(' + (dx * .55) + 'px,' + (dy * .55) + 'px) scale(1.1) rotate(26deg)', offset: .55 },
+          { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(.42) rotate(104deg)', filter: 'drop-shadow(0 0 42px rgba(255,232,163,.95))' }
+        ], { duration: 1120, easing: 'cubic-bezier(.2,.76,.16,1)', fill: 'forwards' }).finished;
       } catch (_) {}
-      menu.classList.add('opened');
+      entry.classList.add('opened');
       await new Promise(r => setTimeout(r, 760));
     }
 
-    // ===== redirect forçando Chrome, no link pessoal =====
     function menuUrl(token) {
       const u = new URL('/garcom/', window.location.origin);
       if (token) u.searchParams.set('cliente', token);
       u.searchParams.set('entrada', 'chave');
       return u.toString();
     }
+
     function chromeUrl(url) {
-      const href = String(url), ua = navigator.userAgent || '';
+      const href = String(url);
+      const ua = navigator.userAgent || '';
       const isIOS = /iPad|iPhone|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
       const isAndroid = /Android/i.test(ua);
       if (isAndroid) {
@@ -457,57 +843,89 @@
       }
       return href;
     }
+
     function redirectToMenu(url) {
-      const target = chromeUrl(url), fallback = String(url);
-      if (target === fallback) { window.location.href = fallback; return; }
+      const target = chromeUrl(url);
+      const fallback = String(url);
+      if (target === fallback) {
+        window.location.href = fallback;
+        return;
+      }
       window.location.href = target;
       setTimeout(() => { window.location.href = fallback; }, 1100);
     }
-    function saveLocal(nomeV, whatsV, token) {
+
+    function saveLocal(nomeV, whatsV, token, clienteId) {
       try {
-        localStorage.setItem(CLIENTE_KEY, JSON.stringify({ nome: nomeV || '', whatsapp: whatsV || '', link_token: token || '' }));
+        localStorage.setItem(CLIENTE_KEY, JSON.stringify({
+          id: clienteId || '',
+          nome: nomeV || '',
+          whatsapp: whatsV || '',
+          link_token: token || ''
+        }));
         if (token) localStorage.setItem(TOKEN_KEY, token);
       } catch (_) {}
     }
 
-    // ===== submit cliente novo =====
     document.getElementById('formNovo').addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (!validateNovo()) { setStatus('Confere nome e WhatsApp com DDD.', 'bad'); return; }
-      btnNovo.classList.add('busy'); btnNovo.disabled = true; btnNovo.textContent = 'Girando a chave...';
-      setStatus('Guardando sua entrada...', 'ok');
+      if (!validateNovo()) {
+        setStatus('Confere nome e WhatsApp com DDD.', 'bad');
+        return;
+      }
+      btnNovo.classList.add('busy');
+      btnNovo.disabled = true;
+      btnNovo.textContent = 'Girando a chave...';
+      setStatus('Criando sua entrada no Dom...', 'ok');
       try {
         const r = await fetch(FN_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
-          body: JSON.stringify({ acao: 'capturar', nome: nome.value.trim(), whatsapp: normalizePhone(whats.value), device_id: getDeviceId(), origem: 'chave-do-menu' })
+          body: JSON.stringify({
+            acao: 'capturar',
+            nome: nome.value.trim(),
+            whatsapp: normalizePhone(whats.value),
+            device_id: getDeviceId(),
+            origem: 'chave-do-menu'
+          })
         });
         const d = await r.json().catch(() => ({}));
-        if (!r.ok || !d.link_token) throw new Error(d.error || 'Não consegui criar sua chave agora.');
-        saveLocal((d.cliente || {}).nome || nome.value.trim(), normalizePhone(whats.value), d.link_token);
-        setStatus('Chave adquirida 🔑  Bem-vindo, ' + ((d.cliente || {}).nome || nome.value.trim()).split(' ')[0] + '.', 'ok');
+        if (!r.ok || !d.link_token) throw new Error(d.error || 'Nao consegui criar sua chave agora.');
+        const cliente = d.cliente || {};
+        saveLocal(cliente.nome || nome.value.trim(), normalizePhone(whats.value), d.link_token, cliente.id);
+        setStatus('Chave criada. Abrindo seu cardapio...', 'ok');
         await animateUnlock();
         setTimeout(() => redirectToMenu(menuUrl(d.link_token)), 220);
       } catch (err) {
-        btnNovo.classList.remove('busy'); setReady(btnNovo, true); btnNovo.textContent = 'Abrir o menu';
-        setStatus((err && err.message) || 'Não consegui abrir agora. Tenta de novo.', 'bad');
+        btnNovo.classList.remove('busy');
+        setReady(btnNovo, true);
+        btnNovo.textContent = 'Obter minha chave';
+        setStatus((err && err.message) || 'Nao consegui abrir agora. Tenta de novo.', 'bad');
       }
     });
 
-    // ===== submit cliente antigo =====
     document.getElementById('formAntigo').addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!tokenAntigo) return;
-      btnAntigo.classList.add('busy'); btnAntigo.disabled = true; btnAntigo.textContent = 'Girando a chave...';
-      setStatus('Chave recuperada 🔑  Bem-vindo de volta' + (nomeAntigo ? ', ' + nomeAntigo : '') + '.', 'ok');
-      saveLocal(nomeAntigo, normalizePhone(whats2.value), tokenAntigo);
+      btnAntigo.classList.add('busy');
+      btnAntigo.disabled = true;
+      btnAntigo.textContent = 'Abrindo...';
+      setStatus('Chave recuperada. Abrindo seu cardapio...', 'ok');
+      saveLocal(nomeAntigo, normalizePhone(whats2.value), tokenAntigo, '');
       await animateUnlock();
       setTimeout(() => redirectToMenu(menuUrl(tokenAntigo)), 220);
     });
 
     key.addEventListener('click', () => {
-      if (returning.classList.contains('open')) { if (!btnAntigo.disabled) document.getElementById('formAntigo').requestSubmit(); }
-      else if (!btnNovo.disabled) document.getElementById('formNovo').requestSubmit();
+      if (returning.classList.contains('open')) {
+        if (!btnAntigo.disabled) document.getElementById('formAntigo').requestSubmit();
+        else whats2.focus();
+      } else if (!btnNovo.disabled) {
+        document.getElementById('formNovo').requestSubmit();
+      } else {
+        if (!nome.value.trim()) nome.focus();
+        else whats.focus();
+      }
     });
   </script>
 </body>
