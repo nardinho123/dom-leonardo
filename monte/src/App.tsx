@@ -55,25 +55,25 @@ export default function App() {
           <button className="top-bell" type="button" aria-label="Notificações">🔔</button>
         </header>
 
-        <div className="stage">
-          <CategoryRail categorias={categorias} ativo={ativo} onSelect={irPara} />
+        <div className="wrap">
+          <div className="scene">
+            <div className="tray-wrap">
+              <CategoryRail categorias={categorias} ativo={ativo} onSelect={irPara} />
+              <Tray />
+            </div>
+            <OrderPanel />
+          </div>
 
-          <main className="center">
-            <Tray />
-            <div className="menu-hint">Arraste para a mesa</div>
-
+          <div className="menu">
             {loading && <div className="grid-empty">Carregando o cardápio…</div>}
             {error && <div className="grid-empty erro">Erro ao carregar: {error}</div>}
-
             {!loading && !error && categorias.map((c) => (
               <section key={c.label} id={`sec-${c.label}`} className="menu-section">
                 <div className="section-title" style={{ color: c.cor }}>{c.label}</div>
                 <DishGrid pratos={pratos.filter((p) => p.categoria === c.label)} />
               </section>
             ))}
-          </main>
-
-          <OrderPanel />
+          </div>
         </div>
       </div>
 
