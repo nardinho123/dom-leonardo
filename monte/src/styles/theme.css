@@ -21,11 +21,12 @@ body {
   color: var(--cream);
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  /* Fundo = parede de concreto (imagem do Leo em /img/parede.jpg); fallback abaixo */
   background:
     var(--grain),
-    radial-gradient(90% 70% at 28% 12%, #f0eeea 0%, transparent 55%),
-    radial-gradient(80% 60% at 82% 70%, #e6e2db 0%, transparent 55%),
-    linear-gradient(135deg, #eae7e2 0%, #d6d2ca 52%, #c4bfb6 100%);
+    radial-gradient(65% 42% at 50% -6%, rgba(255,255,255,0.2) 0%, transparent 58%),
+    url('/img/parede.jpg') center/cover no-repeat fixed,
+    linear-gradient(180deg, #55555a 0%, #3a3a3e 46%, #29292c 100%);
   background-attachment: fixed, fixed, fixed, fixed;
 }
 button { font: inherit; cursor: pointer; border: 0; background: none; color: inherit; }
@@ -39,11 +40,6 @@ img { display: block; max-width: 100%; }
   display: flex;
   flex-direction: column;
   position: relative;
-  background:
-    var(--grain),
-    repeating-linear-gradient(91deg, rgba(0,0,0,0.045) 0 1px, transparent 1px 44px),
-    linear-gradient(180deg, #9a6a3d 0%, #855530 34%, #6f4527 72%, #5c381f 100%);
-  box-shadow: 0 0 70px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.14);
 }
 
 /* Topbar */
@@ -87,12 +83,13 @@ img { display: block; max-width: 100%; }
 
 /* Bandeja escura (prata/grafite) */
 .board {
-  border-radius: 24px; padding: 22px 18px; min-height: 236px;
+  border-radius: 24px; padding: 26px 20px; min-height: 250px;
+  /* Bandeja = tabua de madeira do Leo (/img/mesa.png); fallback madeira abaixo */
   background:
-    linear-gradient(180deg, rgba(255,255,255,0.06), transparent 30%),
-    linear-gradient(180deg, #3c4147 0%, #262a2f 55%, #1c1f23 100%);
-  border: 1px solid rgba(255,255,255,0.09);
-  box-shadow: inset 0 2px 0 rgba(255,255,255,0.14), inset 0 -18px 34px rgba(0,0,0,0.55), 0 24px 44px rgba(0,0,0,0.45);
+    url('/img/mesa.png') center/cover no-repeat,
+    linear-gradient(160deg, #9a6a3d 0%, #7c4f2a 55%, #5c381f 100%);
+  border: 1px solid rgba(0,0,0,0.3);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.12), 0 24px 44px rgba(0,0,0,0.45);
   transition: box-shadow .2s;
 }
 .board.is-over { box-shadow: inset 0 0 0 3px rgba(255,255,255,0.5), inset 0 -18px 34px rgba(0,0,0,0.5), 0 24px 44px rgba(0,0,0,0.45); }
@@ -175,10 +172,11 @@ img { display: block; max-width: 100%; }
 
 /* ===== Mobile ===== */
 @media (max-width: 900px) {
-  .stage { display: flex; flex-direction: column; gap: 16px; padding: 6px 14px 120px; }
-  .rail { position: static; flex-direction: row; overflow-x: auto; gap: 14px; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
-  .rail-item { flex: 0 0 auto; }
-  .dish-grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 13px; }
+  .stage { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 12px; padding: 6px 12px 130px; }
+  .rail { position: sticky; top: 8px; flex-direction: column; gap: 12px; }
+  .rail-icon { width: 44px; height: 44px; font-size: 19px; }
+  .rail-label { font-size: 9.5px; }
+  .dish-grid { grid-template-columns: repeat(auto-fill, minmax(94px, 1fr)); gap: 12px; }
   .order { position: fixed; left: 0; right: 0; bottom: 0; top: auto; border-radius: 20px 20px 0 0; z-index: 60; box-shadow: 0 -14px 34px rgba(0,0,0,0.55); }
   .order-mobile-bar { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 18px calc(14px + env(safe-area-inset-bottom)); }
   .order-mobile-count { color: var(--cream-dim); font-size: 13px; }
