@@ -35,9 +35,24 @@ img { display: block; max-width: 100%; }
 .canvas-wrap { position: absolute; inset: 0; z-index: 0; }
 .loading3d { position: absolute; inset: 0; display: grid; place-items: center; color: var(--cream-dim); font-size: 14px; }
 .loading3d.erro { color: #ffb0a0; }
-.c3d-cap { text-align: center; width: 132px; pointer-events: none; user-select: none; }
-.c3d-cap b { display: block; font-size: 12px; font-weight: 700; color: #fff; line-height: 1.15; text-shadow: 0 1px 4px rgba(0,0,0,0.85); }
-.c3d-cap span { font-size: 12px; font-weight: 300; color: #ffdca0; text-shadow: 0 1px 4px rgba(0,0,0,0.85); }
+.focus-card {
+  position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 6;
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(20,14,9,0.74); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.14); border-radius: 16px; padding: 10px 12px 10px 16px;
+  box-shadow: 0 16px 34px rgba(0,0,0,0.5); max-width: min(92vw, 460px);
+  animation: focusIn .25s ease;
+}
+@keyframes focusIn { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.focus-info { min-width: 0; }
+.focus-name { font-size: 14px; font-weight: 700; color: #fff; line-height: 1.15; }
+.focus-price { font-size: 13px; font-weight: 300; color: #ffd9a0; margin-top: 1px; }
+.focus-add {
+  flex: none; min-height: 42px; padding: 0 18px; border-radius: 12px;
+  background: linear-gradient(180deg, var(--red), var(--red-2)); color: #fff; font-weight: 700; font-size: 14px;
+  box-shadow: 0 10px 20px rgba(239,90,58,0.34);
+}
+.focus-add:active { filter: brightness(0.95); }
 
 /* Topbar (compacta) */
 .topbar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 10px clamp(12px, 3vw, 22px) 6px; }
