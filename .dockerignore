@@ -1,0 +1,8 @@
+.git
+**/node_modules
+monte/src
+monte/*.mjs
+monte/vite.config.ts
+monte/tsconfig*.json
+monte/package*.json
+monte/README.md
