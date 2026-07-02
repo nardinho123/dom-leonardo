@@ -3,7 +3,7 @@ import { CSS } from '@dnd-kit/utilities'
 import type { Prato } from '../lib/types'
 import { useCart, fmtBRL } from '../store/cart'
 
-// Card arrastavel (pra bandeja) com botao "+" pra adicionar por toque (fallback mobile).
+// Card do prato: foto (arrastavel pra bandeja) + nome curto + preco. Botao "+" pra toque.
 export function DishCard({ prato }: { prato: Prato }) {
   const add = useCart((s) => s.add)
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -23,23 +23,20 @@ export function DishCard({ prato }: { prato: Prato }) {
         {prato.foto
           ? <img src={prato.foto} alt={prato.nome} draggable={false} />
           : <div className="dish-noimg" aria-hidden>🍽️</div>}
+        <button
+          className="dish-add"
+          type="button"
+          aria-label={`Adicionar ${prato.nome}`}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); add(prato) }}
+        >
+          +
+        </button>
       </div>
       <div className="dish-info">
         <span className="dish-name">{prato.nome}</span>
         <span className="dish-price">{fmtBRL(prato.preco)}</span>
       </div>
-      <button
-        className="dish-add"
-        type="button"
-        aria-label={`Adicionar ${prato.nome}`}
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => {
-          e.stopPropagation()
-          add(prato)
-        }}
-      >
-        +
-      </button>
     </div>
   )
 }

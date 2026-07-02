@@ -1,13 +1,15 @@
-export type Grupo = 'Principais' | 'Acompanhamentos' | 'Bebidas' | 'Sobremesas'
-
-export const ORDEM_GRUPOS: Grupo[] = ['Principais', 'Acompanhamentos', 'Bebidas', 'Sobremesas']
-
 export interface Prato {
   id: string
   nome: string
   preco: number
   foto: string | null
-  grupo: Grupo
-  categoriaNome: string
-  ordem: number
+  categoria: string // label de exibicao (ex.: "Massas")
+  cor: string // cor da secao
+  catOrdem: number // ordem para ordenar pratos e secoes
+}
+
+export interface CategoriaView {
+  label: string
+  icon: string
+  cor: string
 }

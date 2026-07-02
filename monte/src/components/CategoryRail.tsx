@@ -1,30 +1,24 @@
-import type { Grupo } from '../lib/types'
-
-const ICON: Record<Grupo, string> = {
-  Principais: '🍝',
-  Acompanhamentos: '🍟',
-  Bebidas: '🥤',
-  Sobremesas: '🍰',
-}
+import type { CategoriaView } from '../lib/types'
 
 interface Props {
-  grupos: Grupo[]
-  ativo: Grupo
-  onSelect: (g: Grupo) => void
+  categorias: CategoriaView[]
+  ativo: string
+  onSelect: (label: string) => void
 }
 
-export function CategoryRail({ grupos, ativo, onSelect }: Props) {
+export function CategoryRail({ categorias, ativo, onSelect }: Props) {
   return (
     <nav className="rail" aria-label="Categorias">
-      {grupos.map((g) => (
+      {categorias.map((c) => (
         <button
-          key={g}
-          className={`rail-item ${g === ativo ? 'is-active' : ''}`}
-          onClick={() => onSelect(g)}
+          key={c.label}
           type="button"
+          className={`rail-item ${c.label === ativo ? 'is-active' : ''}`}
+          style={{ ['--chip' as any]: c.cor }}
+          onClick={() => onSelect(c.label)}
         >
-          <span className="rail-icon" aria-hidden>{ICON[g]}</span>
-          <span className="rail-label">{g}</span>
+          <span className="rail-icon" aria-hidden>{c.icon}</span>
+          <span className="rail-label">{c.label}</span>
         </button>
       ))}
     </nav>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -14,29 +14,32 @@ import { CategoryRail } from './components/CategoryRail'
 import { DishGrid } from './components/DishGrid'
 import { Tray } from './components/Tray'
 import { OrderPanel } from './components/OrderPanel'
-import type { Grupo, Prato } from './lib/types'
+import type { Prato } from './lib/types'
 
 export default function App() {
-  const { pratos, gruposComItens, loading, error } = useMenu()
+  const { pratos, categorias, loading, error } = useMenu()
   const add = useCart((s) => s.add)
-  const [ativo, setAtivo] = useState<Grupo>('Principais')
+  const [ativo, setAtivo] = useState<string>('')
   const [arrastando, setArrastando] = useState<Prato | null>(null)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
-  function irPara(g: Grupo) {
-    setAtivo(g)
-    document.getElementById(`sec-${g}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
+  useEffect(() => {
+    if (!ativo && categorias.length) setAtivo(categorias[0].label)
+  }, [categorias, ativo])
 
+  function irPara(label: string) {
+    setAtivo(label)
+    document.getElementById(`sec-${label}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
   function onDragStart(e: DragStartEvent) {
     setArrastando((e.active.data.current?.prato as Prato) ?? null)
   }
   function onDragEnd(e: DragEndEvent) {
     setArrastando(null)
     if (e.over?.id === 'tray') {
-      const prato = e.active.data.current?.prato as Prato | undefined
-      if (prato) add(prato)
+      const p = e.active.data.current?.prato as Prato | undefined
+      if (p) add(p)
     }
   }
 
@@ -53,11 +56,7 @@ export default function App() {
         </header>
 
         <div className="stage">
-          <CategoryRail
-            grupos={gruposComItens.length ? gruposComItens : ['Principais']}
-            ativo={ativo}
-            onSelect={irPara}
-          />
+          <CategoryRail categorias={categorias} ativo={ativo} onSelect={irPara} />
 
           <main className="center">
             <Tray />
@@ -66,10 +65,10 @@ export default function App() {
             {loading && <div className="grid-empty">Carregando o cardápio…</div>}
             {error && <div className="grid-empty erro">Erro ao carregar: {error}</div>}
 
-            {!loading && !error && gruposComItens.map((g) => (
-              <section key={g} id={`sec-${g}`} className="menu-section">
-                <div className="section-title">{g}</div>
-                <DishGrid pratos={pratos.filter((p) => p.grupo === g)} />
+            {!loading && !error && categorias.map((c) => (
+              <section key={c.label} id={`sec-${c.label}`} className="menu-section">
+                <div className="section-title" style={{ color: c.cor }}>{c.label}</div>
+                <DishGrid pratos={pratos.filter((p) => p.categoria === c.label)} />
               </section>
             ))}
           </main>
