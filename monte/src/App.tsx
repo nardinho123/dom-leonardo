@@ -1,78 +1,40 @@
-import { useEffect, useMemo, useState } from 'react'
 import { useMenu } from './hooks/useMenu'
-import { useCart, fmtBRL } from './store/cart'
-import { CategoryRail } from './components/CategoryRail'
-import { OrderPanel } from './components/OrderPanel'
-import { Scene3D, type FrameData } from './components/Scene3D'
+import { App as Gallery, type GalleryImage } from './components/Scene3D'
+
+// Posicoes EXATAS do demo pmndrs/examples "image-gallery" (frente / fundo / esquerda / direita).
+const SLOTS: Array<Pick<GalleryImage, 'position' | 'rotation'>> = [
+  // Frente
+  { position: [0, 0, 1.5], rotation: [0, 0, 0] },
+  // Fundo
+  { position: [-0.8, 0, -0.6], rotation: [0, 0, 0] },
+  { position: [0.8, 0, -0.6], rotation: [0, 0, 0] },
+  // Esquerda
+  { position: [-1.75, 0, 0.25], rotation: [0, Math.PI / 2.5, 0] },
+  { position: [-2.15, 0, 1.5], rotation: [0, Math.PI / 2.5, 0] },
+  { position: [-2, 0, 2.75], rotation: [0, Math.PI / 2.5, 0] },
+  // Direita
+  { position: [1.75, 0, 0.25], rotation: [0, -Math.PI / 2.5, 0] },
+  { position: [2.15, 0, 1.5], rotation: [0, -Math.PI / 2.5, 0] },
+  { position: [2, 0, 2.75], rotation: [0, -Math.PI / 2.5, 0] },
+]
 
 export default function App() {
-  const { pratos, categorias, loading, error } = useMenu()
-  const add = useCart((s) => s.add)
-  const [ativo, setAtivo] = useState<string>('')
-  const [focusedId, setFocusedId] = useState<string | null>(null)
+  const { pratos } = useMenu()
 
-  useEffect(() => {
-    if (!ativo && categorias.length) setAtivo(categorias[0].label)
-  }, [categorias, ativo])
-
-  const pratosDoGrupo = useMemo(() => pratos.filter((p) => p.categoria === ativo), [pratos, ativo])
-
-  // Layout das molduras: fila levemente curvada, de frente pra câmera.
-  const frames: FrameData[] = useMemo(
-    () =>
-      pratosDoGrupo.map((pr, i, arr) => {
-        const t = i - (arr.length - 1) / 2
-        return {
-          id: pr.id,
-          url: pr.foto,
-          position: [t * 1.5, 0, -Math.abs(t) * 0.55],
-          rotation: [0, -t * 0.14, 0],
-        }
-      }),
-    [pratosDoGrupo],
-  )
-
-  const focusedPrato = focusedId ? pratos.find((p) => p.id === focusedId) ?? null : null
-
-  function selecionarCategoria(label: string) {
-    setAtivo(label)
-    setFocusedId(null)
-  }
+  const images: GalleryImage[] = SLOTS.map((slot, i) => {
+    const pr = pratos[i]
+    return {
+      id: pr ? pr.id : `slot-${i}`,
+      name: pr ? pr.nome : '',
+      url: pr?.foto ?? '',
+      position: slot.position,
+      rotation: slot.rotation,
+    }
+  }).filter((img) => img.url)
 
   return (
-    <div className="app">
-      <header className="topbar">
-        <button className="top-enter" type="button">👤 Entrar</button>
-        <div className="top-center">
-          <div className="brand">Monte do seu jeito</div>
-          <div className="brand-sub">🍽 Toque um prato pra ver</div>
-        </div>
-        <button className="top-bell" type="button" aria-label="Notificações">🔔</button>
-      </header>
-
-      <div className="stage3d">
-        <CategoryRail categorias={categorias} ativo={ativo} onSelect={selecionarCategoria} />
-
-        <div className="canvas-wrap">
-          {loading && <div className="loading3d">Carregando o cardápio…</div>}
-          {error && <div className="loading3d erro">Erro: {error}</div>}
-          {!loading && !error && <Scene3D frames={frames} focusedId={focusedId} onFocus={setFocusedId} />}
-        </div>
-
-        {focusedPrato && (
-          <div className="focus-card">
-            <div className="focus-info">
-              <div className="focus-name">{focusedPrato.nome}</div>
-              <div className="focus-price">{fmtBRL(focusedPrato.preco)}</div>
-            </div>
-            <button className="focus-add" type="button" onClick={() => add(focusedPrato)}>
-              Adicionar +
-            </button>
-          </div>
-        )}
-
-        <OrderPanel />
-      </div>
+    <div style={{ position: 'fixed', inset: 0 }}>
+      {images.length > 0 && <Gallery images={images} />}
     </div>
   )
 }
