@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useCart, selectSubtotal, selectTotalItens, fmtBRL } from '../store/cart'
 
-// Fase 1: taxa fixa (placeholder). O calculo real de frete vem na Fase 2.
+// Fase 1: taxa e endereco/tempo sao placeholders (batem com o print).
+// O calculo real de frete + endereco do cliente vem na Fase 2 (checkout).
 const TAXA_ENTREGA = 5.9
 
 export function OrderPanel() {
@@ -15,7 +16,6 @@ export function OrderPanel() {
 
   return (
     <aside className={`order ${aberto ? 'is-open' : ''}`}>
-      {/* Barra que aparece só no mobile; toca e expande a lista */}
       <button className="order-mobile-bar" type="button" onClick={() => setAberto((o) => !o)}>
         <span className="order-mobile-count">{totalItens} {totalItens === 1 ? 'item' : 'itens'}</span>
         <span className="order-mobile-total">{fmtBRL(total)}</span>
@@ -36,7 +36,7 @@ export function OrderPanel() {
               {itens.map((it) => (
                 <li className="order-item" key={it.prato.id}>
                   <div className="order-item-main">
-                    <span className="order-item-name">{it.prato.nome}</span>
+                    <span className="order-item-name">{it.qtd}x {it.prato.nome}</span>
                     <span className="order-item-price">{fmtBRL(it.prato.preco * it.qtd)}</span>
                   </div>
                   <div className="order-qty">
@@ -53,6 +53,22 @@ export function OrderPanel() {
               <div className="order-row"><span>Taxa de entrega</span><strong>{fmtBRL(TAXA_ENTREGA)}</strong></div>
               <div className="order-row total"><span>Total</span><strong>{fmtBRL(total)}</strong></div>
             </div>
+
+            <div className="order-deliver">
+              <div className="order-deliver-label">Entrega em</div>
+              <div className="order-address">
+                <span className="pin" aria-hidden>📍</span>
+                <div className="addr">
+                  <b>Casa</b>
+                  <span>Rua das Flores, 123 · Centro, Curitiba - PR</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="order-eta">
+              <span>⏱ Tempo estimado</span>
+              <strong>30–40 min</strong>
+            </div>
           </>
         )}
 
@@ -64,6 +80,11 @@ export function OrderPanel() {
         >
           Servir pedido →
         </button>
+        {itens.length > 0 && (
+          <button className="order-finalize" type="button" onClick={() => alert('Fase 2: finalizar e enviar')}>
+            Finalizar e enviar
+          </button>
+        )}
       </div>
     </aside>
   )
