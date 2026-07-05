@@ -964,7 +964,15 @@ Deno.serve(async (req) => {
           subtotal: toNumber(pedidoObj.subtotal, 0),
           config: (config as Record<string, unknown> | null) ?? {},
         });
-        const taxaEntregaGoogle = toNumber(entrega.frete_final, NaN);
+        if (entrega.dentro_raio === false) {
+          throw new Error("Endereco fora da area de entrega do Dom (ate 15 km).");
+        }
+        let taxaEntregaGoogle = toNumber(entrega.frete_final, NaN);
+        // Botao "o chef ajuda": corta a taxa de entrega pela metade
+        const chefMetade = body?.chef_frete_metade === true;
+        if (chefMetade && Number.isFinite(taxaEntregaGoogle)) {
+          taxaEntregaGoogle = arredondaDinheiro(taxaEntregaGoogle / 2);
+        }
 
         if (Number.isFinite(taxaEntregaGoogle) && taxaEntregaGoogle >= 0) {
           const subtotalPedido = toNumber(pedidoObj.subtotal, 0);
@@ -975,6 +983,7 @@ Deno.serve(async (req) => {
             `Entrega Google Maps: ${cleanText(entrega.texto_tempo) || "estimativa indisponivel"}`,
             entrega.distancia_texto ? `distancia ${cleanText(entrega.distancia_texto)}` : "",
             entrega.fonte === "google_maps" ? "fonte google_maps" : `fonte configuracao (${cleanText(entrega.motivo) || "fallback"})`,
+            chefMetade ? "chef cortou o frete pela metade" : "",
           ].filter(Boolean).join(" | ");
           const observacoes = [obsAtual, obsEntrega].filter(Boolean).join("\n");
 

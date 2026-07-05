@@ -2826,6 +2826,13 @@
     font-size: 14px;
   }
   .chef-frete-btn:active { transform: scale(.98); }
+  .chef-frete-btn.aplicado {
+    border-style: solid;
+    border-color: #bfe6cd;
+    background: #e9f7ef;
+    color: #15803d;
+    cursor: default;
+  }
   /* Marco centralizado no topo em todas as etapas */
   .marco-sticker.top-center{ left:50%!important; right:auto!important; transform:translateX(-50%) scale(.95)!important; }
   /* tela de endereço redesenhada */
@@ -3221,6 +3228,7 @@ function App() {
   const [checkoutDados, setCheckoutDados] = useState({ nome: '', whatsapp: '', email: '', rua: '', numero: '', bairro: '', complemento: '', ruaNumero: '' });
   const [checkoutErrors, setCheckoutErrors] = useState({});
   const [checkoutStage, setCheckoutStage] = useState('dados'); // dados | revisao | preparando | pagamento | sucesso
+  const [chefFreteMetade, setChefFreteMetade] = useState(false); // botao "o chef ajuda": corta o frete pela metade
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
   const [stripeCheckout, setStripeCheckout] = useState(null);
@@ -3715,7 +3723,9 @@ function App() {
   const freteChefAtivo = carrinhoTotal >= FRETE_CHEF_MINIMO;
   const descontoFreteChef = 0; // "frete do chef" desligado a pedido do dono (sem promocao)
   const taxaEntregaComChef = Math.max(0, taxaEntrega - descontoFreteChef);
-  const taxaEntregaFinal = cupomResumo.ok && cupomResumo.freteGratis ? 0 : taxaEntregaComChef;
+  const taxaEntregaFinal = cupomResumo.ok && cupomResumo.freteGratis
+    ? 0
+    : (chefFreteMetade ? Math.round((taxaEntregaComChef / 2) * 100) / 100 : taxaEntregaComChef);
   const faltaFreteChef = Math.max(0, FRETE_CHEF_MINIMO - carrinhoTotal);
   const totalComEntrega = Math.max(0, carrinhoTotal + taxaEntregaFinal - descontoCupom);
   const preparoTexto = '5 minutos';
@@ -3826,6 +3836,7 @@ function App() {
     setEntregaError('');
     setMapPin(null);
     setMapAddressLabel('');
+    setChefFreteMetade(false);
   };
 
   const splitRuaNumero = (value) => {
@@ -4205,6 +4216,9 @@ function App() {
             fonte: ent.fonte || 'backend',
             endereco_formatado: ent.endereco_formatado || mapAddressLabel || '',
           });
+          if (ent.dentro_raio === false) {
+            setEntregaError('Poxa, esse endereço fica fora da nossa área de entrega (até 15 km do Dom). 😕');
+          }
           estimou = true;
         }
       } catch (_) {}
@@ -4228,6 +4242,9 @@ function App() {
           fonte: 'tabela',
           endereco_formatado: mapAddressLabel || '',
         });
+        if (!dentro) {
+          setEntregaError('Poxa, esse endereço fica fora da nossa área de entrega (até 15 km do Dom). 😕');
+        }
       }
     } catch (err) {
       setEntregaError('Nao consegui calcular a entrega agora. Tenta de novo em instantes.');
@@ -4323,6 +4340,7 @@ function App() {
           itens: carrinho,
           cupom_codigo: cupomResumo.ok && cupomAplicado?.codigo ? String(cupomAplicado.codigo).toUpperCase() : null,
           entrega_google: !!entregaEstimativa,
+          chef_frete_metade: chefFreteMetade,
           device_id: chatDeviceId.current,
           site_url: window.location.origin + window.location.pathname,
           idempotency_key: `dl-stripe-${chatDeviceId.current}-${Date.now()}`,
@@ -4442,6 +4460,11 @@ function App() {
     const erro = validarEndereco();
     if (erro) {
       setCheckoutError(erro);
+      vibrate(35);
+      return;
+    }
+    if (entregaEstimativa && entregaEstimativa.dentro_raio === false) {
+      setCheckoutError('Esse endereço fica fora da nossa área de entrega (até 15 km do Dom). 😕');
       vibrate(35);
       return;
     }
@@ -5813,16 +5836,18 @@ function App() {
                     <p>Usamos a logística de parceiros do iFood. Se a entrega ficou puxada pra você, o chef ajuda:</p>
                     <button
                       type="button"
-                      className="chef-frete-btn"
+                      className={`chef-frete-btn ${chefFreteMetade ? 'aplicado' : ''}`}
+                      disabled={chefFreteMetade}
                       onClick={() => {
+                        if (chefFreteMetade) return;
+                        setChefFreteMetade(true);
+                        vibrate([15, 25, 15]);
+                        trackMeta('Contact', { content_name: 'chef_corta_frete_metade' });
                         const primeiro = primeiroNomeCliente();
-                        const { logradouro, numero, bairro } = enderecoCheckout();
-                        const msg = `Oi, chef! Sou ${primeiro || 'cliente do cardápio'} e a taxa de entrega pro meu endereço (${[logradouro, numero, bairro].filter(Boolean).join(', ') || 'ainda preenchendo'}) ficou puxada. Consegue me ajudar?`;
-                        trackMeta('Contact', { content_name: 'chef_ajuda_frete' });
-                        window.open(`https://wa.me/${WHATSAPP_DOM}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+                        falarMarco(`Prontinho${primeiro ? ', ' + primeiro : ''}! O chef cortou sua entrega pela metade.`, 5600);
                       }}
                     >
-                      👨‍🍳 Falar com o chef sobre o frete
+                      {chefFreteMetade ? '✓ O chef cortou seu frete pela metade' : '👨‍🍳 Chef, me ajuda no frete'}
                     </button>
                   </div>
 
