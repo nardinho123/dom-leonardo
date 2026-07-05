@@ -301,28 +301,62 @@ function arredondaDinheiro(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-function calcularFreteEstimado(distanceKm: number | null, config: Record<string, unknown>, subtotal: number) {
-  const taxaPadrao = toNumber(config.taxa_entrega_padrao, 0);
-  const raioEntregaKm = toNumber(config.raio_entrega_km, 8);
-  const freteCalculado = distanceKm
-    ? Math.max(taxaPadrao, 5 + (distanceKm * 1.35))
-    : taxaPadrao;
-  const freteBruto = arredondaDinheiro(freteCalculado);
-  const descontoChef = subtotal >= 60 ? Math.min(freteBruto, 10) : 0;
+// Logistica de parceiros do iFood: cobra-se a TABELA de faixas (entrega_faixas) + 30%.
+// Mesma regra do front - fonte unica de verdade, sem formula paralela.
+const FATOR_LOGISTICA_IFOOD = 1.3;
 
+type FaixaEntrega = { raio_km: number; tempo_min?: number; taxa: number };
+
+async function carregarFaixasEntregaDb(supabase: any): Promise<FaixaEntrega[] | null> {
+  try {
+    const { data, error } = await supabase
+      .from("entrega_faixas")
+      .select("raio_km,tempo_min,taxa")
+      .order("raio_km", { ascending: true });
+    if (error || !Array.isArray(data) || !data.length) return null;
+    return data as FaixaEntrega[];
+  } catch (_) {
+    return null;
+  }
+}
+
+function calcularFreteEstimado(
+  distanceKm: number | null,
+  config: Record<string, unknown>,
+  _subtotal: number,
+  faixas: FaixaEntrega[] | null = null,
+) {
+  const taxaPadrao = toNumber(config.taxa_entrega_padrao, 0);
+  const raioEntregaKm = faixas?.length
+    ? toNumber(faixas[faixas.length - 1].raio_km, 8)
+    : toNumber(config.raio_entrega_km, 8);
+
+  let freteBase: number;
+  if (faixas?.length && distanceKm != null && Number.isFinite(distanceKm) && distanceKm > 0) {
+    const faixa = faixas.find((f) => toNumber(f.raio_km, 0) >= distanceKm) ?? faixas[faixas.length - 1];
+    freteBase = toNumber(faixa.taxa, taxaPadrao);
+  } else if (distanceKm) {
+    freteBase = Math.max(taxaPadrao, 5 + (distanceKm * 1.35));
+  } else {
+    freteBase = taxaPadrao;
+  }
+
+  const freteBruto = arredondaDinheiro(freteBase * FATOR_LOGISTICA_IFOOD);
+
+  // "Frete do chef" DESLIGADO a pedido do dono (campos mantidos por compatibilidade).
   return {
     frete_bruto: freteBruto,
-    desconto_frete_chef: arredondaDinheiro(descontoChef),
-    frete_final: arredondaDinheiro(Math.max(0, freteBruto - descontoChef)),
+    desconto_frete_chef: 0,
+    frete_final: freteBruto,
     dentro_raio: !distanceKm || distanceKm <= raioEntregaKm,
     raio_entrega_km: raioEntregaKm,
   };
 }
 
-function entregaFallback(config: Record<string, unknown>, subtotal: number, motivo: string) {
+function entregaFallback(config: Record<string, unknown>, subtotal: number, motivo: string, faixas: FaixaEntrega[] | null = null) {
   const tempoMin = toNumber(config.tempo_entrega_min, 20);
   const tempoMax = toNumber(config.tempo_entrega_max, 30);
-  const frete = calcularFreteEstimado(null, config, subtotal);
+  const frete = calcularFreteEstimado(null, config, subtotal, faixas);
 
   return {
     sucesso: true,
@@ -342,9 +376,10 @@ async function calcularEntregaGoogle(params: {
   endereco: Record<string, unknown>;
   subtotal: number;
   config: Record<string, unknown>;
+  faixas?: FaixaEntrega[] | null;
 }) {
   const key = mapsServerKey();
-  if (!key) return entregaFallback(params.config, params.subtotal, "google_maps_key_ausente");
+  if (!key) return entregaFallback(params.config, params.subtotal, "google_maps_key_ausente", params.faixas ?? null);
 
   const logradouro = cleanText(params.endereco.logradouro);
   const numero = cleanText(params.endereco.numero);
@@ -378,7 +413,7 @@ async function calcularEntregaGoogle(params: {
     const geoResults = Array.isArray(geoData.results) ? geoData.results as Array<Record<string, unknown>> : [];
     const geoStatus = cleanText(geoData.status);
     if (!geoResp.ok || geoStatus !== "OK" || geoResults.length === 0) {
-      return entregaFallback(params.config, params.subtotal, `geocode_${geoStatus || geoResp.status}`);
+      return entregaFallback(params.config, params.subtotal, `geocode_${geoStatus || geoResp.status}`, params.faixas ?? null);
     }
 
     const best = geoResults[0];
@@ -388,7 +423,7 @@ async function calcularEntregaGoogle(params: {
     lng = toNumber(location.lng, NaN);
     enderecoFormatado = cleanText(best.formatted_address);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      return entregaFallback(params.config, params.subtotal, "geocode_sem_coordenadas");
+      return entregaFallback(params.config, params.subtotal, "geocode_sem_coordenadas", params.faixas ?? null);
     }
   }
 
@@ -408,7 +443,7 @@ async function calcularEntregaGoogle(params: {
   const element = elements[0] ?? {};
   const elementStatus = cleanText(element.status);
   if (!matrixResp.ok || cleanText(matrixData.status) !== "OK" || elementStatus !== "OK") {
-    return entregaFallback(params.config, params.subtotal, `distance_${cleanText(matrixData.status) || elementStatus || matrixResp.status}`);
+    return entregaFallback(params.config, params.subtotal, `distance_${cleanText(matrixData.status) || elementStatus || matrixResp.status}`, params.faixas ?? null);
   }
 
   const distance = asObject(element.distance);
@@ -419,7 +454,7 @@ async function calcularEntregaGoogle(params: {
   const tempoBaseMax = toNumber(params.config.tempo_entrega_max, 30);
   const tempoMin = Math.max(tempoBaseMin, rotaMinutos + 10);
   const tempoMax = Math.max(tempoBaseMax, tempoMin + 10, rotaMinutos + 20);
-  const frete = calcularFreteEstimado(distanciaKm, params.config, params.subtotal);
+  const frete = calcularFreteEstimado(distanciaKm, params.config, params.subtotal, params.faixas ?? null);
 
   return {
     sucesso: true,
@@ -478,6 +513,7 @@ async function entregaCacheKey(params: {
   ].filter(Boolean).join(", ");
   const subtotalBucket = params.subtotal >= 60 ? "frete_chef" : "normal";
   const configParte = [
+    "ifood30-v2", // versao do calculo (tabela entrega_faixas +30%, sem frete do chef) - invalida cache antigo
     toNumber(params.config.taxa_entrega_padrao, 0),
     toNumber(params.config.raio_entrega_km, 8),
     toNumber(params.config.tempo_entrega_min, 20),
@@ -574,19 +610,22 @@ async function calcularEntregaComProtecao(
     return { ...asObject(cacheHit.resposta), cache: true };
   }
 
+  // Tabela de faixas = fonte de verdade do frete (+30% logistica iFood aplicado no calculo)
+  const faixas = await carregarFaixasEntregaDb(supabase);
+
   const identidade = identidadeEntrega(req, body);
   const hoje = new Date().toISOString().slice(0, 10);
   const deviceLimit = await permiteChamadaMaps(supabase, `device:${identidade}`, 25, 60);
   if (!deviceLimit.permitido) {
-    return { ...entregaFallback(params.config, params.subtotal, `rate_limit_device_${deviceLimit.motivo || "excedido"}`), rate_limited: true };
+    return { ...entregaFallback(params.config, params.subtotal, `rate_limit_device_${deviceLimit.motivo || "excedido"}`, faixas), rate_limited: true };
   }
 
   const globalLimit = await permiteChamadaMaps(supabase, `global:${hoje}`, 500, 24 * 60);
   if (!globalLimit.permitido) {
-    return { ...entregaFallback(params.config, params.subtotal, `rate_limit_global_${globalLimit.motivo || "excedido"}`), rate_limited: true };
+    return { ...entregaFallback(params.config, params.subtotal, `rate_limit_global_${globalLimit.motivo || "excedido"}`, faixas), rate_limited: true };
   }
 
-  const entrega = await calcularEntregaGoogle(params);
+  const entrega = await calcularEntregaGoogle({ ...params, faixas });
   const ttlMinutos = entrega.fonte === "google_maps" ? 12 * 60 : 5;
   const expiraEm = new Date(Date.now() + ttlMinutos * 60 * 1000).toISOString();
 

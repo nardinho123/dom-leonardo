@@ -216,7 +216,10 @@
   html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, sans-serif;
-    overscroll-behavior-y: contain;
+    /* NAO usar overscroll-behavior-y: contain aqui: com overflow-x:hidden em html+body
+       (scroll-containers do tamanho do conteudo), o "contain" prende o gesto de wheel/touch
+       e impede de rolar a pagina (scrollTo por codigo ainda funcionava). Contain de sheet
+       fica no proprio scroller do sheet, nao no body. */
     min-height: 100dvh;
     padding-top: var(--safe-top);
     padding-bottom: var(--safe-bottom);
@@ -319,7 +322,7 @@
     border-radius: 18px 18px 4px 18px;
     font-size: 14px;
     line-height: 1.35;
-    z-index: 51;
+    z-index: 226; /* acima dos sheets (96/99) e do Marco top-mode (225): feedback sempre visivel */
     box-shadow: 0 8px 22px rgba(0,0,0,0.45);
     transform: translateY(8px);
     opacity: 0;
@@ -341,6 +344,21 @@
     border-right: 1px solid var(--line);
     border-bottom: 1px solid var(--line);
     transform: rotate(-45deg);
+  }
+  /* Quando um sheet esta aberto o Marco vai pro topo (top-mode) - o balao acompanha */
+  .balao.top-mode {
+    top: calc(var(--safe-top) + 80px);
+    bottom: auto;
+    right: 18px;
+    border-radius: 18px 4px 18px 18px;
+  }
+  .balao.top-mode::after {
+    bottom: auto;
+    top: -6px;
+    right: 16px;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    transform: rotate(-135deg);
   }
 
   /* Bottom sheet do chat */
@@ -823,6 +841,8 @@
     flex: 1;
     overflow-y: auto;
     padding-bottom: 130px;
+    overscroll-behavior: contain; /* contain fica AQUI (scroller do sheet), nunca no body */
+    -webkit-overflow-scrolling: touch;
   }
   .dish-hero {
     position: relative;
@@ -1264,8 +1284,12 @@
     color: rgba(243,236,224,0.9);
     border-radius: 10px;
     min-height: 34px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
   }
   .value-row {
     display: flex;
@@ -1819,22 +1843,14 @@
     place-items: center;
     text-align: center;
   }
+  /* So o emoji flutuando, sem caixa/quadrado atras (pedido do Leo) */
   .chef-loading-figure {
-    width: 116px;
-    height: 116px;
     margin: 0 auto 16px;
-    border-radius: 34px;
-    border: 1px solid rgba(212,175,55,0.32);
-    background:
-      radial-gradient(circle at 45% 24%, rgba(255,245,191,0.28), transparent 18%),
-      radial-gradient(circle at 50% 58%, rgba(212,175,55,0.20), transparent 48%),
-      rgba(0,0,0,0.32);
     display: grid;
     place-items: center;
-    box-shadow: 0 18px 42px rgba(0,0,0,0.42);
     animation: chefFloat 1.25s ease-in-out infinite alternate;
   }
-  .chef-loading-figure span { font-size: 50px; filter: drop-shadow(0 10px 18px rgba(0,0,0,.35)); }
+  .chef-loading-figure span { font-size: 64px; filter: drop-shadow(0 12px 22px rgba(0,0,0,.35)); }
   .chef-dots {
     display: inline-flex;
     gap: 5px;
@@ -2789,8 +2805,27 @@
   /* botoes sem dourado: preto/branco */
   .bag-sheet.open .bag-primary-btn,
   .bag-sheet.open .sacola-main-btn,
-  .bag-sheet.open .checkout-primary{ background:#111; color:#fff; box-shadow:none; }
-  .bag-sheet.open .checkout-secondary{ color:#111; }
+  .bag-sheet.open .checkout-primary{ background:#111; color:#fff; box-shadow:0 8px 22px rgba(0,0,0,.14); border-radius:14px; }
+  .bag-sheet.open .checkout-secondary{ color:#555; background:transparent; border:1.5px solid #dcdcdc; border-radius:14px; }
+  /* "Peca tambem" no modo claro: botao Adicionar solido e legivel (antes ficava cinza lavado) */
+  .bag-sheet.open .bag-cross-add{ background:#111; color:#fff; border:0; border-radius:10px; font-size:12px; letter-spacing:.02em; }
+  .bag-sheet.open .bag-cross-card{ background:#fff; border:1px solid #ececec; box-shadow:0 6px 18px rgba(0,0,0,.06); }
+  .bag-sheet.open .bag-cross-info strong{ color:#111; }
+  .bag-sheet.open .bag-cross-info span{ color:#666; }
+  /* Botao "chef ajuda no frete" */
+  .chef-frete { margin: 6px 0 2px; }
+  .chef-frete p { font-size: 12.5px; color: #777; line-height: 1.45; margin: 0 0 8px; }
+  .chef-frete-btn {
+    width: 100%;
+    min-height: 46px;
+    border-radius: 14px;
+    border: 1.5px dashed #cfcfcf;
+    background: #fafafa;
+    color: #333;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .chef-frete-btn:active { transform: scale(.98); }
   /* Marco centralizado no topo em todas as etapas */
   .marco-sticker.top-center{ left:50%!important; right:auto!important; transform:translateX(-50%) scale(.95)!important; }
   /* tela de endereço redesenhada */
@@ -2811,7 +2846,8 @@
   .co-wa-btn svg{ width:21px; height:21px; fill:#fff; flex:0 0 auto; }
   /* ===== Checkout: color grading padronizado (fundo branco) ===== */
   .bag-sheet.open .bag-head{ justify-content:flex-start; gap:8px; }
-  .bag-sheet.open .bag-head h2{ margin-left:4px; }
+  .bag-sheet.open .bag-head h2{ margin-left:58px; } /* abre espaco pro botao voltar (44px) nao cobrir o titulo */
+  .bag-sheet.open .bag-cross-head span{ color:#999; } /* "combina com a sua sacola" legivel no fundo branco */
   .bag-sheet.open .checkout-card p,
   .bag-sheet.open .pix-card p{ color:#666; }
   /* Pix / pagamento */
@@ -3036,7 +3072,7 @@ function clampText(value, max = 110) {
   return text.length > max ? text.slice(0, max - 1).trim() + '...' : text;
 }
 function introPrato(p, max = 96) {
-  return clampText(p?.descricao_completa || p?.descricao || p?.frase_fome || '', max);
+  return clampText(p?.descricao_completa || p?.descricao || '', max);
 }
 function getChatDeviceId() {
   const key = 'dom_marco_device_id';
@@ -3244,6 +3280,34 @@ function App() {
     }, duracao);
   };
 
+  // Primeiro nome do cliente (token do menu, localStorage ou dados do checkout)
+  const primeiroNomeCliente = () => {
+    const salvo = getClienteSalvo();
+    const nome = String((salvo && salvo.nome) || checkoutDados.nome || '').trim();
+    return nome ? nome.split(' ')[0] : '';
+  };
+
+  // Mensagem automatica por ETAPA (1 por etapa, sem repetir enquanto a pessoa navega)
+  const etapaFaladaRef = useRef('');
+  useEffect(() => {
+    const etapa = !sacolaOpen ? '' : (whatsEnderecoOpen ? `checkout:${checkoutStage}` : 'sacola');
+    if (!etapa || etapaFaladaRef.current === etapa) return;
+    etapaFaladaRef.current = etapa;
+    const primeiro = primeiroNomeCliente();
+    const oi = primeiro ? `, ${primeiro}` : '';
+    if (etapa === 'sacola' && carrinho.length) {
+      falarMarco(`Essa e a sua sacola${oi}. Confere o pedido e toca em Finalizar pedido.`, 5600);
+    } else if (etapa === 'checkout:dados') {
+      falarMarco(`Endereco de entrega${oi}: permite a localizacao que eu preencho quase tudo. Depois so confere o numero e o complemento.`, 7200);
+    } else if (etapa === 'checkout:revisao') {
+      falarMarco(`Ultima conferencia${oi}: nome, WhatsApp, pedido e endereco. Tudo certo? Toca em Fazer pedido.`, 6800);
+    }
+  }, [sacolaOpen, whatsEnderecoOpen, checkoutStage, carrinho.length]);
+
+  // Boas-vindas com nome: feita na "primeira aparicao" do Marco (abaixo) usando o
+  // cliente salvo (token do menu ja grava no localStorage antes dos 2.5s).
+  const boasVindasRef = useRef(false);
+
   const fraseTamanho = (tamanho) => {
     const label = labelTamanho(tamanho);
     const peso = Number(tamanho?.peso_g || String(label).match(/\d+/)?.[0] || 0);
@@ -3270,12 +3334,15 @@ function App() {
         agendarRonda();
       }, delay);
     };
-    // Primeira aparicao em 3s
+    // Primeira aparicao em 3s (personalizada com o nome quando o cliente e conhecido)
     setTimeout(() => {
       setGarcomState('peek');
-      setBalaoTexto(sortear(chatConfig.saudacoes ?? SAUDACOES_INICIAIS));
-      setTimeout(() => setBalaoTexto(null), 5000);
-      setTimeout(() => setGarcomState('attention'), 5500);
+      const salvo = getClienteSalvo();
+      const primeiro = String((salvo && salvo.nome) || '').trim().split(' ')[0];
+      const base = sortear(chatConfig.saudacoes ?? SAUDACOES_INICIAIS);
+      setBalaoTexto(primeiro ? `Oi, ${primeiro}! ${base}` : base);
+      setTimeout(() => setBalaoTexto(null), 5600);
+      setTimeout(() => setGarcomState('attention'), 6100);
       agendarRonda();
     }, 2500);
     return () => clearTimeout(rondaTimer.current);
@@ -3596,6 +3663,12 @@ function App() {
           bairro: prev.bairro || (end && end.bairro) || '',
           complemento: prev.complemento || (end && end.complemento) || '',
         }));
+        // Se o token chegou DEPOIS da primeira aparicao do Marco, cumprimenta com o nome agora
+        const primeiro = String(c.nome || '').trim().split(' ')[0];
+        if (primeiro && !boasVindasRef.current) {
+          boasVindasRef.current = true;
+          setTimeout(() => falarMarco(`Oi, ${primeiro}! Que bom te ver por aqui. Escolhe com calma que eu anoto tudo.`, 6200), 3600);
+        }
       } catch (_) {}
     })();
     return () => { vivo = false; };
@@ -3618,7 +3691,7 @@ function App() {
 
   const calcSubtotal = (items) => items.reduce((s, it) => s + Number(it.subtotal ?? (it.preco * it.qtd) ?? 0), 0);
   const totalItens = carrinho.reduce((s, it) => s + Number(it.qtd || 0), 0);
-  const taxaEntrega = Number(entregaEstimativa?.frete_bruto ?? deliveryConfig.taxa_entrega_padrao ?? 0);
+  const taxaEntrega = Number(entregaEstimativa?.frete_bruto ?? (Math.round(Number(deliveryConfig.taxa_entrega_padrao || 0) * 1.3 * 100) / 100));
   const FRETE_CHEF_MINIMO = 60;
   const FRETE_CHEF_LIMITE = 10;
   const cuponsDisponiveis = cupons.filter(c => {
@@ -4107,23 +4180,55 @@ function App() {
         return;
       }
 
-      const faixas = await carregarFaixasEntrega();
-      if (!faixas.length) {
-        setEntregaError('Nao consegui carregar as faixas de entrega agora.');
-        return;
+      // Fonte de verdade = backend (mesma conta do pedido: tabela de faixas + 30% iFood,
+      // distancia por ROTA do Google, com cache). Assim o valor exibido == valor cobrado.
+      let estimou = false;
+      try {
+        const er = await fetch(GARCOM_RESPONDER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+          body: JSON.stringify({
+            acao: 'calcular_entrega_google',
+            endereco: { logradouro, numero, bairro, cidade: 'Curitiba', uf: 'PR', lat: coords.lat, lng: coords.lng },
+            subtotal: carrinhoTotal,
+            device_id: chatDeviceId.current,
+          }),
+        });
+        const ed = await er.json().catch(() => ({}));
+        const ent = ed?.entrega;
+        if (er.ok && ent && Number.isFinite(Number(ent.frete_final))) {
+          setEntregaEstimativa({
+            frete_bruto: Number(ent.frete_final),
+            texto_tempo: ent.texto_tempo || '',
+            distancia_texto: ent.distancia_texto || '',
+            dentro_raio: ent.dentro_raio !== false,
+            fonte: ent.fonte || 'backend',
+            endereco_formatado: ent.endereco_formatado || mapAddressLabel || '',
+          });
+          estimou = true;
+        }
+      } catch (_) {}
+
+      // Fallback local (tabela + 30%, distancia em linha reta) se o backend nao respondeu
+      if (!estimou) {
+        const faixas = await carregarFaixasEntrega();
+        if (!faixas.length) {
+          setEntregaError('Nao consegui carregar as faixas de entrega agora.');
+          return;
+        }
+        const distKm = haversineKm(COZINHA_ORIGEM, coords);
+        const maxRaio = faixas[faixas.length - 1].raio_km;
+        const faixa = faixas.find(f => f.raio_km >= distKm) || faixas[faixas.length - 1];
+        const dentro = distKm <= maxRaio + 0.001;
+        setEntregaEstimativa({
+          frete_bruto: Math.round(Number(faixa.taxa || 0) * 1.3 * 100) / 100,
+          texto_tempo: `${faixa.tempo_min} min`,
+          distancia_texto: `${distKm.toFixed(1).replace('.', ',')} km`,
+          dentro_raio: dentro,
+          fonte: 'tabela',
+          endereco_formatado: mapAddressLabel || '',
+        });
       }
-      const distKm = haversineKm(COZINHA_ORIGEM, coords);
-      const maxRaio = faixas[faixas.length - 1].raio_km;
-      const faixa = faixas.find(f => f.raio_km >= distKm) || faixas[faixas.length - 1];
-      const dentro = distKm <= maxRaio + 0.001;
-      setEntregaEstimativa({
-        frete_bruto: faixa.taxa,
-        texto_tempo: `${faixa.tempo_min} min`,
-        distancia_texto: `${distKm.toFixed(1).replace('.', ',')} km`,
-        dentro_raio: dentro,
-        fonte: 'tabela',
-        endereco_formatado: mapAddressLabel || '',
-      });
     } catch (err) {
       setEntregaError('Nao consegui calcular a entrega agora. Tenta de novo em instantes.');
     } finally {
@@ -4345,7 +4450,6 @@ function App() {
       calcularEntregaCheckout();
     }
     setCheckoutStage('revisao');
-    falarMarco('Quase la. Confere esse resumo rapidinho e eu ja aviso o chef.', 4300);
     vibrate(12);
   };
 
@@ -4441,7 +4545,7 @@ function App() {
       setPixCopiado(false);
       setCheckoutStage('pagamento');
       trackMeta('AddPaymentInfo', { value: totalComEntrega, currency: 'BRL' });
-      falarMarco('Pix gerado! Escaneia o QR ou copia o codigo. Assim que cair, eu confirmo aqui na hora.', 4200);
+      falarMarco('Pix pronto! Pagar por aqui e mais rapido: a cozinha recebe na hora. Se preferir, tem o botao do WhatsApp ali em cima.', 7000);
       vibrate([15, 30, 15]);
     } catch (err) {
       setCheckoutError(err.message || 'Nao consegui gerar o Pix agora.');
@@ -4541,14 +4645,13 @@ function App() {
   const pratosDestaque = destaques.length ? destaques : pratos.slice(0, 6);
   const destaquesLoop = pratosDestaque.length > 1 ? [...pratosDestaque, ...pratosDestaque] : pratosDestaque;
   const carrinhoIds = new Set(carrinho.map(item => String(item.prato_id || '')));
+  // "Peca tambem": SO categorias de bebidas e adicionais (pedido do Leo).
+  // Itens pausados nunca chegam aqui (a API so devolve ativo=true).
+  const categoriasSugestaoIds = new Set(
+    categorias.filter(c => /bebida|adicion/i.test(String(c.nome || ''))).map(c => String(c.id))
+  );
   const sugestoesSacola = pratos
-    .filter(p => !carrinhoIds.has(String(p.id)))
-    .sort((a, b) => {
-      const aa = `${a.nome || ''} ${a.categoria_nome || ''} ${a.badge || ''}`.toLowerCase();
-      const bb = `${b.nome || ''} ${b.categoria_nome || ''} ${b.badge || ''}`.toLowerCase();
-      const score = (t) => (/(sobrem|doce|bebida|refri|coca|agua|água|tiramisu|panna|pudim)/.test(t) ? 0 : 1);
-      return score(aa) - score(bb);
-    })
+    .filter(p => categoriasSugestaoIds.has(String(p.categoria_id)) && !carrinhoIds.has(String(p.id)))
     .slice(0, 10);
   const pixTotalMs = 7 * 60 * 1000;
   const pixRestanteMs = pixExpireAt ? Math.max(0, pixExpireAt - pixNow) : pixTotalMs;
@@ -4556,13 +4659,19 @@ function App() {
   const pixMin = Math.floor(pixRestanteMs / 60000);
   const pixSeg = String(Math.floor((pixRestanteMs % 60000) / 1000)).padStart(2, '0');
   const pixPercent = Math.max(0, Math.min(100, (pixRestanteMs / pixTotalMs) * 100));
-  const maisPedidos = (pratos.filter(p => {
+  // Fonte da verdade = categoria "Mais Pedidos" do painel admin (todos os pratos ativos dela).
+  // Fallback: badge/selo com "mais pedido"/"favorito"; depois destaques. Sem corte artificial.
+  const categoriaMaisPedidos = categorias.find(c => /mais\s*pedido/i.test(String(c.nome || '')));
+  const maisPedidosDaCategoria = categoriaMaisPedidos
+    ? pratos.filter(p => String(p.categoria_id) === String(categoriaMaisPedidos.id))
+    : [];
+  const maisPedidosBadge = pratos.filter(p => {
     const texto = `${p.badge || ''} ${p.badge_destaque || ''} ${p.selo_experiencia || ''}`.toLowerCase();
-    return texto.includes('mais pedido') || texto.includes('pedido') || texto.includes('favorito');
-  }).length ? pratos.filter(p => {
-    const texto = `${p.badge || ''} ${p.badge_destaque || ''} ${p.selo_experiencia || ''}`.toLowerCase();
-    return texto.includes('mais pedido') || texto.includes('pedido') || texto.includes('favorito');
-  }) : (destaques.length ? destaques : pratos)).slice(0, 3);
+    return texto.includes('mais pedido') || texto.includes('favorito');
+  });
+  const maisPedidos = maisPedidosDaCategoria.length
+    ? maisPedidosDaCategoria
+    : (maisPedidosBadge.length ? maisPedidosBadge : (destaques.length ? destaques : pratos).slice(0, 3));
   const categoriaNomePorId = categorias.reduce((acc, cat) => {
     acc[String(cat.id)] = cat.nome;
     return acc;
@@ -4703,10 +4812,15 @@ function App() {
     setDetailSizeId(primeiroTamanho(prato));
     setDetailOptions({});
     setDetailObs('');
+    // Regra dos 5 segundos: parou olhando o prato -> Marco engaja (1 mensagem so)
     detailGuideTimer.current = setTimeout(() => {
       if (detailInteragiuRef.current || chatOpen) return;
-      falarMarco('Toca no tamanho ou no + para selecionar. Duvida grande? Aperta no Marco fixo aqui embaixo e cai na cozinha.', 7200);
-    }, 3800);
+      const primeiro = primeiroNomeCliente();
+      const temTamanhos = tamanhosDoPrato(prato).length > 0;
+      falarMarco(temTamanhos
+        ? `Esse e dos bons${primeiro ? ', ' + primeiro : ''}! Duvida no tamanho? Me pergunta aqui.`
+        : `Boa escolha${primeiro ? ', ' + primeiro : ''}! Toca no + pra montar do seu jeito.`, 6800);
+    }, 5000);
   };
 
   const abrirFoto = (src, alt = '') => {
@@ -4850,7 +4964,10 @@ function App() {
     setCarrinhoPulse(true);
     setTimeout(() => setCarrinhoPulse(false), 700);
     fecharDetalhe();
-    falarMarco('Sacola pronta. Voce pode finalizar o pedido ou adicionar mais. Qualquer duvida, me chama aqui.');
+    {
+      const primeiro = primeiroNomeCliente();
+      falarMarco(`Opa, anotado: ${item.nome}${primeiro ? ', ' + primeiro : ''}! Finaliza o pedido ou adiciona mais. Estou aqui.`, 6200);
+    }
     vibrate([20, 30, 20]);
   };
 
@@ -5417,7 +5534,6 @@ function App() {
                   <span className="experience-chip">{pratoAberto.selo_experiencia || pratoAberto.badge_destaque}</span>
                 )}
                 <h2 className="font-serif">{pratoAberto.nome}</h2>
-                {pratoAberto.frase_fome && <p style={{color:'rgba(243,236,224,0.9)', fontWeight:700}}>{pratoAberto.frase_fome}</p>}
                 {pratoAberto.descricao && <p>{clampText(pratoAberto.descricao, 165)}</p>}
                 <div className="dish-start-price">a partir de {fmtBRL(pratoAberto.preco)}</div>
               </div>
@@ -5445,9 +5561,6 @@ function App() {
                     <span className={`choice-dot ${String(detailSizeId) === String(tam.id) ? 'active' : ''}`}></span>
                   </button>
                 ))}
-                <button className="help-size-btn" onClick={() => mostrarMensagemAutomatica(`${pratoAberto.nome}: ${pratoAberto.duvida_tamanho_texto || microcopy.tamanhos_texto}.`)}>
-                  {microcopy.fome_botao_texto}
-                </button>
               </div>
 
               {gruposDoPrato(pratoAberto).map(grupo => (
@@ -5696,6 +5809,23 @@ function App() {
                     />
                   </div>
 
+                  <div className="chef-frete">
+                    <p>Usamos a logística de parceiros do iFood. Se a entrega ficou puxada pra você, o chef ajuda:</p>
+                    <button
+                      type="button"
+                      className="chef-frete-btn"
+                      onClick={() => {
+                        const primeiro = primeiroNomeCliente();
+                        const { logradouro, numero, bairro } = enderecoCheckout();
+                        const msg = `Oi, chef! Sou ${primeiro || 'cliente do cardápio'} e a taxa de entrega pro meu endereço (${[logradouro, numero, bairro].filter(Boolean).join(', ') || 'ainda preenchendo'}) ficou puxada. Consegue me ajudar?`;
+                        trackMeta('Contact', { content_name: 'chef_ajuda_frete' });
+                        window.open(`https://wa.me/${WHATSAPP_DOM}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+                      }}
+                    >
+                      👨‍🍳 Falar com o chef sobre o frete
+                    </button>
+                  </div>
+
                   {entregaError && <div className="checkout-error">{entregaError}</div>}
                   {checkoutError && <div className="checkout-error">{checkoutError}</div>}
                 </div>
@@ -5743,6 +5873,9 @@ function App() {
                     <div className="review-line">
                       <div><b>Pagamento:</b> Pix Mercado Pago dentro do cardápio</div>
                     </div>
+                    <div className="review-line">
+                      <div><b>Rastreio:</b> entrega rastreável por link no WhatsApp</div>
+                    </div>
                   </div>
                   <div className="value-row"><span>Subtotal</span><strong>{fmtBRL(carrinhoTotal)}</strong></div>
                   <div className="value-row"><span>Taxa de entrega</span><strong>{cupomResumo.ok && cupomResumo.freteGratis ? 'Gratis' : fmtBRL(taxaEntregaFinal)}</strong></div>
@@ -5758,10 +5891,10 @@ function App() {
             <div className="bag-values">
               <div className="chef-loading">
                 <div>
-                  <div className="chef-loading-figure"><span>🍳</span></div>
+                  <div className="chef-loading-figure"><span>🍝</span></div>
                   <div className="pix-seal"><strong>Marco</strong><span>avisando o chef</span></div>
-                  <h3>Revisando os itens na velocidade da luz...</h3>
-                  <p>Estou mandando o pedido para a cozinha e preparando o Pix. É rapidinho.</p>
+                  <h3>Mandando seu pedido para a cozinha…</h3>
+                  <p>Já preparo o seu Pix. É rapidinho.</p>
                   <span className="chef-dots"><i></i><i></i><i></i></span>
                   {checkoutError && <div className="checkout-error">{checkoutError}</div>}
                 </div>
@@ -6011,7 +6144,7 @@ function App() {
       </button>
 
       {/* Balao de fala */}
-      <div className={`balao ${balaoTexto && !chatOpen ? 'shown' : ''}`}>
+      <div className={`balao ${balaoTexto && !chatOpen ? 'shown' : ''} ${(pratoAberto || fotoAberta || sacolaOpen) ? 'top-mode' : ''}`}>
         {balaoTexto}
       </div>
 
