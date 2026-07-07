@@ -2353,7 +2353,20 @@
 
       async function callAdminPedidos(body) {
         const { data: result, error } = await sb.functions.invoke('admin-pedidos', { body });
-        if (error) throw error;
+        if (error) {
+          // FunctionsHttpError esconde o corpo: le a resposta real pra mostrar o motivo de verdade
+          let motivo = '';
+          try {
+            const resp = error.context;
+            if (resp && typeof resp.json === 'function') {
+              const data = await resp.json();
+              if (data?.error) {
+                motivo = data.error + (data?.detalhe ? ` — ${JSON.stringify(data.detalhe)}` : '');
+              }
+            }
+          } catch (_) {}
+          throw new Error(motivo || error.message);
+        }
         if (result?.error) {
           const detalhe = result?.detalhe ? ` ${JSON.stringify(result.detalhe)}` : '';
           throw new Error(`${result.error}${detalhe}`);

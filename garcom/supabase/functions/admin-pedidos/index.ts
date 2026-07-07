@@ -154,8 +154,10 @@ async function recusarPedido(supabase: ReturnType<typeof createClient>, pedidoId
   const mercadoPagoToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN") || "";
   if (!mercadoPagoToken) throw new Error("MERCADO_PAGO_ACCESS_TOKEN nao configurado.");
 
+  const paymentId = encodeURIComponent(cleanText(pedido.mp_payment_id));
+
   const refundResp = await fetch(
-    `https://api.mercadopago.com/v1/payments/${encodeURIComponent(cleanText(pedido.mp_payment_id))}/refunds`,
+    `https://api.mercadopago.com/v1/payments/${paymentId}/refunds`,
     {
       method: "POST",
       headers: {
@@ -164,14 +166,27 @@ async function recusarPedido(supabase: ReturnType<typeof createClient>, pedidoId
       },
     },
   );
-  const refundData = await refundResp.json().catch(() => ({}));
+  let refundData = await refundResp.json().catch(() => ({}));
   if (!refundResp.ok) {
     console.error("admin-pedidos refund error", refundResp.status, refundData);
-    return {
-      ok: false,
-      status: refundResp.status,
-      erro_estorno: refundData,
-    };
+    // Pedidos antigos: o pagamento pode ja estar estornado/cancelado/expirado no MP.
+    // Nesses casos nao ha o que estornar - segue a recusa normalmente.
+    const statusResp = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+      headers: { "Authorization": `Bearer ${mercadoPagoToken}` },
+    });
+    const payData = await statusResp.json().catch(() => ({})) as Record<string, unknown>;
+    const payStatus = String(payData?.status ?? "");
+    const jaResolvido = ["refunded", "cancelled", "charged_back", "rejected"].includes(payStatus);
+    if (!jaResolvido) {
+      const mpMsg = String((refundData as Record<string, unknown>)?.message ?? "") || `HTTP ${refundResp.status}`;
+      return {
+        ok: false,
+        status: refundResp.status,
+        erro_estorno: { mensagem_mp: mpMsg, pagamento_status_mp: payStatus || "desconhecido", detalhe: refundData },
+      };
+    }
+    console.warn(`admin-pedidos: pagamento ${paymentId} ja estava '${payStatus}' no MP - recusando sem novo estorno`);
+    refundData = { ja_resolvido: true, pagamento_status_mp: payStatus };
   }
 
   const { error: rpcError } = await supabase.rpc("atualizar_status_pedido", {
