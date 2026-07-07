@@ -787,6 +787,39 @@
     .gestor-mini-status { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 4px 10px; background: #f3f4f6; color: #374151; }
     .gestor-mini-status.ok { background: #e9f7ef; color: #15803d; }
     .gestor-mini-status.ruim { background: #fdecec; color: #b91c1c; }
+    /* Painel de jornada do cliente (dentro do chat) */
+    .jornada-panel {
+      max-height: 240px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fafaf7;
+      font-size: 12.5px;
+    }
+    .jornada-head {
+      position: sticky;
+      top: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #f1efe8;
+      border-bottom: 1px solid var(--line);
+    }
+    .jornada-head span { color: #8a8577; font-size: 11px; }
+    .jornada-linha {
+      display: grid;
+      grid-template-columns: 118px 1fr;
+      gap: 2px 10px;
+      padding: 7px 12px;
+      border-bottom: 1px solid rgba(0,0,0,.045);
+    }
+    .jornada-linha.compra { background: #e9f7ef; }
+    .jornada-hora { color: #8a8577; font-size: 11px; white-space: nowrap; }
+    .jornada-evento { font-weight: 700; color: #2c2a24; }
+    .jornada-detalhe { grid-column: 2; color: #6b675c; font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .gestor-card h4 {
       margin: 0;
       font-size: 14px;
@@ -3390,14 +3423,77 @@
       );
     }
 
+    // Traducao amigavel dos eventos da jornada (mesmos nomes enviados a Meta)
+    const JORNADA_LABEL = {
+      PageView: '👀 Abriu a página',
+      WebviewAberto: '📱 Entrou por webview (Insta/Face)',
+      DigitouNome: '⌨️ Digitou o nome',
+      DigitouWhatsApp: '⌨️ Digitou o WhatsApp',
+      ClicouDestrancarMenu: '🔑 Clicou em destrancar o menu',
+      Lead: '✅ Pegou a chave (lead)',
+      RecuperouChave: '🔓 Recuperou a chave',
+      ViewContent: '🍝 Abriu um prato',
+      EscolheuTamanho: '📏 Escolheu tamanho',
+      AdicionouAdicional: '➕ Adicionou adicional',
+      RemoveuAdicional: '➖ Tirou adicional',
+      AddToCart: '🛍 Adicionou à sacola',
+      CartOpen: '🛒 Abriu a sacola',
+      RemoveuItemSacola: '🗑 Removeu item da sacola',
+      AbandonouSacola: '🚪 Saiu da sacola',
+      InitiateCheckout: '🧾 Começou o checkout',
+      AddPaymentInfo: '💳 Chegou no pagamento',
+      Purchase: '💰 PAGOU',
+      ChefCortouFrete: '👨‍🍳 Chef cortou o frete',
+      MarcoMensagem: '💬 Mandou mensagem pro Marco',
+      ChatOpen: '💬 Abriu o chat do Marco',
+      MenuCategory: '📂 Trocou de categoria',
+      PhotoView: '🖼 Ampliou uma foto',
+      CouponApply: '🎟 Aplicou cupom',
+      CouponRemove: '🎟 Removeu cupom',
+      Contact: '📞 Contato',
+    };
+
+    function resumoDetalhe(detalhe) {
+      if (!detalhe || typeof detalhe !== 'object') return '';
+      const interessantes = ['prato', 'adicional', 'tamanho', 'content_name', 'value', 'valor', 'texto', 'etapa', 'itens', 'numero_pedido', 'category_name', 'metodo', 'taxa_metade'];
+      const partes = [];
+      interessantes.forEach(k => {
+        const v = detalhe[k];
+        if (v !== undefined && v !== null && v !== '') partes.push(`${k === 'value' || k === 'valor' ? 'R$ ' : ''}${String(v).slice(0, 60)}`);
+      });
+      return partes.slice(0, 3).join(' · ');
+    }
+
     function AtendimentoModal({ detail, onClose, onSend, onSendMidia, onResolve }) {
       const [reply, setReply] = useState('');
       const [gravando, setGravando] = useState(false);
       const [enviandoMidia, setEnviandoMidia] = useState(false);
+      const [jornada, setJornada] = useState(null);
+      const [jornadaLoading, setJornadaLoading] = useState(false);
       const scrollRef = useRef(null);
       const recorderRef = useRef(null);
       const chunksRef = useRef([]);
       const { atendimento, mensagens } = detail;
+
+      const toggleJornada = async () => {
+        if (jornada) { setJornada(null); return; }
+        setJornadaLoading(true);
+        try {
+          const { data, error } = await sb
+            .from('jornada_eventos')
+            .select('evento, detalhe, pagina, criado_em')
+            .eq('device_id', atendimento.device_id)
+            .neq('evento', 'DomButtonClick')
+            .order('criado_em', { ascending: false })
+            .limit(150);
+          if (error) throw error;
+          setJornada(data || []);
+        } catch (err) {
+          toast(err.message, 'error');
+        } finally {
+          setJornadaLoading(false);
+        }
+      };
 
       useEffect(() => {
         setTimeout(() => {
@@ -3472,9 +3568,30 @@
                 <h3>Marco · {atendimento.cliente_nome || 'Cliente no cardápio'}</h3>
                 <p className="muted" style={{margin:'4px 0 0'}}>{fmtDate(atendimento.ultima_mensagem_em || atendimento.aberto_em)}</p>
               </div>
-              <button className="btn btn-ghost" onClick={onClose}>Fechar</button>
+              <div style={{display:'flex', gap:'8px'}}>
+                <button className={`btn ${jornada ? 'btn-primary' : ''}`} onClick={toggleJornada} disabled={jornadaLoading}>
+                  {jornadaLoading ? 'Carregando…' : 'ℹ️ Jornada'}
+                </button>
+                <button className="btn btn-ghost" onClick={onClose}>Fechar</button>
+              </div>
             </div>
             <div className="modal-body">
+              {jornada && (
+                <div className="jornada-panel">
+                  <div className="jornada-head">
+                    <strong>Jornada no cardápio</strong>
+                    <span>{jornada.length} evento{jornada.length === 1 ? '' : 's'} · mais recente primeiro</span>
+                  </div>
+                  {jornada.length === 0 && <div className="empty" style={{padding:'10px'}}>Sem eventos registrados ainda para este dispositivo.</div>}
+                  {jornada.map((ev, i) => (
+                    <div key={i} className={`jornada-linha ${ev.evento === 'Purchase' ? 'compra' : ''}`}>
+                      <span className="jornada-hora">{fmtDate(ev.criado_em)}</span>
+                      <span className="jornada-evento">{JORNADA_LABEL[ev.evento] || ev.evento}</span>
+                      <span className="jornada-detalhe">{resumoDetalhe(ev.detalhe)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="chat-thread" ref={scrollRef}>
                 {mensagens.map(msg => {
                   const midiaUrl = msg.contexto && msg.contexto.midia_url;

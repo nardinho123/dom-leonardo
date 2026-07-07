@@ -164,6 +164,42 @@ Deno.serve(async (req) => {
       ultima_captura_em: now,
     };
 
+    // Toda pessoa identificada ganha um chat no painel (mesmo sem nunca falar com o Marco):
+    // cria/atualiza o atendimento do device com o nome e registra a captura como mensagem de sistema.
+    async function garantirChatDaPessoa(clienteNovo: boolean) {
+      if (!deviceId) return;
+      try {
+        const { data: atExistente } = await sb
+          .from("atendimentos")
+          .select("id")
+          .eq("device_id", deviceId)
+          .maybeSingle();
+        const texto = `🔑 ${nome} ${clienteNovo ? "criou a chave do menu" : "recuperou a chave do menu"} (${whatsapp}).`;
+        let atendimentoId = atExistente?.id;
+        if (atendimentoId) {
+          await sb.from("atendimentos").update({ cliente_nome: nome, ultima_mensagem_em: now }).eq("id", atendimentoId);
+        } else {
+          const { data: novoAt, error: atError } = await sb
+            .from("atendimentos")
+            .insert({ device_id: deviceId, cliente_nome: nome, status: "aberto", ultimo_texto: texto, aberto_em: now, ultima_mensagem_em: now, nao_lidas: 0 })
+            .select("id")
+            .single();
+          if (atError) throw atError;
+          atendimentoId = novoAt?.id;
+        }
+        if (atendimentoId) {
+          await sb.from("atendimento_mensagens").insert({
+            atendimento_id: atendimentoId,
+            autor: "sistema",
+            texto,
+            contexto: { origem, whatsapp },
+          });
+        }
+      } catch (err) {
+        console.warn("cliente-entrada: nao consegui garantir o chat da pessoa:", err);
+      }
+    }
+
     if (existente?.id) {
       const { data, error } = await sb
         .from("clientes")
@@ -172,6 +208,7 @@ Deno.serve(async (req) => {
         .select("id, nome, whatsapp, link_token")
         .single();
       if (error) throw error;
+      await garantirChatDaPessoa(false);
       return json({ cliente: data, novo: false, link_token: linkToken });
     }
 
@@ -182,6 +219,7 @@ Deno.serve(async (req) => {
       .single();
     if (error) throw error;
 
+    await garantirChatDaPessoa(true);
     return json({ cliente: data, novo: true, link_token: linkToken });
   } catch (err) {
     console.error("cliente-entrada error:", err);

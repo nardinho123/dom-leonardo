@@ -128,16 +128,39 @@
       return out;
     }
 
-    function sendServerEvent(eventName, eventId, data) {
+    // Dados da pessoa (quando conhecidos) para Advanced Matching - o hash e feito no servidor
+    w.domMetaUser = function(extra) {
+      var user = { ct: 'curitiba', st: 'pr', country: 'br' };
+      try {
+        var c = JSON.parse(localStorage.getItem('dom_leonardo_cliente') || 'null') || {};
+        var partes = String(c.nome || '').trim().split(/\s+/);
+        if (c.whatsapp) user.ph = c.whatsapp;
+        if (partes[0]) user.fn = partes[0];
+        if (partes.length > 1) user.ln = partes.slice(1).join(' ');
+        if (c.nome) user.nome_completo = c.nome;
+      } catch (_) {}
+      if (extra && typeof extra === 'object') {
+        Object.keys(extra).forEach(function(k) { if (extra[k]) user[k] = extra[k]; });
+      }
+      return user;
+    };
+
+    function marcoDeviceId() {
+      try { return localStorage.getItem('dom_marco_device_id') || ''; } catch (_) { return ''; }
+    }
+
+    function sendServerEvent(eventName, eventId, data, userExtra) {
       var payload = {
         event_name: eventName,
         event_id: eventId,
         event_time: Math.floor(Date.now() / 1000),
         event_source_url: w.location.href,
         external_id: ensureClientId(),
+        device_id: marcoDeviceId(),
         fbp: decodeURIComponent(getCookie('_fbp') || ''),
         fbc: ensureFbc(),
         client_user_agent: navigator.userAgent,
+        user: w.domMetaUser(userExtra),
         custom_data: compactData(data)
       };
 
@@ -164,7 +187,7 @@
         w.fbq(method, eventName, payload, { eventID: eventId });
       } catch (_) {}
 
-      sendServerEvent(eventName, eventId, payload);
+      sendServerEvent(eventName, eventId, payload, options && options.user);
       return eventId;
     };
 
@@ -3138,9 +3161,9 @@ function cupomDentroDaData(cupom) {
   if (cupom.valido_ate && new Date(cupom.valido_ate).getTime() < agora) return false;
   return true;
 }
-function trackMeta(eventName, data = {}) {
+function trackMeta(eventName, data = {}, options) {
   try {
-    if (window.domMetaTrack) window.domMetaTrack(eventName, data);
+    if (window.domMetaTrack) window.domMetaTrack(eventName, data, options);
   } catch (_) {}
 }
 
@@ -4415,7 +4438,12 @@ function App() {
           num_items: totalItens,
           content_type: 'product',
           content_ids: carrinho.map(item => String(item.prato_id || item.local_id || item.nome)).slice(0, 20),
-        });
+          contents_names: carrinho.map(item => `${item.qtd}x ${item.nome}`).slice(0, 12),
+          numero_pedido: pedidoNumero || '',
+          bairro: checkoutDados.bairro || '',
+          taxa_entrega: taxaEntregaFinal,
+          metodo: 'cartao_stripe',
+        }, { user: metaUserCheckout() });
         setCarrinho([]);
         setCarrinhoTotal(0);
         vibrate([20, 40, 20]);
@@ -4454,6 +4482,17 @@ function App() {
 
   const finalizarNoWhatsApp = (pago = false) => {
     abrirWhatsApp('checkout', { checkout: true, pago });
+  };
+
+  // Dados da pessoa no momento do checkout (viram Advanced Matching hasheado no servidor)
+  const metaUserCheckout = () => {
+    const partes = String(checkoutDados.nome || '').trim().split(/\s+/);
+    return {
+      ph: checkoutDados.whatsapp || '',
+      fn: partes[0] || '',
+      ln: partes.slice(1).join(' ') || '',
+      nome_completo: checkoutDados.nome || '',
+    };
   };
 
   const revisarPedidoCheckout = async () => {
@@ -4625,7 +4664,12 @@ function App() {
       num_items: totalItens,
       content_type: 'product',
       content_ids: carrinho.map(item => String(item.prato_id || item.local_id || item.nome)).slice(0, 20),
-    });
+      contents_names: carrinho.map(item => `${item.qtd}x ${item.nome}`).slice(0, 12),
+      numero_pedido: numero || '',
+      bairro: checkoutDados.bairro || '',
+      taxa_entrega: taxaEntregaFinal,
+      metodo: 'pix_mercado_pago',
+    }, { user: metaUserCheckout() });
     setCarrinho([]);
     setCarrinhoTotal(0);
     vibrate([20, 40, 20]);
@@ -4883,6 +4927,7 @@ function App() {
 
       if (delta > 0) {
         if (max === 1) {
+          trackMeta('AdicionouAdicional', { prato: pratoAberto?.nome || '', grupo: grupo.nome, adicional: opcional.nome, preco_delta: Number(opcional.preco_delta || 0) });
           return { ...prev, [gid]: { [oid]: 1 } };
         }
         const totalGrupo = Object.values(atualGrupo).reduce((s, qtd) => s + Number(qtd || 0), 0);
@@ -4895,6 +4940,13 @@ function App() {
       }
 
       const novo = Math.max(0, atual + delta);
+      trackMeta(delta > 0 ? 'AdicionouAdicional' : 'RemoveuAdicional', {
+        prato: pratoAberto?.nome || '',
+        grupo: grupo.nome,
+        adicional: opcional.nome,
+        qtd: novo,
+        preco_delta: Number(opcional.preco_delta || 0),
+      });
       if (novo <= 0) delete atualGrupo[oid];
       else atualGrupo[oid] = novo;
       return { ...prev, [gid]: atualGrupo };
@@ -4918,6 +4970,7 @@ function App() {
     detailInteragiuRef.current = true;
     clearTimeout(detailGuideTimer.current);
     setDetailSizeId(tamanho.id);
+    trackMeta('EscolheuTamanho', { prato: pratoAberto?.nome || '', tamanho: labelTamanho(tamanho), preco_delta: Number(tamanho?.preco_delta || 0) });
     vibrate(10);
     const key = String(tamanho?.peso_g || tamanho?.nome || tamanho?.id || '');
     if (!sizeGuideShownRef.current.has(key)) {
@@ -4996,7 +5049,13 @@ function App() {
 
   const removerItemSacola = (localId) => {
     resetStripeCheckout();
+    const removido = carrinho.find(it => it.local_id === localId);
     const novos = carrinho.filter(it => it.local_id !== localId);
+    trackMeta('RemoveuItemSacola', {
+      prato: removido?.nome || '',
+      valor_item: Number(removido?.subtotal || 0),
+      itens_restantes: novos.length,
+    });
     setCarrinho(novos);
     setCarrinhoTotal(calcSubtotal(novos));
     vibrate(18);
@@ -5219,6 +5278,7 @@ function App() {
         num_items: totalItens,
       });
     }
+    trackMeta('MarcoMensagem', { texto: texto.slice(0, 120), itens_na_sacola: totalItens, valor_sacola: carrinhoTotal });
     const localId = `local-${Date.now()}`;
     setChatInput('');
     setChatSending(true);
@@ -5694,7 +5754,9 @@ function App() {
               resetStripeCheckout();
               setCheckoutErrors({});
               setWhatsEnderecoOpen(false);
+              trackMeta('AbandonouSacola', { etapa: `checkout_${checkoutStage}`, itens: carrinho.length, valor: carrinhoTotal });
             } else {
+              if (carrinho.length) trackMeta('AbandonouSacola', { etapa: 'sacola', itens: carrinho.length, valor: carrinhoTotal });
               setSacolaOpen(false);
             }
           }} aria-label="Voltar">
@@ -5842,7 +5904,7 @@ function App() {
                         if (chefFreteMetade) return;
                         setChefFreteMetade(true);
                         vibrate([15, 25, 15]);
-                        trackMeta('Contact', { content_name: 'chef_corta_frete_metade' });
+                        trackMeta('ChefCortouFrete', { taxa_cheia: taxaEntregaComChef, taxa_metade: Math.round((taxaEntregaComChef / 2) * 100) / 100 });
                         const primeiro = primeiroNomeCliente();
                         falarMarco(`Prontinho${primeiro ? ', ' + primeiro : ''}! O chef cortou sua entrega pela metade.`, 5600);
                       }}

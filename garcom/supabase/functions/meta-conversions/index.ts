@@ -1,3 +1,5 @@
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+
 const META_GRAPH_VERSION = 'v25.0';
 const DEFAULT_PIXEL_ID = '2687533954980204';
 
@@ -28,6 +30,19 @@ const allowedEvents = new Set([
   'GameStart',
   'GameComplete',
   'GameShare',
+  // Jornada granular (custom events)
+  'DigitouNome',
+  'DigitouWhatsApp',
+  'ClicouDestrancarMenu',
+  'RecuperouChave',
+  'WebviewAberto',
+  'EscolheuTamanho',
+  'AdicionouAdicional',
+  'RemoveuAdicional',
+  'RemoveuItemSacola',
+  'AbandonouSacola',
+  'ChefCortouFrete',
+  'MarcoMensagem',
 ]);
 
 function jsonResponse(body: unknown, status = 200) {
@@ -111,6 +126,93 @@ async function sha256(value: string) {
     .join('');
 }
 
+// ===== Advanced Matching (normalizacao EXATA da doc de Customer Information Parameters) =====
+// ph: so digitos, COM codigo do pais (55...). fn/ln/ct: minusculas sem pontuacao/espacos.
+// st: 2 letras minusculas. zp: so digitos. country: ISO-2 minusculas. Tudo hasheado SHA-256.
+function soDigitos(v: unknown) {
+  return String(v ?? '').replace(/\D/g, '');
+}
+
+function normPhoneBr(v: unknown) {
+  let d = soDigitos(v);
+  if (!d) return '';
+  if ((d.length === 10 || d.length === 11) && !d.startsWith('55')) d = '55' + d;
+  return d.length >= 12 && d.length <= 14 ? d : '';
+}
+
+function normNomeParte(v: unknown) {
+  return String(v ?? '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z]/g, '')
+    .slice(0, 60);
+}
+
+function normCidade(v: unknown) {
+  return String(v ?? '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z]/g, '')
+    .slice(0, 60);
+}
+
+async function buildAdvancedMatching(raw: unknown): Promise<Record<string, string>> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const u = raw as Record<string, unknown>;
+  const out: Record<string, string> = {};
+
+  const ph = normPhoneBr(u.ph);
+  if (ph) out.ph = await sha256(ph);
+
+  const em = cleanText(u.em, 160).toLowerCase();
+  if (em && em.includes('@')) out.em = await sha256(em);
+
+  const fn = normNomeParte(u.fn);
+  if (fn) out.fn = await sha256(fn);
+
+  const ln = normNomeParte(u.ln);
+  if (ln) out.ln = await sha256(ln);
+
+  const ct = normCidade(u.ct);
+  if (ct) out.ct = await sha256(ct);
+
+  const st = String(u.st ?? '').toLowerCase().replace(/[^a-z]/g, '').slice(0, 2);
+  if (st.length === 2) out.st = await sha256(st);
+
+  const zp = soDigitos(u.zp).slice(0, 8);
+  if (zp) out.zp = await sha256(zp);
+
+  const country = String(u.country ?? 'br').toLowerCase().replace(/[^a-z]/g, '').slice(0, 2);
+  if (country.length === 2) out.country = await sha256(country);
+
+  return out;
+}
+
+// ===== Jornada: grava o MESMO evento na tabela jornada_eventos (uma tabela so) =====
+async function gravarJornada(input: Record<string, unknown>, eventName: string, customData: Record<string, unknown>, sourceUrl?: string) {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    if (!supabaseUrl || !serviceKey) return;
+    const sb = createClient(supabaseUrl, serviceKey);
+    const user = (input.user && typeof input.user === 'object' && !Array.isArray(input.user))
+      ? input.user as Record<string, unknown>
+      : {};
+    // device_id do chat (dom_marco_device_id) casa a jornada com os atendimentos do painel
+    const deviceId = cleanText(input.device_id, 160) || cleanText(input.external_id, 160) || 'anon';
+    await sb.from('jornada_eventos').insert({
+      device_id: deviceId,
+      whatsapp: normPhoneBr(user.ph) || null,
+      cliente_nome: cleanText(user.nome_completo, 120) || null,
+      evento: eventName,
+      detalhe: customData,
+      pagina: sourceUrl ? cleanText(sourceUrl, 300) : null,
+    });
+  } catch (err) {
+    console.warn('jornada insert falhou (nao bloqueia o evento Meta):', err);
+  }
+}
+
 function validEventId(value: unknown) {
   const text = cleanText(value, 120);
   if (!/^[a-zA-Z0-9_.:-]{8,120}$/.test(text)) return crypto.randomUUID();
@@ -165,6 +267,9 @@ Deno.serve(async (req: Request) => {
   if (ip) userData.client_ip_address = ip;
   if (externalId) userData.external_id = await sha256(externalId);
 
+  // Advanced Matching: telefone/nome/cidade/etc hasheados (quanto mais, melhor o match)
+  Object.assign(userData, await buildAdvancedMatching(input.user));
+
   const serverEvent: Record<string, unknown> = {
     event_name: eventName,
     event_time: eventTime,
@@ -178,6 +283,9 @@ Deno.serve(async (req: Request) => {
   const requestBody: Record<string, unknown> = { data: [serverEvent] };
   if (testEventCode) requestBody.test_event_code = testEventCode;
 
+  // Grava a jornada em paralelo (nunca bloqueia o envio a Meta)
+  const jornadaPromise = gravarJornada(input, eventName, customData, sourceUrl);
+
   const endpoint = `https://graph.facebook.com/${META_GRAPH_VERSION}/${pixelId}/events?access_token=${encodeURIComponent(token)}`;
 
   try {
@@ -187,6 +295,7 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify(requestBody),
     });
     const metaBody = await metaResponse.json().catch(() => ({}));
+    await jornadaPromise;
 
     if (!metaResponse.ok) {
       console.error('Meta CAPI rejected event', {
@@ -204,6 +313,7 @@ Deno.serve(async (req: Request) => {
     });
   } catch (error) {
     console.error('Meta CAPI request failed', error);
+    await jornadaPromise.catch(() => {});
     return jsonResponse({ ok: false, error: 'Meta request failed' }, 502);
   }
 });
