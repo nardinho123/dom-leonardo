@@ -764,6 +764,29 @@
       border-color: rgba(34, 197, 94, .38);
       box-shadow: 0 10px 24px rgba(34, 197, 94, .10);
     }
+    /* Cards compactos (Finalizados/Recusados) - estilo iFood */
+    .gestor-lane-body.compacta {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+      gap: 8px;
+    }
+    .gestor-card.gestor-mini {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 12px 8px;
+      cursor: pointer;
+      border: 1px solid var(--line);
+      font: inherit;
+      text-align: center;
+    }
+    .gestor-card.gestor-mini:hover { box-shadow: 0 10px 22px rgba(17, 24, 39, .12); }
+    .gestor-mini-num { font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
+    .gestor-mini-nome { font-size: 12px; color: #6b7280; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .gestor-mini-status { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 4px 10px; background: #f3f4f6; color: #374151; }
+    .gestor-mini-status.ok { background: #e9f7ef; color: #15803d; }
+    .gestor-mini-status.ruim { background: #fdecec; color: #b91c1c; }
     .gestor-card h4 {
       margin: 0;
       font-size: 14px;
@@ -1612,8 +1635,9 @@
       const [statusFilter, setStatusFilter] = useState('');
       const [orderDetail, setOrderDetail] = useState(null);
       const [chatDetail, setChatDetail] = useState(null);
-      const [soundEnabled, setSoundEnabled] = useState(false);
+      const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('admin_sound_enabled') === '1');
       const [ringing, setRinging] = useState(false);
+      const ringingRef = useRef(false);
       const [customSoundName, setCustomSoundName] = useState(() => localStorage.getItem('admin_custom_sound_name') || '');
       const audioCtxRef = useRef(null);
       const customAudioRef = useRef(null);
@@ -1644,19 +1668,20 @@
           const ctx = audioCtxRef.current || new Ctx();
           audioCtxRef.current = ctx;
           if (ctx.state === 'suspended') ctx.resume();
+          // Campainha ALTA estilo iFood: trinado forte em onda quadrada (bem mais audivel na cozinha)
           const now = ctx.currentTime;
-          [0, 0.18, 0.36].forEach((offset, index) => {
+          [0, 0.16, 0.32, 0.55, 0.71, 0.87].forEach((offset, index) => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.value = index === 1 ? 920 : 740;
+            osc.type = 'square';
+            osc.frequency.value = (index % 3 === 1) ? 1046 : (index % 3 === 2 ? 880 : 784);
             gain.gain.setValueAtTime(0.0001, now + offset);
-            gain.gain.exponentialRampToValueAtTime(0.18, now + offset + 0.018);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.13);
+            gain.gain.exponentialRampToValueAtTime(0.55, now + offset + 0.015);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.15);
             osc.connect(gain);
             gain.connect(ctx.destination);
             osc.start(now + offset);
-            osc.stop(now + offset + 0.15);
+            osc.stop(now + offset + 0.17);
           });
         } catch (error) {
           console.warn('Som bloqueado pelo navegador', error);
@@ -1674,30 +1699,42 @@
           audio.pause();
           audio.currentTime = 0;
         }
+        ringingRef.current = false;
         setRinging(false);
       }
 
       function startSoundLoop() {
         if (!soundEnabled) return;
         stopSoundLoop();
+        ringingRef.current = true;
         setRinging(true);
         const customSound = localStorage.getItem('admin_custom_sound_data');
         if (customSound) {
           const audio = customAudioRef.current || new Audio(customSound);
           customAudioRef.current = audio;
           audio.loop = true;
+          audio.volume = 1;
           audio.currentTime = 0;
           audio.play().catch(error => console.warn('Som importado bloqueado pelo navegador', error));
+          // re-tenta (se o navegador bloqueou antes do 1o clique, comeca a tocar no proximo)
+          ringIntervalRef.current = setInterval(() => { audio.play().catch(() => {}); }, 1500);
           return;
         }
         playOrderSound(true);
-        ringIntervalRef.current = setInterval(() => playOrderSound(true), 1700);
+        ringIntervalRef.current = setInterval(() => playOrderSound(true), 1300);
       }
 
       function enableOrderSound() {
-        setSoundEnabled(true);
-        playOrderSound(true);
-        toast('Som dos pedidos ativado.');
+        const next = !soundEnabled;
+        setSoundEnabled(next);
+        localStorage.setItem('admin_sound_enabled', next ? '1' : '0');
+        if (next) {
+          playOrderSound(true);
+          toast('Som dos pedidos ativado. Vai tocar em loop ate voce aceitar o pedido.');
+        } else {
+          stopSoundLoop();
+          toast('Som dos pedidos desativado.');
+        }
       }
 
       function importarSomManual(file) {
@@ -1779,6 +1816,27 @@
           .subscribe();
         return () => { sb.removeChannel(channel); };
       }, [session, statusFilter, soundEnabled]);
+
+      // Toque INSISTENTE: enquanto houver pedido pago aguardando aceite, o alarme fica tocando
+      // (funciona tambem se a pagina for recarregada com pedido pendente na fila).
+      useEffect(() => {
+        if (!session) return;
+        const temPendente = (data.pedidos || []).some(isPaidPending);
+        if (soundEnabled && temPendente && !ringingRef.current) startSoundLoop();
+        if (!temPendente && ringingRef.current) stopSoundLoop();
+      }, [session, data.pedidos, soundEnabled]);
+
+      // Navegador bloqueia audio ate a 1a interacao: destrava no primeiro clique/toque na pagina
+      useEffect(() => {
+        const unlock = () => {
+          try {
+            if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') audioCtxRef.current.resume();
+          } catch (_) {}
+          document.removeEventListener('pointerdown', unlock);
+        };
+        document.addEventListener('pointerdown', unlock);
+        return () => document.removeEventListener('pointerdown', unlock);
+      }, []);
 
       async function run(label, promise) {
         const { data, error } = await promise;
@@ -2469,7 +2527,7 @@
               </div>
               <div className="actions">
                 <a className="btn" href="/garcom/" target="_blank">Abrir Garçom</a>
-                <button className={`btn ${soundEnabled ? 'btn-primary' : ''}`} onClick={enableOrderSound}>{soundEnabled ? 'Som ativo' : 'Ativar som'}</button>
+                <button className={`btn ${soundEnabled ? 'btn-primary' : ''}`} onClick={enableOrderSound}>{soundEnabled ? '🔊 Som ligado' : '🔕 Ativar som'}</button>
                 <input
                   ref={soundInputRef}
                   type="file"
@@ -3452,6 +3510,13 @@
     }
 
     function GestorPedidos({ pedidos, reload, openOrder, aceitarPedido, recusarPedido, updateStatus }) {
+      // Estilo iFood: pedido finalizado/recusado fica um tempo como card compacto e depois SAI da tela.
+      // O historico completo continua na aba "Pedidos".
+      const JANELA_FINALIZADOS_MS = 12 * 60 * 60 * 1000; // 12 horas
+      const ehRecente = (p) => {
+        const t = new Date(p.atualizado_em || p.criado_em || 0).getTime();
+        return Number.isFinite(t) && (Date.now() - t) <= JANELA_FINALIZADOS_MS;
+      };
       const lanes = [
         {
           id: 'em_preparo',
@@ -3476,16 +3541,20 @@
         {
           id: 'finalizados',
           title: 'Finalizados',
-          hint: 'Pedidos concluídos.',
-          filter: p => p.pagamento_status === 'pago' && p.status === 'entregue',
+          hint: 'Concluídos nas últimas 12h. Histórico completo na aba Pedidos.',
+          compact: true,
+          filter: p => p.pagamento_status === 'pago' && p.status === 'entregue' && ehRecente(p),
         },
         {
           id: 'recusados',
           title: 'Recusados',
-          hint: 'Cancelados ou estornados.',
-          filter: p => p.aceite_status === 'recusado' || p.pagamento_status === 'estornado',
+          hint: 'Cancelados ou estornados nas últimas 12h.',
+          compact: true,
+          filter: p => (p.aceite_status === 'recusado' || p.pagamento_status === 'estornado') && ehRecente(p),
         },
       ];
+
+      const tsPedido = (p) => new Date(p.criado_em || 0).getTime() || 0;
 
       return (
         <section className="panel">
@@ -3498,7 +3567,11 @@
           </div>
           <div className="gestor-grid">
             {lanes.map(lane => {
-              const lanePedidos = pedidos.filter(lane.filter);
+              let lanePedidos = pedidos.filter(lane.filter);
+              lanePedidos = lanePedidos.slice().sort((a, b) => lane.compact
+                ? tsPedido(b) - tsPedido(a)   // finalizados: mais novo primeiro
+                : tsPedido(a) - tsPedido(b)); // fila ativa: mais antigo primeiro (urgencia)
+              if (lane.compact) lanePedidos = lanePedidos.slice(0, 12);
               return (
                 <div className="gestor-lane" key={lane.id}>
                   <header>
@@ -3510,18 +3583,27 @@
                     <span className={`gestor-badge ${lane.id === 'em_preparo' ? 'gold' : ''}`}>{lanePedidos.length}</span>
                     </div>
                   </header>
-                  <div className="gestor-lane-body">
+                  <div className={`gestor-lane-body ${lane.compact ? 'compacta' : ''}`}>
                     {lanePedidos.length === 0 && <div className="gestor-empty">Nada por aqui agora.</div>}
                     {lanePedidos.map(pedido => (
-                      <PedidoGestorCard
-                        key={pedido.id}
-                        pedido={pedido}
-                        laneId={lane.id}
-                        openOrder={openOrder}
-                        aceitarPedido={aceitarPedido}
-                        recusarPedido={recusarPedido}
-                        updateStatus={updateStatus}
-                      />
+                      lane.compact ? (
+                        <PedidoGestorMini
+                          key={pedido.id}
+                          pedido={pedido}
+                          laneId={lane.id}
+                          openOrder={openOrder}
+                        />
+                      ) : (
+                        <PedidoGestorCard
+                          key={pedido.id}
+                          pedido={pedido}
+                          laneId={lane.id}
+                          openOrder={openOrder}
+                          aceitarPedido={aceitarPedido}
+                          recusarPedido={recusarPedido}
+                          updateStatus={updateStatus}
+                        />
+                      )
                     ))}
                   </div>
                 </div>
@@ -3529,6 +3611,21 @@
             })}
           </div>
         </section>
+      );
+    }
+
+    // Card compacto (estilo iFood): numero grande + primeiro nome + status. Clique abre os detalhes.
+    function PedidoGestorMini({ pedido, laneId, openOrder }) {
+      const recusado = laneId === 'recusados';
+      const primeiroNome = String(pedido.cliente_nome || 'Cliente').trim().split(' ')[0];
+      return (
+        <button type="button" className="gestor-card gestor-mini" onClick={() => openOrder(pedido)}>
+          <strong className="gestor-mini-num">{orderLabel(pedido).replace(/^#/, '')}</strong>
+          <span className="gestor-mini-nome">{primeiroNome}</span>
+          <span className={`gestor-mini-status ${recusado ? 'ruim' : 'ok'}`}>
+            {recusado ? '✕ Recusado' : '✓ Concluído'}
+          </span>
+        </button>
       );
     }
 
