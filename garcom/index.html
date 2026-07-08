@@ -4067,6 +4067,7 @@ function App() {
   };
 
   const usarLocalizacaoAtual = async () => {
+    trackMeta('ClicouPermitirLocalizacao', { etapa: `checkout_${checkoutStage}` }, { user: metaUserCheckout() });
     if (!navigator.geolocation) {
       setMapsError('Seu navegador nao liberou localizacao. Pode buscar pelo endereco mesmo.');
       return;
@@ -4481,6 +4482,7 @@ function App() {
   };
 
   const finalizarNoWhatsApp = (pago = false) => {
+    trackMeta('ClicouFinalizarWhatsApp', { pago, etapa: `checkout_${checkoutStage}`, valor: totalComEntrega }, { user: metaUserCheckout() });
     abrirWhatsApp('checkout', { checkout: true, pago });
   };
 
@@ -4606,7 +4608,8 @@ function App() {
       salvarPedidoLocal(data?.pedido);
       setPixCopiado(false);
       setCheckoutStage('pagamento');
-      trackMeta('AddPaymentInfo', { value: totalComEntrega, currency: 'BRL' });
+      trackMeta('AddPaymentInfo', { value: totalComEntrega, currency: 'BRL' }, { user: metaUserCheckout() });
+      trackMeta('ChegouNoPix', { valor: totalComEntrega, numero_pedido: data?.pedido?.numero_pedido || '', bairro: checkoutDados.bairro || '' }, { user: metaUserCheckout() });
       falarMarco('Pix pronto! Pagar por aqui e mais rapido: a cozinha recebe na hora. Se preferir, tem o botao do WhatsApp ali em cima.', 7000);
       vibrate([15, 30, 15]);
     } catch (err) {
@@ -4678,6 +4681,7 @@ function App() {
   const verificarPagamentoPix = async () => {
     const paymentId = pixData?.payment_id;
     if (!paymentId) return;
+    trackMeta('ClicouJaPaguei', { valor: pixData?.total || totalComEntrega, numero_pedido: pixData?.pedido?.numero_pedido || '' }, { user: metaUserCheckout() });
     setPixVerificando(true);
     setCheckoutError('');
     try {
@@ -5125,6 +5129,7 @@ function App() {
   // Tap no Marco - abre chat
   const tapMarco = () => {
     vibrate(15);
+    trackMeta('ClicouMarco', { page_context: pratoAberto?.nome || (sacolaOpen ? 'sacola' : 'cardapio') });
     abrirChat();
   };
 

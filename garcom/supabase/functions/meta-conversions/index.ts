@@ -43,6 +43,11 @@ const allowedEvents = new Set([
   'AbandonouSacola',
   'ChefCortouFrete',
   'MarcoMensagem',
+  'ClicouPermitirLocalizacao',
+  'ClicouMarco',
+  'ChegouNoPix',
+  'ClicouJaPaguei',
+  'ClicouFinalizarWhatsApp',
 ]);
 
 function jsonResponse(body: unknown, status = 200) {
