@@ -28,6 +28,16 @@ function normalizePhone(value: unknown): string {
   return d;
 }
 
+function phoneLookupValues(value: unknown): string[] {
+  const canonical = normalizePhone(value);
+  const values = new Set<string>();
+  if (canonical) values.add(canonical);
+  if (canonical.startsWith("55") && (canonical.length === 12 || canonical.length === 13)) {
+    values.add(canonical.slice(2));
+  }
+  return [...values].filter((v) => v.length >= 10 && v.length <= 14);
+}
+
 function primeiroNome(nome: unknown): string {
   return String(nome || "").trim().split(/\s+/)[0] || "";
 }
@@ -60,6 +70,71 @@ async function uniqueToken(sb: any, nome: string, whatsapp: string): Promise<str
   return crypto.randomUUID().replace(/-/g, "");
 }
 
+// deno-lint-ignore no-explicit-any
+async function findClienteByPhone(sb: any, whatsapp: string): Promise<any | null> {
+  const values = phoneLookupValues(whatsapp);
+  if (!values.length) return null;
+  const { data, error } = await sb
+    .from("clientes")
+    .select("id, nome, whatsapp, link_token, total_pedidos, ultimo_pedido_em, entrada_meta")
+    .in("whatsapp", values)
+    .order("total_pedidos", { ascending: false })
+    .order("ultimo_pedido_em", { ascending: false, nullsFirst: false })
+    .limit(1);
+  if (error) throw error;
+  return data?.[0] || null;
+}
+
+// deno-lint-ignore no-explicit-any
+async function findClienteFromPedido(sb: any, whatsapp: string, now: string): Promise<any | null> {
+  const values = phoneLookupValues(whatsapp);
+  if (!values.length) return null;
+  const { data: pedidos, error } = await sb
+    .from("pedidos")
+    .select("cliente_id, cliente_nome, cliente_whatsapp, criado_em")
+    .in("cliente_whatsapp", values)
+    .order("criado_em", { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  const pedido = pedidos?.[0];
+  if (!pedido) return null;
+
+  if (pedido.cliente_id) {
+    const { data: cli, error: cliError } = await sb
+      .from("clientes")
+      .select("id, nome, whatsapp, link_token, total_pedidos, ultimo_pedido_em, entrada_meta")
+      .eq("id", pedido.cliente_id)
+      .maybeSingle();
+    if (cliError) throw cliError;
+    if (cli) return cli;
+  }
+
+  const nome = cleanText(pedido.cliente_nome, 80) || "Cliente Dom";
+  const canonical = normalizePhone(whatsapp);
+  const linkToken = await uniqueToken(sb, nome, canonical);
+  const { data: novo, error: insertError } = await sb
+    .from("clientes")
+    .insert({
+      nome,
+      whatsapp: canonical,
+      link_token: linkToken,
+      entrada_origem: "pedido-existente",
+      ultimo_acesso_em: now,
+      entrada_meta: { criado_por: "cliente-entrada", origem_pedido: true },
+    })
+    .select("id, nome, whatsapp, link_token, total_pedidos, ultimo_pedido_em, entrada_meta")
+    .single();
+  if (insertError) throw insertError;
+
+  await sb
+    .from("pedidos")
+    .update({ cliente_id: novo.id })
+    .in("cliente_whatsapp", values)
+    .is("cliente_id", null);
+
+  return novo;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405);
@@ -82,19 +157,26 @@ Deno.serve(async (req) => {
       const whatsapp = normalizePhone(body.whatsapp);
       if (whatsapp.length < 12 || whatsapp.length > 14) return json({ existe: false });
 
-      const { data, error } = await sb
-        .from("clientes")
-        .select("id, nome, link_token")
-        .eq("whatsapp", whatsapp)
-        .maybeSingle();
-      if (error) throw error;
+      const data = await findClienteByPhone(sb, whatsapp) || await findClienteFromPedido(sb, whatsapp, now);
       if (!data) return json({ existe: false });
 
       let token = cleanText(data.link_token, 120);
       if (!token) token = await uniqueToken(sb, data.nome || "cliente", whatsapp);
       await sb.from("clientes").update({ link_token: token, ultimo_acesso_em: now }).eq("id", data.id);
 
-      return json({ existe: true, primeiro_nome: primeiroNome(data.nome), link_token: token });
+      return json({
+        existe: true,
+        primeiro_nome: primeiroNome(data.nome),
+        link_token: token,
+        cliente: {
+          id: data.id,
+          nome: data.nome,
+          whatsapp,
+          link_token: token,
+          total_pedidos: data.total_pedidos ?? 0,
+          ultimo_pedido_em: data.ultimo_pedido_em ?? null,
+        },
+      });
     }
 
     // ===== POR_TOKEN: recupera identidade + estado (restore no cardapio) =====
@@ -132,7 +214,7 @@ Deno.serve(async (req) => {
 
       return json({
         encontrado: true,
-        cliente: { nome: cli.nome, whatsapp: cli.whatsapp, link_token: cli.link_token },
+        cliente: { id: cli.id, nome: cli.nome, whatsapp: cli.whatsapp, link_token: cli.link_token },
         endereco: end || null,
         pedido_aberto: pedidoAberto,
       });
@@ -148,12 +230,7 @@ Deno.serve(async (req) => {
     if (nome.length < 2) return json({ error: "Nome muito curto" }, 400);
     if (whatsapp.length < 12 || whatsapp.length > 14) return json({ error: "WhatsApp invalido" }, 400);
 
-    const { data: existente, error: findError } = await sb
-      .from("clientes")
-      .select("id, nome, whatsapp, link_token, entrada_meta")
-      .eq("whatsapp", whatsapp)
-      .maybeSingle();
-    if (findError) throw findError;
+    const existente = await findClienteByPhone(sb, whatsapp);
 
     const linkToken = cleanText(existente?.link_token, 120) || await uniqueToken(sb, nome, whatsapp);
     const entradaMeta = {

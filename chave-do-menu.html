@@ -1826,6 +1826,7 @@
 
     let tokenAntigo = '';
     let nomeAntigo = '';
+    let clienteAntigo = null;
 
     function digits(v) { return String(v || '').replace(/\D/g, ''); }
     function normalizePhone(v) {
@@ -1922,6 +1923,7 @@
     document.getElementById('toggleNew').addEventListener('click', () => {
       returning.classList.remove('open');
       tokenAntigo = '';
+      clienteAntigo = null;
       setReady(btnAntigo, false);
       setValidGlow();
       found.textContent = '';
@@ -1932,6 +1934,7 @@
     let buscaTimer = null;
     whats2.addEventListener('input', () => {
       tokenAntigo = '';
+      clienteAntigo = null;
       setReady(btnAntigo, false);
       setValidGlow();
       const w = normalizePhone(whats2.value);
@@ -1951,7 +1954,8 @@
           if (normalizePhone(whats2.value) !== w) return;
           if (d.existe && d.link_token) {
             tokenAntigo = d.link_token;
-            nomeAntigo = d.primeiro_nome || '';
+            clienteAntigo = d.cliente || null;
+            nomeAntigo = (clienteAntigo && clienteAntigo.nome) || d.primeiro_nome || '';
             found.textContent = nomeAntigo ? ('Chave encontrada para ' + nomeAntigo) : 'Chave encontrada';
             setReady(btnAntigo, true);
             setValidGlow();
@@ -2085,7 +2089,12 @@
       btnAntigo.disabled = true;
       btnAntigo.textContent = 'Abrindo...';
       setStatus('Chave recuperada. Abrindo seu cardapio...', 'ok');
-      saveLocal(nomeAntigo, normalizePhone(whats2.value), tokenAntigo, '');
+      saveLocal(
+        (clienteAntigo && clienteAntigo.nome) || nomeAntigo,
+        (clienteAntigo && clienteAntigo.whatsapp) || normalizePhone(whats2.value),
+        tokenAntigo,
+        (clienteAntigo && clienteAntigo.id) || ''
+      );
       await animateUnlock();
       setTimeout(() => redirectToMenu(menuUrl(tokenAntigo)), 220);
     });
