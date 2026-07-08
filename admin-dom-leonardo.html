@@ -3237,7 +3237,7 @@
                   <button className="btn btn-small btn-primary" onClick={addGroup}>Adicionar opcionais</button>
                 </div>
                 {form.grupos.map((grupo, gi) => (
-                  <div className="row-card" key={gi}>
+                  <div className="row-card" key={gi} style={{opacity: grupo.ativo === false ? 0.55 : 1}}>
                     <div className="inline-grid">
                       <div className="span-4"><TextField label="Categoria do opcional" value={grupo.nome} onChange={v => patchGroup(gi, { nome: v })} /></div>
                       <div className="span-2"><TextField label="Mínimo" type="number" step="1" value={grupo.min_escolhas} onChange={v => patchGroup(gi, { min_escolhas: v })} /></div>
@@ -3246,13 +3246,14 @@
                         <button className="btn btn-small" disabled={gi === 0} onClick={() => moveGroup(gi, -1)}>↑</button>
                         <button className="btn btn-small" disabled={gi === form.grupos.length - 1} onClick={() => moveGroup(gi, 1)}>↓</button>
                         <button className="btn btn-small" onClick={() => duplicateGroup(gi)}>Duplicar</button>
+                        <button className={`btn btn-small ${grupo.ativo === false ? 'btn-primary' : 'btn-danger'}`} onClick={() => patchGroup(gi, { ativo: grupo.ativo === false })} title="Pausar/ativar este grupo no cardápio (aplica ao Salvar)">{grupo.ativo === false ? '▶ Ativar grupo' : '⏸ Pausar grupo'}</button>
                         <button className="btn btn-small btn-primary" onClick={() => addOption(gi)}>Adicionar item</button>
                         <button className="btn btn-small btn-danger" onClick={() => removeArray('grupos', gi)}>Remover grupo</button>
                       </div>
                       <div className="span-12"><TextField label="Descrição do grupo" value={grupo.descricao} onChange={v => patchGroup(gi, { descricao: v })} /></div>
                     </div>
                     {grupo.opcionais.map((op, oi) => (
-                      <div className="row-card" key={op.localId || oi} style={{marginTop:10}}>
+                      <div className="row-card" key={op.localId || oi} style={{marginTop:10, opacity: op.ativo === false ? 0.55 : 1}}>
                         <div className="inline-grid">
                           <div className="span-3"><ImageInput label="Foto" value={op.foto_url} file={op.fotoFile} onFile={file => patchOption(gi, oi, { fotoFile: file })} kind="opcional" empty="+" /></div>
                           <div className="span-3"><TextField label="Nome" value={op.nome} onChange={v => patchOption(gi, oi, { nome: v })} /></div>
@@ -3262,6 +3263,7 @@
                             <button className="btn btn-small" disabled={oi === 0} onClick={() => moveOption(gi, oi, -1)}>↑</button>
                             <button className="btn btn-small" disabled={oi === grupo.opcionais.length - 1} onClick={() => moveOption(gi, oi, 1)}>↓</button>
                             <button className="btn btn-small" onClick={() => duplicateOption(gi, oi)}>Dup</button>
+                            <button className={`btn btn-small ${op.ativo === false ? 'btn-primary' : ''}`} onClick={() => patchOption(gi, oi, { ativo: op.ativo === false })} title={op.ativo === false ? 'Ativar este item (aplica ao Salvar)' : 'Pausar este item (aplica ao Salvar)'}>{op.ativo === false ? '▶' : '⏸'}</button>
                             <button className="btn btn-small btn-danger" onClick={() => patchGroup(gi, { opcionais: grupo.opcionais.filter((_, j) => j !== oi) })}>X</button>
                           </div>
                         </div>
