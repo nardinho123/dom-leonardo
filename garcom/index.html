@@ -3711,6 +3711,10 @@ function App() {
         L.push(`${item.qtd}x ${item.nome}${item.tamanho?.nome ? ` (${labelTamanho(item.tamanho)})` : ''}`);
       });
       L.push('', `Total: ${fmtBRL(totalComEntrega)}`);
+      const pixCodigo = String(opts.pixCode || '').trim();
+      if (pixCodigo) {
+        L.push('', 'Pix copia e cola (toque para copiar e pague no app do seu banco):', pixCodigo);
+      }
       return L.join('\n');
     }
     const linhas = [
@@ -3773,7 +3777,13 @@ function App() {
       content_type: 'product',
       content_ids: carrinho.map(item => String(item.prato_id || item.local_id || item.nome)).slice(0, 20),
     });
-    window.open(`https://wa.me/${WHATSAPP_DOM}?text=${encodeURIComponent(texto)}`, '_blank', 'noopener,noreferrer');
+    const url = `https://wa.me/${WHATSAPP_DOM}?text=${encodeURIComponent(texto)}`;
+    // opts.janela = aba aberta no clique (evita bloqueio de pop-up quando abrimos depois de um await no celular)
+    if (opts.janela) {
+      try { opts.janela.location.href = url; return; } catch (_) {}
+    }
+    if (opts.redirecionar) { window.location.href = url; return; }
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const resetStripeCheckout = () => {
@@ -4424,7 +4434,41 @@ function App() {
 
   const finalizarNoWhatsApp = (pago = false) => {
     trackMeta('ClicouFinalizarWhatsApp', { pago, etapa: `checkout_${checkoutStage}`, valor: totalComEntrega }, { user: metaUserCheckout() });
-    abrirWhatsApp('checkout', { checkout: true, pago });
+    abrirWhatsApp('checkout', { checkout: true, pago, pixCode: pixData?.qr_code || '' });
+  };
+
+  // Núcleo do checkout novo: gera o Pix (sem abrir tela de QR), monta a mensagem com nome +
+  // endereço + itens + Pix copia e cola e cai direto no WhatsApp. Sem revisão, sem QR Code.
+  const enviarPedidoWhatsApp = async (etapa) => {
+    // Abre a aba do WhatsApp JÁ no gesto do clique (antes de qualquer await), senão o celular bloqueia.
+    let janela = null;
+    try { janela = window.open('', '_blank'); } catch (_) { janela = null; }
+    setCheckoutError('');
+    trackMeta('ClicouFinalizarWhatsApp', { etapa, valor: totalComEntrega }, { user: metaUserCheckout() });
+    const pix = await gerarPixMercadoPago({ semTela: true });
+    setCheckoutError('');
+    abrirWhatsApp('checkout', { checkout: true, pago: false, pixCode: pix?.qr_code || '', janela, redirecionar: !janela });
+    setCheckoutStage('enviado');
+    vibrate([12, 28, 12]);
+  };
+
+  const finalizarNoWhatsAppComEndereco = async () => {
+    const erroEnd = validarEndereco();
+    if (erroEnd) { setCheckoutError(erroEnd); vibrate(35); return; }
+    if (entregaEstimativa && entregaEstimativa.dentro_raio === false) {
+      setCheckoutError('Esse endereço fica fora da nossa área de entrega (até 15 km do Dom). 😕');
+      vibrate(35);
+      return;
+    }
+    const erroContato = validarContato();
+    if (erroContato) {
+      // Só cai aqui quem não passou pela chave (sem nome/WhatsApp salvo): mostra o passo pra preencher.
+      setCheckoutError(erroContato);
+      setCheckoutStage('revisao');
+      vibrate(35);
+      return;
+    }
+    await enviarPedidoWhatsApp('checkout_dados');
   };
 
   // Dados da pessoa no momento do checkout (viram Advanced Matching hasheado no servidor)
@@ -4458,18 +4502,21 @@ function App() {
     vibrate(12);
   };
 
-  const fazerPedidoRevisado = () => {
+  const fazerPedidoRevisado = async () => {
     const erro = validarContato();
     if (erro) {
       setCheckoutError(erro);
       vibrate(35);
       return;
     }
-    setCheckoutError('');
-    setCheckoutStage('preparando');
-    falarMarco('Vou avisar o chef e separar seu Pix. Segura um tiquinho.', 3600);
-    vibrate([12, 28, 12]);
-    setTimeout(() => gerarPixMercadoPago({ voltarParaRevisao: true }), 2800);
+    const erroEnd = validarEndereco();
+    if (erroEnd) {
+      setCheckoutError(erroEnd);
+      setCheckoutStage('dados');
+      vibrate(35);
+      return;
+    }
+    await enviarPedidoWhatsApp('checkout_revisao');
   };
 
   // ===== Pix (Mercado Pago) — gera QR + copia e cola dentro do cardapio =====
@@ -4548,14 +4595,21 @@ function App() {
       salvarClienteLocal({ nome: checkoutDados.nome.trim(), whatsapp });
       salvarPedidoLocal(data?.pedido);
       setPixCopiado(false);
-      setCheckoutStage('pagamento');
       trackMeta('AddPaymentInfo', { value: totalComEntrega, currency: 'BRL' }, { user: metaUserCheckout() });
       trackMeta('ChegouNoPix', { valor: totalComEntrega, numero_pedido: data?.pedido?.numero_pedido || '', bairro: checkoutDados.bairro || '' }, { user: metaUserCheckout() });
-      falarMarco('Pix pronto! Pagar por aqui e mais rapido: a cozinha recebe na hora. Se preferir, tem o botao do WhatsApp ali em cima.', 7000);
-      vibrate([15, 30, 15]);
+      if (!opts.semTela) {
+        setCheckoutStage('pagamento');
+        falarMarco('Pix pronto! Pagar por aqui e mais rapido: a cozinha recebe na hora. Se preferir, tem o botao do WhatsApp ali em cima.', 7000);
+        vibrate([15, 30, 15]);
+      }
+      return { qr_code: poi.qr_code, qr_code_base64: poi.qr_code_base64 || '', pedido: data?.pedido || null, total: totalComEntrega };
     } catch (err) {
-      setCheckoutError(err.message || 'Nao consegui gerar o Pix agora.');
-      if (opts.voltarParaRevisao) setCheckoutStage('revisao');
+      // No fluxo direto (semTela) não mostramos erro aqui: seguimos pro WhatsApp com os dados do pedido.
+      if (!opts.semTela) {
+        setCheckoutError(err.message || 'Nao consegui gerar o Pix agora.');
+        if (opts.voltarParaRevisao) setCheckoutStage('revisao');
+      }
+      return null;
     } finally {
       setCheckoutLoading(false);
     }
@@ -6022,6 +6076,26 @@ function App() {
             );
           })()}
 
+          {whatsEnderecoOpen && checkoutStage === 'enviado' && (
+            <div className="bag-values">
+              <div className="checkout-card pedido-card">
+                <div className="pix-seal"><strong>WhatsApp</strong><span>seu pedido foi enviado</span></div>
+                <h3>Pronto! Seu pedido foi pro WhatsApp 🍝</h3>
+                <p>Abra a conversa com o Dom Leonardo para confirmar o endereço e pagar o Pix. O chef já recebeu seu nome, endereço e os itens por lá.</p>
+                {pixData?.qr_code && (
+                  <div className="pix-copia">
+                    <span className="pix-copia-label">Pix copia e cola</span>
+                    <div className="pix-copia-code">{pixData.qr_code}</div>
+                    <button className="pix-copy-btn" onClick={copiarCodigoPix}>
+                      {pixCopiado ? 'Código copiado ✓' : 'Copiar código Pix'}
+                    </button>
+                  </div>
+                )}
+                {checkoutError && <div className="checkout-error">{checkoutError}</div>}
+              </div>
+            </div>
+          )}
+
         </div>
         <div className={`bag-footer ${whatsEnderecoOpen ? 'address-step' : ''}`}>
           {!whatsEnderecoOpen ? (
@@ -6031,8 +6105,17 @@ function App() {
             </button>
           ) : checkoutStage === 'dados' ? (
             <div className="checkout-actions">
-              <button className="checkout-primary" disabled={checkoutLoading} onClick={revisarPedidoCheckout}>
-                Avançar · {fmtBRL(totalComEntrega)}
+              <button className="checkout-primary" disabled={checkoutLoading} onClick={finalizarNoWhatsAppComEndereco}>
+                {checkoutLoading ? 'Preparando seu pedido…' : `Finalizar no WhatsApp · ${fmtBRL(totalComEntrega)}`}
+              </button>
+            </div>
+          ) : checkoutStage === 'enviado' ? (
+            <div className="checkout-actions">
+              <button className="checkout-primary" onClick={() => abrirWhatsApp('checkout', { checkout: true, pago: false, pixCode: pixData?.qr_code || '' })}>
+                Abrir o WhatsApp de novo
+              </button>
+              <button className="checkout-secondary" onClick={() => { resetStripeCheckout(); setWhatsEnderecoOpen(false); setSacolaOpen(false); }}>
+                Voltar ao cardápio
               </button>
             </div>
           ) : checkoutStage === 'revisao' ? (
