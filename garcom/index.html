@@ -2571,10 +2571,10 @@
   /* ===== CAPA editorial (branca) ===== */
   .capa {
     position: relative;
-    min-height: clamp(440px, 64vh, 540px);
+    min-height: clamp(300px, 46vh, 380px);
     display: flex;
     flex-direction: column;
-    padding: 42px 24px 26px;
+    padding: 22px 22px 14px;
     overflow: hidden;
     background:
       radial-gradient(120% 60% at 50% 0%, rgba(214,176,66,.10), transparent 58%),
@@ -2587,24 +2587,24 @@
   }
   .capa-top { position: relative; z-index: 3; display: flex; justify-content: space-between; align-items: center; }
   .capa-pill { border: 1px solid rgba(160,120,20,.4); border-radius: 999px; background: rgba(255,255,255,.55); color: #8a6d12; backdrop-filter: blur(16px); padding: 8px 13px; font-family: 'Jost', sans-serif; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; font-weight: 600; }
-  .capa-logo { width: 104px; height: 104px; border-radius: 50%; border: 1px solid rgba(160,120,20,.45); overflow: hidden; background: #fff; box-shadow: 0 16px 30px rgba(40,28,8,.18), 0 3px 8px rgba(40,28,8,.12); }
+  .capa-logo { width: 68px; height: 68px; border-radius: 50%; border: 1px solid rgba(160,120,20,.45); overflow: hidden; background: #fff; box-shadow: 0 12px 22px rgba(40,28,8,.18), 0 3px 8px rgba(40,28,8,.12); }
   .capa-logo img { width: 100%; height: 100%; object-fit: cover; }
   .capa-center { position: relative; z-index: 3; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
   .capa-eyebrow { font-family: 'Jost', sans-serif; color: #9c7c1e; font-size: 10.5px; font-weight: 600; letter-spacing: .34em; text-transform: uppercase; margin-bottom: 16px; }
-  .capa-bemvindo { font-family: 'Jost', sans-serif; color: #1a1305; font-size: 13px; font-weight: 600; letter-spacing: .26em; text-transform: uppercase; margin-bottom: 10px; }
-  .capa-title { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(50px, 16vw, 78px); line-height: .9; letter-spacing: -.05em; text-shadow: none; color: #c0972c; }
+  .capa-bemvindo { font-family: 'Jost', sans-serif; color: #1a1305; font-size: 11px; font-weight: 600; letter-spacing: .26em; text-transform: uppercase; margin-bottom: 5px; }
+  .capa-title { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(32px, 10.5vw, 46px); line-height: .92; letter-spacing: -.04em; text-shadow: none; color: #c0972c; }
   .capa-title em { display: block; font-style: italic; font-weight: 400; color: #c0972c; }
   .capa-orn { display: flex; align-items: center; gap: 14px; width: 72%; max-width: 300px; margin: 22px 0 16px; }
   .capa-orn .l, .capa-orn .r { flex: 1; height: 1px; }
   .capa-orn .l { background: linear-gradient(90deg, transparent, #d4af37); }
   .capa-orn .r { background: linear-gradient(90deg, #d4af37, transparent); }
   .capa-orn i { color: #d4af37; font-size: 12px; font-style: normal; transform: rotate(45deg); }
-  .capa-sub { font-family: 'Cormorant Garamond', Georgia, serif; color: #6b5a3a; font-style: italic; font-size: 18px; line-height: 1.45; max-width: 30ch; }
-  .capa-meta { font-family: 'Jost', sans-serif; margin-top: 18px; color: #8a7a55; font-size: 10.5px; letter-spacing: .24em; text-transform: uppercase; }
+  .capa-sub { font-family: 'Cormorant Garamond', Georgia, serif; color: #6b5a3a; font-style: italic; font-size: 15px; line-height: 1.35; max-width: 32ch; margin-top: 6px; }
+  .capa-meta { font-family: 'Jost', sans-serif; margin-top: 12px; color: #8a7a55; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; font-weight: 600; }
   .capa-cue { position: relative; z-index: 3; text-align: center; font-family: 'Jost', sans-serif; color: #1a1305; font-size: 10px; letter-spacing: .26em; text-transform: uppercase; animation: capabob 2.4s ease-in-out infinite; }
   @keyframes capabob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
   .capa-topbar { position: relative; z-index: 3; text-align: center; font-family: 'Jost', sans-serif; color: #9c7c1e; font-size: 10.5px; letter-spacing: .3em; text-transform: uppercase; font-weight: 600; margin-bottom: 16px; }
-  .capa-brand { position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; margin: 4px 0 16px; }
+  .capa-brand { position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; margin: 2px 0 8px; }
   .capa-logo-wrap { position: relative; display: inline-flex; }
   .capa-logo-empty { display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', Georgia, serif; color: #c0972c; font-size: 34px; }
   .capa-logo-base { width: 132px; height: 14px; position: relative; margin-top: 9px; }
@@ -2648,7 +2648,7 @@
   .info-link { display: inline-block; margin-top: 6px; color: #4fe09a; font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 700; text-decoration: none; }
   /* No celular o topo ocupa quase a tela toda: 1a rolagem = so o topo, com a 2a secao so espiando. */
   @media (max-width: 640px) {
-    .capa { min-height: calc(100svh - 116px); }
+    .capa { min-height: 46vh; }
   }
 
   /* ===== NAV (pills flutuando) ===== */
@@ -3087,6 +3087,7 @@ async function listarPratos() {
 function sortear(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function vibrate(ms) { try { navigator.vibrate?.(ms); } catch (_) {} }
 function fmtBRL(v) { return 'R$ ' + Number(v || 0).toFixed(2).replace('.', ','); }
+function fmtPreco(v) { return Number(v || 0).toFixed(2).replace('.', ','); }
 function labelTamanho(tamanho) {
   const nome = String(tamanho?.nome || '').trim();
   const peso = String(tamanho?.peso_g || '').trim().replace(/[,.]0+$/, '');
@@ -3300,15 +3301,9 @@ function App() {
   const sizeGuideShownRef = useRef(new Set());
   const chatLeadTrackedRef = useRef(false);
 
-  const falarMarco = (texto, duracao = 5600) => {
-    if (!texto || chatOpen) return;
-    clearTimeout(balaoTimer.current);
-    setGarcomState('peek');
-    setBalaoTexto(texto);
-    balaoTimer.current = setTimeout(() => {
-      setBalaoTexto(null);
-      if (!chatOpen) setGarcomState('attention');
-    }, duracao);
+  const falarMarco = (_texto, _duracao) => {
+    // Frases automaticas do Marco DESATIVADAS (pedido do dono). Marco so fala dentro do chat, quando a pessoa abre.
+    return;
   };
 
   // Primeiro nome do cliente (token do menu, localStorage ou dados do checkout)
@@ -3347,53 +3342,11 @@ function App() {
     return `Boa, ${label} selecionado. Agora e so escolher os opcionais que combinam.`;
   };
 
-  // Ronda do Marco - aparece a cada 40-90s
-  useEffect(() => {
-    const agendarRonda = () => {
-      const delay = 40000 + Math.random() * 50000;
-      rondaTimer.current = setTimeout(() => {
-        if (!chatOpen) {
-          setGarcomState('peek');
-          const fala = sortear(FALAS_RONDA);
-          setBalaoTexto(fala);
-          // Some depois de 4-5s
-          setTimeout(() => setBalaoTexto(null), 4500);
-          setTimeout(() => {
-            if (!chatOpen) setGarcomState('attention');
-          }, 5000);
-        }
-        agendarRonda();
-      }, delay);
-    };
-    // Primeira aparicao em 3s (personalizada com o nome quando o cliente e conhecido)
-    setTimeout(() => {
-      setGarcomState('peek');
-      const salvo = getClienteSalvo();
-      const primeiro = String((salvo && salvo.nome) || '').trim().split(' ')[0];
-      const base = sortear(chatConfig.saudacoes ?? SAUDACOES_INICIAIS);
-      setBalaoTexto(primeiro ? `Oi, ${primeiro}! ${base}` : base);
-      setTimeout(() => setBalaoTexto(null), 5600);
-      setTimeout(() => setGarcomState('attention'), 6100);
-      agendarRonda();
-    }, 2500);
-    return () => clearTimeout(rondaTimer.current);
-  }, [chatOpen, chatConfig.saudacoes]);
+  // Ronda / primeira aparicao automatica do Marco: DESATIVADA (pedido do dono).
+  useEffect(() => {}, [chatOpen, chatConfig.saudacoes]);
 
-  // Idle de 45s
-  useEffect(() => {
-    const checkIdle = () => {
-      idleTimer.current = setTimeout(() => {
-        if (!chatOpen && Date.now() - ultimaInteracao.current > 45000) {
-          const fala = sortear(FALAS_IDLE_45S);
-          setBalaoTexto(fala);
-          setTimeout(() => setBalaoTexto(null), 5000);
-        }
-        checkIdle();
-      }, 50000);
-    };
-    checkIdle();
-    return () => clearTimeout(idleTimer.current);
-  }, [chatOpen]);
+  // Idle de 45s do Marco: DESATIVADO (pedido do dono).
+  useEffect(() => {}, [chatOpen]);
 
   // Reseta idle ao tocar a tela
   useEffect(() => {
@@ -3705,20 +3658,8 @@ function App() {
     return () => { vivo = false; };
   }, []);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!chatOpen) {
-        setGarcomState('peek');
-        setBalaoTexto(sortear(chatConfig.mensagens_automaticas ?? DEFAULT_CHAT_CONFIG.mensagens_automaticas));
-        clearTimeout(balaoTimer.current);
-        balaoTimer.current = setTimeout(() => {
-          setBalaoTexto(null);
-          if (!chatOpen) setGarcomState('attention');
-        }, 5200);
-      }
-    }, 120000);
-    return () => clearTimeout(timer);
-  }, [chatOpen, chatConfig.mensagens_automaticas]);
+  // Mensagem automatica de 120s do Marco: DESATIVADA (pedido do dono).
+  useEffect(() => {}, [chatOpen, chatConfig.mensagens_automaticas]);
 
   const calcSubtotal = (items) => items.reduce((s, it) => s + Number(it.subtotal ?? (it.preco * it.qtd) ?? 0), 0);
   const totalItens = carrinho.reduce((s, it) => s + Number(it.qtd || 0), 0);
@@ -5339,7 +5280,7 @@ function App() {
   };
 
   const priceLine = (p) => (
-    <div className="priceline"><span className="lead">Valor</span><span className="dots"></span><span className="val">{fmtBRL(p.preco)}</span></div>
+    <div className="priceline"><span className="val">{fmtPreco(p.preco)}</span></div>
   );
 
   const renderDishClaude = (p, prefix = 'nh') => (
@@ -5456,10 +5397,6 @@ function App() {
       <div className="wedge"></div>
       <div className="vig"></div>
       <div className="fc">
-        <div className="k">
-          <svg className="ic" viewBox="0 0 24 24"><path d="M5 8h11v5a5 5 0 01-5 5H10a5 5 0 01-5-5z"/><path d="M16 9h2a2 2 0 010 4h-2"/><path d="M8 3v2M11 3v2"/></svg>
-          Doce final
-        </div>
         <h3>{p.nome}</h3>
         {introPrato(p) && <p>{introPrato(p)}</p>}
         {priceLine(p)}
@@ -5512,10 +5449,7 @@ function App() {
     const [hh, mm] = s.split(':');
     return mm === '00' ? `${parseInt(hh, 10)}h` : `${parseInt(hh, 10)}h${mm}`;
   };
-  const horarioResumo = String(topo.horario_texto || '').trim()
-    || ((deliveryConfig.horario_abertura && deliveryConfig.horario_fechamento)
-      ? `${fmtHoraSimples(deliveryConfig.horario_abertura)} às ${fmtHoraSimples(deliveryConfig.horario_fechamento)}`
-      : 'Consulte o horário');
+  const horarioResumo = '11h às 13h · 18h às 23h';
   const telefoneContato = String(topo.telefone || deliveryConfig.whatsapp_pedidos || '').trim();
   const telefoneDigits = telefoneContato.replace(/\D/g, '');
   const heroLogoUrl = String(topo.logo_url || '').trim();
@@ -5554,12 +5488,8 @@ function App() {
         <div className="capa-center">
           <span className="capa-bemvindo">Bem-vindo</span>
           <h1 className="capa-title">{nomeCapa1}{nomeCapa2 && <em>{nomeCapa2}</em>}</h1>
-          <p className="capa-sub">{topo.descricao}</p>
-          <div className="capa-chips">
-            <div className="capa-chip"><span className="v">{topo.chip_2_valor}</span><span className="l">{topo.chip_2_label}</span></div>
-            <div className="capa-chip"><span className="v">{topo.chip_1_valor}</span><span className="l">{topo.chip_1_label}</span></div>
-            <div className="capa-chip"><span className="v">{topo.chip_3_valor}</span><span className="l">{topo.chip_3_label}</span></div>
-          </div>
+          <p className="capa-sub">Monte seu pedido e seja direcionado ao WhatsApp para confirmação do chef 👨‍🍳</p>
+          <div className="capa-meta">🕒 11h às 13h · 18h às 23h &nbsp;·&nbsp; 📍 Entrega rastreável</div>
         </div>
         <div className="capa-cue">role o menu ↓</div>
       </header>
@@ -5623,7 +5553,7 @@ function App() {
                 )}
                 <h2 className="font-serif">{pratoAberto.nome}</h2>
                 {pratoAberto.descricao && <p>{clampText(pratoAberto.descricao, 165)}</p>}
-                <div className="dish-start-price">a partir de {fmtBRL(pratoAberto.preco)}</div>
+                <div className="dish-start-price">a partir de {fmtPreco(pratoAberto.preco)}</div>
               </div>
 
               <div className="choice-block">
